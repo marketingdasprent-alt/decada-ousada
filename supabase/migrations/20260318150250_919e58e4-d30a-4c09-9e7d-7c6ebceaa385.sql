@@ -1,0 +1,1 @@
+DELETE FROM public.uber_drivers WHERE uber_driver_id LIKE 'drv-%';

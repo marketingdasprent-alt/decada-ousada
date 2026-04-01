@@ -1,0 +1,946 @@
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { 
+  Loader2, 
+  Zap, 
+  RefreshCw, 
+  CheckCircle, 
+  XCircle, 
+  Settings, 
+  Users,
+  Car,
+  History,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Database,
+  Download,
+} from 'lucide-react';
+import { format, subDays } from 'date-fns';
+import { pt } from 'date-fns/locale';
+
+interface BoltConfig {
+  id: string;
+  client_id: string;
+  client_secret: string;
+  company_id: number;
+  company_name: string | null;
+  ativo: boolean;
+  ultimo_sync: string | null;
+  sync_automatico: boolean;
+  intervalo_sync_horas: number;
+}
+
+interface BoltMapeamento {
+  id: string;
+  driver_uuid: string;
+  driver_name: string | null;
+  driver_phone: string | null;
+  motorista_id: string | null;
+  auto_mapped: boolean;
+  motorista?: {
+    nome: string;
+  };
+}
+
+interface BoltSyncLog {
+  id: string;
+  tipo: string;
+  status: string;
+  mensagem: string | null;
+  viagens_novas: number;
+  viagens_atualizadas: number;
+  erros: number;
+  created_at: string;
+}
+
+interface Motorista {
+  id: string;
+  nome: string;
+}
+
+export const BoltIntegrationPanel: React.FC = () => {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+  
+  const [config, setConfig] = useState<BoltConfig | null>(null);
+  const [formData, setFormData] = useState({
+    client_id: '',
+    client_secret: '',
+    company_id: '',
+    ativo: false,
+    sync_automatico: false,
+    intervalo_sync_horas: 6,
+  });
+
+  const [mapeamentos, setMapeamentos] = useState<BoltMapeamento[]>([]);
+  const [motoristas, setMotoristas] = useState<Motorista[]>([]);
+  const [logs, setLogs] = useState<BoltSyncLog[]>([]);
+
+  const [syncDates, setSyncDates] = useState({
+    start: format(subDays(new Date(), 7), 'yyyy-MM-dd'),
+    end: format(new Date(), 'yyyy-MM-dd'),
+  });
+
+  // Estados para Dados Bolt
+  const [boltDrivers, setBoltDrivers] = useState<any[]>([]);
+  const [boltVehicles, setBoltVehicles] = useState<any[]>([]);
+  const [loadingBoltData, setLoadingBoltData] = useState(false);
+  const [fetchingDrivers, setFetchingDrivers] = useState(false);
+  const [fetchingVehicles, setFetchingVehicles] = useState(false);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Buscar configuração, mapeamentos, motoristas e logs em paralelo
+      const [configRes, mapeamentosRes, motoristasRes, logsRes] = await Promise.all([
+        supabase.from('plataformas_configuracao').select('*').limit(1).single(),
+        supabase.from('bolt_mapeamento_motoristas').select('*, motorista:motoristas_ativos(nome)').order('driver_name'),
+        supabase.from('motoristas_ativos').select('id, nome').eq('status_ativo', true).order('nome'),
+        supabase.from('bolt_sync_logs').select('*').order('created_at', { ascending: false }).limit(20),
+      ]);
+
+      if (configRes.data) {
+        setConfig(configRes.data as BoltConfig);
+        setFormData({
+          client_id: configRes.data.client_id || '',
+          client_secret: configRes.data.client_secret || '',
+          company_id: configRes.data.company_id?.toString() || '',
+          ativo: configRes.data.ativo || false,
+          sync_automatico: configRes.data.sync_automatico || false,
+          intervalo_sync_horas: configRes.data.intervalo_sync_horas || 6,
+        });
+      }
+
+      setMapeamentos((mapeamentosRes.data || []) as BoltMapeamento[]);
+      setMotoristas((motoristasRes.data || []) as Motorista[]);
+      setLogs((logsRes.data || []) as BoltSyncLog[]);
+
+    } catch (error: any) {
+      console.error('Erro ao carregar dados:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    if (!formData.client_id || !formData.client_secret) {
+      toast({
+        title: "Erro",
+        description: "Preencha o Client ID e Client Secret",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setTesting(true);
+      
+      const { data, error } = await supabase.functions.invoke('bolt-test-connection', {
+        body: {
+          client_id: formData.client_id,
+          client_secret: formData.client_secret,
+          company_id: formData.company_id,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Conexão bem sucedida",
+          description: data.company?.company_name 
+            ? `Ligado a: ${data.company.company_name}` 
+            : "Credenciais válidas",
+        });
+
+        // Actualizar nome da empresa se disponível
+        if (data.company?.company_name) {
+          setFormData(prev => ({ ...prev, company_name: data.company.company_name }));
+        }
+      } else {
+        toast({
+          title: "Falha na conexão",
+          description: data.error || "Verifique as credenciais",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível testar a conexão",
+        variant: "destructive",
+      });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    if (!formData.client_id || !formData.client_secret || !formData.company_id) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const configData = {
+        client_id: formData.client_id,
+        client_secret: formData.client_secret,
+        company_id: parseInt(formData.company_id),
+        ativo: formData.ativo,
+        sync_automatico: formData.sync_automatico,
+        intervalo_sync_horas: formData.intervalo_sync_horas,
+      };
+
+      let error;
+      if (config) {
+        const result = await supabase
+          .from('plataformas_configuracao')
+          .update(configData)
+          .eq('id', config.id);
+        error = result.error;
+      } else {
+        const result = await supabase
+          .from('plataformas_configuracao')
+          .insert(configData);
+        error = result.error;
+      }
+
+      if (error) throw error;
+
+      // Sync scheduling is handled by the central sync-orchestrator cron job
+      // No individual cron jobs needed — just save sync_automatico flag
+
+      toast({
+        title: "Sucesso",
+        description: "Configuração guardada com sucesso",
+      });
+
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível guardar a configuração",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSync = async () => {
+    if (!config?.ativo) {
+      toast({
+        title: "Erro",
+        description: "A integração não está activa",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSyncing(true);
+
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const { data, error } = await supabase.functions.invoke('bolt-sync', {
+        body: {
+          start_date: syncDates.start,
+          end_date: syncDates.end,
+          user_id: userData.user?.id,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Sincronização concluída",
+          description: data.message,
+        });
+        fetchData();
+      } else {
+        toast({
+          title: "Erro na sincronização",
+          description: data.error,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível sincronizar",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleMapDriver = async (mapeamentoId: string, motoristaId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('bolt_mapeamento_motoristas')
+        .update({ 
+          motorista_id: motoristaId,
+          auto_mapped: false,
+        })
+        .eq('id', mapeamentoId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Mapeamento actualizado",
+      });
+
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchBoltDrivers = async () => {
+    if (!config?.ativo) {
+      toast({
+        title: "Erro",
+        description: "A integração não está activa",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setFetchingDrivers(true);
+      
+      const { data, error } = await supabase.functions.invoke('bolt-api', {
+        body: { operation: 'getDrivers' },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        const drivers = data.drivers || [];
+        setBoltDrivers(drivers);
+
+        // Guardar na base de dados (upsert)
+        if (drivers.length > 0) {
+          const driversToUpsert = drivers.map((driver: any) => ({
+            driver_uuid: driver.driver_uuid || driver.uuid || driver.id,
+            name: driver.name || driver.driver_name || null,
+            email: driver.email || null,
+            phone: driver.phone || driver.driver_phone || null,
+            status: driver.status || null,
+            registration_date: driver.registration_date || driver.created_at || null,
+            dados_raw: driver,
+            updated_at: new Date().toISOString(),
+          }));
+
+          const { error: upsertError } = await supabase
+            .from('bolt_drivers')
+            .upsert(driversToUpsert, { onConflict: 'driver_uuid' });
+
+          if (upsertError) {
+            console.error('Erro ao guardar motoristas:', upsertError);
+          } else if (config?.id) {
+            // Auto-mapear motoristas automaticamente após guardar
+            try {
+              const { data: autoMapData } = await supabase.functions.invoke(
+                'bolt-auto-map-drivers',
+                { body: { integracao_id: config.id } }
+              );
+              
+              if (autoMapData?.created > 0) {
+                toast({
+                  title: "Novos motoristas criados",
+                  description: `${autoMapData.created} motoristas criados automaticamente via email`,
+                });
+              }
+              if (autoMapData?.mapped > 0) {
+                console.log(`Auto-mapeados: ${autoMapData.mapped} motoristas`);
+              }
+            } catch (autoMapError) {
+              console.error('Erro no auto-mapeamento:', autoMapError);
+              // Não falhar por erro no auto-map
+            }
+          }
+        }
+
+        toast({
+          title: "Sucesso",
+          description: `${data.total || 0} motoristas encontrados e guardados`,
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: data.error || "Erro ao buscar motoristas",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível buscar motoristas",
+        variant: "destructive",
+      });
+    } finally {
+      setFetchingDrivers(false);
+    }
+  };
+
+  const fetchBoltVehicles = async () => {
+    if (!config?.ativo) {
+      toast({
+        title: "Erro",
+        description: "A integração não está activa",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setFetchingVehicles(true);
+      
+      const { data, error } = await supabase.functions.invoke('bolt-api', {
+        body: { operation: 'getVehicles' },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        const vehicles = data.vehicles || [];
+        setBoltVehicles(vehicles);
+
+        // Guardar na base de dados (upsert)
+        if (vehicles.length > 0) {
+          const vehiclesToUpsert = vehicles.map((vehicle: any) => ({
+            vehicle_uuid: vehicle.vehicle_uuid || vehicle.uuid || vehicle.id,
+            license_plate: vehicle.license_plate || vehicle.plate || null,
+            brand: vehicle.brand || vehicle.make || null,
+            model: vehicle.model || null,
+            year: vehicle.year || null,
+            color: vehicle.color || null,
+            status: vehicle.status || null,
+            dados_raw: vehicle,
+            updated_at: new Date().toISOString(),
+          }));
+
+          const { error: upsertError } = await supabase
+            .from('bolt_vehicles')
+            .upsert(vehiclesToUpsert, { onConflict: 'vehicle_uuid' });
+
+          if (upsertError) {
+            console.error('Erro ao guardar viaturas:', upsertError);
+          }
+        }
+
+        toast({
+          title: "Sucesso",
+          description: `${data.total || 0} viaturas encontradas e guardadas`,
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: data.error || "Erro ao buscar viaturas",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível buscar viaturas",
+        variant: "destructive",
+      });
+    } finally {
+      setFetchingVehicles(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'success':
+        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Sucesso</Badge>;
+      case 'error':
+        return <Badge variant="destructive">Erro</Badge>;
+      case 'partial':
+        return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Parcial</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-500/20 rounded-lg">
+              <Zap className="h-5 w-5 text-green-400" />
+            </div>
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                Bolt Fleet
+                {config?.ativo ? (
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Activo
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary">
+                    <XCircle className="h-3 w-3 mr-1" />
+                    Inactivo
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                Integração com a API Bolt Fleet para importar viagens automaticamente
+              </CardDescription>
+            </div>
+          </div>
+          {config?.ultimo_sync && (
+            <div className="text-sm text-muted-foreground">
+              Última sincronização: {format(new Date(config.ultimo_sync), "dd/MM/yyyy HH:mm", { locale: pt })}
+            </div>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="config" className="w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
+            <TabsTrigger value="config" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Configuração
+            </TabsTrigger>
+            <TabsTrigger value="sync" className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Sincronizar
+            </TabsTrigger>
+            <TabsTrigger value="boltdata" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Dados Bolt
+            </TabsTrigger>
+            <TabsTrigger value="mapping" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Mapeamento
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Histórico
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tab Configuração */}
+          <TabsContent value="config" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="client_id">Client ID *</Label>
+                <Input
+                  id="client_id"
+                  value={formData.client_id}
+                  onChange={(e) => setFormData(prev => ({ ...prev, client_id: e.target.value }))}
+                  placeholder="Introduza o Client ID da Bolt"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="client_secret">Client Secret *</Label>
+                <div className="relative">
+                  <Input
+                    id="client_secret"
+                    type={showSecret ? 'text' : 'password'}
+                    value={formData.client_secret}
+                    onChange={(e) => setFormData(prev => ({ ...prev, client_secret: e.target.value }))}
+                    placeholder="Introduza o Client Secret da Bolt"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setShowSecret(!showSecret)}
+                  >
+                    {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="company_id">Company ID *</Label>
+                <Input
+                  id="company_id"
+                  value={formData.company_id}
+                  onChange={(e) => setFormData(prev => ({ ...prev, company_id: e.target.value }))}
+                  placeholder="ID da empresa na Bolt"
+                />
+              </div>
+
+            </div>
+
+            <div className="flex items-center justify-between py-4 border-t border-border/50">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="ativo"
+                    checked={formData.ativo}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, ativo: checked }))}
+                  />
+                  <Label htmlFor="ativo">Integração Activa</Label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="sync_auto"
+                    checked={formData.sync_automatico}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, sync_automatico: checked }))}
+                  />
+                  <Label htmlFor="sync_auto">Sincronização Semanal (Segundas 00:00)</Label>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleTestConnection} disabled={testing}>
+                  {testing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Testar Conexão
+                </Button>
+                <Button onClick={handleSaveConfig} disabled={saving}>
+                  {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Guardar
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Tab Sincronizar */}
+          <TabsContent value="sync" className="space-y-4">
+            {!config?.ativo ? (
+              <div className="flex items-center gap-2 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                <span className="text-yellow-500">
+                  Active a integração na tab "Configuração" para sincronizar viagens.
+                </span>
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="start_date">Data Início</Label>
+                    <Input
+                      id="start_date"
+                      type="date"
+                      value={syncDates.start}
+                      onChange={(e) => setSyncDates(prev => ({ ...prev, start: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="end_date">Data Fim</Label>
+                    <Input
+                      id="end_date"
+                      type="date"
+                      value={syncDates.end}
+                      onChange={(e) => setSyncDates(prev => ({ ...prev, end: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button onClick={handleSync} disabled={syncing} className="w-full">
+                      {syncing ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Sincronizar Agora
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                  A sincronização irá importar todas as viagens no período seleccionado.
+                  Viagens já existentes serão actualizadas.
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Tab Dados Bolt */}
+          <TabsContent value="boltdata" className="space-y-6">
+            {!config?.ativo ? (
+              <div className="flex items-center gap-2 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                <span className="text-yellow-500">
+                  Active a integração na tab "Configuração" para consultar dados da Bolt.
+                </span>
+              </div>
+            ) : (
+              <>
+                {/* Motoristas Bolt */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Motoristas da Bolt
+                    </h3>
+                    <Button onClick={fetchBoltDrivers} disabled={fetchingDrivers}>
+                      {fetchingDrivers ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      Buscar Motoristas
+                    </Button>
+                  </div>
+
+                  {boltDrivers.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Telefone</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Estado</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {boltDrivers.map((driver, index) => (
+                          <TableRow key={driver.uuid || index}>
+                            <TableCell className="font-medium">
+                              {driver.name || driver.first_name || 'Sem nome'}
+                            </TableCell>
+                            <TableCell>{driver.phone || '-'}</TableCell>
+                            <TableCell>{driver.email || '-'}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{driver.status || 'desconhecido'}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground border border-dashed rounded-lg">
+                      <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>Clique em "Buscar Motoristas" para consultar a API Bolt</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Viaturas Bolt */}
+                <div className="space-y-4 pt-4 border-t border-border/50">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium flex items-center gap-2">
+                      <Car className="h-5 w-5" />
+                      Viaturas da Bolt
+                    </h3>
+                    <Button onClick={fetchBoltVehicles} disabled={fetchingVehicles}>
+                      {fetchingVehicles ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      Buscar Viaturas
+                    </Button>
+                  </div>
+
+                  {boltVehicles.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Matrícula</TableHead>
+                          <TableHead>Modelo</TableHead>
+                          <TableHead>Marca</TableHead>
+                          <TableHead>Cor</TableHead>
+                          <TableHead>Estado</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {boltVehicles.map((vehicle, index) => (
+                          <TableRow key={vehicle.uuid || index}>
+                            <TableCell className="font-medium font-mono">
+                              {vehicle.license_plate || vehicle.reg_number || '-'}
+                            </TableCell>
+                            <TableCell>{vehicle.model || '-'}</TableCell>
+                            <TableCell>{vehicle.brand || vehicle.make || '-'}</TableCell>
+                            <TableCell>{vehicle.color || '-'}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{vehicle.status || 'desconhecido'}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground border border-dashed rounded-lg">
+                      <Car className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>Clique em "Buscar Viaturas" para consultar a API Bolt</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Tab Mapeamento */}
+          <TabsContent value="mapping" className="space-y-4">
+            {mapeamentos.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhum motorista da Bolt encontrado.</p>
+                <p className="text-sm">Execute uma sincronização para importar os motoristas.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Motorista Bolt</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Motorista Sistema</TableHead>
+                    <TableHead>Mapeamento</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mapeamentos.map((m) => (
+                    <TableRow key={m.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{m.driver_name || 'Sem nome'}</p>
+                          <code className="text-xs text-muted-foreground">{m.driver_uuid.slice(0, 8)}...</code>
+                        </div>
+                      </TableCell>
+                      <TableCell>{m.driver_phone || '-'}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={m.motorista_id || 'none'}
+                          onValueChange={(v) => handleMapDriver(m.id, v === 'none' ? null : v)}
+                        >
+                          <SelectTrigger className="w-[200px]">
+                            <SelectValue placeholder="Seleccionar motorista" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Não mapeado</SelectItem>
+                            {motoristas.map((mot) => (
+                              <SelectItem key={mot.id} value={mot.id}>
+                                {mot.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        {m.auto_mapped ? (
+                          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                            <Car className="h-3 w-3 mr-1" />
+                            Automático
+                          </Badge>
+                        ) : m.motorista_id ? (
+                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Manual
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Pendente
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </TabsContent>
+
+          {/* Tab Histórico */}
+          <TabsContent value="logs" className="space-y-4">
+            {logs.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhum registo de sincronização.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Novas</TableHead>
+                    <TableHead>Actualizadas</TableHead>
+                    <TableHead>Erros</TableHead>
+                    <TableHead>Mensagem</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-sm">
+                        {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", { locale: pt })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{log.tipo}</Badge>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(log.status)}</TableCell>
+                      <TableCell className="text-green-500">{log.viagens_novas || 0}</TableCell>
+                      <TableCell className="text-blue-500">{log.viagens_atualizadas || 0}</TableCell>
+                      <TableCell className="text-red-500">{log.erros || 0}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">
+                        {log.mensagem || '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+};

@@ -1,0 +1,1 @@
+ALTER TABLE public.plataformas_configuracao ADD COLUMN IF NOT EXISTS apify_actor_id TEXT;

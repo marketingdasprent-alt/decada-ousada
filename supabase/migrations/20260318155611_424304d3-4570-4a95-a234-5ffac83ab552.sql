@@ -1,0 +1,1 @@
+UPDATE plataformas_configuracao SET ultimo_sync = last_webhook_at WHERE plataforma = 'uber' AND ultimo_sync IS NULL AND last_webhook_at IS NOT NULL;

@@ -1,0 +1,1 @@
+DELETE FROM uber_transactions WHERE uber_transaction_id LIKE 'csv-%';

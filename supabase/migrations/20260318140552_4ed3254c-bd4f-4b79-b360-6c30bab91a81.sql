@@ -1,0 +1,1 @@
+DELETE FROM uber_transactions WHERE id = 'cc08085f-d0e8-47af-acb9-ef0ecea2e783'

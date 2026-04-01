@@ -1,0 +1,106 @@
+project_id = "hkqzzxgeedsmjnhyquke"
+
+[functions.send-brevo-email]
+verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = false
+
+[functions.send-webhook]
+verify_jwt = false
+
+[functions.create-user]
+verify_jwt = false
+
+[functions.bolt-auth]
+verify_jwt = false
+
+[functions.bolt-sync]
+verify_jwt = false
+
+[functions.bolt-test-connection]
+verify_jwt = false
+
+[functions.bolt-api]
+verify_jwt = false
+
+[functions.bolt-auto-map-drivers]
+verify_jwt = false
+
+[functions.bolt-full-sync]
+verify_jwt = false
+
+[functions.bolt-auto-map-vehicles]
+verify_jwt = false
+
+[functions.bolt-auto-map-driver-vehicles]
+verify_jwt = false
+
+[functions.send-calendar-reminders]
+verify_jwt = false
+
+[functions.send-calendar-notification]
+verify_jwt = false
+
+[functions.send-marketing-email]
+verify_jwt = false
+
+[functions.brevo-email-stats]
+verify_jwt = false
+
+[functions.brevo-webhook]
+verify_jwt = false
+
+[functions.sync-campaign-sends]
+verify_jwt = false
+
+[functions.via-verde-test-connection]
+verify_jwt = false
+
+[functions.uber-test-connection]
+verify_jwt = false
+
+[functions.uber-sync]
+verify_jwt = false
+
+[functions.uber-webhook]
+verify_jwt = false
+
+[functions.uber-oauth-callback]
+verify_jwt = false
+
+[functions.uber-full-sync]
+verify_jwt = false
+
+[functions.uber-import-reports]
+verify_jwt = false
+
+[functions.bp-test-connection]
+verify_jwt = false
+
+[functions.bp-sync-cards]
+verify_jwt = false
+
+[functions.bp-sync-transactions]
+verify_jwt = false
+
+[functions.robot-execute]
+verify_jwt = false
+
+[functions.robot-webhook]
+verify_jwt = false
+
+[functions.robot-manual-import]
+verify_jwt = false
+
+[functions.bp-import-csv]
+verify_jwt = false
+
+[functions.robot-schedule]
+verify_jwt = false
+
+[functions.bolt-schedule]
+verify_jwt = false
+
+[functions.bolt-import-csv]
+verify_jwt = false

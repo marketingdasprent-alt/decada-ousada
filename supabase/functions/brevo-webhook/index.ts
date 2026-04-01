@@ -1,0 +1,190 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const payload = await req.json();
+    console.log("Brevo webhook received:", JSON.stringify(payload));
+
+    // Brevo can send single event or array
+    const events = Array.isArray(payload) ? payload : [payload];
+
+    for (const event of events) {
+      const messageId = event["message-id"] || event.messageId || event["msg-id"];
+      const eventType = event.event;
+      const email = event.email;
+      const date = event.date || event.ts_event || new Date().toISOString();
+
+      if (!messageId || !eventType) {
+        console.log("Skipping event without message-id or event type:", JSON.stringify(event));
+        continue;
+      }
+
+      // Map Brevo event types to our status
+      const statusMap: Record<string, string> = {
+        delivered: "delivered",
+        opened: "opened",
+        click: "clicked",
+        hard_bounce: "bounced",
+        soft_bounce: "bounced",
+        spam: "spam",
+        unsubscribed: "unsubscribed",
+        blocked: "blocked",
+        invalid: "invalid",
+        deferred: "deferred",
+        request: "sent",
+      };
+
+      const status = statusMap[eventType] || eventType;
+
+      // Build update fields based on event type
+      const updateFields: Record<string, unknown> = {
+        last_event: eventType,
+        last_event_at: date,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Only upgrade status (don't downgrade e.g. from opened back to delivered)
+      const statusPriority: Record<string, number> = {
+        sent: 0,
+        deferred: 1,
+        delivered: 2,
+        opened: 3,
+        clicked: 4,
+        bounced: 10,
+        spam: 10,
+        unsubscribed: 10,
+        blocked: 10,
+        invalid: 10,
+      };
+
+      switch (eventType) {
+        case "delivered":
+          updateFields.delivered_at = date;
+          break;
+        case "opened":
+          updateFields.opened_at = date;
+          updateFields.delivered_at = date; // if opened, it was delivered
+          break;
+        case "click":
+          updateFields.clicked_at = date;
+          updateFields.opened_at = date;
+          updateFields.delivered_at = date;
+          break;
+        case "hard_bounce":
+          updateFields.bounced_at = date;
+          updateFields.bounce_type = "hard";
+          updateFields.error_message = event.reason || event.message || null;
+          break;
+        case "soft_bounce":
+          updateFields.bounced_at = date;
+          updateFields.bounce_type = "soft";
+          updateFields.error_message = event.reason || event.message || null;
+          break;
+        case "spam":
+          updateFields.error_message = "Marcado como spam";
+          break;
+        case "unsubscribed":
+          updateFields.unsubscribed_at = date;
+          break;
+        case "blocked":
+        case "invalid":
+          updateFields.error_message = event.reason || event.message || null;
+          break;
+      }
+
+      // Find the record by brevo_message_id
+      const { data: existing } = await supabase
+        .from("email_sends")
+        .select("id, status")
+        .eq("brevo_message_id", messageId)
+        .maybeSingle();
+
+      if (existing) {
+        // Only update status if new status has higher priority
+        const currentPriority = statusPriority[existing.status] ?? 0;
+        const newPriority = statusPriority[status] ?? 0;
+        if (newPriority >= currentPriority) {
+          updateFields.status = status;
+        }
+
+        const { error } = await supabase
+          .from("email_sends")
+          .update(updateFields)
+          .eq("id", existing.id);
+
+        if (error) {
+          console.error("Error updating email_send:", error);
+        }
+      } else if (email) {
+        // Try to find by email if message_id not found (fallback)
+        console.log(`No record found for message_id ${messageId}, email ${email}`);
+      }
+
+      // Update campaign counters
+      if (existing) {
+        const { data: send } = await supabase
+          .from("email_sends")
+          .select("campanha_id")
+          .eq("id", existing.id)
+          .single();
+
+        if (send?.campanha_id) {
+          await updateCampaignCounters(supabase, send.campanha_id);
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Brevo webhook error:", message);
+    return new Response(JSON.stringify({ error: message }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
+
+async function updateCampaignCounters(supabase: ReturnType<typeof createClient>, campanhaId: string) {
+  const { data: counts } = await supabase
+    .from("email_sends")
+    .select("status")
+    .eq("campanha_id", campanhaId);
+
+  if (!counts) return;
+
+  const totals = {
+    total_entregues: 0,
+    total_abertos: 0,
+    total_clicados: 0,
+    total_bounces: 0,
+  };
+
+  for (const row of counts) {
+    if (["delivered", "opened", "clicked"].includes(row.status)) totals.total_entregues++;
+    if (["opened", "clicked"].includes(row.status)) totals.total_abertos++;
+    if (row.status === "clicked") totals.total_clicados++;
+    if (row.status === "bounced") totals.total_bounces++;
+  }
+
+  await supabase
+    .from("marketing_campanhas")
+    .update(totals)
+    .eq("id", campanhaId);
+}

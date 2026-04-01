@@ -1,0 +1,1 @@
+ALTER PUBLICATION supabase_realtime ADD TABLE calendario_eventos;

@@ -1,0 +1,476 @@
+import { useState, useEffect, useRef } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import RichTextEditor, { RichTextEditorRef } from './RichTextEditor';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Save, X, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+interface DocumentTemplate {
+  id?: string;
+  nome: string;
+  tipo: string;
+  empresa_id: string;
+  template_data: any;
+  campos_dinamicos: any;
+  ativo: boolean;
+  versao: number;
+  papel_timbrado_url?: string;
+}
+
+interface DocumentTemplateEditorProps {
+  template: DocumentTemplate | null;
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+export const DocumentTemplateEditor = ({ template, onSave, onCancel }: DocumentTemplateEditorProps) => {
+  const [nome, setNome] = useState(template?.nome || '');
+  const [empresaId, setEmpresaId] = useState(template?.empresa_id || 'decada_ousada');
+  const [ativo, setAtivo] = useState(template?.ativo ?? true);
+  const [conteudoCompleto, setConteudoCompleto] = useState('');
+  const [papelTimbradoUrl, setPapelTimbradoUrl] = useState(template?.papel_timbrado_url || '');
+  const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const editorRef = useRef<RichTextEditorRef>(null);
+
+  useEffect(() => {
+    if (template) {
+      let content = '';
+      
+      if (template?.template_data?.conteudo) {
+        content = template.template_data.conteudo;
+      } else if (template?.template_data?.secoes) {
+        // Migrar formato antigo (seções) para novo formato (conteúdo completo)
+        const secoes = template.template_data.secoes;
+        content = template.template_data.titulo ? template.template_data.titulo + '\n\n' : '';
+        
+        secoes.forEach((secao: any) => {
+          if (secao.titulo) content += secao.titulo + '\n';
+          if (secao.subtitulo) content += secao.subtitulo + '\n';
+          if (secao.conteudo) content += secao.conteudo + '\n';
+          if (secao.paragrafos) {
+            secao.paragrafos.forEach((p: string) => {
+              content += p + '\n';
+            });
+          }
+          content += '\n';
+        });
+      }
+      
+      // Detectar se é texto simples ou HTML e converter se necessário
+      const isHtml = /<[a-z][\s\S]*>/i.test(content);
+      if (isHtml) {
+        setConteudoCompleto(content);
+      } else if (content) {
+        // Converter texto simples para HTML básico, preservando estrutura
+        const htmlContent = content
+          .trim()
+          .split(/\n{2,}/)
+          .filter(p => p.trim())
+          .map(p => {
+            const formatted = p.trim().replace(/\n/g, '<br>');
+            return `<p>${formatted}</p>`;
+          })
+          .join('');
+        setConteudoCompleto(htmlContent || `<p>${content}</p>`);
+      } else {
+        setConteudoCompleto('<p></p>');
+      }
+      
+      if (template?.papel_timbrado_url) {
+        setPapelTimbradoUrl(template.papel_timbrado_url);
+      }
+    }
+  }, [template]);
+
+  const camposDinamicos = [
+    { 
+      label: '👤 Motorista', 
+      icon: '👤',
+      fields: ['{{motorista_nome}}', '{{motorista_nif}}', '{{motorista_documento_tipo}}', '{{motorista_documento_numero}}', '{{carta_conducao}}', '{{carta_categorias}}', '{{motorista_morada}}', '{{motorista_email}}', '{{motorista_telefone}}'] 
+    },
+    { 
+      label: '🏢 Empresa', 
+      icon: '🏢',
+      fields: ['{{empresa_nome_completo}}', '{{empresa_nif}}', '{{empresa_sede}}', '{{empresa_licenca_tvde}}', '{{empresa_representante}}'] 
+    },
+    { 
+      label: '📄 Contrato', 
+      icon: '📄',
+      fields: ['{{data_inicio}}', '{{data_assinatura}}', '{{cidade_assinatura}}', '{{duracao_meses}}'] 
+    }
+  ];
+
+  const insertField = (field: string) => {
+    if (editorRef.current) {
+      editorRef.current.insertContent(field);
+    }
+  };
+
+  const handleImageUpload = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      setUploadingImage(true);
+      try {
+        // Verificar se usuário é admin
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast.error('Usuário não autenticado');
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+        
+        if (!profile?.is_admin) {
+          toast.error('Apenas administradores podem fazer upload de imagens');
+          return;
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('document-templates')
+          .upload(fileName, file);
+        
+        if (error) {
+          // Log detalhado do erro
+          const errorObj = error as any;
+          console.error('Erro detalhado do upload:', {
+            message: error.message,
+            statusCode: errorObj.statusCode,
+            error: errorObj.error,
+            hint: errorObj.hint,
+            details: errorObj.details,
+            fullError: JSON.stringify(error, null, 2)
+          });
+          
+          // Mensagens específicas baseadas no tipo de erro
+          if (error.message?.includes('row-level security') || error.message?.includes('policy')) {
+            toast.error('Erro de permissão RLS. Verifique se você é administrador.');
+          } else if (errorObj.statusCode === '400' || errorObj.statusCode === 400) {
+            toast.error(`Erro 400: ${error.message || 'Requisição inválida ao servidor'}`);
+          } else if (error.message?.includes('bucket')) {
+            toast.error('Bucket de armazenamento não configurado corretamente');
+          } else if (error.message?.includes('permission') || error.message?.includes('unauthorized')) {
+            toast.error('Sem permissão para fazer upload. Verifique as políticas RLS.');
+          } else {
+            toast.error(`Erro ao fazer upload: ${error.message || 'Erro desconhecido'}`);
+          }
+          throw error;
+        }
+        
+        const { data: urlData } = supabase.storage
+          .from('document-templates')
+          .getPublicUrl(fileName);
+        
+        setPapelTimbradoUrl(urlData.publicUrl);
+        toast.success('Imagem carregada com sucesso!');
+      } catch (error) {
+        console.error('Erro ao fazer upload:', error);
+        if (!(error as any)?.message?.includes('bucket') && !(error as any)?.message?.includes('policy')) {
+          toast.error('Erro ao fazer upload da imagem');
+        }
+      } finally {
+        setUploadingImage(false);
+      }
+    };
+    
+    input.click();
+  };
+
+  const handleImageRemove = async () => {
+    if (!papelTimbradoUrl) return;
+    
+    try {
+      // Extrair nome do arquivo da URL
+      const urlParts = papelTimbradoUrl.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      
+      if (fileName && !fileName.includes('lovable-uploads')) {
+        await supabase.storage
+          .from('document-templates')
+          .remove([fileName]);
+      }
+      
+      setPapelTimbradoUrl('');
+      toast.success('Imagem removida');
+    } catch (error) {
+      console.error('Erro ao remover imagem:', error);
+      toast.error('Erro ao remover imagem');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!nome.trim()) {
+      toast.error('Por favor, insira um nome para o template');
+      return;
+    }
+
+    if (!conteudoCompleto.trim()) {
+      toast.error('Por favor, insira o conteúdo do template');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Determinar a versão correta
+      let versao = template?.versao || 1;
+      
+      // Se for novo template, buscar versão máxima e incrementar
+      if (!template?.id) {
+        const { data: maxVersionTemplate } = await supabase
+          .from('document_templates')
+          .select('versao')
+          .eq('empresa_id', empresaId)
+          .eq('tipo', 'contrato_tvde')
+          .order('versao', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        versao = (maxVersionTemplate?.versao || 0) + 1;
+      }
+
+      const templateData = {
+        nome,
+        tipo: 'contrato_tvde',
+        empresa_id: empresaId,
+        template_data: {
+          conteudo: conteudoCompleto
+        } as any,
+        campos_dinamicos: {
+          motorista: camposDinamicos[0].fields,
+          empresa: camposDinamicos[1].fields,
+          contrato: camposDinamicos[2].fields
+        } as any,
+        papel_timbrado_url: papelTimbradoUrl || null,
+        ativo,
+        versao
+      };
+
+      if (template?.id) {
+        const { error } = await supabase
+          .from('document_templates')
+          .update(templateData)
+          .eq('id', template.id);
+
+        if (error) throw error;
+        toast.success('Template atualizado com sucesso!');
+      } else {
+        const { error } = await supabase
+          .from('document_templates')
+          .insert(templateData);
+
+        if (error) throw error;
+        toast.success('Template criado com sucesso!');
+      }
+
+      onSave();
+    } catch (error) {
+      console.error('Erro ao salvar template:', error);
+      toast.error('Erro ao salvar template. Verifique os dados e tente novamente.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header com ações */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-foreground">
+          {template ? 'Editar Template' : 'Novo Template'}
+        </h2>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onCancel} disabled={saving}>
+            <X className="mr-2 h-4 w-4" />
+            Cancelar
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            <Save className="mr-2 h-4 w-4" />
+            {saving ? 'A guardar...' : 'Guardar Template'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Info sobre campos dinâmicos */}
+      <Alert className="bg-blue-900/20 border-blue-700">
+        <AlertDescription className="text-foreground">
+          ✨ Use os campos dinâmicos ao lado para inserir dados automáticos. Clique em qualquer campo para inserir no cursor.
+        </AlertDescription>
+      </Alert>
+
+      {/* Layout Principal: Editor (2/3) + Painel Lateral (1/3) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* COLUNA PRINCIPAL - EDITOR */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Informações do Template */}
+          <Card className="bg-card/50 border-border">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex-1 grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-foreground">Nome do Template</Label>
+                    <Input
+                      value={nome}
+                      onChange={(e) => setNome(e.target.value)}
+                      placeholder="Ex: Contrato TVDE Padrão"
+                      className="bg-card border-border text-foreground"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground">Empresa</Label>
+                    <Select value={empresaId} onValueChange={setEmpresaId}>
+                      <SelectTrigger className="bg-card border-border text-foreground">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="decada_ousada">Década Ousada</SelectItem>
+                        <SelectItem value="distancia_arrojada">Distância Arrojada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  <Switch checked={ativo} onCheckedChange={setAtivo} />
+                  <Label className="text-foreground">Ativo</Label>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Editor de Conteúdo */}
+          <Card className="bg-card/50 border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground">Conteúdo do Contrato</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Digite o conteúdo completo do contrato. Use os campos dinâmicos ao lado para inserir dados automáticos.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RichTextEditor
+                ref={editorRef}
+                content={conteudoCompleto}
+                onChange={setConteudoCompleto}
+              />
+              <div className="mt-2 text-xs text-muted-foreground">
+                {conteudoCompleto.length} caracteres
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* COLUNA LATERAL - FERRAMENTAS */}
+        <div className="space-y-4 pr-2">
+          
+          {/* Campos Dinâmicos */}
+          <Card className="bg-card/50 border-border sticky top-0 z-50 shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-foreground text-lg">Campos Dinâmicos</CardTitle>
+              <CardDescription className="text-muted-foreground text-xs">
+                Clique para inserir no cursor
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+              {camposDinamicos.map((categoria) => (
+                <div key={categoria.label} className="space-y-2">
+                  <Label className="text-sm text-foreground font-bold flex items-center gap-2">
+                    <span>{categoria.icon}</span>
+                    {categoria.label}
+                  </Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {categoria.fields.map((field) => (
+                      <Badge
+                        key={field}
+                        variant="outline"
+                        className="cursor-pointer hover:bg-yellow-500/20 hover:border-yellow-500 transition-all text-xs px-2 py-1"
+                        onClick={() => insertField(field)}
+                      >
+                        {field.replace(/[{}]/g, '')}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Gestão de Papel Timbrado */}
+          <Card className="bg-card/50 border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground text-lg">Papel Timbrado</CardTitle>
+              <CardDescription className="text-muted-foreground text-xs">
+                Formato A4 (210x297mm)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {papelTimbradoUrl ? (
+                <div className="space-y-3">
+                  <div className="relative w-full max-h-[400px] border border-border rounded bg-card overflow-y-auto">
+                    <img 
+                      src={papelTimbradoUrl} 
+                      alt="Papel timbrado"
+                      className="w-full object-contain"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleImageUpload}
+                      disabled={uploadingImage}
+                      className="flex-1"
+                    >
+                      <Upload className="mr-2 h-3 w-3" />
+                      Alterar
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={handleImageRemove}
+                      className="flex-1"
+                    >
+                      <Trash2 className="mr-2 h-3 w-3" />
+                      Remover
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={handleImageUpload}
+                  disabled={uploadingImage}
+                >
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  {uploadingImage ? 'A carregar...' : 'Fazer upload de imagem'}
+                </Button>
+              )}
+              <p className="text-xs text-gray-500">
+                A imagem será usada como fundo do documento ao gerar contratos
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};

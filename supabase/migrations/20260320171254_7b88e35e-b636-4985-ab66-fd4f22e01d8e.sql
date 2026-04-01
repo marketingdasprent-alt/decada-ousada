@@ -1,0 +1,1 @@
+ALTER TABLE public.motoristas_ativos ADD COLUMN IF NOT EXISTS gestor_responsavel TEXT;

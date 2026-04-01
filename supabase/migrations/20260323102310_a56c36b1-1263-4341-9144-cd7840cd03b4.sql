@@ -1,0 +1,1 @@
+ALTER TABLE via_verde_contas ADD COLUMN logo_url text;

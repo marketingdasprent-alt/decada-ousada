@@ -1,0 +1,82 @@
+
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { GripVertical, Trash2, Type, Mail, Phone, Calendar, FileText, ToggleLeft } from 'lucide-react';
+import { FormField } from './DynamicFieldEditor';
+import { FieldEditor } from './FieldEditor';
+
+interface FieldCardProps {
+  field: FormField;
+  isEditing: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onUpdate: (updates: Partial<FormField>) => void;
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+}
+
+const fieldTypeIcons = {
+  text: Type,
+  email: Mail,
+  tel: Phone,
+  textarea: FileText,
+  select: ToggleLeft,
+  date: Calendar,
+  checkbox: ToggleLeft,
+  radio: ToggleLeft
+};
+
+export const FieldCard: React.FC<FieldCardProps> = ({
+  field,
+  isEditing,
+  onEdit,
+  onDelete,
+  onUpdate,
+  dragHandleProps
+}) => {
+  const IconComponent = fieldTypeIcons[field.type];
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between text-foreground">
+          <div className="flex items-center gap-3">
+            <div 
+              {...dragHandleProps}
+              className="cursor-grab active:cursor-grabbing touch-none"
+            >
+              <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+            </div>
+            <IconComponent className="h-4 w-4 text-primary" />
+            <span className="text-sm">{field.label}</span>
+            {field.required && (
+              <span className="text-destructive text-xs">*</span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onEdit}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {isEditing ? 'Fechar' : 'Editar'}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onDelete}
+              className="text-destructive hover:text-destructive/80"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardTitle>
+      </CardHeader>
+
+      {isEditing && (
+        <FieldEditor field={field} onUpdate={onUpdate} />
+      )}
+    </Card>
+  );
+};

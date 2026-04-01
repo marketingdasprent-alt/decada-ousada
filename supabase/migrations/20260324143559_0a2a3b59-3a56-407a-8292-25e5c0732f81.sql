@@ -1,0 +1,1 @@
+DELETE FROM public.bp_transacoes WHERE transaction_id LIKE 'bp-%';

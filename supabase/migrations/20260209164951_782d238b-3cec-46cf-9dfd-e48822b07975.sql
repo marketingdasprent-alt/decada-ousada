@@ -1,0 +1,1 @@
+ALTER TABLE calendario_eventos ADD COLUMN cidade text;

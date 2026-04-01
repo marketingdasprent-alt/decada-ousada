@@ -1,0 +1,1 @@
+UPDATE uber_transactions SET occurred_at = '2026-03-10T12:00:00+00' WHERE occurred_at = '2026-03-09T12:00:00+00';

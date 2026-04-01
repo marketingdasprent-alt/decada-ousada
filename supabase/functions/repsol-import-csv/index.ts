@@ -1,0 +1,199 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+function sanitizeCard(card: string): string {
+  return (card || '').replace(/\D/g, '');
+}
+
+function parseRepsolDate(raw: string, time: string = '00:00'): string | null {
+  if (!raw) return null;
+  // Common format: DD/MM/YYYY
+  const m = raw.trim().match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/);
+  if (m) {
+    const t = time.trim().match(/^(\d{2})[:h](\d{2})/) || ['00:00', '00', '00'];
+    return `${m[3]}-${m[2]}-${m[1]}T${t[1]}:${t[2]}:00Z`;
+  }
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+function parseCsvLine(line: string, sep: string): string[] {
+  const fields: string[] = [];
+  let i = 0;
+  while (i <= line.length) {
+    if (i === line.length) { fields.push(''); break; }
+    if (line[i] === '"') {
+      let value = '';
+      i++;
+      while (i < line.length) {
+        if (line[i] === '"') {
+          if (i + 1 < line.length && line[i + 1] === '"') { value += '"'; i += 2; }
+          else { i++; break; }
+        } else { value += line[i]; i++; }
+      }
+      fields.push(value);
+      if (i < line.length && line[i] === sep) i++;
+    } else {
+      const nextSep = line.indexOf(sep, i);
+      if (nextSep === -1) { fields.push(line.substring(i)); break; }
+      else { fields.push(line.substring(i, nextSep)); i = nextSep + 1; }
+    }
+  }
+  return fields;
+}
+
+function detectSeparator(lines: string[]): string {
+  const header = lines[0].replace(/"[^"]*"/g, '');
+  const semilons = (header.match(/;/g) || []).length;
+  const commas = (header.match(/,/g) || []).length;
+  return semilons >= commas ? ';' : ',';
+}
+
+function parseCsv(text: string): Record<string, string>[] {
+  const clean = text.replace(/^\uFEFF/, '');
+  const lines = clean.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const sep = detectSeparator(lines);
+  const headers = parseCsvLine(lines[0], sep).map(h => h.trim());
+  const rows: Record<string, string>[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = parseCsvLine(lines[i], sep).map(v => v.trim());
+    if (vals.length < 2) continue;
+    const row: Record<string, string> = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ''; });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function findField(row: Record<string, string>, candidates: string[]): string {
+  for (const c of candidates) {
+    const key = Object.keys(row).find(k => k.toLowerCase().includes(c.toLowerCase()));
+    if (key && row[key]) return row[key];
+  }
+  return '';
+}
+
+function parseNumber(val: string): number | null {
+  if (!val) return null;
+  const clean = val.replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(clean);
+  return isNaN(n) ? null : n;
+}
+
+function normalizeName(name: string): string {
+  return (name || '').toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  try {
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const authHeader = req.headers.get('authorization') || '';
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    const body = await req.json();
+    const { integracao_id, combustivel_csv, movimentos } = body;
+
+    let rows: Record<string, string>[] = [];
+    if (movimentos && Array.isArray(movimentos)) {
+      rows = movimentos.map(m => {
+        const row: Record<string, string> = {};
+        Object.entries(m).forEach(([k, v]) => {
+          row[k] = v !== null && v !== undefined ? String(v) : '';
+        });
+        return row;
+      });
+    } else if (combustivel_csv) {
+      rows = parseCsv(combustivel_csv);
+    }
+    const { data: motoristas } = await supabase.from('motoristas_ativos').select('id, nome, cartao_repsol');
+    const { data: viaturas } = await supabase.from('viaturas').select('id, matricula');
+
+    const cardMap = new Map();
+    const nameMap = new Map();
+    const matriculaMap = new Map();
+
+    for (const m of motoristas || []) {
+      const normalName = normalizeName(m.nome);
+      if (normalName) nameMap.set(normalName, m.id);
+      if (m.cartao_repsol) {
+        const parts = m.cartao_repsol.split('/').map(p => sanitizeCard(p.trim())).filter(p => p.length >= 3);
+        for (const p of parts) {
+          cardMap.set(p, m.id);
+          if (p.length >= 4) cardMap.set(p.slice(-4), m.id);
+        }
+      }
+    }
+
+    for (const v of viaturas || []) {
+      if (v.matricula) matriculaMap.set(v.matricula.toUpperCase().replace(/\s/g, ''), v.id);
+    }
+
+    let imported = 0, matched = 0, skipped = 0;
+    const upsertMap = new Map();
+
+    for (const row of rows) {
+      const cardNumber = findField(row, ['tarjeta', 'cartao_dispositivo', 'cartao', 'card', 'PAN']);
+      const dateStr = findField(row, ['fecha', 'data', 'date']);
+      const timeStr = findField(row, ['hora', 'time']);
+      const amountStr = findField(row, ['montante', 'importe', 'valor', 'total', 'amount']);
+      const qtyStr = findField(row, ['litros', 'cantidad', 'quantidade', 'volume']);
+      const product = findField(row, ['producto', 'produto', 'product']);
+      const station = findField(row, ['estacion', 'posto', 'station']);
+      const driverName = findField(row, ['conductor', 'motorista', 'driver', 'nombre']);
+      const matriculaRaw = findField(row, ['matricula', 'viatura', 'vehicle']);
+
+      const txDate = parseRepsolDate(dateStr, timeStr);
+      if (!txDate) { skipped++; continue; }
+
+      const amount = parseNumber(amountStr);
+      const qty = parseNumber(qtyStr);
+      const safeStation = (station || '').replace(/\W/g, '').toLowerCase();
+      const safeMatricula = (matriculaRaw || '').replace(/\W/g, '').toLowerCase();
+      const txId = `repsol-${sanitizeCard(cardNumber)}-${dateStr.replace(/\D/g, '')}-${amountStr.replace(/\D/g, '')}-${qtyStr.replace(/\D/g, '')}-${safeStation}-${safeMatricula}`;
+
+      const sanitized = sanitizeCard(cardNumber);
+      let motoristaId = sanitized ? cardMap.get(sanitized) : null;
+      if (!motoristaId && sanitized.length >= 4) motoristaId = cardMap.get(sanitized.slice(-4));
+      if (!motoristaId && driverName) motoristaId = nameMap.get(normalizeName(driverName));
+
+      const matriculaNorm = matriculaRaw ? matriculaRaw.toUpperCase().replace(/\s/g, '') : null;
+      const viaturaId = matriculaNorm ? matriculaMap.get(matriculaNorm) : null;
+
+      if (motoristaId) matched++;
+
+      // Usar Map para pre-deduplicar as transações gémeas do pacote.
+      upsertMap.set(txId, {
+        integracao_id,
+        transaction_id: txId,
+        transaction_date: txDate,
+        card_number: sanitized || null,
+        amount,
+        quantity: qty,
+        fuel_type: product || null,
+        station_name: station || null,
+        motorista_id: motoristaId,
+        viatura_id: viaturaId || null,
+        raw_data: row
+      });
+    }
+
+    const upsertBatch = Array.from(upsertMap.values());
+    if (upsertBatch.length > 0) {
+      const { error } = await supabase.from('repsol_transacoes').upsert(upsertBatch, { onConflict: 'integracao_id,transaction_id' });
+      if (!error) imported = upsertBatch.length;
+      else console.error("Bulk upsert error:", error);
+    }
+
+    return new Response(JSON.stringify({ success: true, imported, matched, skipped, total: rows.length }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  } catch (err) {
+    return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+});

@@ -1,0 +1,1 @@
+ALTER TABLE public.calendario_eventos ADD COLUMN matricula_devolver text;

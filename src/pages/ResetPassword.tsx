@@ -1,0 +1,164 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { AuthMobileShell } from '@/components/auth/AuthMobileShell';
+import { Eye, EyeOff, KeyRound } from 'lucide-react';
+import { getPostAuthRoute, getUnauthenticatedRoute } from '@/lib/native';
+
+const ResetPassword = () => {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || session) {
+        setHasSession(!!session);
+        setChecking(false);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setHasSession(!!session);
+      setChecking(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast({
+        title: 'Palavras-passe diferentes',
+        description: 'As palavras-passe introduzidas não coincidem.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: 'Palavra-passe demasiado curta',
+        description: 'A palavra-passe deve ter pelo menos 6 caracteres.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Palavra-passe alterada',
+        description: 'A sua palavra-passe foi atualizada com sucesso.',
+      });
+
+      navigate(getPostAuthRoute(), { replace: true });
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      toast({
+        title: 'Erro ao alterar a palavra-passe',
+        description: error.message || 'Não foi possível alterar a palavra-passe.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AuthMobileShell
+      title="Redefinir palavra-passe"
+      description="Defina uma nova palavra-passe para voltar a aceder à sua conta."
+      logoAlt="Década Ousada"
+      headerIcon={<KeyRound className="auth-icon-accent" />}
+    >
+      {hasSession ? (
+        <form onSubmit={handleResetPassword} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="password">Nova palavra-passe</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="auth-input pr-11"
+                placeholder="Introduza a nova palavra-passe"
+                minLength={6}
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirmar nova palavra-passe</Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="auth-input pr-11"
+                placeholder="Confirme a nova palavra-passe"
+                minLength={6}
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={showConfirmPassword ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'}
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <Button type="submit" disabled={loading} className="auth-primary-button w-full">
+            {loading ? 'A alterar...' : 'Alterar palavra-passe'}
+          </Button>
+        </form>
+      ) : (
+        <div className="space-y-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            {checking ? 'A validar o link de recuperação...' : 'O link é inválido ou expirou. Peça um novo link.'}
+          </p>
+          {!checking && (
+            <Button onClick={() => navigate(getUnauthenticatedRoute(), { replace: true })} variant="outline" className="mx-auto">
+              Voltar
+            </Button>
+          )}
+        </div>
+      )}
+    </AuthMobileShell>
+  );
+};
+
+export default ResetPassword;

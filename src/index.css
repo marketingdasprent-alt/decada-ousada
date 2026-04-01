@@ -1,0 +1,345 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Tema Claro - Década Ousada (Preto e Vermelho) */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+
+    --primary: 0 99% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+
+    --accent: 0 99% 35%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 99% 35%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 3.9%;
+    --sidebar-primary: 0 99% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 96.1%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 0 0% 89.8%;
+    --sidebar-ring: 0 99% 35%;
+  }
+
+  .dark {
+    /* Tema Escuro - Década Ousada (Preto e Vermelho) */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 78%;
+
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 78%;
+
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 78%;
+
+    --primary: 0 99% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 78%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 58%;
+
+    --accent: 0 99% 35%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 0 99% 35%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 0 0% 78%;
+    --sidebar-primary: 0 99% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 78%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 0 99% 35%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .sticky-header-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .main-content-safe {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .auth-screen-safe {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  button,
+  a,
+  [role="button"] {
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .dialog-content {
+    max-width: min(95vw, 42rem);
+    max-height: 95vh;
+  }
+
+  .overflow-y-auto {
+    overscroll-behavior-y: contain;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  @media (max-width: 640px) {
+    [role="listbox"] {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    h1 {
+      line-height: 1.2;
+    }
+
+    p {
+      line-height: 1.5;
+    }
+  }
+}
+
+@layer components {
+  .auth-screen {
+    @apply relative flex min-h-screen items-center justify-center overflow-hidden bg-background;
+  }
+
+  .auth-screen__background {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at top, hsl(var(--primary) / 0.18), transparent 42%),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--card)) 60%, hsl(var(--background)));
+  }
+
+  .auth-screen__pattern {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.18) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.18) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: linear-gradient(180deg, hsl(0 0% 0% / 0.7), transparent 90%);
+    opacity: 0.45;
+  }
+
+  .auth-panel {
+    @apply border-border/80 bg-card/95 backdrop-blur-sm;
+  }
+
+  .auth-input {
+    @apply h-12 rounded-xl border-border/80 bg-background/80 px-4 text-base text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0;
+  }
+
+  .auth-link {
+    @apply text-sm font-medium text-primary transition-colors hover:text-primary/80;
+  }
+
+  .auth-icon-accent {
+    @apply h-5 w-5 text-primary;
+  }
+
+  .auth-primary-button {
+    @apply h-12 rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform duration-200 hover:scale-[0.99] hover:bg-primary/90 active:scale-[0.98];
+  }
+
+  .auth-secondary-button {
+    @apply h-12 rounded-xl border-border/80 bg-secondary/40 text-foreground hover:bg-secondary/70;
+  }
+}
+
+/* Estilos de Impressão Globais */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0.5cm;
+  }
+
+  /* FORÇAR reset do tema escuro durante impressão */
+  .dark {
+    --background: 0 0% 100% !important;
+    --foreground: 0 0% 0% !important;
+    --card: 0 0% 100% !important;
+    --card-foreground: 0 0% 0% !important;
+    --popover: 0 0% 100% !important;
+    --popover-foreground: 0 0% 0% !important;
+    --muted: 0 0% 96% !important;
+    --muted-foreground: 0 0% 40% !important;
+    --border: 0 0% 90% !important;
+  }
+
+  /* Esconder TODOS os overlays possíveis */
+  [data-radix-dialog-overlay],
+  [data-radix-alert-dialog-overlay],
+  [class*="bg-black"],
+  .fixed.inset-0.bg-black\/80 {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Esconder elementos específicos da aplicação */
+  .print-hidden,
+  nav,
+  header,
+  aside,
+  .sidebar {
+    display: none !important;
+  }
+
+  /* Esconder o conteúdo principal da página (mas não o portal) */
+  #root > *:not([data-radix-portal]) {
+    display: none !important;
+  }
+
+  /* Portal container - garantir transparência */
+  [data-radix-portal] {
+    display: block !important;
+    position: static !important;
+    background: transparent !important;
+  }
+
+  /* Dialog ocupa página inteira - forçar fundo branco */
+  [role="dialog"],
+  [data-radix-dialog-content] {
+    position: static !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    background-color: white !important;
+    color: black !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Conteúdo interno do Dialog */
+  [role="dialog"] *,
+  [data-radix-dialog-content] * {
+    color: inherit !important;
+  }
+
+  /* Conteúdo de impressão */
+  .print-content {
+    display: block !important;
+    width: 100% !important;
+    background: white !important;
+    padding: 1cm !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Backgrounds transparentes para herdar branco */
+  .print-content * {
+    background-color: transparent !important;
+  }
+
+  /* Excepções para backgrounds coloridos específicos */
+  .print-content .bg-green-50,
+  .print-content .print\:bg-green-50 { background-color: #f0fdf4 !important; }
+  .print-content .bg-red-50,
+  .print-content .print\:bg-red-50 { background-color: #fef2f2 !important; }
+  .print-content .bg-blue-50,
+  .print-content .print\:bg-blue-50 { background-color: #eff6ff !important; }
+  .print-content .bg-gray-50,
+  .print-content .print\:bg-gray-50 { background-color: #f9fafb !important; }
+
+  /* Fundo branco garantido */
+  html, body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Classes utilitárias */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Cores legíveis na impressão */
+  .text-green-600, .text-green-700 { color: #059669 !important; }
+  .text-red-600, .text-red-700 { color: #dc2626 !important; }
+  .text-orange-600 { color: #ea580c !important; }
+  .text-primary { color: #1d4ed8 !important; }
+  .text-muted-foreground { color: #6b7280 !important; }
+  
+  /* Separadores mais compactos */
+  .print-content hr,
+  .print-content [data-orientation="horizontal"] {
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+}
