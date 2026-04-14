@@ -18,6 +18,7 @@ import { useCampaignTags } from '@/hooks/useCampaignTags';
 import { useRealTimeLeads } from '@/hooks/useRealTimeLeads';
 import { useFormularioTags } from '@/hooks/useFormularioTags';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { normalizeString } from '@/lib/utils';
 
 import { LeadCard } from '@/components/crm/LeadCard';
 import { ColumnContainer } from '@/components/crm/ColumnContainer';
@@ -191,11 +192,11 @@ const CRM = () => {
 
     // Search filter
     if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
+      const searchNormalized = normalizeString(filters.search);
       result = result.filter(lead => 
-        lead.nome.toLowerCase().includes(searchLower) ||
-        lead.email.toLowerCase().includes(searchLower) ||
-        (lead.telefone && lead.telefone.toLowerCase().includes(searchLower))
+        normalizeString(lead.nome).includes(searchNormalized) ||
+        normalizeString(lead.email).includes(searchNormalized) ||
+        (lead.telefone && normalizeString(lead.telefone).includes(searchNormalized))
       );
     }
 
@@ -1076,25 +1077,26 @@ const CRM = () => {
       <div className="relative z-10 p-6">
           <div className="max-w-7xl mx-auto">
 
-            {/* Status de tempo real e toggle de visualização */}
-            <div className="mb-4 flex justify-between items-center">
-              <CRMViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-              <RealtimeStatus isConnected={isConnected} lastActivity={lastActivity} />
+            {/* Stickable CRM Header: Stats and Filters */}
+            <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 py-4 -mt-4 mb-4 space-y-4">
+              <div className="flex justify-between items-center px-1">
+                <CRMViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+                <RealtimeStatus isConnected={isConnected} lastActivity={lastActivity} />
+              </div>
+
+              <CRMStats leads={leads} statusColumns={statusColumns} />
+
+              <CRMFilters
+                filters={filters}
+                onFilterChange={setFilters}
+                statusColumns={statusColumns}
+                totalLeads={leads.length}
+                filteredCount={filteredLeads.length}
+                availableTags={availableTags}
+                onGenerateReport={generateReport}
+                filteredLeads={filteredLeads}
+              />
             </div>
-
-            <CRMStats leads={leads} statusColumns={statusColumns} />
-
-            {/* Add Filters Component with campaign tags */}
-            <CRMFilters
-              filters={filters}
-              onFilterChange={setFilters}
-              statusColumns={statusColumns}
-              totalLeads={leads.length}
-              filteredCount={filteredLeads.length}
-              availableTags={availableTags}
-              onGenerateReport={generateReport}
-              filteredLeads={filteredLeads}
-            />
 
             {/* Kanban Board - Mobile with Tabs, Desktop with Drag & Drop */}
             {viewMode === 'lista' ? (

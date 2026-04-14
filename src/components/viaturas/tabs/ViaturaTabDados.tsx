@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,7 +29,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const viaturaSchema = z.object({
-  matricula: z.string().min(1, 'Matrícula é obrigatória'),
+  matricula: z.string()
+    .min(1, 'Matrícula é obrigatória')
+    .regex(/^[A-Z0-9]{2}-[A-Z0-9]{2}-[A-Z0-9]{2}$/, 'Formato inválido. Use XX-00-XX'),
   marca: z.string().min(1, 'Marca é obrigatória'),
   modelo: z.string().min(1, 'Modelo é obrigatório'),
   ano: z.string().optional(),
@@ -44,6 +46,7 @@ const viaturaSchema = z.object({
   observacoes: z.string().optional(),
   valor_aluguer: z.string().optional(),
   is_slot: z.boolean().default(false),
+  estacao_id: z.string().optional(),
 });
 
 type ViaturaFormData = z.infer<typeof viaturaSchema>;
@@ -65,6 +68,7 @@ interface Viatura {
   observacoes?: string | null;
   valor_aluguer?: number | null;
   is_slot?: boolean | null;
+  estacao_id?: string | null;
 }
 
 interface ViaturaDocument {
@@ -110,10 +114,22 @@ const DOCUMENTOS_VIATURA = [
   { tipo: 'ipo', label: 'IPO - Inspeção Periódica Obrigatória', obrigatorio: true },
 ];
 
+interface Estacao {
+  id: string;
+  nome: string;
+  cidade: string | null;
+}
+
 export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDadosProps) {
   const [documents, setDocuments] = useState<ViaturaDocument[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [estacoes, setEstacoes] = useState<Estacao[]>([]);
+
+  useEffect(() => {
+    supabase.from('estacoes').select('id, nome, cidade').eq('ativa', true).order('nome')
+      .then(({ data }) => setEstacoes(data || []));
+  }, []);
 
   const form = useForm<ViaturaFormData>({
     resolver: zodResolver(viaturaSchema),
@@ -133,6 +149,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       observacoes: '',
       valor_aluguer: '',
       is_slot: false,
+      estacao_id: '',
     },
   });
 
@@ -154,6 +171,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
         observacoes: viatura.observacoes || '',
         valor_aluguer: viatura.valor_aluguer?.toString() || '',
         is_slot: viatura.is_slot || false,
+        estacao_id: viatura.estacao_id || '',
       });
       loadDocuments();
     }
@@ -196,6 +214,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       observacoes: data.observacoes || null,
       valor_aluguer: data.valor_aluguer ? parseFloat(data.valor_aluguer) : null,
       is_slot: data.is_slot,
+      estacao_id: data.estacao_id || null,
     };
 
     await onSave(payload);
@@ -316,7 +335,21 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                       <FormItem>
                         <FormLabel>Matrícula *</FormLabel>
                         <FormControl>
-                          <Input placeholder="AA-00-BB" {...field} className="uppercase" />
+                          <Input
+                            placeholder="AA-00-BB"
+                            className="uppercase"
+                            value={field.value}
+                            onChange={(e) => {
+                              // Remove everything except alphanumeric, auto-insert dashes
+                              const raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                              let formatted = raw;
+                              if (raw.length > 4) formatted = raw.slice(0, 2) + '-' + raw.slice(2, 4) + '-' + raw.slice(4, 6);
+                              else if (raw.length > 2) formatted = raw.slice(0, 2) + '-' + raw.slice(2);
+                              field.onChange(formatted);
+                            }}
+                            onBlur={field.onBlur}
+                            maxLength={8}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -477,6 +510,34 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                             {...field} 
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="estacao_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estação</FormLabel>
+                        <Select
+                          value={field.value || ''}
+                          onValueChange={(v) => field.onChange(v === 'none' ? '' : v)}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecionar estação..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">— Sem estação —</SelectItem>
+                            {estacoes.map((e) => (
+                              <SelectItem key={e.id} value={e.id}>
+                                {e.nome}{e.cidade ? ` (${e.cidade})` : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { AdminAccessDenied } from '@/components/admin/AdminAccessDenied';
 import { AdminLoadingState } from '@/components/admin/AdminLoadingState';
@@ -9,8 +9,15 @@ import { DocumentosTab } from '@/components/admin/DocumentosTab';
 import { FormulariosTab } from '@/components/admin/FormulariosTab';
 import { CategoriasAssistenciaTab } from '@/components/admin/CategoriasAssistenciaTab';
 import { IntegracoesTab } from '@/components/admin/IntegracoesTab';
+import { EstacoesTab } from '@/components/admin/EstacoesTab';
+import { ImportExcelDialog } from '@/components/admin/ImportExcelDialog';
+import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+import { Settings2, FileSpreadsheet } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
 const AdminSettings = () => {
   const { isAdmin, loading } = usePermissions();
+  const [importOpen, setImportOpen] = useState(false);
 
   if (loading) {
     return <AdminLoadingState message="Verificando permissões..." />;
@@ -21,67 +28,75 @@ const AdminSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent hidden dark:block" />
-      <div className="absolute inset-0 bg-grid-foreground/[0.02] bg-[size:60px_60px] hidden dark:block" />
-      
-      <div className="relative z-10 container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Configurações do Sistema</h1>
-          <p className="text-muted-foreground">
-            Gerir utilizadores, grupos, documentos, formulários e categorias
-          </p>
-        </div>
+    <Tabs defaultValue="users" className="w-full">
+      <ImportExcelDialog open={importOpen} onOpenChange={setImportOpen} />
 
-        <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-card border border-border">
-            <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Utilizadores
-            </TabsTrigger>
-            <TabsTrigger value="grupos" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Grupos
-            </TabsTrigger>
-            <TabsTrigger value="documentos" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Documentos
-            </TabsTrigger>
-            <TabsTrigger value="formularios" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Formulários
-            </TabsTrigger>
-            <TabsTrigger value="categorias" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Assistência
-            </TabsTrigger>
-            <TabsTrigger value="integracoes" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Integrações
-            </TabsTrigger>
-          </TabsList>
+      <StickyPageHeader
+        title="Configurações do Sistema"
+        description="Gerir utilizadores, grupos, documentos, formulários e categorias"
+        icon={Settings2}
+        className="pb-0"
+      >
+        <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportOpen(true)}>
+          <FileSpreadsheet className="h-4 w-4" />
+          Importar Excel
+        </Button>
+      </StickyPageHeader>
 
-          <TabsContent value="users" className="mt-6">
-            <UsersTab />
-          </TabsContent>
+      <TabsList className="bg-transparent border-b rounded-none h-auto p-0 gap-6 overflow-x-auto justify-start no-scrollbar mb-6">
+        <TabsTrigger value="users" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+          Utilizadores
+        </TabsTrigger>
+        <TabsTrigger value="grupos" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+          Grupos
+        </TabsTrigger>
+        <TabsTrigger value="documentos" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+          Documentos
+        </TabsTrigger>
+        <TabsTrigger value="formularios" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+          Formulários
+        </TabsTrigger>
+        <TabsTrigger value="categorias" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+          Assistência
+        </TabsTrigger>
+        <TabsTrigger value="integracoes" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+          Integrações
+        </TabsTrigger>
+        <TabsTrigger value="estacoes" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+          Estações
+        </TabsTrigger>
+      </TabsList>
 
-          <TabsContent value="grupos" className="mt-6">
-            <GruposTab />
-          </TabsContent>
+      <div className="space-y-6">
+        <TabsContent value="users" className="mt-0">
+          <UsersTab />
+        </TabsContent>
 
-          <TabsContent value="documentos" className="mt-6">
-            <DocumentosTab />
-          </TabsContent>
+        <TabsContent value="grupos" className="mt-0">
+          <GruposTab />
+        </TabsContent>
 
-          <TabsContent value="formularios" className="mt-6">
-            <FormulariosTab />
-          </TabsContent>
+        <TabsContent value="documentos" className="mt-0">
+          <DocumentosTab />
+        </TabsContent>
 
-          <TabsContent value="categorias" className="mt-6">
-            <CategoriasAssistenciaTab />
-          </TabsContent>
+        <TabsContent value="formularios" className="mt-0">
+          <FormulariosTab />
+        </TabsContent>
 
-          <TabsContent value="integracoes" className="mt-6">
-            <IntegracoesTab />
-          </TabsContent>
-        </Tabs>
+        <TabsContent value="categorias" className="mt-0">
+          <CategoriasAssistenciaTab />
+        </TabsContent>
+
+        <TabsContent value="integracoes" className="mt-0">
+          <IntegracoesTab />
+        </TabsContent>
+
+        <TabsContent value="estacoes" className="mt-0">
+          <EstacoesTab />
+        </TabsContent>
       </div>
-    </div>
+    </Tabs>
   );
 };
 

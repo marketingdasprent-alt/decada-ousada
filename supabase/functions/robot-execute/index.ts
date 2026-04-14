@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
       .from('plataformas_configuracao')
       .select('*')
       .eq('id', integracao_id)
-      .eq('plataforma', 'robot')
+      .in('plataforma', ['robot', 'repsol', 'edp', 'via_verde'])
       .single();
 
     if (configError || !config) {
@@ -38,7 +38,28 @@ Deno.serve(async (req) => {
       );
     }
 
-    const actorId = config.apify_actor_id;
+    let actorId = config.apify_actor_id;
+    let apifyToken = config.apify_api_token;
+
+    // Forçar uso do Actor ID e API Token da integração "mestre/original" se for Uber ou Bolt (Ex: Uber Década Ousada)
+    // Isso garante que todas as sub-contas operem sob o mesmo robô e credenciais mais recentes.
+    const targetPlatform = config.robot_target_platform || config.plataforma;
+    const { data: masterConfig } = await supabase
+      .from('plataformas_configuracao')
+      .select('apify_actor_id, apify_api_token')
+      .eq('plataforma', 'robot')
+      .eq('robot_target_platform', targetPlatform)
+      .not('apify_actor_id', 'is', null)
+      .not('apify_api_token', 'is', null)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single();
+
+    if (masterConfig) {
+      actorId = masterConfig.apify_actor_id;
+      apifyToken = masterConfig.apify_api_token;
+    }
+
     if (!actorId) {
       return new Response(
         JSON.stringify({ success: false, error: 'Actor ID não configurado nesta integração' }),
@@ -46,7 +67,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    const apifyToken = config.apify_api_token;
     if (!apifyToken) {
       return new Response(
         JSON.stringify({ success: false, error: 'API Token do Apify não configurado nesta integração' }),
@@ -110,7 +130,7 @@ Deno.serve(async (req) => {
       console.error('Apify error:', apifyData);
       return new Response(
         JSON.stringify({ success: false, error: `Apify API error [${apifyResponse.status}]: ${JSON.stringify(apifyData)}` }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
@@ -131,8 +151,8 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('robot-execute error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message || 'Erro interno' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : String(error) }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
 });

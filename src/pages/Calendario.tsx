@@ -9,9 +9,11 @@ import { EventoDialog } from '@/components/calendario/EventoDialog';
 import { EventoHistoricoDialog } from '@/components/calendario/EventoHistoricoDialog';
 import { CalendarioConfig } from '@/components/calendario/CalendarioConfig';
 import { RelatorioDialog } from '@/components/calendario/RelatorioDialog';
+import { NovoEventoPage } from '@/components/calendario/NovoEventoPage';
 import { Button } from '@/components/ui/button';
 import { Plus, Settings, CalendarDays, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
 export interface CalendarioEvento {
   id: string;
@@ -33,6 +35,7 @@ const Calendario: React.FC = () => {
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
+  const [novoEventoOpen, setNovoEventoOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
   const [historicoOpen, setHistoricoOpen] = useState(false);
@@ -115,8 +118,7 @@ const Calendario: React.FC = () => {
   };
 
   const handleNew = () => {
-    setEditingEvento(null);
-    setDialogOpen(true);
+    setNovoEventoOpen(true);
   };
 
   const handleDetails = (evento: CalendarioEvento) => {
@@ -125,12 +127,20 @@ const Calendario: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-6 w-6 text-primary" />
-          <h1 className="text-xl md:text-2xl font-bold">Calendário</h1>
-        </div>
+    <>
+    {novoEventoOpen && (
+      <NovoEventoPage
+        userId={user?.id || ''}
+        defaultDate={selectedDay || undefined}
+        onClose={() => setNovoEventoOpen(false)}
+      />
+    )}
+    <div className="space-y-6">
+      <StickyPageHeader
+        title="Calendário"
+        description="Agendamento de entregas, devoluções e manutenções"
+        icon={CalendarDays}
+      >
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => setRelatorioOpen(true)}>
             <FileDown className="h-4 w-4" />
@@ -145,18 +155,19 @@ const Calendario: React.FC = () => {
             </Button>
           )}
         </div>
-      </div>
+      </StickyPageHeader>
 
       <CalendarioGrid
         eventos={eventos}
         currentMonth={currentMonth}
         onMonthChange={setCurrentMonth}
-        onEventClick={hasPermission('calendario_editar') ? handleEdit : undefined}
-        onDeleteEvent={hasPermission('calendario_eliminar') ? (id) => deleteMutation.mutate(id) : undefined}
+        onEventClick={(hasPermission('calendario_editar') || hasPermission('calendario_editar_todos')) ? handleEdit : undefined}
+        onDeleteEvent={(hasPermission('calendario_eliminar') || hasPermission('calendario_editar_todos')) ? (id) => deleteMutation.mutate(id) : undefined}
         onEventDetails={handleDetails}
         onDaySelect={setSelectedDay}
         isLoading={isLoading}
         currentUserId={user?.id}
+        canEditAll={hasPermission('calendario_editar_todos')}
       />
 
       <EventoDialog
@@ -177,6 +188,7 @@ const Calendario: React.FC = () => {
 
       <RelatorioDialog open={relatorioOpen} onOpenChange={setRelatorioOpen} currentMonth={currentMonth} />
     </div>
+    </>
   );
 };
 

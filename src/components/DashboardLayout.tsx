@@ -1,5 +1,5 @@
 import React from 'react';
-import { HorizontalTopMenu } from '@/components/navigation/HorizontalTopMenu';
+import { SidebarMenu } from '@/components/navigation/SidebarMenu';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -7,10 +7,10 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <HorizontalTopMenu />
+    <div className="min-h-screen flex flex-col lg:flex-row bg-background w-full">
+      <SidebarMenu />
       
-      <main className="flex-1 p-4 md:p-6 max-w-[1800px] mx-auto w-full">
+      <main className="flex-1 p-4 md:p-8 w-full max-w-[1920px] mx-auto">
         {children}
       </main>
     </div>

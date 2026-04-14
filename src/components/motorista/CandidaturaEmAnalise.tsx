@@ -25,7 +25,7 @@ export const CandidaturaEmAnalise: React.FC<CandidaturaEmAnaliseProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 rota-liquida">
       {/* Header */}
       <div className="bg-card/50 backdrop-blur border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -34,8 +34,7 @@ export const CandidaturaEmAnalise: React.FC<CandidaturaEmAnaliseProps> = ({
               <Car className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-foreground">Década Ousada</h1>
-              <p className="text-sm text-muted-foreground">Área do Motorista</p>
+              <h1 className="text-lg font-semibold text-foreground">Área do Motorista</h1>
             </div>
           </div>
           
@@ -167,8 +166,8 @@ export const CandidaturaEmAnalise: React.FC<CandidaturaEmAnaliseProps> = ({
         {/* Info */}
         <p className="text-center text-sm text-muted-foreground">
           Se tiver alguma questão, contacte-nos através do email{' '}
-          <a href="mailto:suporte@decadaousada.pt" className="text-primary hover:underline">
-            suporte@decadaousada.pt
+          <a href="mailto:suporte@rotaliquida.pt" className="text-primary hover:underline">
+            suporte@rotaliquida.pt
           </a>
         </p>
       </div>

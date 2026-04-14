@@ -18,12 +18,13 @@ interface Props {
   onDaySelect?: (d: Date) => void;
   isLoading: boolean;
   currentUserId?: string;
+  canEditAll?: boolean;
 }
 
 const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
 export const CalendarioGrid: React.FC<Props> = ({
-  eventos, currentMonth, onMonthChange, onEventClick, onDeleteEvent, onEventDetails, onDaySelect, isLoading, currentUserId
+  eventos, currentMonth, onMonthChange, onEventClick, onDeleteEvent, onEventDetails, onDaySelect, isLoading, currentUserId, canEditAll
 }) => {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
@@ -157,7 +158,7 @@ export const CalendarioGrid: React.FC<Props> = ({
                 onEdit={onEventClick}
                 onDelete={onDeleteEvent}
                 onDetails={onEventDetails}
-                canEdit={currentUserId === ev.criado_por}
+                canEdit={canEditAll || currentUserId === ev.criado_por}
               />
             ))
           )}

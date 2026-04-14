@@ -111,6 +111,7 @@ export const HeroSection = ({ onRentClick, onSlotClick }: HeroSectionProps) => {
               Quero ser Slot
             </Button>
           </motion.div>
+
           
           {/* Partner logos */}
           <motion.div

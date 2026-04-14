@@ -87,39 +87,46 @@ export function MotoristaDocumentosCard({ motorista }: MotoristaDocumentosCardPr
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <FileText className="w-5 h-5" />
-          Documentos
+    <Card className="bg-white border-slate-200 shadow-sm rounded-[2rem] overflow-hidden leading-relaxed">
+      <CardHeader className="p-8 pb-4 border-b border-slate-50">
+        <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-3">
+          <div className="p-2 bg-teal-50 rounded-xl">
+            <FileText className="w-5 h-5 text-teal-600" />
+          </div>
+          Documentos Legais
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="p-0">
+        <div className="divide-y divide-slate-50">
           {documentos.map((doc, index) => (
             <div 
               key={index} 
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-3 border-b last:border-0"
+              className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-8 hover:bg-slate-50 transition-colors"
             >
-              <div>
-                <p className="font-medium">{doc.nome}</p>
-                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <div className="space-y-1">
+                <p className="font-black text-slate-900 tracking-tight">{doc.nome}</p>
+                <div className="flex flex-wrap items-center gap-3">
                   {doc.numero && (
-                    <span className="font-mono">{doc.numero}</span>
+                    <span className="font-mono text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
+                      {doc.numero}
+                    </span>
                   )}
                   {doc.categorias && doc.categorias.length > 0 && (
-                    <span className="text-xs">
-                      Categorias: {doc.categorias.join(", ")}
+                    <span className="text-[10px] font-black uppercase tracking-wider text-teal-600/70 bg-teal-50 px-2 py-1 rounded-md">
+                      Cat: {doc.categorias.join(", ")}
                     </span>
                   )}
                 </div>
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-6">
                 {doc.validade && (
-                  <span className="text-sm text-muted-foreground">
-                    Válido até: {format(new Date(doc.validade), "dd/MM/yyyy", { locale: pt })}
-                  </span>
+                  <div className="text-right hidden md:block">
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Validade</p>
+                    <p className="text-xs font-bold text-slate-500">
+                      {format(new Date(doc.validade), "dd MMM yyyy", { locale: pt })}
+                    </p>
+                  </div>
                 )}
                 {getStatusBadge(doc.validade)}
               </div>

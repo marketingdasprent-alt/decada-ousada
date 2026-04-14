@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, ChevronUp, ChevronDown, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MotoristaDetailsDrawer } from "@/components/motoristas/MotoristaDetailsDrawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
+import { cn, normalizeString } from "@/lib/utils";
 
 export type Motorista = {
   id: string;
@@ -64,6 +65,8 @@ export type Motorista = {
   cartao_repsol: string | null;
   cartao_edp: string | null;
   observacoes: string | null;
+  uber_uuid: string | null;
+  bolt_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -77,7 +80,7 @@ export default function Motoristas() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [cidadeFilter, setCidadeFilter] = useState<string>("todas");
   const [selectedMotorista, setSelectedMotorista] = useState<Motorista | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [motoristaToEdit, setMotoristaToEdit] = useState<Motorista | null>(null);
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
@@ -162,10 +165,6 @@ export default function Motoristas() {
 
   // Combined filtering and sorting logic
   const filteredMotoristas = useMemo(() => {
-    // Normalization helper to remove accents/diacritics
-    const normalizeString = (str: string) => 
-      str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
     const searchNormalized = normalizeString(searchTerm);
 
     let result = motoristas.filter((m) => {
@@ -224,8 +223,7 @@ export default function Motoristas() {
   }, [motoristas, searchTerm, statusFilter, cidadeFilter, sortColumn, sortDirection]);
 
   const handleRowClick = (motorista: Motorista) => {
-    setSelectedMotorista(motorista);
-    setIsDrawerOpen(true);
+    navigate(`/motoristas/${motorista.id}`);
   };
 
   const handleMotoristaUpdated = () => {
@@ -374,13 +372,7 @@ export default function Motoristas() {
         </div>
       )}
 
-      {/* Details Drawer */}
-      <MotoristaDetailsDrawer
-        open={isDrawerOpen}
-        onOpenChange={setIsDrawerOpen}
-        motorista={selectedMotorista}
-        onMotoristaUpdated={handleMotoristaUpdated}
-      />
+
 
       {/* Dialog para Adicionar Motorista */}
       <MotoristaDialog

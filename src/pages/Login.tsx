@@ -151,7 +151,7 @@ const Login = () => {
           ? 'Introduza o seu email para receber o link de redefinição.'
           : 'Acesso exclusivo para membros autorizados.'
       }
-      logoAlt="Década Ousada"
+      logoAlt="Rota Líquida"
       headerIcon={<ShieldCheck className="auth-icon-accent" />}
       footer={
         !resetMode ? (

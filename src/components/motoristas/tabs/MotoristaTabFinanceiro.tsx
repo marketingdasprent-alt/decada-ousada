@@ -47,7 +47,7 @@ import { toast } from "sonner";
 import type { Motorista } from "@/pages/Motoristas";
 import { MotoristaRecibosSection } from "./MotoristaRecibosSection";
 
-type SubTab = "movimentos" | "recibos";
+
 
 interface MovimentoFinanceiro {
   id: string;
@@ -77,7 +77,6 @@ interface MotoristaTabFinanceiroProps {
 }
 
 export function MotoristaTabFinanceiro({ motorista }: MotoristaTabFinanceiroProps) {
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>("movimentos");
   const [movimentos, setMovimentos] = useState<MovimentoFinanceiro[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -222,7 +221,7 @@ export function MotoristaTabFinanceiro({ motorista }: MotoristaTabFinanceiroProp
     }).format(value);
   };
 
-  if (loading && activeSubTab === "movimentos") {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-muted-foreground">A carregar dados financeiros...</div>
@@ -232,29 +231,7 @@ export function MotoristaTabFinanceiro({ motorista }: MotoristaTabFinanceiroProp
 
   return (
     <div className="space-y-6">
-      {/* Sub-abas de navegação */}
-      <div className="flex gap-2 border-b border-border pb-2">
-        <Button
-          variant={activeSubTab === "movimentos" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setActiveSubTab("movimentos")}
-          className="gap-2"
-        >
-          <Coins className="h-4 w-4" />
-          Movimentos
-        </Button>
-        <Button
-          variant={activeSubTab === "recibos" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setActiveSubTab("recibos")}
-          className="gap-2"
-        >
-          <Receipt className="h-4 w-4" />
-          Recibos
-        </Button>
-      </div>
 
-      {activeSubTab === "movimentos" && (
         <>
           {/* Resumo Financeiro with colored cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -472,11 +449,6 @@ export function MotoristaTabFinanceiro({ motorista }: MotoristaTabFinanceiroProp
             </DialogContent>
           </Dialog>
         </>
-      )}
-
-      {activeSubTab === "recibos" && (
-        <MotoristaRecibosSection motoristaId={motorista.id} />
-      )}
     </div>
   );
 }

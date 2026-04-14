@@ -38,38 +38,38 @@ export interface IntegracaoConfig {
 
 // Pre-configured defaults for Uber integrations (stored as robot internally)
 export const UBER_DEFAULTS = {
-  apify_actor_id: 'UjtZpKCJm6tVollPX',
+  apify_actor_id: 'V0XdIalMut9LfL17V',
   site_url: 'https://supplier.uber.com/',
   auth_mode: 'cookies' as const,
   robot_target_platform: 'uber',
-  apify_api_token: 'apify_api_rZZQbfp7yP3gfexNRAHYQKJ0zK1zTK2wwwoH',
+  apify_api_token: 'apify_api_zyXNhVu0c2aYqhETTy6fgfDI5ZNrOA3DM0vc',
 };
 
 // Pre-configured defaults for Bolt integrations (stored as robot internally)
 export const BOLT_DEFAULTS = {
-  apify_actor_id: 'gdH4FPg9daQE2C3io',
+  apify_actor_id: 'eaeRDaDAU3jqGqWoc',
   site_url: 'https://fleets.bolt.eu/',
   auth_mode: 'password' as const,
   robot_target_platform: 'bolt',
-  apify_api_token: 'apify_api_rZZQbfp7yP3gfexNRAHYQKJ0zK1zTK2wwwoH',
+  apify_api_token: 'apify_api_zyXNhVu0c2aYqhETTy6fgfDI5ZNrOA3DM0vc',
 };
 
 // Pre-configured defaults for BP integrations (stored as robot internally)
 export const BP_DEFAULTS = {
-  apify_actor_id: 'uZFeKeF6ket7ff9aw',
+  apify_actor_id: 'hKRIfwsrS4gr3fsRK',
   site_url: 'https://www.bpplus.com/',
   auth_mode: 'password' as const,
   robot_target_platform: 'bp',
-  apify_api_token: 'apify_api_rZZQbfp7yP3gfexNRAHYQKJ0zK1zTK2wwwoH',
+  apify_api_token: 'apify_api_zyXNhVu0c2aYqhETTy6fgfDI5ZNrOA3DM0vc',
 };
 
 // Pre-configured defaults for Repsol integrations
 export const REPSOL_DEFAULTS = {
-  apify_actor_id: 'gwOCcw5C9v9G0Nmzd',
+  apify_actor_id: 'E6AO5pXQ55KnXO1fG',
   site_url: 'https://misolred.repsol.com/movimientos',
   auth_mode: 'password' as const,
   robot_target_platform: 'repsol',
-  apify_api_token: 'apify_api_rZZQbfp7yP3gfexNRAHYQKJ0zK1zTK2wwwoH',
+  apify_api_token: 'apify_api_zyXNhVu0c2aYqhETTy6fgfDI5ZNrOA3DM0vc',
 };
 
 // Pre-configured defaults for EDP integrations

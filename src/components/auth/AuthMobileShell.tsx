@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useLocation } from 'react-router-dom';
 
 interface AuthMobileShellProps {
   title: string;
@@ -18,8 +19,15 @@ export function AuthMobileShell({
   footer,
   children,
 }: AuthMobileShellProps) {
+  const location = useLocation();
+  const isMotoristaRoute = location.pathname === '/motorista' || location.pathname.startsWith('/motorista/');
+  
+  const logoSrc = isMotoristaRoute 
+    ? '/images/logo-rota-liquida.png.png'
+    : '/images/logo-decada-ousada-white.png';
+
   return (
-    <div className="auth-screen auth-screen-safe">
+    <div className={`auth-screen auth-screen-safe ${isMotoristaRoute ? 'rota-liquida' : ''}`}>
       <div className="auth-screen__background" aria-hidden="true" />
       <div className="auth-screen__pattern" aria-hidden="true" />
 
@@ -28,9 +36,17 @@ export function AuthMobileShell({
           <CardHeader className="space-y-4 text-center">
             <div className="mx-auto">
               <img
-                src="/images/logo-decada-ousada-white.png"
+                src={logoSrc}
                 alt={logoAlt}
-                className="h-16 w-auto mx-auto object-contain"
+                className="h-72 w-auto mx-auto object-contain"
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  if (!isMotoristaRoute && img.src.includes('-white')) {
+                    img.src = "/images/logo-decada-ousada.png";
+                  } else {
+                    img.style.display = 'none';
+                  }
+                }}
               />
             </div>
 

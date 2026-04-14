@@ -65,6 +65,8 @@ const prioridadeConfig: Record<string, { label: string; color: string }> = {
   urgente: { label: 'Urgente', color: 'bg-red-500' },
 };
 
+import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+
 const MeusTickets = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -163,31 +165,24 @@ const MeusTickets = () => {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6 flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Wrench className="h-6 w-6" />
-            Meus Tickets de Assistência
-          </h1>
-          <p className="text-muted-foreground">
-            Acompanhe os pedidos de reparação que submeteu
-          </p>
-        </div>
-        
+    <div className="space-y-6">
+      <StickyPageHeader
+        title="Meus Tickets de Assistência"
+        description="Acompanhe os pedidos de reparação que submeteu"
+        icon={Wrench}
+      >
         <Button onClick={() => setNovoTicketOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Novo Ticket
         </Button>
-      </div>
+      </StickyPageHeader>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

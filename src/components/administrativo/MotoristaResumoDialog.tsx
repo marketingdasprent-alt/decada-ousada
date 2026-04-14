@@ -2,14 +2,33 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
-import { Printer, X, TrendingUp, TrendingDown, Calculator, Loader2 } from "lucide-react";
+import { 
+  Printer, 
+  X, 
+  TrendingUp, 
+  TrendingDown, 
+  Calculator, 
+  Loader2,
+  Send,
+  Mail,
+  MessageSquare,
+  UserCheck
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { generateFinanceiroPDF } from "@/utils/generateFinanceiroPDF";
 
 import { Separator } from "@/components/ui/separator";
 import { useThemedLogo } from "@/hooks/useThemedLogo";
@@ -29,6 +48,9 @@ interface MotoristaResumoProps {
   combustivel: number;
   portagens: number;
   reparacoes: number;
+  outros_custos: number;
+  aluguer: number;
+  identificador_bolt?: string;
 }
 
 interface Props {
@@ -43,7 +65,15 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
   const [loading, setLoading] = useState(false);
   const [matricula, setMatricula] = useState<string | null>(null);
   const [cartaoFrota, setCartaoFrota] = useState<string | null>(null);
-  const [valorAluguer, setValorAluguer] = useState<number>(0);
+  // aluguer comes pre-calculated from ContasResumoTab (bulk query, reliable)
+  const [isSending, setIsSending] = useState(false);
+  const [motoristaEmail, setMotoristaEmail] = useState<string | null>(null);
+  const [motoristaTelefone, setMotoristaTelefone] = useState<string | null>(null);
+  const [extraCosts, setExtraCosts] = useState<{caucao: number, seguros: number, outros: number}>({
+    caucao: 0,
+    seguros: 0,
+    outros: 0
+  });
 
   useEffect(() => {
     if (open && (motorista?.motorista_id || motorista?.driver_uuid)) {
@@ -57,12 +87,28 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
     setLoading(true);
     setMatricula(null);
     setCartaoFrota(null);
-    setValorAluguer(0);
+    setExtraCosts({ caucao: 0, seguros: 0, outros: 0 });
     
     try {
-      // Usar motorista_id directamente se disponível, senão fallback via bolt_mapeamento
+      // Usar motorista_id directamente se disponível
       let resolvedMotoristaId = motorista.motorista_id || null;
       
+      // Fallback 1: Match por IDs de Plataforma (Uber/Bolt) na tabela motoristas_ativos
+      if (!resolvedMotoristaId) {
+        const query = supabase.from("motoristas_ativos").select("id");
+        
+        if (motorista.driver_uuid) {
+          const { data } = await query.eq("uber_uuid", motorista.driver_uuid).maybeSingle();
+          if (data) resolvedMotoristaId = data.id;
+        }
+        
+        if (!resolvedMotoristaId && motorista.identificador_bolt) {
+          const { data } = await query.eq("bolt_id", motorista.identificador_bolt).maybeSingle();
+          if (data) resolvedMotoristaId = data.id;
+        }
+      }
+
+      // Fallback 2: Mapeamento histórico Bolt
       if (!resolvedMotoristaId && motorista.driver_uuid) {
         const { data: mapeamento } = await supabase
           .from("bolt_mapeamento_motoristas")
@@ -72,8 +118,19 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
         resolvedMotoristaId = mapeamento?.motorista_id || null;
       }
 
+      // Fallback 3: Busca por nome (último recurso)
+      if (!resolvedMotoristaId && motorista.driver_name) {
+        const { data: matched } = await supabase
+          .from("motoristas_ativos")
+          .select("id")
+          .ilike("nome", `%${motorista.driver_name}%`)
+          .limit(1)
+          .maybeSingle();
+        resolvedMotoristaId = matched?.id || null;
+      }
+
       if (resolvedMotoristaId) {
-        const [viaturaResult, motoristaResult] = await Promise.all([
+        const results = await Promise.all([
           supabase
             .from("motorista_viaturas")
             .select("viatura_id, viaturas(matricula, valor_aluguer)")
@@ -82,23 +139,50 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
             .maybeSingle(),
           supabase
             .from("motoristas_ativos")
-            .select("cartao_frota, cartao_bp, cartao_repsol, cartao_edp")
+            .select("cartao_frota, cartao_bp, cartao_repsol, cartao_edp, email, telefone")
             .eq("id", resolvedMotoristaId)
-            .maybeSingle()
+            .maybeSingle(),
+          supabase
+            .from("motorista_custos_adicionais")
+            .select("tipo, valor")
+            .eq("motorista_id", resolvedMotoristaId)
+            .gte("semana_referencia", format(dateRange.from, "yyyy-MM-dd"))
+            .lte("semana_referencia", format(dateRange.to, "yyyy-MM-dd"))
         ]);
 
-        if (viaturaResult.data?.viaturas) {
-          const viatura = viaturaResult.data.viaturas as { matricula: string; valor_aluguer: number | null };
+        const viaturaData = results[0].data;
+        const motoristaData = results[1].data;
+        const adhocData = results[2].data;
+
+        if (viaturaData?.viaturas) {
+          const viatura = viaturaData.viaturas as any;
           setMatricula(viatura.matricula);
-          setValorAluguer(viatura.valor_aluguer || 0);
+          // Note: valor_aluguer is provided via prop from ContasResumoTab (bulk query)
+          // We only use it here as a fallback if prop is 0
+          if (!motorista.aluguer) {
+            // No-op: prop takes precedence
+          }
         }
-        
-        if (motoristaResult.data) {
-          const m = motoristaResult.data;
+
+        if (motoristaData) {
+          const m = motoristaData;
           const cards = [m.cartao_bp, m.cartao_repsol, m.cartao_edp, m.cartao_frota]
             .filter(c => !!c)
             .join(' / ');
           setCartaoFrota(cards || "N/A");
+          setMotoristaEmail(m.email);
+          setMotoristaTelefone(m.telefone);
+        }
+
+        if (adhocData) {
+          const totals = adhocData.reduce((acc, curr) => {
+            const val = Number(curr.valor) || 0;
+            if (curr.tipo === "Caução") acc.caucao += val;
+            else if (curr.tipo === "Seguros") acc.seguros += val;
+            else acc.outros += val;
+            return acc;
+          }, { caucao: 0, seguros: 0, outros: 0 });
+          setExtraCosts(totals);
         }
       }
     } catch (error) {
@@ -119,12 +203,12 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
   const totalReceitas = receitas.bolt + receitas.uber + receitas.outras_receitas;
 
   const despesas = {
-    aluguer: valorAluguer,
+    aluguer: motorista.aluguer || 0,
     combustivel: motorista.combustivel || 0,
     portagens: motorista.portagens || 0,
-    outros_custos: 0,
-    caucao: 0,
-    seguros: 0,
+    outros_custos: extraCosts.outros,
+    caucao: extraCosts.caucao,
+    seguros: extraCosts.seguros,
     reparacoes: motorista.reparacoes || 0,
   };
   const totalDespesas = Object.values(despesas).reduce((a, b) => a + b, 0);
@@ -143,6 +227,106 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleSendEmail = () => {
+    const subject = `Resumo Financeiro - ${motorista.driver_name} - ${format(dateRange.from, 'dd/MM/yyyy')}`;
+    const body = `Olá ${motorista.driver_name},\n\nSegue o resumo financeiro do período ${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}:\n\n` +
+      `Receitas: ${formatCurrency(totalReceitas)}\n` +
+      `Despesas: ${formatCurrency(totalDespesas)}\n` +
+      `Líquido a Receber: ${formatCurrency(liquido)}\n\n` +
+      `Cumprimentos,\nEquipa Década Ousada`;
+    
+    const mailto = `mailto:${motoristaEmail || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+  };
+
+  const handleSendWhatsApp = () => {
+    const message = `*RESUMO FINANCEIRO - DÉCADA OUSADA*\n\n` +
+      `Olá *${motorista.driver_name}*,\n` +
+      `Período: ${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}\n\n` +
+      `💰 *Receitas:* ${formatCurrency(totalReceitas)}\n` +
+      `💸 *Despesas:* ${formatCurrency(totalDespesas)}\n` +
+      `🏁 *Líquido Final:* ${formatCurrency(liquido)}\n\n` +
+      `Se tiver alguma dúvida, por favor contacte-nos.`;
+    
+    const phone = motoristaTelefone?.replace(/\s/g, '') || '';
+    const whatsappUrl = `https://wa.me/${phone.startsWith('+') ? phone : '+351' + phone}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleSendAccount = async () => {
+    if (!motorista.motorista_id) {
+      toast.error("ID do motorista não disponível para envio à conta.");
+      return;
+    }
+
+    try {
+      setIsSending(true);
+      const pdf = await generateFinanceiroPDF({
+        driver_name: motorista.driver_name,
+        matricula,
+        cartaoFrota,
+        dateRange,
+        recibo_verde: motorista.recibo_verde,
+        receitas: { 
+          bolt: receitas.bolt, 
+          uber: receitas.uber, 
+          outras_receitas: receitas.outras_receitas, 
+          total: totalReceitas 
+        },
+        despesas: { 
+          aluguer: despesas.aluguer, 
+          combustivel: despesas.combustivel, 
+          portagens: despesas.portagens, 
+          reparacoes: despesas.reparacoes, 
+          outros: despesas.outros_custos + despesas.caucao + despesas.seguros,
+          total: totalDespesas 
+        },
+        resumo: { 
+          totalAReceber: totalAReceber, 
+          ajuste: motorista.recibo_verde ? undefined : (totalAReceber - liquido),
+          liquido: liquido 
+        },
+        logoSrc: logoSrc
+      });
+
+      const fileName = `resumo_${motorista.motorista_id}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
+      const pdfBlob = pdf.output('blob');
+
+      // Upload to storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('motorista-recibos')
+        .upload(`${motorista.motorista_id}/${fileName}`, pdfBlob);
+
+      if (uploadError) throw uploadError;
+
+      // Insert or Update record in motorista_recibos
+      const { error: dbError } = await supabase
+        .from('motorista_recibos')
+        .upsert({
+          motorista_id: motorista.motorista_id,
+          descricao: `Resumo Financeiro ${format(dateRange.from, 'dd/MM')} - ${format(dateRange.to, 'dd/MM')}`,
+          periodo_referencia: format(dateRange.from, 'MMMM yyyy', { locale: pt }),
+          semana_referencia_inicio: format(dateRange.from, 'yyyy-MM-dd'),
+          valor_total: liquido,
+          ficheiro_url: uploadData.path,
+          nome_ficheiro: fileName,
+          status: 'validado',
+          data_validacao: new Date().toISOString()
+        }, {
+          onConflict: 'motorista_id,semana_referencia_inicio'
+        });
+
+      if (dbError) throw dbError;
+
+      toast.success("Resumo enviado para a conta do motorista com sucesso!");
+    } catch (error: any) {
+      console.error("Erro ao enviar para conta:", error);
+      toast.error("Erro ao enviar resumo: " + (error.message || String(error)));
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -342,6 +526,34 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
             <X className="h-4 w-4 mr-2" />
             Fechar
           </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={isSending}>
+                {isSending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                Enviar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleSendWhatsApp}>
+                <MessageSquare className="h-4 w-4 mr-2 text-green-500" />
+                WhatsApp
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSendEmail}>
+                <Mail className="h-4 w-4 mr-2 text-blue-500" />
+                Email
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSendAccount}>
+                <UserCheck className="h-4 w-4 mr-2 text-primary" />
+                Enviar à Conta
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" />
             Imprimir

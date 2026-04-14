@@ -56,7 +56,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`robot-webhook received for integration ${integracaoId}:`, JSON.stringify(payload).substring(0, 500));
+    const payloadKeys = Object.keys(payload);
+    console.log(`robot-webhook received for integration ${integracaoId} (${config.robot_target_platform}). Keys: [${payloadKeys.join(', ')}]`);
+    // Log string field sizes to help identify which field contains the CSV
+    for (const [k, v] of Object.entries(payload)) {
+      if (typeof v === 'string') console.log(`  key="${k}" length=${v.length}`);
+      else if (Array.isArray(v)) console.log(`  key="${k}" array length=${v.length}`);
+    }
 
     // Update ultimo_sync timestamp
     await supabase
@@ -64,10 +70,26 @@ Deno.serve(async (req) => {
       .update({ ultimo_sync: new Date().toISOString() })
       .eq('id', integracaoId);
 
+    // Helper: find any string value that looks like CSV (has newlines + commas)
+    const findCsvInPayload = (obj: any): string | null => {
+      // Check known field names first
+      const knownFields = ['dados_csv_bolt', 'csv_content', 'dados_csv', 'raw_csv', 'csvContent',
+        'csv', 'data', 'content', 'csvData', 'resultado', 'combustivel_csv', 'dados_csv_combustivel',
+        'pagamentos_csv', 'viagens_csv', 'dados_csv_pagamentos', 'dados_csv_atividades'];
+      for (const f of knownFields) {
+        if (typeof obj[f] === 'string' && obj[f].length > 50) return obj[f];
+      }
+      // Fallback: any long string with newlines (likely a CSV)
+      for (const [, v] of Object.entries(obj)) {
+        if (typeof v === 'string' && v.length > 100 && v.includes('\n')) return v as string;
+      }
+      return null;
+    };
+
     // Detect Bolt CSV data in payload
-    // Be more flexible: check specific keys OR check target platform
-    const boltCsvContent = payload.dados_csv_bolt || 
-                         (config.robot_target_platform === 'bolt' ? (payload.csv_content || payload.data || payload.dados_csv || payload.raw_csv) : null);
+    const boltCsvContent = config.robot_target_platform === 'bolt'
+      ? (payload.dados_csv_bolt || payload.csv_content || payload.data || payload.dados_csv || payload.raw_csv || findCsvInPayload(payload))
+      : payload.dados_csv_bolt;
 
     if (boltCsvContent) {
       console.log('robot-webhook: Bolt CSV data detected, forwarding to bolt-import-csv');
@@ -105,8 +127,9 @@ Deno.serve(async (req) => {
     }
 
     // Detect BP fuel CSV data in payload
-    const hasBpData = payload.combustivel_csv || payload.dados_csv_combustivel || 
-                     (config.robot_target_platform === 'bp' ? (payload.csv_content || payload.data) : null);
+    const hasBpData = config.robot_target_platform === 'bp'
+      ? (payload.combustivel_csv || payload.dados_csv_combustivel || payload.csv_content || payload.data || findCsvInPayload(payload))
+      : (payload.combustivel_csv || payload.dados_csv_combustivel);
 
     if (hasBpData) {
       console.log('robot-webhook: BP fuel CSV data detected, forwarding to bp-import-csv');
@@ -146,7 +169,7 @@ Deno.serve(async (req) => {
     if (config.robot_target_platform === 'repsol') {
       console.log('robot-webhook: Repsol integration detected, forwarding to repsol-import-csv');
 
-      const knownData = payload.combustivel_csv || payload.dados_csv_combustivel || payload.movimentos || payload.data;
+      const knownData = payload.combustivel_csv || payload.dados_csv_combustivel || payload.movimentos || payload.data || findCsvInPayload(payload);
       const fallbackArray = !knownData
         ? Object.values(payload).find(v => Array.isArray(v)) as any[] | undefined
         : undefined;
@@ -182,7 +205,7 @@ Deno.serve(async (req) => {
 
     // Detect EDP fuel CSV data in payload
     if (config.robot_target_platform === 'edp') {
-      const edpData = payload.combustivel_csv || payload.dados_csv_combustivel || payload.data;
+      const edpData = payload.combustivel_csv || payload.dados_csv_combustivel || payload.data || findCsvInPayload(payload);
       if (edpData) {
         console.log('robot-webhook: EDP fuel data detected, forwarding to edp-import-csv');
         
@@ -215,19 +238,50 @@ Deno.serve(async (req) => {
     }
 
     // Detect Uber CSV data in payload (flexible)
-    const hasUberData = payload.pagamentos_csv || payload.viagens_csv ||
-      payload.dados_csv_pagamentos || payload.dados_csv_atividades ||
-      (config.robot_target_platform === 'uber' ? payload.csv_content : null);
+    const uberPagamentosCsv = payload.pagamentos_csv || payload.dados_csv_pagamentos;
+    const uberViagensCsv = payload.viagens_csv || payload.dados_csv_atividades;
+    // For robot integrations targeting 'uber', also look for generic CSV fields
+    const uberFallbackCsv = config.robot_target_platform === 'uber' && !uberPagamentosCsv && !uberViagensCsv
+      ? (payload.csv_content || findCsvInPayload(payload))
+      : null;
+    const hasUberData = uberPagamentosCsv || uberViagensCsv || uberFallbackCsv;
 
     if (hasUberData) {
       console.log('robot-webhook: Uber CSV data detected, forwarding to uber-import-reports');
 
-      const forwardBody = {
-        ...payload,
+      // Extract original filename so uber-import-reports can parse the period from it
+      const nomeOriginal: string = payload.nome_ficheiro || payload.filename || payload.nome_original || '';
+
+      // Build a clean forward body with the correct field names that uber-import-reports expects
+      const forwardBody: Record<string, unknown> = {
         integracao_id: integracaoId,
         origem: 'Robot Apify',
         data_extracao: new Date().toISOString(),
       };
+
+      if (uberPagamentosCsv) {
+        forwardBody.pagamentos_csv = uberPagamentosCsv;
+        forwardBody.nome_pagamentos = payload.nome_pagamentos || nomeOriginal || 'pagamentos.csv';
+      }
+      if (uberViagensCsv) {
+        forwardBody.viagens_csv = uberViagensCsv;
+        forwardBody.nome_viagens = payload.nome_viagens || nomeOriginal || 'viagens.csv';
+      }
+
+      // Fallback: single CSV detected via generic field — determine type from filename
+      if (uberFallbackCsv) {
+        const isActivity = /activit|atividade/i.test(nomeOriginal);
+        if (isActivity) {
+          forwardBody.viagens_csv = uberFallbackCsv;
+          forwardBody.nome_viagens = nomeOriginal || 'atividade.csv';
+        } else {
+          // payments_driver or unknown → treat as pagamentos
+          forwardBody.pagamentos_csv = uberFallbackCsv;
+          forwardBody.nome_pagamentos = nomeOriginal || 'pagamentos.csv';
+        }
+      }
+
+      console.log(`robot-webhook: Uber forward — pagamentos=${!!forwardBody.pagamentos_csv}, viagens=${!!forwardBody.viagens_csv}, nome="${nomeOriginal}"`);
 
       const importResponse = await fetch(
         `${SUPABASE_URL}/functions/v1/uber-import-reports`,

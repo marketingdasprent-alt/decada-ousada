@@ -7,58 +7,63 @@ import ImportarTab from '@/components/marketing/ImportarTab';
 import AssinaturasTab from '@/components/marketing/AssinaturasTab';
 import EstatisticasTab from '@/components/marketing/EstatisticasTab';
 
+import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+import { Megaphone } from 'lucide-react';
+
 const Marketing = () => {
   const [activeTab, setActiveTab] = useState('campanhas');
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Marketing</h1>
-        <p className="text-muted-foreground">Gerir campanhas de email, listas de transmissão e importações</p>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="campanhas" className="gap-2">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <StickyPageHeader
+        title="Marketing"
+        description="Gerir campanhas de email, listas de transmissão e importações"
+        icon={Megaphone}
+        className="pb-0"
+      >
+        <TabsList className="bg-transparent border-b rounded-none h-auto p-0 gap-6">
+          <TabsTrigger value="campanhas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
             <Mail className="h-4 w-4" />
             Campanhas
           </TabsTrigger>
-          <TabsTrigger value="listas" className="gap-2">
+          <TabsTrigger value="listas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
             <Users className="h-4 w-4" />
             Listas
           </TabsTrigger>
-          <TabsTrigger value="assinaturas" className="gap-2">
+          <TabsTrigger value="assinaturas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
             <PenTool className="h-4 w-4" />
             Assinaturas
           </TabsTrigger>
-          <TabsTrigger value="estatisticas" className="gap-2">
+          <TabsTrigger value="estatisticas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
             <BarChart3 className="h-4 w-4" />
             Estatísticas
           </TabsTrigger>
-          <TabsTrigger value="importar" className="gap-2">
+          <TabsTrigger value="importar" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
             <Upload className="h-4 w-4" />
             Importar
           </TabsTrigger>
         </TabsList>
+      </StickyPageHeader>
 
-        <TabsContent value="campanhas">
+      <div className="space-y-6">
+        <TabsContent value="campanhas" className="mt-4">
           <CampanhasTab />
         </TabsContent>
-        <TabsContent value="listas">
+        <TabsContent value="listas" className="mt-4">
           <ListasTab />
         </TabsContent>
-        <TabsContent value="assinaturas">
+        <TabsContent value="assinaturas" className="mt-4">
           <AssinaturasTab />
         </TabsContent>
-        <TabsContent value="estatisticas">
+        <TabsContent value="estatisticas" className="mt-4">
           <EstatisticasTab />
         </TabsContent>
-        <TabsContent value="importar">
+        <TabsContent value="importar" className="mt-4">
           <ImportarTab />
         </TabsContent>
-      </Tabs>
-    </div>
+      </div>
+    </Tabs>
   );
-};
+}
 
 export default Marketing;

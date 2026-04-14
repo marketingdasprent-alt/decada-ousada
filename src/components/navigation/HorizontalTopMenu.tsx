@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, User, FileText, Settings, Menu, ClipboardCheck, ChevronDown, Wrench, Car, Wallet, CalendarDays, Mail } from 'lucide-react';
+import { LayoutDashboard, BarChart3, User, FileText, Settings, Menu, ClipboardCheck, ChevronDown, Wrench, Car, Wallet, CalendarDays, Mail } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
 import { UserMenu } from '@/components/auth/UserMenu';
@@ -32,6 +32,7 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
+  { label: 'Dashboard', url: '/dashboard', icon: LayoutDashboard, recurso: 'motoristas_gestao' },
   { label: 'CRM', url: '/crm', icon: BarChart3, recurso: 'motoristas_crm' },
   { label: 'Meus Tickets', url: '/meus-tickets', icon: Wrench, recurso: 'motoristas_crm' },
 { 
@@ -213,20 +214,20 @@ export const HorizontalTopMenu: React.FC = () => {
 
   // Desktop version (unchanged)
   return (
-    <header className="h-20 bg-card/95 backdrop-blur-sm border-b border-primary/30 sticky top-0 z-[60]">
-      <div className="h-full flex items-center justify-between px-6 max-w-[1800px] mx-auto">
+    <header className="h-32 bg-card/95 backdrop-blur-sm border-b border-primary/30 sticky top-0 z-[60] flex flex-col justify-center">
+      <div className="h-full flex items-center justify-between px-6 max-w-[1800px] mx-auto w-full gap-8">
         {/* Logo */}
         <div className="flex-shrink-0">
           <img 
             src={logoSrc}
             alt="Década Ousada" 
-            className="h-12 w-auto object-contain"
+            className="h-10 w-auto object-contain"
           />
         </div>
 
-        {/* Menu Items */}
-        <nav className="flex items-center gap-1 flex-1 justify-center">
-          {visibleMenuItems.map((item) => {
+        {/* Menu Items arranged in 2 rows of 5 */}
+        <nav className="grid grid-cols-5 gap-x-2 gap-y-2 flex-1 max-w-4xl">
+          {[...visibleMenuItems, ...(hasAdminAccess ? [{ label: 'Administração', url: '/admin/settings', icon: Settings }] : [])].map((item) => {
             const Icon = item.icon;
             
             // Se tem subitens, renderiza dropdown
@@ -239,18 +240,18 @@ export const HorizontalTopMenu: React.FC = () => {
                     <button
                       disabled={loading}
                       className={cn(
-                        "flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200",
-                        "hover:bg-primary/10 hover:scale-105",
-                        "text-sm font-medium border-none outline-none",
+                        "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 w-full justify-start",
+                        "hover:bg-primary/10",
+                        "text-xs font-medium border-none outline-none",
                         loading && "pointer-events-none opacity-50",
                         isSubActive 
                           ? "bg-primary/20 text-primary" 
                           : "text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      <Icon className="h-5 w-5" />
-                      <span>{item.label}</span>
-                      <ChevronDown className="h-4 w-4" />
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                      <ChevronDown className="h-3 w-3 ml-auto" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="center" className="w-48 bg-background z-[70]">
@@ -285,42 +286,24 @@ export const HorizontalTopMenu: React.FC = () => {
                   }
                 }}
                 className={({ isActive }) => cn(
-                  "flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200",
-                  "hover:bg-primary/10 hover:scale-105",
-                  "text-sm font-medium",
+                  "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 w-full justify-start",
+                  "hover:bg-primary/10",
+                  "text-xs font-medium",
                   loading && "pointer-events-none opacity-50",
                   isActive 
-                    ? "bg-primary/20 text-primary border-b-2 border-primary" 
+                    ? "bg-primary/20 text-primary" 
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Icon className="h-5 w-5" />
-                <span>{item.label}</span>
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{item.label}</span>
               </NavLink>
             );
           })}
-
-          {/* Admin Direct Link */}
-          {hasAdminAccess && (
-            <NavLink
-              to="/admin/settings"
-              className={({ isActive }) => cn(
-                "flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200",
-                "hover:bg-primary/10 hover:scale-105",
-                "text-sm font-medium",
-                isActive 
-                  ? "bg-primary/20 text-primary border-b-2 border-primary" 
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Settings className="h-5 w-5" />
-              <span>Administração</span>
-            </NavLink>
-          )}
         </nav>
 
         {/* User Menu e Theme Toggle */}
-        <div className="flex-shrink-0 flex items-center gap-2">
+        <div className="flex-shrink-0 flex items-center gap-4">
           <ThemeToggle />
           <UserMenu />
         </div>

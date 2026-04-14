@@ -48,6 +48,8 @@ import {
   Plus,
   PlusCircle,
   X,
+  Smartphone,
+  Zap,
 } from "lucide-react";
 
 const CARTA_CATEGORIAS = ["AM", "A1", "A2", "A", "B1", "B", "BE", "C1", "C", "CE", "D1", "D", "DE"];
@@ -93,6 +95,8 @@ const formSchema = z.object({
   slot_valor_semanal: z.number().optional().nullable(),
   status_ativo: z.boolean().default(true),
   observacoes: z.string().optional(),
+  uber_uuid: z.string().optional().nullable(),
+  bolt_id: z.string().optional().nullable(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -136,6 +140,8 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
       slot_valor_semanal: null,
       status_ativo: true,
       observacoes: "",
+      uber_uuid: "",
+      bolt_id: "",
     },
   });
 
@@ -176,6 +182,8 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
         slot_valor_semanal: motorista.slot_valor_semanal ?? null,
         status_ativo: motorista.status_ativo ?? true,
         observacoes: motorista.observacoes || "",
+        uber_uuid: motorista.uber_uuid || "",
+        bolt_id: motorista.bolt_id || "",
       });
     }
   }, [motorista, form]);
@@ -210,6 +218,8 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
         slot_valor_semanal: data.is_slot ? data.slot_valor_semanal : null,
         status_ativo: data.status_ativo,
         observacoes: data.observacoes || null,
+        uber_uuid: data.uber_uuid || null,
+        bolt_id: data.bolt_id || null,
       };
 
       const { error } = await supabase
@@ -526,7 +536,6 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
             headerClassName="bg-orange-50 dark:bg-orange-950/30 border-b"
           >
             <div className="space-y-4">
-              {/* Botões de Seleção Rápida */}
               <div className="flex flex-wrap gap-2 mb-4 p-3 bg-muted/20 rounded-lg border border-dashed">
                 <p className="text-xs text-muted-foreground w-full mb-1">Adicionar novo cartão:</p>
                 {!form.watch('cartao_bp') && (
@@ -564,7 +573,6 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                 )}
               </div>
 
-              {/* BP */}
               {(form.watch('cartao_bp') !== null && form.watch('cartao_bp') !== "") && (
                 <FormField
                   control={form.control}
@@ -659,7 +667,6 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
             </div>
           </SectionCard>
 
-
           {/* Estado & Configuração */}
           <SectionCard
             icon={<Settings className="h-4 w-4 text-slate-600 dark:text-slate-400" />}
@@ -744,29 +751,72 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
           </SectionCard>
         </div>
 
-        {/* Observações - largura total */}
-        <SectionCard
-          icon={<MessageSquare className="h-4 w-4 text-pink-600 dark:text-pink-400" />}
-          title="Observações"
-          headerClassName="bg-pink-50 dark:bg-pink-950/30 border-b"
-        >
-          <FormField
-            control={form.control}
-            name="observacoes"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    placeholder="Notas adicionais sobre o motorista..."
-                    className="min-h-[100px]"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </SectionCard>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 py-4">
+          {/* IDs de Plataformas */}
+          <SectionCard
+            icon={<Smartphone className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
+            title="IDs de Integração (Uber / Bolt)"
+            headerClassName="bg-purple-50 dark:bg-purple-950/30 border-b"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="uber_uuid"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Uber UUID</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. e912..." {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="bolt_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                       <Zap className="h-3 w-3 text-yellow-500" /> Bolt ID
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. 12345/6789" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <p className="text-[10px] text-muted-foreground sm:col-span-2 mt-1">
+                Estes IDs são usados para unificar automaticamente os ganhos das plataformas no Dashboard financeiro.
+              </p>
+            </div>
+          </SectionCard>
+
+          {/* Observações */}
+          <SectionCard
+            icon={<MessageSquare className="h-4 w-4 text-pink-600 dark:text-pink-400" />}
+            title="Observações Internas"
+            headerClassName="bg-pink-50 dark:bg-pink-950/30 border-b"
+          >
+            <FormField
+              control={form.control}
+              name="observacoes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Notas adicionais sobre o motorista..."
+                      className="min-h-[80px]"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </SectionCard>
+        </div>
 
         {/* Botão de salvar */}
         <div className="flex justify-end pt-4 border-t">

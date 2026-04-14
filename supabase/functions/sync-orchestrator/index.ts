@@ -18,6 +18,58 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    const body = await req.json().catch(() => ({}));
+
+    // ── MODE: ENQUEUE ────────────────────────────────────────────────────────
+    // Called once per week (Monday 4:30 AM Lisbon) by pg_cron.
+    // Enqueues ALL active integrations that have sync_automatico = true.
+    if (body.enqueue === true) {
+      const { data: integracoes, error } = await supabase
+        .from("plataformas_configuracao")
+        .select("id, plataforma, robot_target_platform, nome")
+        .eq("ativo", true)
+        .eq("sync_automatico", true);
+
+      if (error) throw error;
+      if (!integracoes || integracoes.length === 0) {
+        return new Response(
+          JSON.stringify({ success: true, action: "enqueue", enqueued: 0, message: "Nenhuma integração ativa encontrada" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      let enqueued = 0;
+      for (const integ of integracoes) {
+        // Skip if already pending or running (e.g. manual trigger earlier in the week)
+        const { data: existing } = await supabase
+          .from("sync_queue")
+          .select("id")
+          .eq("integracao_id", integ.id)
+          .in("status", ["pending", "running"])
+          .limit(1);
+
+        if (existing && existing.length > 0) continue;
+
+        await supabase.from("sync_queue").insert({
+          integracao_id: integ.id,
+          plataforma: integ.plataforma,
+          robot_target_platform: integ.robot_target_platform || null,
+          status: "pending",
+        });
+        enqueued++;
+        console.log(`Enqueued: ${integ.nome} (${integ.id})`);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, action: "enqueue", enqueued, total: integracoes.length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── MODE: DRAIN ──────────────────────────────────────────────────────────
+    // Called every 10 minutes by pg_cron.
+    // Processes ONE pending item from the queue (10-min gap between each integration).
+
     // 1. Mark stale "running" items as failed (stuck for > 10 min)
     const staleThreshold = new Date(Date.now() - STALE_TIMEOUT_MINUTES * 60 * 1000).toISOString();
     await supabase
@@ -30,7 +82,7 @@ Deno.serve(async (req) => {
       .eq("status", "running")
       .lt("started_at", staleThreshold);
 
-    // 2. Check if something is already running
+    // 2. Skip if something is already running
     const { data: running } = await supabase
       .from("sync_queue")
       .select("id")
@@ -44,42 +96,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Enqueue integrations that are due for sync
-    const { data: integracoes } = await supabase
-      .from("plataformas_configuracao")
-      .select("id, plataforma, robot_target_platform, ultimo_sync, intervalo_sync_horas, sync_automatico")
-      .eq("ativo", true)
-      .eq("sync_automatico", true);
-
-    if (integracoes && integracoes.length > 0) {
-      const now = Date.now();
-      for (const integ of integracoes) {
-        const intervalMs = (integ.intervalo_sync_horas || 168) * 60 * 60 * 1000;
-        const lastSync = integ.ultimo_sync ? new Date(integ.ultimo_sync).getTime() : 0;
-        const isDue = (now - lastSync) >= intervalMs;
-
-        if (isDue) {
-          // Check if already queued (pending) for this integration
-          const { data: existing } = await supabase
-            .from("sync_queue")
-            .select("id")
-            .eq("integracao_id", integ.id)
-            .eq("status", "pending")
-            .limit(1);
-
-          if (!existing || existing.length === 0) {
-            await supabase.from("sync_queue").insert({
-              integracao_id: integ.id,
-              plataforma: integ.plataforma,
-              robot_target_platform: integ.robot_target_platform || null,
-              status: "pending",
-            });
-          }
-        }
-      }
-    }
-
-    // 4. Pick the oldest pending item
+    // 3. Pick the oldest pending item
     const { data: nextItems } = await supabase
       .from("sync_queue")
       .select("*")
@@ -96,27 +113,29 @@ Deno.serve(async (req) => {
 
     const item = nextItems[0];
 
-    // 5. Mark as running
+    // 4. Mark as running
     await supabase
       .from("sync_queue")
       .update({ status: "running", started_at: new Date().toISOString() })
       .eq("id", item.id);
 
-    // 6. Execute the correct function
+    // 5. Determine which function to call
     let functionName: string;
-    let body: Record<string, unknown>;
+    let fnBody: Record<string, unknown>;
 
-    if (item.plataforma === "robot") {
+    if (item.plataforma === "robot" || item.plataforma === "repsol" || item.plataforma === "edp" || item.robot_target_platform) {
       functionName = "robot-execute";
-      body = { integracao_id: item.integracao_id };
+      fnBody = { integracao_id: item.integracao_id };
     } else if (item.plataforma === "bolt") {
       functionName = "bolt-full-sync";
-      body = { integracao_id: item.integracao_id };
+      fnBody = { integracao_id: item.integracao_id };
+    } else if (item.plataforma === "uber") {
+      functionName = "uber-full-sync";
+      fnBody = { integracao_id: item.integracao_id };
     } else if (item.plataforma === "bp") {
       functionName = "bp-sync-transactions";
-      body = { integracao_id: item.integracao_id };
+      fnBody = { integracao_id: item.integracao_id };
     } else {
-      // Unknown platform - mark as failed
       await supabase
         .from("sync_queue")
         .update({
@@ -132,6 +151,7 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 6. Execute
     try {
       console.log(`Executing ${functionName} for integracao ${item.integracao_id}`);
 
@@ -141,7 +161,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${serviceRoleKey}`,
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(fnBody),
       });
 
       const responseText = await response.text();
@@ -152,7 +172,7 @@ Deno.serve(async (req) => {
         result = { raw: responseText };
       }
 
-      if (response.ok && (result.success !== false)) {
+      if (response.ok && result.success !== false) {
         await supabase
           .from("sync_queue")
           .update({ status: "completed", completed_at: new Date().toISOString() })

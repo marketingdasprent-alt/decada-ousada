@@ -69,7 +69,7 @@ export const EventoDialog: React.FC<Props> = ({ open, onOpenChange, evento, user
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const payload = {
+      const payload: any = {
         titulo: matricula.toUpperCase().replace(/[-\s]/g, ''),
         cidade: cidade || null,
         tipo,
@@ -78,8 +78,11 @@ export const EventoDialog: React.FC<Props> = ({ open, onOpenChange, evento, user
         dia_todo: diaTodo,
         descricao: observacoes.trim() || null,
         matricula_devolver: tipo === 'troca' ? (matriculaDevolver.toUpperCase().replace(/[-\s]/g, '') || null) : null,
-        criado_por: userId,
       };
+
+      if (!isEditing) {
+        payload.criado_por = userId;
+      }
 
       if (isEditing) {
         // Compare and record changes

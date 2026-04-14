@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Car,
   Plus,
@@ -21,6 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -40,6 +42,7 @@ import { DeleteViaturaDialog } from '@/components/viaturas/DeleteViaturaDialog';
 import { ImportViaturasDialog } from '@/components/viaturas/ImportViaturasDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getCategoriaBadgeClass, getStatusBadgeClass, getStatusLabel } from '@/lib/viaturas';
+import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
 interface Viatura {
   id: string;
@@ -66,10 +69,12 @@ type SortDirection = 'asc' | 'desc';
 
 export default function Viaturas() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>(() => searchParams.get('status') || 'all');
+  const [mostrarVendidas, setMostrarVendidas] = useState(() => searchParams.get('status') === 'vendida');
   const [categoriaFilter, setCategoriaFilter] = useState<string>('all');
   const [combustivelFilter, setCombustivelFilter] = useState<string>('all');
   const [sortColumn, setSortColumn] = useState<SortColumn>('matricula');
@@ -135,6 +140,11 @@ export default function Viaturas() {
   const filteredViaturas = useMemo(() => {
     let result = [...viaturas];
 
+    // Ocultar vendidas por defeito
+    if (!mostrarVendidas && statusFilter === 'all') {
+      result = result.filter(v => v.status !== 'vendida');
+    }
+
     // Filtro de pesquisa
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -178,7 +188,7 @@ export default function Viaturas() {
     });
 
     return result;
-  }, [viaturas, searchTerm, statusFilter, categoriaFilter, combustivelFilter, sortColumn, sortDirection]);
+  }, [viaturas, searchTerm, statusFilter, categoriaFilter, combustivelFilter, sortColumn, sortDirection, mostrarVendidas]);
 
   const getCategoriaColor = (categoria: string | null | undefined) => getCategoriaBadgeClass(categoria);
 
@@ -198,7 +208,6 @@ export default function Viaturas() {
     if (!date) return false;
     return new Date(date) < new Date();
   };
-
 
   const handleDeleteClick = (viatura: Viatura) => {
     setSelectedViatura(viatura);
@@ -235,18 +244,12 @@ export default function Viaturas() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Car className="h-6 w-6" />
-            Frota de Viaturas
-          </h1>
-          <p className="text-muted-foreground">
-            Gestão completa da frota de veículos
-          </p>
-        </div>
+    <div className="space-y-6">
+      <StickyPageHeader
+        title="Frota de Viaturas"
+        description="Gestão completa da frota de veículos"
+        icon={Car}
+      >
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
           <ImportViaturasDialog onImportComplete={loadViaturas} />
           <Button onClick={handleNewViatura} className="w-full sm:w-auto">
@@ -254,10 +257,18 @@ export default function Viaturas() {
             Nova Viatura
           </Button>
         </div>
-      </div>
+      </StickyPageHeader>
 
       {/* Stats Cards */}
-      <ViaturaStatsCards stats={stats} />
+      <ViaturaStatsCards
+        stats={stats}
+        activeFilter={statusFilter}
+        onFilter={(filter) => {
+          setStatusFilter(filter);
+          if (filter === 'vendida') setMostrarVendidas(true);
+          else if (filter === 'all') setMostrarVendidas(false);
+        }}
+      />
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
@@ -307,6 +318,16 @@ export default function Viaturas() {
             <SelectItem value="diesel">Diesel</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-2 px-1 shrink-0">
+          <Switch
+            id="mostrar-vendidas"
+            checked={mostrarVendidas}
+            onCheckedChange={setMostrarVendidas}
+          />
+          <Label htmlFor="mostrar-vendidas" className="text-sm cursor-pointer whitespace-nowrap text-muted-foreground">
+            Mostrar vendidas {mostrarVendidas && `(${stats.vendidas})`}
+          </Label>
+        </div>
       </div>
 
       {/* Table / Cards */}

@@ -201,21 +201,52 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Determine periodo from payload or generate from current date
-    const periodoValue = periodo || new Date().toISOString().slice(0, 10);
+    // Calculate last week's Monday–Sunday (the actor always fetches "Semana passada")
+    const getLastWeekDates = () => {
+      const now = new Date();
+      // Em UTC, ajustar para o dia da semana correto
+      const dow = now.getDay(); // 0=Sun, 1=Mon … 6=Sat
+      const daysToThisMonday = dow === 0 ? 6 : dow - 1;
+      
+      // Encontrar a segunda-feira desta semana
+      const thisMonday = new Date(now);
+      thisMonday.setDate(now.getDate() - daysToThisMonday);
+      thisMonday.setHours(0, 0, 0, 0);
+      
+      // A semana passada começa 7 dias antes
+      const lastMonday = new Date(thisMonday);
+      lastMonday.setDate(thisMonday.getDate() - 7);
+      
+      const lastSunday = new Date(lastMonday);
+      lastSunday.setDate(lastMonday.getDate() + 6);
+      
+      return {
+        start: lastMonday.toISOString().split('T')[0],
+        end: lastSunday.toISOString().split('T')[0],
+      };
+    };
 
-    // Determine real week start/end from payload or week number
-    let periodoInicioValue = periodo_inicio || null;
-    let periodoFimValue = periodo_fim || null;
+    const lastWeek = getLastWeekDates();
 
-    if (!periodoInicioValue && periodoValue.includes('W')) {
-      const dates = getDatesFromISOWeek(periodoValue);
-      if (dates) {
-        periodoInicioValue = dates.start;
-        periodoFimValue = dates.end;
-        console.log(`bolt-import-csv: Auto-calculated dates for ${periodoValue}: ${dates.start} to ${dates.end}`);
+    // The Apify actor sometimes wrongly sends the execution date as periodo_inicio.
+    // If the provided start date is NOT a Monday, or is very close to today, ignore it!
+    let periodoInicioValue = periodo_inicio;
+    let periodoFimValue = periodo_fim;
+    
+    if (periodoInicioValue) {
+      const d = new Date(periodoInicioValue);
+      // If it's not a Monday, or it's in the current week/future, ignore the payload's date
+      if (d.getDay() !== 1 || d.getTime() > new Date().getTime() - 2 * 24 * 60 * 60 * 1000) {
+        console.log(`bolt-import-csv: Ignoring buggy payload dates (${periodoInicioValue}). Using calculated last week.`);
+        periodoInicioValue = undefined;
       }
     }
+
+    periodoInicioValue = periodoInicioValue || lastWeek.start;
+    periodoFimValue    = periodoFimValue || lastWeek.end;
+    const periodoValue = periodo || `${periodoInicioValue} a ${periodoFimValue}`;
+
+    console.log(`bolt-import-csv: periodo=${periodoValue}, inicio=${periodoInicioValue}, fim=${periodoFimValue}`);
 
     // Fetch motoristas for name matching
     const { data: motoristas } = await supabase

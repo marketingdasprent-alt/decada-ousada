@@ -244,10 +244,14 @@ Deno.serve(async (req) => {
       const parts = allCards.split('/');
       for (const part of parts) {
         const sanitized = sanitizeCard(part);
-        if (sanitized.length >= 4) {
+        if (sanitized.length > 0) {
           cardMapFull.set(sanitized, { id: m.id, nome: m.nome });
-          cardMapSuffix4.set(sanitized.slice(-4), { id: m.id, nome: m.nome });
-          cardMapSuffix3.set(sanitized.slice(-3), { id: m.id, nome: m.nome });
+          if (sanitized.length >= 4) {
+            cardMapSuffix4.set(sanitized.slice(-4), { id: m.id, nome: m.nome });
+          }
+          if (sanitized.length >= 3) {
+            cardMapSuffix3.set(sanitized.slice(-3), { id: m.id, nome: m.nome });
+          }
         }
       }
     }

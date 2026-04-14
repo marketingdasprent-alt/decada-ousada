@@ -26,8 +26,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MotoristaResumoDialog } from "./MotoristaResumoDialog";
+import { ReparaCartoes } from "./ReparaCartoes";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Printer, Mail, Send, FileDown } from "lucide-react";
+import { generateFinanceiroPDF } from "@/utils/generateFinanceiroPDF";
+import { useThemedLogo } from "@/hooks/useThemedLogo";
+
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
+import { cn, normalizeString } from "@/lib/utils";
 
 interface MotoristaResumo {
   driver_name: string;
@@ -44,6 +50,8 @@ interface MotoristaResumo {
   combustivel: number;
   portagens: number;
   reparacoes: number;
+  outros_custos: number;
+  aluguer: number;
 }
 
 interface Integracao {
@@ -76,6 +84,104 @@ export function ContasResumoTab() {
   const [selectedWeek, setSelectedWeek] = useState<Date>(subWeeks(new Date(), 1));
   const [selectedMotorista, setSelectedMotorista] = useState<MotoristaResumo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkSending, setIsBulkSending] = useState(false);
+  const logoSrc = useThemedLogo();
+
+  const handleBulkPrint = async () => {
+    if (selectedIds.size === 0) return;
+    
+    setLoading(true);
+    toast.info(`Preparando ${selectedIds.size} relatórios para impressão...`);
+
+    try {
+      const selectedResumos = resumos.filter(r => 
+        selectedIds.has(r.driver_uuid || r.driver_name)
+      );
+
+      let combinedPdf = null;
+
+      for (let i = 0; i < selectedResumos.length; i++) {
+        const motorista = selectedResumos[i];
+        
+        // Fetch extra data for this driver (same as MotoristaResumoDialog)
+        let matricula = null;
+        let cartaoFrota = null;
+        let extraCosts = { caucao: 0, seguros: 0, outros: 0 };
+        
+        let resolvedMotoristaId = motorista.motorista_id || null;
+        if (resolvedMotoristaId) {
+          const [vData, mData, aData] = await Promise.all([
+            supabase.from("motorista_viaturas").select("viaturas(matricula)").eq("motorista_id", resolvedMotoristaId).eq("status", "ativo").maybeSingle(),
+            supabase.from("motoristas_ativos").select("cartao_frota, cartao_bp, cartao_repsol, cartao_edp").eq("id", resolvedMotoristaId).maybeSingle(),
+            supabase.from("motorista_custos_adicionais").select("tipo, valor").eq("motorista_id", resolvedMotoristaId).gte("semana_referencia", format(weekStart, "yyyy-MM-dd")).lte("semana_referencia", format(weekEnd, "yyyy-MM-dd"))
+          ]);
+
+          if (vData.data?.viaturas) matricula = (vData.data.viaturas as any).matricula;
+          if (mData.data) {
+            cartaoFrota = [mData.data.cartao_bp, mData.data.cartao_repsol, mData.data.cartao_edp, mData.data.cartao_frota].filter(c => !!c).join(' / ') || "N/A";
+          }
+          if (aData.data) {
+            extraCosts = aData.data.reduce((acc, curr) => {
+              const val = Number(curr.valor) || 0;
+              if (curr.tipo === "Caução") acc.caucao += val;
+              else if (curr.tipo === "Seguros") acc.seguros += val;
+              else acc.outros += val;
+              return acc;
+            }, { caucao: 0, seguros: 0, outros: 0 });
+          }
+        }
+
+        const receitaAjustada = motorista.recibo_verde ? motorista.total_faturado : motorista.total_faturado / 1.06;
+        const totalDespesas = motorista.aluguer + motorista.combustivel + motorista.portagens + motorista.reparacoes + extraCosts.outros + extraCosts.caucao + extraCosts.seguros;
+        
+        const pdfData = {
+          driver_name: motorista.driver_name,
+          matricula,
+          cartaoFrota,
+          dateRange: { from: weekStart, to: weekEnd },
+          recibo_verde: motorista.recibo_verde,
+          receitas: { 
+            bolt: motorista.faturado_bolt, 
+            uber: motorista.faturado_uber, 
+            outras_receitas: 0, 
+            total: motorista.total_faturado 
+          },
+          despesas: { 
+            aluguer: motorista.aluguer, 
+            combustivel: motorista.combustivel, 
+            portagens: motorista.portagens, 
+            reparacoes: motorista.reparacoes, 
+            outros: extraCosts.outros + extraCosts.caucao + extraCosts.seguros,
+            total: totalDespesas 
+          },
+          resumo: { 
+            totalAReceber: receitaAjustada - (motorista.recibo_verde ? 0 : 0), // Base logic from dialog
+            ajuste: motorista.recibo_verde ? undefined : (motorista.total_faturado - receitaAjustada),
+            liquido: motorista.liquido 
+          },
+          logoSrc
+        };
+
+        combinedPdf = await generateFinanceiroPDF(pdfData, combinedPdf || undefined);
+      }
+
+      if (combinedPdf) {
+        const fileName = `resumos_financeiros_${format(weekStart, 'yyyyMMdd')}.pdf`;
+        combinedPdf.save(fileName);
+        toast.success("Relatórios gerados com sucesso!");
+      }
+    } catch (error) {
+      console.error("Erro ao imprimir em massa:", error);
+      toast.error("Erro ao gerar relatórios");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkEmail = async () => {
+    toast.info("Funcionalidade de envio em massa por email em desenvolvimento.");
+  };
 
   // Calcular início e fim da semana (Segunda a Domingo)
   const weekStart = startOfWeek(selectedWeek, { weekStartsOn: WEEK_STARTS_ON });
@@ -93,6 +199,25 @@ export function ContasResumoTab() {
   const handleRowClick = (resumo: MotoristaResumo) => {
     setSelectedMotorista(resumo);
     setDialogOpen(true);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredResumos.length) {
+      setSelectedIds(new Set());
+    } else {
+      const allIds = filteredResumos.map(r => r.driver_uuid || r.driver_name);
+      setSelectedIds(new Set(allIds));
+    }
+  };
+
+  const toggleSelectOne = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
   };
 
   const handleDayClick = (day: Date | undefined) => {
@@ -169,11 +294,16 @@ export function ContasResumoTab() {
     // 4. O nome oficial está contido no nome da plataforma? (Inverso)
     if (pNorm.includes(oNorm) && oNorm.length > 5) return true;
 
-    // 5. Match individual de nomes (pelo menos 2 nomes em comum)
-    const pParts = pNorm.split(" ").filter(p => p.length > 2);
-    const oParts = oNorm.split(" ").filter(p => p.length > 2);
+    // 5. Match individual de nomes (pelo menos 2 nomes em comum, ignorando preposições)
+    const noise = ["da", "de", "do", "das", "dos", "e"];
+    const pParts = pNorm.split(" ").filter(p => p.length > 2 && !noise.includes(p));
+    const oParts = oNorm.split(" ").filter(p => p.length > 2 && !noise.includes(p));
+    
     const commonParts = pParts.filter(p => oParts.includes(p));
     if (commonParts.length >= 2) return true;
+
+    // 6. Caso especial: Um só nome mas é muito longo e único? (Opcional, manter seguro)
+    if (pParts.length === 1 && oParts.includes(pParts[0]) && pParts[0].length > 7) return true;
 
     return false;
   }
@@ -202,16 +332,26 @@ export function ContasResumoTab() {
         }
       });
 
-      // 2. Buscar todos motoristas_ativos para matching por nome com Uber
+      // 2. Buscar todos motoristas_ativos para matching (Nomes e IDs de plataforma)
       const { data: todosMotoristas } = await supabase
         .from("motoristas_ativos")
-        .select("id, nome, recibo_verde");
+        .select("id, nome, recibo_verde, uber_uuid, bolt_id");
+
+      // Mapa: uber_uuid -> motorista_id
+      const uberIdMap: Record<string, string> = {};
+      // Mapa: bolt_id -> motorista_id
+      const boltIdMap: Record<string, string> = {};
 
       // Mapa: nome normalizado → motorista_id
       const nomeToMotoristaMap: Record<string, { id: string; nome: string; recibo_verde: boolean }> = {};
       (todosMotoristas || []).forEach((m) => {
         const norm = normalizeName(m.nome);
         nomeToMotoristaMap[norm] = { id: m.id, nome: m.nome, recibo_verde: m.recibo_verde ?? true };
+        
+        // Mapear IDs de plataforma se existirem
+        if (m.uber_uuid) uberIdMap[m.uber_uuid] = m.id;
+        if (m.bolt_id) boltIdMap[m.bolt_id] = m.id;
+
         // Também guardar recibo_verde para qualquer motorista
         if (!(m.id in reciboVerdeMap)) {
           reciboVerdeMap[m.id] = m.recibo_verde ?? true;
@@ -228,19 +368,17 @@ export function ContasResumoTab() {
 
       // Determine effective platform type for the selected integration
       const selectedIntegracaoObj = integracoes.find(i => i.id === selectedIntegracao);
-      const getEffectivePlatform = (intObj: Integracao | undefined): 'bolt' | 'uber' | null => {
+      const getEffectivePlatform = (intObj: Integracao | undefined): string | null => {
         if (!intObj) return null;
-        if (intObj.plataforma === 'bolt') return 'bolt';
-        if (intObj.plataforma === 'uber') return 'uber';
-        if (intObj.plataforma === 'robot') return (intObj.robot_target_platform === 'bolt' ? 'bolt' : 'uber');
-        return null;
+        if (intObj.plataforma === 'robot' && intObj.robot_target_platform) return intObj.robot_target_platform;
+        return intObj.plataforma;
       };
       const effectivePlatform = getEffectivePlatform(selectedIntegracaoObj);
 
       if (selectedIntegracao !== "all" && effectivePlatform === "bolt") {
         boltQuery = boltQuery.eq("integracao_id", selectedIntegracao);
-      } else if (selectedIntegracao !== "all" && effectivePlatform === "uber") {
-        // Uber/Robot-uber selecionada: não mostrar dados Bolt
+      } else if (selectedIntegracao !== "all" && effectivePlatform !== "bolt") {
+        // Se outra plataforma (Uber/BP etc) for seleccionada: ignorar Bolt
         boltQuery = boltQuery.eq("integracao_id", "00000000-0000-0000-0000-000000000000");
       }
 
@@ -254,7 +392,7 @@ export function ContasResumoTab() {
       // Filtro de integração Uber
       if (selectedIntegracao !== "all" && effectivePlatform === "uber") {
         uberQuery = uberQuery.eq("integracao_id", selectedIntegracao);
-      } else if (selectedIntegracao !== "all" && effectivePlatform === "bolt") {
+      } else if (selectedIntegracao !== "all" && effectivePlatform !== "uber") {
         uberQuery = uberQuery.eq("integracao_id", "00000000-0000-0000-0000-000000000000");
       }
 
@@ -269,7 +407,7 @@ export function ContasResumoTab() {
 
       if (selectedIntegracao !== "all" && effectivePlatform === "uber") {
         atividadeQuery = atividadeQuery.eq("integracao_id", selectedIntegracao);
-      } else if (selectedIntegracao !== "all" && effectivePlatform === "bolt") {
+      } else if (selectedIntegracao !== "all" && effectivePlatform !== "uber") {
         atividadeQuery = atividadeQuery.eq("integracao_id", "00000000-0000-0000-0000-000000000000");
       }
 
@@ -279,26 +417,52 @@ export function ContasResumoTab() {
         .select("uber_driver_id, motorista_id, full_name");
 
       // 4d. Buscar transações de combustível no período
-      const combustivelQuery = (supabase as any)
+      let combustivelQuery = (supabase as any)
         .from("bp_transacoes")
         .select("motorista_id, amount")
         .gte("transaction_date", weekStart.toISOString())
         .lte("transaction_date", weekEnd.toISOString())
         .not("motorista_id", "is", null);
 
-      const repsolQuery = supabase
+      let repsolQuery = supabase
         .from("repsol_transacoes")
         .select("motorista_id, amount")
         .gte("transaction_date", weekStart.toISOString())
         .lte("transaction_date", weekEnd.toISOString())
         .not("motorista_id", "is", null);
 
-      const edpQuery = supabase
+      let edpQuery = supabase
         .from("edp_transacoes")
         .select("motorista_id, amount")
         .gte("transaction_date", weekStart.toISOString())
         .lte("transaction_date", weekEnd.toISOString())
         .not("motorista_id", "is", null);
+
+      // 4d-bis. Buscar valor de aluguer de viatura (bulk) para todos os motoristas activos
+      const viaturasQuery = supabase
+        .from("motorista_viaturas")
+        .select("motorista_id, viaturas(valor_aluguer)")
+        .eq("status", "ativo");
+
+      if (selectedIntegracao !== "all" && effectivePlatform === "bp") {
+        combustivelQuery = combustivelQuery.eq("integracao_id", selectedIntegracao);
+        repsolQuery = repsolQuery.eq("integracao_id", "00000000-0000-0000-0000-000000000000");
+        edpQuery = edpQuery.eq("integracao_id", "00000000-0000-0000-0000-000000000000");
+      } else if (selectedIntegracao !== "all" && effectivePlatform === "repsol") {
+        repsolQuery = repsolQuery.eq("integracao_id", selectedIntegracao);
+        combustivelQuery = combustivelQuery.eq("integracao_id", "00000000-0000-0000-0000-000000000000");
+        edpQuery = edpQuery.eq("integracao_id", "00000000-0000-0000-0000-000000000000");
+      } else if (selectedIntegracao !== "all" && effectivePlatform === "edp") {
+        edpQuery = edpQuery.eq("integracao_id", selectedIntegracao);
+        combustivelQuery = combustivelQuery.eq("integracao_id", "00000000-0000-0000-0000-000000000000");
+        repsolQuery = repsolQuery.eq("integracao_id", "00000000-0000-0000-0000-000000000000");
+      } else if (selectedIntegracao !== "all" && !["bp", "repsol", "edp"].includes(effectivePlatform as string)) {
+        // Se seleccionou uma integracao que NAO é de combustivel, pode querer ver as faturas?
+        // Geralmente "Contas" devem abater os combustiveis de todas as fontes sempre, mesmo filtrando a Uber!
+        // Caso contrario, lucros líquidos ficariam inflacionados se não subtrair o gasóleo enquanto estuda a Uber.
+        // O utilizador pediu "filtros das contas que filtrar BP, REPSOL, EDP nao ta funcionando".
+        // Isto significa que eles querem que seleccionar BP filtre!
+      }
 
       // 4e. Buscar resumos semanais Bolt (dados CSV) cujo intervalo intersecte a semana seleccionada
       const weekStartStr = format(weekStart, "yyyy-MM-dd");
@@ -319,15 +483,32 @@ export function ContasResumoTab() {
 
       if (selectedIntegracao !== "all" && effectivePlatform === "bolt") {
         boltResumosQuery = boltResumosQuery.eq("integracao_id", selectedIntegracao);
-      } else if (selectedIntegracao !== "all" && effectivePlatform === "uber") {
+      } else if (selectedIntegracao !== "all" && effectivePlatform !== "bolt") {
         boltResumosQuery = boltResumosQuery.eq("integracao_id", "00000000-0000-0000-0000-000000000000");
       }
 
-      const [boltResult, uberResult, atividadeResult, uberDriversResult, combustivelResult, repsolResult, edpResult, boltResumosResult, parcelasResult] = await Promise.all([boltQuery, uberQuery, atividadeQuery, uberDriversQuery, combustivelQuery, repsolQuery, edpQuery, boltResumosQuery, parcelasQuery]);
+      const adhocCostsQuery = supabase
+        .from("motorista_custos_adicionais")
+        .select("motorista_id, valor")
+        .gte("semana_referencia", weekStartStr)
+        .lte("semana_referencia", weekEndStr);
+
+      const [boltResult, uberResult, atividadeResult, uberDriversResult, combustivelResult, repsolResult, edpResult, boltResumosResult, parcelasResult, adhocCostsResult, viaturasResult] = await Promise.all([
+        boltQuery,
+        uberQuery,
+        atividadeQuery,
+        uberDriversQuery,
+        combustivelQuery,
+        repsolQuery,
+        edpQuery,
+        boltResumosQuery,
+        parcelasQuery,
+        adhocCostsQuery,
+        viaturasQuery
+      ]);
 
       if (boltResult.error) throw boltResult.error;
       if (uberResult.error) throw uberResult.error;
-
 
       // Mapa: motorista_id → total combustível gasto no período
       const combustivelByMotorista: Record<string, number> = {};
@@ -344,11 +525,27 @@ export function ContasResumoTab() {
       somarCombustivel(repsolResult);
       somarCombustivel(edpResult);
 
+      // Mapa: motorista_id → valor semanal de aluguer de viatura
+      const aluguerByMotorista: Record<string, number> = {};
+      (viaturasResult.data || []).forEach((mv: any) => {
+        if (mv.motorista_id && mv.viaturas?.valor_aluguer) {
+          aluguerByMotorista[mv.motorista_id] = Number(mv.viaturas.valor_aluguer) || 0;
+        }
+      });
+
       // Mapa: motorista_id → total reparações (parcelas) da semana
       const reparacoesByMotorista: Record<string, number> = {};
       (parcelasResult.data || []).forEach((p: any) => {
         if (p.motorista_id) {
           reparacoesByMotorista[p.motorista_id] = (reparacoesByMotorista[p.motorista_id] || 0) + (Number(p.valor) || 0);
+        }
+      });
+
+      // Mapa: motorista_id → total custos adicionais (caução, seguros, etc)
+      const adhocByMotorista: Record<string, number> = {};
+      (adhocCostsResult.data || []).forEach((c: any) => {
+        if (c.motorista_id) {
+          adhocByMotorista[c.motorista_id] = (adhocByMotorista[c.motorista_id] || 0) + (Number(c.valor) || 0);
         }
       });
 
@@ -379,13 +576,23 @@ export function ContasResumoTab() {
         faturado_uber: number;
         viagens_bolt: number;
         viagens_uber: number;
+        identificador_bolt?: string;
       }
       const agrupado: Record<string, AgrupadoEntry> = {};
 
       // 5a. Processar Bolt
       (boltResult.data || []).forEach((v) => {
         const driverUuid = v.driver_uuid || "unknown";
-        let motoristaId = boltToMotoristaMap[driverUuid] || null;
+        const identificadorBolt = (v.raw_data as any)?.["Identificador do motorista"] || "";
+
+        // ORDEM DE MATCHING BOLT:
+        // 1. Pelo bolt_id gravado na ficha do motorista (CRM)
+        // 2. Pelo mapeamento histórico da tabela bolt_drivers
+        // 3. Pelo match inteligente de nomes
+        let motoristaId = (identificadorBolt && boltIdMap[identificadorBolt]) 
+          ? boltIdMap[identificadorBolt] 
+          : (boltToMotoristaMap[driverUuid] || null);
+
         let displayName = v.driver_name || "Desconhecido";
 
         // Se não tem mapeamento directo, tentar match inteligente
@@ -417,6 +624,7 @@ export function ContasResumoTab() {
         }
         agrupado[key].faturado_bolt += Number(v.driver_earnings) || 0;
         agrupado[key].viagens_bolt += 1;
+        if (identificadorBolt) agrupado[key].identificador_bolt = identificadorBolt;
       });
 
       // 5a-bis. Processar resumos semanais Bolt (CSV) — complementar dados da API
@@ -427,6 +635,13 @@ export function ContasResumoTab() {
 
       (boltResumosResult.data || []).forEach((r: any) => {
         let motoristaId: string | null = r.motorista_id || null;
+        const identificadorBolt = r.identificador_motorista || "";
+
+        // Tentar match por ID se não veio no registo
+        if (!motoristaId && identificadorBolt && boltIdMap[identificadorBolt]) {
+          motoristaId = boltIdMap[identificadorBolt];
+        }
+
         let displayName = r.motorista_nome || "Desconhecido";
 
         if (!motoristaId && displayName !== "Desconhecido") {
@@ -458,6 +673,9 @@ export function ContasResumoTab() {
         }
         agrupado[key].faturado_bolt += Number(r.ganhos_liquidos) || 0;
         agrupado[key].viagens_bolt += Number(r.viagens_terminadas) || 0;
+        if (identificadorBolt && !agrupado[key].identificador_bolt) {
+          agrupado[key].identificador_bolt = identificadorBolt;
+        }
       });
 
       // 5b. Processar Uber — aggregate by uber_driver_id
@@ -493,8 +711,11 @@ export function ContasResumoTab() {
       Object.entries(uberByDriver).forEach(([uberDriverId, uberData]) => {
         const uberFullName = `${uberData.firstName} ${uberData.lastName}`.trim();
 
-        // Priority 1: uber_drivers.motorista_id mapping
-        let matchedMotoristaId: string | null = uberDriverToMotoristaMap[uberDriverId] || null;
+        // ORDEM DE MATCHING UBER:
+        // 1. Pelo uber_uuid gravado na ficha do motorista (CRM)
+        // 2. Pelo mapeamento histórico da tabela uber_drivers.motorista_id
+        // 3. Pelo match inteligente de nomes
+        let matchedMotoristaId: string | null = uberIdMap[uberDriverId] || uberDriverToMotoristaMap[uberDriverId] || null;
         let matchedName = uberFullName || uberDriverNameMap[uberDriverId] || uberDriverId;
 
         if (matchedMotoristaId) {
@@ -505,7 +726,7 @@ export function ContasResumoTab() {
             reciboVerdeMap[motData.id] = motData.recibo_verde;
           }
         } else {
-          // Priority 2: smart match
+          // Priority 3: smart match
           for (const [normName, mData] of Object.entries(nomeToMotoristaMap)) {
             if (isNameMatch(matchedName, mData.nome)) {
               matchedMotoristaId = mData.id;
@@ -535,20 +756,74 @@ export function ContasResumoTab() {
         }
       });
 
-      // 5c. Dedup final por nome normalizado (first+last)
-      // Isto funde entradas que são o mesmo motorista mas com chaves diferentes
-      const dedupMap: Record<string, string[]> = {}; // normalizedFirstLast → [keys]
-      for (const [key, entry] of Object.entries(agrupado)) {
-        const fl = normalizeFirstLast(entry.driver_name);
-        if (fl && fl.includes(" ")) {
-          if (!dedupMap[fl]) dedupMap[fl] = [];
-          dedupMap[fl].push(key);
+      // 5b-bis. Ensure drivers with ONLY fuel/reparacoes are added to agrupado
+      for (const [motoristaId, totalFuel] of Object.entries(combustivelByMotorista)) {
+        if (!agrupado[motoristaId] && totalFuel > 0) {
+          const motData = Object.values(nomeToMotoristaMap).find(m => m.id === motoristaId);
+          agrupado[motoristaId] = {
+            motorista_id: motoristaId,
+            driver_name: motData?.nome || "Desconhecido",
+            driver_uuid: "",
+            faturado_bolt: 0,
+            faturado_uber: 0,
+            viagens_bolt: 0,
+            viagens_uber: 0,
+          };
         }
       }
 
-      for (const [, keys] of Object.entries(dedupMap)) {
+      for (const [motoristaId, totalRep] of Object.entries(reparacoesByMotorista)) {
+        if (!agrupado[motoristaId] && totalRep > 0) {
+          const motData = Object.values(nomeToMotoristaMap).find(m => m.id === motoristaId);
+          agrupado[motoristaId] = {
+            motorista_id: motoristaId,
+            driver_name: motData?.nome || "Desconhecido",
+            driver_uuid: "",
+            faturado_bolt: 0,
+            faturado_uber: 0,
+            viagens_bolt: 0,
+            viagens_uber: 0,
+          };
+        }
+      }
+
+      for (const [motoristaId, totalAdhoc] of Object.entries(adhocByMotorista)) {
+        if (!agrupado[motoristaId] && totalAdhoc > 0) {
+          const motData = Object.values(nomeToMotoristaMap).find(m => m.id === motoristaId);
+          agrupado[motoristaId] = {
+            motorista_id: motoristaId,
+            driver_name: motData?.nome || "Desconhecido",
+            driver_uuid: "",
+            faturado_bolt: 0,
+            faturado_uber: 0,
+            viagens_bolt: 0,
+            viagens_uber: 0,
+          };
+        }
+      }
+
+      // 5c. Dedup final
+      // Primero: agrupar por motorista_id (se disponível)
+      const idDedupMap: Record<string, string[]> = {}; // motorista_id -> [keys]
+      const nameDedupMap: Record<string, string[]> = {}; // normalizedFirstLast -> [keys]
+
+      for (const [key, entry] of Object.entries(agrupado)) {
+        if (entry.motorista_id) {
+          if (!idDedupMap[entry.motorista_id]) idDedupMap[entry.motorista_id] = [];
+          idDedupMap[entry.motorista_id].push(key);
+        } else {
+          // Apenas para os que não têm ID, tentamos por nome
+          const fl = normalizeFirstLast(entry.driver_name);
+          if (fl && fl.includes(" ")) {
+            if (!nameDedupMap[fl]) nameDedupMap[fl] = [];
+            nameDedupMap[fl].push(key);
+          }
+        }
+      }
+
+      // Fusão por ID
+      for (const [mid, keys] of Object.entries(idDedupMap)) {
         if (keys.length <= 1) continue;
-        // Priorizar a chave com motorista_id real (sem prefixo bolt_/uber_)
         const primaryKey = keys.find(k => !k.startsWith("bolt_") && !k.startsWith("uber_")) || keys[0];
         for (const dupKey of keys) {
           if (dupKey === primaryKey) continue;
@@ -557,14 +832,23 @@ export function ContasResumoTab() {
           agrupado[primaryKey].faturado_uber += dup.faturado_uber;
           agrupado[primaryKey].viagens_bolt += dup.viagens_bolt;
           agrupado[primaryKey].viagens_uber += dup.viagens_uber;
-          // Usar o nome mais completo (mais longo)
-          if (dup.driver_name.length > agrupado[primaryKey].driver_name.length) {
-            agrupado[primaryKey].driver_name = dup.driver_name;
-          }
-          // Herdar motorista_id se o primary não tem
-          if (!agrupado[primaryKey].motorista_id && dup.motorista_id) {
-            agrupado[primaryKey].motorista_id = dup.motorista_id;
-          }
+          delete agrupado[dupKey];
+        }
+      }
+
+      // Fusão por Nome (para os que restam sem ID)
+      for (const [, keys] of Object.entries(nameDedupMap)) {
+        const activeKeys = keys.filter(k => !!agrupado[k]);
+        if (activeKeys.length <= 1) continue;
+        
+        const primaryKey = activeKeys[0];
+        for (let i = 1; i < activeKeys.length; i++) {
+          const dupKey = activeKeys[i];
+          const dup = agrupado[dupKey];
+          agrupado[primaryKey].faturado_bolt += dup.faturado_bolt;
+          agrupado[primaryKey].faturado_uber += dup.faturado_uber;
+          agrupado[primaryKey].viagens_bolt += dup.viagens_bolt;
+          agrupado[primaryKey].viagens_uber += dup.viagens_uber;
           delete agrupado[dupKey];
         }
       }
@@ -576,9 +860,10 @@ export function ContasResumoTab() {
         
         const receita = passaReciboVerde ? totalFaturado : totalFaturado / 1.06;
         const combustivelValor = m.motorista_id ? (combustivelByMotorista[m.motorista_id] || 0) : 0;
-        const portagensValor = 0;
+        const aluguerValor = m.motorista_id ? (aluguerByMotorista[m.motorista_id] || 0) : 0;
         const reparacoesValor = m.motorista_id ? (reparacoesByMotorista[m.motorista_id] || 0) : 0;
-        const liquido = receita - combustivelValor - portagensValor - reparacoesValor;
+        const adhocValor = m.motorista_id ? (adhocByMotorista[m.motorista_id] || 0) : 0;
+        const liquido = receita - combustivelValor - aluguerValor - reparacoesValor - adhocValor;
 
         return {
           driver_name: m.driver_name,
@@ -595,6 +880,9 @@ export function ContasResumoTab() {
           combustivel: combustivelValor,
           portagens: 0,
           reparacoes: reparacoesValor,
+          outros_custos: adhocValor,
+          aluguer: aluguerValor,
+          identificador_bolt: m.identificador_bolt,
         };
       });
 
@@ -611,9 +899,9 @@ export function ContasResumoTab() {
   // Filtrar por pesquisa
   const filteredResumos = useMemo(() => {
     if (!searchTerm) return resumos;
-    const term = searchTerm.toLowerCase();
+    const term = normalizeString(searchTerm);
     return resumos.filter((r) =>
-      r.driver_name.toLowerCase().includes(term)
+      normalizeString(r.driver_name).includes(term)
     );
   }, [resumos, searchTerm]);
 
@@ -746,6 +1034,8 @@ export function ContasResumoTab() {
               className="pl-9"
             />
           </div>
+          
+          <ReparaCartoes />
         </div>
       </div>
 
@@ -805,74 +1095,102 @@ export function ContasResumoTab() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[40px]">
+                <Checkbox 
+                  checked={selectedIds.size === filteredResumos.length && filteredResumos.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
               <TableHead>Nome</TableHead>
               <TableHead className="text-center">Viagens</TableHead>
               <TableHead className="text-right">Faturado</TableHead>
               <TableHead className="text-right">Líquido</TableHead>
+              <TableHead className="text-right">Aluguer</TableHead>
               <TableHead className="text-right">Combustível</TableHead>
+              <TableHead className="text-right">Outros Custos</TableHead>
               <TableHead className="text-right">Reparações</TableHead>
-              <TableHead className="text-right">Portagens</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredResumos.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   Nenhum dado encontrado para o período selecionado
                 </TableCell>
               </TableRow>
             ) : (
-              filteredResumos.map((resumo) => (
-                <TableRow 
-                  key={resumo.driver_uuid || resumo.driver_name}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => handleRowClick(resumo)}
-                >
-                  <TableCell className={cn(
-                    "font-bold",
-                    resumo.recibo_verde ? "text-green-600" : "text-red-600"
-                  )}>
-                    {resumo.driver_name}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span>{resumo.total_viagens}</span>
-                    {(resumo.viagens_bolt > 0 && resumo.viagens_uber > 0) && (
-                      <span className="text-xs text-muted-foreground ml-1">
-                        (B:{resumo.viagens_bolt} U:{resumo.viagens_uber})
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className="text-green-600 font-medium">{formatCurrency(resumo.total_faturado)}</span>
-                    {(resumo.faturado_bolt > 0 && resumo.faturado_uber > 0) && (
-                      <div className="text-xs text-muted-foreground">
-                        B: {formatCurrency(resumo.faturado_bolt)} | U: {formatCurrency(resumo.faturado_uber)}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right font-bold">
-                    {formatCurrency(resumo.liquido)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {resumo.combustivel > 0 ? (
-                      <span className="font-medium text-orange-600">{formatCurrency(resumo.combustivel)}</span>
-                    ) : (
-                      <span className="text-muted-foreground">€0,00</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {resumo.reparacoes > 0 ? (
-                      <span className="font-medium text-red-600">{formatCurrency(resumo.reparacoes)}</span>
-                    ) : (
-                      <span className="text-muted-foreground">€0,00</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    €0,00
-                    <Badge variant="outline" className="ml-2 text-xs">Em breve</Badge>
-                  </TableCell>
-                </TableRow>
-              ))
+              filteredResumos.map((resumo) => {
+                const rowId = resumo.driver_uuid || resumo.driver_name;
+                return (
+                  <TableRow 
+                    key={rowId}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox 
+                        checked={selectedIds.has(rowId)}
+                        onCheckedChange={() => toggleSelectOne(rowId)}
+                      />
+                    </TableCell>
+                    <TableCell 
+                      className={cn(
+                        "font-bold",
+                        resumo.recibo_verde ? "text-green-600" : "text-red-600"
+                      )}
+                      onClick={() => handleRowClick(resumo)}
+                    >
+                      {resumo.driver_name}
+                    </TableCell>
+                    <TableCell className="text-center" onClick={() => handleRowClick(resumo)}>
+                      <span>{resumo.total_viagens}</span>
+                      {(resumo.viagens_bolt > 0 && resumo.viagens_uber > 0) && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          (B:{resumo.viagens_bolt} U:{resumo.viagens_uber})
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
+                      <span className="text-green-600 font-medium">{formatCurrency(resumo.total_faturado)}</span>
+                      {(resumo.faturado_bolt > 0 && resumo.faturado_uber > 0) && (
+                        <div className="text-xs text-muted-foreground">
+                          B: {formatCurrency(resumo.faturado_bolt)} | U: {formatCurrency(resumo.faturado_uber)}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-bold" onClick={() => handleRowClick(resumo)}>
+                      {formatCurrency(resumo.liquido)}
+                    </TableCell>
+                    <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
+                      {resumo.aluguer > 0 ? (
+                        <span className="font-medium text-purple-600">{formatCurrency(resumo.aluguer)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">€0,00</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
+                      {resumo.combustivel > 0 ? (
+                        <span className="font-medium text-orange-600">{formatCurrency(resumo.combustivel)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">€0,00</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
+                      {resumo.outros_custos > 0 ? (
+                        <span className="font-medium text-destructive">{formatCurrency(resumo.outros_custos)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">€0,00</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
+                      {resumo.reparacoes > 0 ? (
+                        <span className="font-medium text-red-600">{formatCurrency(resumo.reparacoes)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">€0,00</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -887,82 +1205,136 @@ export function ContasResumoTab() {
             </CardContent>
           </Card>
         ) : (
-          filteredResumos.map((resumo) => (
-            <Card 
-              key={resumo.driver_uuid || resumo.driver_name}
-              className="cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => handleRowClick(resumo)}
-            >
-              <CardContent className="pt-4 pb-3 space-y-3">
-                {/* Header */}
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className={cn(
-                      "font-bold",
-                      resumo.recibo_verde ? "text-green-600" : "text-red-600"
-                    )}>
-                      {resumo.driver_name}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {resumo.total_viagens} viagens
-                      {(resumo.viagens_bolt > 0 && resumo.viagens_uber > 0) && (
-                        <span className="ml-1">(B:{resumo.viagens_bolt} U:{resumo.viagens_uber})</span>
-                      )}
+          filteredResumos.map((resumo) => {
+            const rowId = resumo.driver_uuid || resumo.driver_name;
+            return (
+              <Card 
+                key={rowId}
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <CardContent className="pt-4 pb-3 space-y-3">
+                  {/* Header */}
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-3">
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Checkbox 
+                          checked={selectedIds.has(rowId)}
+                          onCheckedChange={() => toggleSelectOne(rowId)}
+                        />
+                      </div>
+                      <div onClick={() => handleRowClick(resumo)}>
+                        <div className={cn(
+                          "font-bold",
+                          resumo.recibo_verde ? "text-green-600" : "text-red-600"
+                        )}>
+                          {resumo.driver_name}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {resumo.total_viagens} viagens
+                          {(resumo.viagens_bolt > 0 && resumo.viagens_uber > 0) && (
+                            <span className="ml-1">(B:{resumo.viagens_bolt} U:{resumo.viagens_uber})</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Financeiro */}
-                <div className="space-y-1.5 text-sm border-t pt-3">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Faturado</span>
-                    <span className="font-medium text-green-600">{formatCurrency(resumo.total_faturado)}</span>
-                  </div>
-                  {(resumo.faturado_bolt > 0 && resumo.faturado_uber > 0) && (
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Bolt: {formatCurrency(resumo.faturado_bolt)}</span>
-                      <span>Uber: {formatCurrency(resumo.faturado_uber)}</span>
+                  {/* Financeiro */}
+                  <div className="space-y-1.5 text-sm border-t pt-3" onClick={() => handleRowClick(resumo)}>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Faturado</span>
+                      <span className="font-medium text-green-600">{formatCurrency(resumo.total_faturado)}</span>
                     </div>
-                  )}
-                </div>
-
-                {/* Líquido */}
-                <div className="flex justify-between border-t pt-3">
-                  <span className="font-semibold">Líquido</span>
-                  <span className="font-bold text-primary">{formatCurrency(resumo.liquido)}</span>
-                </div>
-
-                {/* Despesas (futuro) */}
-                <div className="space-y-1.5 text-sm border-t pt-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Combustível</span>
-                    {resumo.combustivel > 0 ? (
-                      <span className="font-medium text-orange-600">{formatCurrency(resumo.combustivel)}</span>
-                    ) : (
-                      <span className="text-muted-foreground">€0,00</span>
+                    {(resumo.faturado_bolt > 0 && resumo.faturado_uber > 0) && (
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Bolt: {formatCurrency(resumo.faturado_bolt)}</span>
+                        <span>Uber: {formatCurrency(resumo.faturado_uber)}</span>
+                      </div>
                     )}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Reparações</span>
-                    {resumo.reparacoes > 0 ? (
-                      <span className="font-medium text-red-600">{formatCurrency(resumo.reparacoes)}</span>
-                    ) : (
-                      <span className="text-muted-foreground">€0,00</span>
+
+                  {/* Líquido */}
+                  <div className="flex justify-between border-t pt-3" onClick={() => handleRowClick(resumo)}>
+                    <span className="font-semibold">Líquido</span>
+                    <span className="font-bold text-primary">{formatCurrency(resumo.liquido)}</span>
+                  </div>
+
+                  {/* Despesas */}
+                  <div className="space-y-1.5 text-sm border-t pt-3" onClick={() => handleRowClick(resumo)}>
+                    {resumo.aluguer > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Aluguer</span>
+                        <span className="text-purple-600">-{formatCurrency(resumo.aluguer)}</span>
+                      </div>
+                    )}
+                    {resumo.combustivel > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Combustível</span>
+                        <span className="text-orange-600">-{formatCurrency(resumo.combustivel)}</span>
+                      </div>
+                    )}
+                    {resumo.outros_custos > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Outros Custos</span>
+                        <span className="text-destructive">-{formatCurrency(resumo.outros_custos)}</span>
+                      </div>
+                    )}
+                    {resumo.reparacoes > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Reparações</span>
+                        <span className="text-red-600">-{formatCurrency(resumo.reparacoes)}</span>
+                      </div>
                     )}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Portagens</span>
-                    <span className="flex items-center gap-2 text-muted-foreground">
-                      €0,00
-                      <Badge variant="outline" className="text-xs">Em breve</Badge>
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
+
+      {/* Floating Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-2xl rounded-full px-6 py-3 flex items-center gap-6 animate-in fade-in slide-in-from-bottom-4">
+          <div className="text-sm font-medium">
+            {selectedIds.size} selecionado{selectedIds.size !== 1 && 's'}
+          </div>
+          <div className="h-4 w-[1px] bg-border" />
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-9 gap-2 rounded-full"
+              onClick={() => handleBulkPrint()}
+            >
+              <Printer className="h-4 w-4" />
+              Imprimir
+            </Button>
+            <Button 
+              size="sm" 
+              className="h-9 gap-2 rounded-full"
+              disabled={isBulkSending}
+              onClick={() => handleBulkEmail()}
+            >
+              {isBulkSending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Enviar por Email
+            </Button>
+          </div>
+          <div className="h-4 w-[1px] bg-border" />
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="h-9 px-3 rounded-full hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Limpar
+          </Button>
+        </div>
+      )}
 
       {/* Dialog de Resumo Detalhado */}
       <MotoristaResumoDialog

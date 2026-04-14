@@ -119,7 +119,7 @@ const LoginMotorista: React.FC = () => {
           ? 'Introduza o seu email para receber o link de recuperação.'
           : 'Aceda à sua conta de motorista.'
       }
-      logoAlt="Década Ousada"
+      logoAlt="Rota Líquida"
       headerIcon={<Car className="auth-icon-accent" />}
       footer={
         !isResetMode ? (

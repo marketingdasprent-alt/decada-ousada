@@ -56,6 +56,7 @@ export const RECURSOS = {
   CALENDARIO_VER: 'calendario_ver',
   CALENDARIO_CRIAR: 'calendario_criar',
   CALENDARIO_EDITAR: 'calendario_editar',
+  CALENDARIO_EDITAR_TODOS: 'calendario_editar_todos',
   CALENDARIO_ELIMINAR: 'calendario_eliminar',
 } as const;
 

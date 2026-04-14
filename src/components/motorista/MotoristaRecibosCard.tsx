@@ -34,6 +34,7 @@ import { Receipt, Plus, Upload, Loader2, FileText, Eye, Trash2, Check } from "lu
 import { format, startOfWeek, addDays, addWeeks, isBefore, isEqual } from "date-fns";
 import { pt } from "date-fns/locale";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface Recibo {
   id: string;
@@ -379,83 +380,87 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="bg-white border-slate-200 shadow-sm rounded-[2rem] overflow-hidden leading-relaxed">
+      <CardHeader className="p-8 pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Receipt className="w-5 h-5" />
+          <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-3">
+            <div className="p-2 bg-teal-50 rounded-xl">
+              <Receipt className="w-5 h-5 text-teal-600" />
+            </div>
             Recibos Verdes
           </CardTitle>
           
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm">
+              <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold transition-all shadow-sm">
                 <Plus className="w-4 h-4 mr-2" />
                 Submeter Recibo Verde
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="rounded-[2rem] border-slate-200 bg-white">
               <DialogHeader>
-                <DialogTitle>Submeter Recibo Verde</DialogTitle>
+                <DialogTitle className="text-xl font-black text-slate-900">Submeter Recibo Verde</DialogTitle>
               </DialogHeader>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-6 pt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="semana">Semana de Referência</Label>
+                  <Label htmlFor="semana" className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Semana de Referência</Label>
                   <Select value={semanaSeleccionada} onValueChange={setSemanaSeleccionada}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:ring-teal-600/20">
                       <SelectValue placeholder="Seleccione a semana..." />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[300px]">
+                    <SelectContent className="max-h-[300px] rounded-xl border-slate-200 shadow-xl bg-white">
                       {semanasDisponiveis.map((semana) => (
                         <SelectItem 
                           key={semana.value} 
                           value={semana.value}
                           disabled={semana.jaTemRecibo}
-                          className="flex items-center justify-between"
+                          className="flex items-center justify-between rounded-lg"
                         >
-                          <span className="flex items-center gap-2">
+                          <span className="flex items-center gap-2 font-medium">
                             {semana.jaTemRecibo && (
                               <Check className="w-4 h-4 text-green-600" />
                             )}
                             {semana.label}
                             {semana.jaTemRecibo && (
-                              <span className="text-xs text-muted-foreground">(já submetido)</span>
+                              <span className="text-[10px] text-slate-400 font-black uppercase">(já submetido)</span>
                             )}
                           </span>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Seleccione a semana a que o recibo se refere
-                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="valor">Valor Total (€)</Label>
+                  <Label htmlFor="valor" className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Valor Total (€)</Label>
                   <Input
                     id="valor"
                     type="text"
                     placeholder="0,00"
                     value={valor}
                     onChange={(e) => setValor(e.target.value)}
+                    className="h-12 rounded-xl border-slate-100 bg-slate-50 focus-visible:ring-teal-600/20 font-bold"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Ficheiro do Recibo Verde</Label>
-                  <div className="border-2 border-dashed rounded-lg p-4">
+                  <Label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Ficheiro do Recibo Verde</Label>
+                  <div className="border-2 border-dashed border-slate-100 rounded-[2rem] p-8 bg-slate-50/50 hover:bg-slate-50 transition-colors">
                     {ficheiro ? (
-                      <div className="flex items-center gap-2 text-sm">
-                        <FileText className="w-4 h-4" />
-                        <span className="truncate">{ficheiro.name}</span>
-                        {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
+                      <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                        <div className="flex items-center gap-3">
+                           <FileText className="w-5 h-5 text-teal-600" />
+                           <span className="text-sm font-bold text-slate-900 truncate max-w-[200px]">{ficheiro.name}</span>
+                        </div>
+                        {uploading && <Loader2 className="w-4 h-4 animate-spin text-teal-600" />}
                       </div>
                     ) : (
-                      <label className="cursor-pointer flex flex-col items-center gap-2">
-                        <Upload className="w-8 h-8 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">
+                      <label className="cursor-pointer flex flex-col items-center gap-3 py-4">
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-50">
+                          <Upload className="w-6 h-6 text-slate-400" />
+                        </div>
+                        <span className="text-sm font-bold text-slate-500">
                           Clique para carregar PDF ou imagem
                         </span>
                         <input
@@ -471,7 +476,7 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
 
                 <Button 
                   type="submit" 
-                  className="w-full" 
+                  className="w-full h-14 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest flex items-center justify-center transition-all shadow-lg" 
                   disabled={submitting || uploading || !ficheiroUrl}
                 >
                   {submitting ? (
@@ -480,7 +485,7 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
                       A submeter...
                     </>
                   ) : (
-                    "Submeter Recibo Verde"
+                    "Confirmar Submissão"
                   )}
                 </Button>
               </form>
@@ -488,43 +493,56 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
           </Dialog>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         {recibos.length === 0 ? (
-          <div className="text-center py-6 text-muted-foreground">
-            <Receipt className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p>Sem recibos submetidos</p>
-            <p className="text-sm">Submeta os seus recibos verdes</p>
+          <div className="text-center py-20 text-slate-400">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+              <Receipt className="w-10 h-10 opacity-20" />
+            </div>
+            <p className="font-bold text-slate-900">Sem recibos submetidos</p>
+            <p className="text-xs font-medium">Submeta os seus recibos verdes semanais</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="text-left text-sm text-muted-foreground border-b">
-                  <th className="pb-2 font-medium">Código</th>
-                  <th className="pb-2 font-medium">Semana</th>
-                  <th className="pb-2 font-medium text-right">Valor</th>
-                  <th className="pb-2 font-medium text-right">Estado</th>
-                  <th className="pb-2 font-medium text-right"></th>
+                <tr className="text-[10px] uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50">
+                  <th className="px-8 py-4 font-black">Código</th>
+                  <th className="px-8 py-4 font-black">Semana</th>
+                  <th className="px-8 py-4 font-black text-right">Valor</th>
+                  <th className="px-8 py-4 font-black text-right">Estado</th>
+                  <th className="px-8 py-4 font-black"></th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-50">
                 {recibos.map((recibo) => (
-                  <tr key={recibo.id} className="border-b last:border-0">
-                    <td className="py-3 text-sm font-mono font-bold text-primary">
-                      {formatCodigo(recibo.codigo)}
+                  <tr key={recibo.id} className="group hover:bg-slate-50 transition-colors">
+                    <td className="px-8 py-5">
+                      <span className="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-lg">
+                        {formatCodigo(recibo.codigo)}
+                      </span>
                     </td>
-                    <td className="py-3 text-sm">{formatSemanaReferencia(recibo)}</td>
-                    <td className="py-3 text-right text-sm font-medium">
+                    <td className="px-8 py-5">
+                       <p className="text-sm font-bold text-slate-900">{formatSemanaReferencia(recibo)}</p>
+                    </td>
+                    <td className="px-8 py-5 text-right font-black text-slate-900 text-sm">
                       {formatCurrency(Number(recibo.valor_total || 0))}
                     </td>
-                    <td className="py-3 text-right">
-                      {getStatusBadge(recibo.status)}
+                    <td className="px-8 py-5 text-right">
+                      <div className={cn(
+                        "inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
+                        recibo.status === "validado" ? "bg-green-50 text-green-600" : 
+                        recibo.status === "submetido" ? "bg-slate-100 text-slate-500" : "bg-red-50 text-red-600"
+                      )}>
+                        {recibo.status}
+                      </div>
                     </td>
-                    <td className="py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="px-8 py-5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
+                          className="h-9 w-9 rounded-xl bg-slate-50 text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all border border-slate-100"
                           onClick={() => handleViewRecibo(recibo.ficheiro_url)}
                         >
                           <Eye className="w-4 h-4" />
@@ -532,8 +550,8 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
                         {recibo.status === "submetido" && (
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
+                            size="icon"
+                            className="h-9 w-9 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
                             onClick={() => {
                               setReciboToDelete(recibo);
                               setDeleteDialogOpen(true);
@@ -551,21 +569,20 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
           </div>
         )}
 
-        {/* Dialog de confirmação de eliminação */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
+          <AlertDialogContent className="rounded-[2rem] border-slate-200 bg-white">
             <AlertDialogHeader>
-              <AlertDialogTitle>Apagar Recibo Verde?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem a certeza que deseja apagar este recibo? Esta ação não pode ser desfeita.
+              <AlertDialogTitle className="text-xl font-black text-slate-900">Apagar Recibo Verde?</AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-500 font-medium leading-relaxed">
+                Tem a certeza que deseja apagar este recibo? Esta ação não pode ser desfeita e terá de submeter um novo para esta semana.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogFooter className="pt-4">
+              <AlertDialogCancel disabled={deleting} className="rounded-xl font-bold border-slate-100">Cancelar</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteRecibo}
                 disabled={deleting}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                className="bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-sm"
               >
                 {deleting ? (
                   <>
@@ -573,7 +590,7 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
                     A apagar...
                   </>
                 ) : (
-                  "Apagar"
+                  "Confirmar Eliminação"
                 )}
               </AlertDialogAction>
             </AlertDialogFooter>

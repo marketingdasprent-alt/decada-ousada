@@ -275,7 +275,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
               <Car className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-foreground">Década Ousada</h1>
+              <h1 className="text-lg font-semibold text-foreground">Rota Líquida</h1>
               <p className="text-sm text-muted-foreground">Candidatura de Motorista</p>
             </div>
           </div>

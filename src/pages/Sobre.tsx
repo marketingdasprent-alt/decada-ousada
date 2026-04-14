@@ -18,7 +18,7 @@ const Sobre = () => {
             className="text-center max-w-3xl mx-auto"
           >
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Sobre a <span className="text-[#E53333]">Década Ousada</span>
+              Sobre a <span className="text-[#B20101]">Década Ousada</span>
             </h1>
             <p className="text-xl text-gray-400">
               A empresa TVDE que mais cresce em Portugal, comprometida com o sucesso dos nossos motoristas parceiros.
@@ -57,19 +57,19 @@ const Sobre = () => {
             >
               <div className="grid grid-cols-2 gap-6">
                 <div className="text-center p-4">
-                  <div className="text-4xl font-bold text-[#E53333] mb-2">500+</div>
+                  <div className="text-4xl font-bold text-[#B20101] mb-2">500+</div>
                   <div className="text-gray-400">Motoristas Ativos</div>
                 </div>
                 <div className="text-center p-4">
-                  <div className="text-4xl font-bold text-[#E53333] mb-2">200+</div>
+                  <div className="text-4xl font-bold text-[#B20101] mb-2">200+</div>
                   <div className="text-gray-400">Veículos na Frota</div>
                 </div>
                 <div className="text-center p-4">
-                  <div className="text-4xl font-bold text-[#E53333] mb-2">5</div>
+                  <div className="text-4xl font-bold text-[#B20101] mb-2">5</div>
                   <div className="text-gray-400">Anos de Experiência</div>
                 </div>
                 <div className="text-center p-4">
-                  <div className="text-4xl font-bold text-[#E53333] mb-2">24/7</div>
+                  <div className="text-4xl font-bold text-[#B20101] mb-2">24/7</div>
                   <div className="text-gray-400">Suporte Disponível</div>
                 </div>
               </div>
@@ -122,7 +122,7 @@ const Sobre = () => {
                 className="bg-gray-800/50 rounded-xl p-6 text-center"
               >
                 <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#B20101]/20 flex items-center justify-center">
-                  <value.icon className="w-7 h-7 text-[#E53333]" />
+                  <value.icon className="w-7 h-7 text-[#B20101]" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{value.title}</h3>
                 <p className="text-gray-400 text-sm">{value.description}</p>

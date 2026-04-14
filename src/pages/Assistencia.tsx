@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { 
   Wrench, 
+  Plus,
   Search, 
   Clock,
   CheckCircle2,
@@ -29,6 +30,7 @@ import {
 } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
 interface Ticket {
   id: string;
@@ -84,7 +86,7 @@ const prioridadeConfig: Record<string, { label: string; color: string }> = {
   baixa: { label: 'Baixa', color: 'bg-gray-400' },
   media: { label: 'Média', color: 'bg-blue-400' },
   alta: { label: 'Alta', color: 'bg-orange-500' },
-  urgente: { label: 'Urgente', color: 'bg-red-500' },
+  prioridade: { label: 'Urgente', color: 'bg-red-500' },
 };
 
 const Assistencia = () => {
@@ -277,17 +279,17 @@ const Assistencia = () => {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Wrench className="h-6 w-6" />
-          Gestão de Assistência
-        </h1>
-        <p className="text-muted-foreground">
-          Gerir e resolver tickets de suporte e reparações
-        </p>
-      </div>
+    <div className="space-y-6">
+      <StickyPageHeader
+        title="Gestão de Assistência"
+        description="Gerir e resolver tickets de suporte e reparações"
+        icon={Wrench}
+      >
+        <Button onClick={() => navigate('/assistencia/nova')}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Assistência
+        </Button>
+      </StickyPageHeader>
 
       {/* Stats Cards - Focused on Management */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

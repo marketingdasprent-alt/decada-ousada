@@ -56,6 +56,12 @@ interface Ticket {
   categoria_id: string | null;
   criado_por: string | null;
   atribuido_a: string | null;
+  km_inicio: number | null;
+  km_fim: number | null;
+  combustivel_inicio: string | null;
+  combustivel_fim: string | null;
+  valor_reparacao: number | null;
+  cobrar_motorista: boolean;
 }
 
 interface Mensagem {
@@ -85,6 +91,7 @@ interface Viatura {
   matricula: string;
   marca: string;
   modelo: string;
+  km_atual?: number | null;
 }
 
 interface Motorista {
@@ -137,6 +144,18 @@ const TicketDetails = () => {
   const [uploading, setUploading] = useState(false);
   const [novaMensagem, setNovaMensagem] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  
+  // closure states
+  const [showClosureForm, setShowClosureForm] = useState(false);
+  const [closureLoading, setClosureLoading] = useState(false);
+  const [closureData, setClosureData] = useState({
+    km_fim: '',
+    combustivel_fim: 'meio',
+    valor_reparacao: '',
+    cobrar_motorista: false,
+    descricao_reparacao: '',
+    num_parcelas: '1',
+  });
 
   // Permission logic is calculated after ticket loads in the return section
 
@@ -397,6 +416,132 @@ const TicketDetails = () => {
       });
     }
   };
+  
+  const handleViaturaReparada = async () => {
+    if (!ticket || !viatura) return;
+    
+    if (!closureData.km_fim) {
+      toast({ title: "Erro", description: "Informe a quilometragem final.", variant: "destructive" });
+      return;
+    }
+    
+    if (!closureData.valor_reparacao) {
+      toast({ title: "Erro", description: "Informe o valor da reparação.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      setClosureLoading(true);
+      const valor = parseFloat(closureData.valor_reparacao);
+      const kmFim = parseInt(closureData.km_fim);
+      
+      // 1. Criar registo em viatura_reparacoes para histórico financeiro
+      const { data: repData, error: repError } = await supabase
+        .from('viatura_reparacoes')
+        .insert({
+          viatura_id: viatura.id,
+          descricao: closureData.descricao_reparacao || ticket.titulo,
+          custo: valor,
+          data_entrada: ticket.created_at,
+          data_saida: new Date().toISOString(),
+          km_entrada: ticket.km_inicio,
+          registado_por: user?.id,
+          motorista_responsavel_id: motorista?.id || null,
+          cobrar_motorista: closureData.cobrar_motorista,
+          valor_a_cobrar: closureData.cobrar_motorista ? valor : null,
+          num_parcelas: closureData.cobrar_motorista ? parseInt(closureData.num_parcelas) : null,
+          data_inicio_cobranca: closureData.cobrar_motorista ? new Date().toISOString().split('T')[0] : null,
+        })
+        .select()
+        .single();
+
+      if (repError) throw repError;
+
+      // 2. Se cobrar_motorista for true, gerar parcelas (Simplificado para 1 parcela ou as solicitadas)
+      if (closureData.cobrar_motorista && motorista?.id && repData) {
+        const numParcelas = parseInt(closureData.num_parcelas) || 1;
+        const valorParcela = Math.round((valor / numParcelas) * 100) / 100;
+        const parcelas = [];
+        
+        for (let i = 0; i < numParcelas; i++) {
+          const dataRef = new Date();
+          dataRef.setDate(dataRef.getDate() + (i * 7)); // Semanal
+          parcelas.push({
+            reparacao_id: repData.id,
+            motorista_id: motorista.id,
+            numero_parcela: i + 1,
+            valor: i === numParcelas - 1 ? (valor - (valorParcela * (numParcelas - 1))) : valorParcela,
+            semana_referencia: dataRef.toISOString().split('T')[0],
+            status: 'pendente',
+          });
+        }
+        
+        await supabase.from('reparacao_parcelas').insert(parcelas);
+
+        // 3. Adicionar movimento à conta corrente do motorista (motorista_financeiro)
+        // Lançamos o valor total como um débito informativo se houver parcelas, 
+        // ou como débito direto se for pago de uma vez.
+        await supabase.from('motorista_financeiro').insert({
+          motorista_id: motorista.id,
+          tipo: 'debito',
+          categoria: 'outro',
+          descricao: `Reparação Viatura: ${ticket.titulo} (Ticket #${ticket.numero}) - ${numParcelas}x parcelas`,
+          valor: valor,
+          data_movimento: new Date().toISOString().split('T')[0],
+          status: 'pendente',
+          referencia: `Ticket #${ticket.numero}`
+        });
+      }
+
+      // 4. Atualizar o Ticket
+      await supabase
+        .from('assistencia_tickets')
+        .update({
+          status: 'resolvido',
+          data_resolucao: new Date().toISOString(),
+          km_fim: kmFim,
+          combustivel_fim: closureData.combustivel_fim,
+          valor_reparacao: valor,
+          cobrar_motorista: closureData.cobrar_motorista,
+          reparacao_id: repData.id
+        })
+        .eq('id', id);
+
+      // 5. Atualizar Viatura (voltar a disponível e atualizar KM)
+      await supabase
+        .from('viaturas')
+        .update({ 
+          status: 'disponivel',
+          km_atual: kmFim
+        })
+        .eq('id', viatura.id);
+
+      // 6. Log status change
+      await supabase.from('assistencia_mensagens').insert({
+        ticket_id: id,
+        autor_id: user?.id,
+        mensagem: `Viatura Reparada. Valor: ${valor}€. Viatura voltou a estar disponível.`,
+        tipo: 'status_change',
+      });
+
+      toast({
+        title: "Sucesso",
+        description: "Viatura reparada e assistência concluída.",
+      });
+
+      setShowClosureForm(false);
+      fetchTicketData();
+    } catch (error: any) {
+      console.error('Erro ao concluir reparação:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível concluir a reparação.",
+        variant: "destructive",
+      });
+    } finally {
+      setClosureLoading(false);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -599,9 +744,130 @@ const TicketDetails = () => {
               </ScrollArea>
 
               <Separator />
+              
+              {/* Closure Form - NEW */}
+              {showClosureForm && (
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-4 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-primary" />
+                      Concluir Reparação (Viatura Reparada)
+                    </h3>
+                    <Button variant="ghost" size="icon" onClick={() => setShowClosureForm(false)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>KM Final *</Label>
+                      <Input 
+                        type="number" 
+                        placeholder="Quilometragem atual"
+                        value={closureData.km_fim}
+                        onChange={(e) => setClosureData(prev => ({ ...prev, km_fim: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Combustível Final</Label>
+                      <Select 
+                        value={closureData.combustivel_fim}
+                        onValueChange={(val) => setClosureData(prev => ({ ...prev, combustivel_fim: val }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="vazio">Vazio</SelectItem>
+                          <SelectItem value="reserva">Reserva</SelectItem>
+                          <SelectItem value="1/4">1/4</SelectItem>
+                          <SelectItem value="meio">1/2 (Meio)</SelectItem>
+                          <SelectItem value="3/4">3/4</SelectItem>
+                          <SelectItem value="cheio">Cheio</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Valor Total (€) *</Label>
+                      <Input 
+                        type="number" 
+                        step="0.01"
+                        placeholder="0.00"
+                        value={closureData.valor_reparacao}
+                        onChange={(e) => setClosureData(prev => ({ ...prev, valor_reparacao: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Nº Parcelas (Semanal)</Label>
+                      <Input 
+                        type="number" 
+                        min="1"
+                        value={closureData.num_parcelas}
+                        onChange={(e) => setClosureData(prev => ({ ...prev, num_parcelas: e.target.value }))}
+                        disabled={!closureData.cobrar_motorista}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Resumo da Reparação</Label>
+                    <Textarea 
+                      placeholder="O que foi reparado..."
+                      value={closureData.descricao_reparacao}
+                      onChange={(e) => setClosureData(prev => ({ ...prev, descricao_reparacao: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      id="cobrar" 
+                      checked={closureData.cobrar_motorista}
+                      onChange={(e) => setClosureData(prev => ({ ...prev, cobrar_motorista: e.target.checked }))}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <Label htmlFor="cobrar" className="cursor-pointer">
+                      Cobrar valor ao motorista ({motorista?.nome || 'Nenhum motorista associado'})
+                    </Label>
+                  </div>
+                  
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="outline" onClick={() => setShowClosureForm(false)}>Cancelar</Button>
+                    <Button onClick={handleViaturaReparada} disabled={closureLoading}>
+                      {closureLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Finalizar e Colocar Viatura em Uso
+                    </Button>
+                  </div>
+                </div>
+              )}
 
-              {/* Selected files preview */}
-              {selectedFiles.length > 0 && (
+              {/* Message input area */}
+              {!showClosureForm && (
+                <>
+                  {/* Action Buttons for Managers */}
+                  {canChangeStatus && ticket.status !== 'resolvido' && ticket.status !== 'fechado' && (
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="default" 
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => {
+                          setClosureData(prev => ({
+                            ...prev,
+                            km_fim: viatura?.km_atual?.toString() || '',
+                          }));
+                          setShowClosureForm(true);
+                        }}
+                      >
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Viatura Reparada
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <Separator />
+                  
+                  {/* Selected files preview */}
+                  {selectedFiles.length > 0 && (
                 <div className="flex flex-wrap gap-2 p-2 bg-muted rounded-lg">
                   {selectedFiles.map((file, index) => (
                     <div key={index} className="flex items-center gap-2 bg-background px-2 py-1 rounded text-sm">
@@ -621,7 +887,7 @@ const TicketDetails = () => {
               )}
 
               {/* Message input - only show if user can reply */}
-              {canReply ? (
+              {canReply && (
                 <div className="flex gap-2">
                   <Textarea
                     placeholder="Escreva uma mensagem..."
@@ -659,13 +925,11 @@ const TicketDetails = () => {
                     </Button>
                   </div>
                 </div>
-              ) : (
-                <div className="text-center py-4 text-muted-foreground text-sm">
-                  Aguarde a resposta da equipa de assistência
-                </div>
               )}
-            </CardContent>
-          </Card>
+            </>
+          )}
+        </CardContent>
+      </Card>
         </div>
 
         {/* Sidebar */}

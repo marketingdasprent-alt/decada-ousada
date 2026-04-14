@@ -211,7 +211,11 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
       const { data, error } = await supabase.functions.invoke('robot-execute', {
         body: { integracao_id: integracao.id },
       });
-      if (error) throw error;
+      if (error) {
+        let msg = error.message;
+        try { const body = await error.context?.json?.(); msg = body?.error || msg; } catch {}
+        throw new Error(msg);
+      }
       if (data?.success) {
         toast({ title: 'Robot iniciado', description: `Run ID: ${data.run_id || 'em execução'}` });
       } else {

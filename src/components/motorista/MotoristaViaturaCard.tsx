@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { Car, Calendar, Fuel, Tag } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
@@ -131,59 +132,68 @@ export function MotoristaViaturaCard({ motoristaId }: MotoristaViaturaCardProps)
   const { viatura } = viaturaAtual;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Car className="w-5 h-5" />
+    <Card className="bg-white border-slate-200 shadow-sm rounded-[2rem] overflow-hidden leading-relaxed">
+      <CardHeader className="p-8 pb-4">
+        <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-3">
+          <div className="p-2 bg-teal-50 rounded-xl">
+            <Car className="w-5 h-5 text-teal-600" />
+          </div>
           Viatura Atual
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-xl font-semibold">
-                {viatura.marca} {viatura.modelo}
-              </h3>
-              {viatura.ano && (
-                <span className="text-muted-foreground">({viatura.ano})</span>
-              )}
+      <CardContent className="p-8 pt-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                  {viatura.marca} {viatura.modelo}
+                </h3>
+                {viatura.ano && (
+                  <span className="text-slate-400 font-bold">({viatura.ano})</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="px-3 py-1 bg-slate-900 text-white rounded-lg font-mono font-black text-xs tracking-widest shadow-sm">
+                  {viatura.matricula}
+                </div>
+                {viatura.categoria && (
+                  <div className={cn(
+                    "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider",
+                    getCategoriaColor(viatura.categoria).split(' ').filter(c => !c.startsWith('dark:')).join(' ')
+                  )}>
+                    {viatura.categoria}
+                  </div>
+                )}
+              </div>
             </div>
             
-            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Tag className="w-4 h-4" />
-                <span className="font-mono font-semibold text-foreground">
-                  {viatura.matricula}
-                </span>
-              </div>
-              
-              {viatura.categoria && (
-                <Badge className={getCategoriaColor(viatura.categoria)}>
-                  {viatura.categoria}
-                </Badge>
-              )}
-              
+            <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-500">
               {viatura.combustivel && (
-                <div className="flex items-center gap-1">
-                  <Fuel className="w-4 h-4" />
+                <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
+                  <Fuel className="w-3.5 h-3.5 text-teal-600" />
                   <span>{viatura.combustivel}</span>
                 </div>
               )}
               
               {viatura.cor && (
-                <span>Cor: {viatura.cor}</span>
+                <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
+                  <div className="w-3 h-3 rounded-full border border-slate-200" style={{ backgroundColor: viatura.cor.toLowerCase() === 'preto' ? 'black' : viatura.cor.toLowerCase() === 'branco' ? 'white' : viatura.cor }} />
+                  <span>{viatura.cor}</span>
+                </div>
               )}
+
+              <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-[10px]">Atribuída em {format(new Date(viaturaAtual.data_inicio), "dd MMM yyyy", { locale: pt })}</span>
+              </div>
             </div>
           </div>
           
-          <div className="text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              <span>
-                Atribuída desde {format(new Date(viaturaAtual.data_inicio), "d 'de' MMMM 'de' yyyy", { locale: pt })}
-              </span>
-            </div>
+          <div className="hidden lg:block">
+             <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center border-2 border-dashed border-slate-200 opacity-60">
+                <Car className="w-10 h-10 text-slate-300" />
+             </div>
           </div>
         </div>
       </CardContent>

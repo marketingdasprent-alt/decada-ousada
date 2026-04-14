@@ -1,6 +1,6 @@
 import React from "react"
 import { NavLink, useLocation } from "react-router-dom"
-import { BarChart3, Users, User, FormInput, UserPlus, Shield, FileText, FileSignature, ClipboardCheck, ChevronDown, Wrench, Car, Briefcase, CalendarDays } from "lucide-react"
+import { BarChart3, Users, User, FormInput, UserPlus, Shield, FileText, FileSignature, ClipboardCheck, ChevronDown, Wrench, Car, Briefcase, CalendarDays, LayoutDashboard } from "lucide-react"
 import { usePermissions } from "@/hooks/usePermissions"
 import { RECURSOS } from "@/utils/permissions"
 
@@ -39,6 +39,7 @@ interface MenuItem {
 }
 
 const items: MenuItem[] = [
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, recurso: RECURSOS.MOTORISTAS_GESTAO },
   { title: "CRM", url: "/crm", icon: BarChart3, recurso: RECURSOS.MOTORISTAS_CRM },
   { title: "Meus Tickets", url: "/meus-tickets", icon: Wrench, recurso: RECURSOS.MOTORISTAS_CRM },
   { title: "Contatos", url: "/contatos", icon: Users, recurso: RECURSOS.MOTORISTAS_CONTACTOS },

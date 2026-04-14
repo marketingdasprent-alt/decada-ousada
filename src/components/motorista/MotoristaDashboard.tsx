@@ -6,14 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
-  LogOut, 
-  User, 
-  Car, 
   FileText, 
-  Wallet, 
-  AlertTriangle,
   Receipt,
-  AlertCircle
+  AlertCircle,
+  TrendingUp,
+  FileWarning,
+  Wallet,
+  AlertTriangle
 } from "lucide-react";
 import { format, startOfWeek, addDays, addWeeks, isBefore } from "date-fns";
 import { pt } from "date-fns/locale";
@@ -22,7 +21,10 @@ import { MotoristaDocumentosCard } from "./MotoristaDocumentosCard";
 import { MotoristaMovimentosCard } from "./MotoristaMovimentosCard";
 import { MotoristaRecibosCard } from "./MotoristaRecibosCard";
 import { MotoristaDanosCard } from "./MotoristaDanosCard";
+import { MotoristaCombustivelCard } from "./MotoristaCombustivelCard";
 import { useThemedLogo } from "@/hooks/useThemedLogo";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 interface MotoristaAtivo {
   id: string;
@@ -43,6 +45,7 @@ interface MotoristaAtivo {
   carta_validade: string;
   licenca_tvde_numero: string;
   licenca_tvde_validade: string;
+  foto_url?: string;
 }
 
 interface DashboardStats {
@@ -54,7 +57,6 @@ interface DashboardStats {
 
 export function MotoristaDashboard() {
   const { user, signOut } = useAuth();
-  const logoSrc = useThemedLogo();
   const [motorista, setMotorista] = useState<MotoristaAtivo | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     saldoPendente: 0,
@@ -70,43 +72,24 @@ export function MotoristaDashboard() {
     }
   }, [user?.id]);
 
-  // Subscripção Realtime para actualizar cards automaticamente
   useEffect(() => {
     if (!motorista?.id) return;
 
-    // Escutar mudanças em recibos
     const recibosChannel = supabase
       .channel(`dashboard-recibos-${motorista.id}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'motorista_recibos',
-          filter: `motorista_id=eq.${motorista.id}`
-        },
-        () => {
-          loadStats(motorista.id, motorista);
-        }
-      )
-      .subscribe();
+        { event: '*', schema: 'public', table: 'motorista_recibos', filter: `motorista_id=eq.${motorista.id}` },
+        () => loadStats(motorista.id, motorista)
+      ).subscribe();
 
-    // Escutar mudanças em movimentos financeiros
     const financeiroChannel = supabase
       .channel(`dashboard-financeiro-${motorista.id}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'motorista_financeiro',
-          filter: `motorista_id=eq.${motorista.id}`
-        },
-        () => {
-          loadStats(motorista.id, motorista);
-        }
-      )
-      .subscribe();
+        { event: '*', schema: 'public', table: 'motorista_financeiro', filter: `motorista_id=eq.${motorista.id}` },
+        () => loadStats(motorista.id, motorista)
+      ).subscribe();
 
     return () => {
       supabase.removeChannel(recibosChannel);
@@ -117,8 +100,6 @@ export function MotoristaDashboard() {
   async function loadMotoristaData() {
     try {
       setLoading(true);
-      
-      // Buscar motorista ativo pelo user_id
       const { data: motoristaData, error: motoristaError } = await supabase
         .from("motoristas_ativos")
         .select("*")
@@ -127,8 +108,6 @@ export function MotoristaDashboard() {
 
       if (motoristaError) throw motoristaError;
       setMotorista(motoristaData);
-
-      // Buscar estatísticas - passa os dados do motorista directamente
       await loadStats(motoristaData.id, motoristaData);
     } catch (error) {
       console.error("Erro ao carregar dados do motorista:", error);
@@ -139,7 +118,6 @@ export function MotoristaDashboard() {
 
   async function loadStats(motoristaId: string, motoristaData: MotoristaAtivo) {
     try {
-      // Saldo pendente
       const { data: movimentos } = await supabase
         .from("motorista_financeiro")
         .select("tipo, valor, status")
@@ -149,65 +127,36 @@ export function MotoristaDashboard() {
       let saldoPendente = 0;
       if (movimentos) {
         movimentos.forEach(m => {
-          if (m.tipo === "credito") {
-            saldoPendente += Number(m.valor);
-          } else {
-            saldoPendente -= Number(m.valor);
-          }
+          if (m.tipo === "credito") saldoPendente += Number(m.valor);
+          else saldoPendente -= Number(m.valor);
         });
       }
 
-      // Recibos pendentes de aceitação (status "submetido")
       const { count: recibosPendentesAceitacao } = await supabase
         .from("motorista_recibos")
         .select("*", { count: "exact", head: true })
         .eq("motorista_id", motoristaId)
         .eq("status", "submetido");
 
-      // Recibos em falta - verificar semana a semana usando semana_referencia_inicio
       let recibosEmFalta = 0;
       if (motoristaData.data_contratacao) {
         const dataContratacao = new Date(motoristaData.data_contratacao);
         const hoje = new Date();
-        
-        // Buscar todas as semanas que têm recibo
-        const { data: recibos } = await supabase
-          .from("motorista_recibos")
-          .select("semana_referencia_inicio")
-          .eq("motorista_id", motoristaId);
-
-        const semanasComRecibo = new Set(
-          recibos?.map(r => r.semana_referencia_inicio).filter(Boolean) || []
-        );
-        
-        // Verificar cada semana desde contratação até a semana passada
+        const { data: recibos } = await supabase.from("motorista_recibos").select("semana_referencia_inicio").eq("motorista_id", motoristaId);
+        const semanasComRecibo = new Set(recibos?.map(r => r.semana_referencia_inicio).filter(Boolean) || []);
         let semanaActual = startOfWeek(dataContratacao, { weekStartsOn: 1 });
-        const limite = startOfWeek(hoje, { weekStartsOn: 1 }); // Não incluir a semana actual
-        
+        const limite = startOfWeek(hoje, { weekStartsOn: 1 });
         while (isBefore(semanaActual, limite)) {
           const dataStr = format(semanaActual, "yyyy-MM-dd");
-          if (!semanasComRecibo.has(dataStr)) {
-            recibosEmFalta++;
-          }
+          if (!semanasComRecibo.has(dataStr)) recibosEmFalta++;
           semanaActual = addWeeks(semanaActual, 1);
         }
       }
 
-      // Documentos a expirar (próximos 30 dias) - usa motoristaData directamente
       let documentosAExpirar = 0;
       const proximoLimite = addDays(new Date(), 30);
-      const docs = [
-        motoristaData.carta_validade,
-        motoristaData.documento_validade,
-        motoristaData.licenca_tvde_validade
-      ].filter(Boolean);
-      
-      docs.forEach(data => {
-        const dataValidade = new Date(data);
-        if (dataValidade <= proximoLimite) {
-          documentosAExpirar++;
-        }
-      });
+      const docs = [motoristaData.carta_validade, motoristaData.documento_validade, motoristaData.licenca_tvde_validade].filter(Boolean);
+      docs.forEach(data => { if (new Date(data) <= proximoLimite) documentosAExpirar++; });
 
       setStats({
         saldoPendente,
@@ -221,46 +170,30 @@ export function MotoristaDashboard() {
   }
 
   function formatCurrency(value: number) {
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: "EUR"
-    }).format(value);
+    return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(value);
   }
 
   if (loading) {
     return (
-      <div className="main-content-safe min-h-screen bg-background py-4 md:py-6">
-        <div className="mx-auto max-w-6xl space-y-6">
-          <div className="flex items-center justify-between gap-3">
-            <Skeleton className="h-10 w-40" />
-            <Skeleton className="h-10 w-24" />
-          </div>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
-            ))}
-          </div>
-          <Skeleton className="h-48 rounded-xl" />
-          <Skeleton className="h-64 rounded-xl" />
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-40" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 rounded-[2rem]" />)}
         </div>
+        <Skeleton className="h-48 rounded-[2rem]" />
       </div>
     );
   }
 
   if (!motorista) {
     return (
-      <div className="main-content-safe flex min-h-screen items-center justify-center bg-background py-4">
-        <Card className="w-full max-w-md">
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Card className="w-full max-w-md bg-white border-slate-200">
           <CardContent className="pt-6 text-center">
-            <AlertTriangle className="mx-auto mb-4 h-12 w-12 text-destructive" />
-            <h2 className="mb-2 text-xl font-semibold">Dados não encontrados</h2>
-            <p className="mb-4 text-muted-foreground">
-              Não foi possível encontrar os seus dados de motorista.
-            </p>
-            <Button onClick={() => signOut()}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Terminar sessão
-            </Button>
+            <AlertTriangle className="mx-auto mb-4 h-12 w-12 text-red-500" />
+            <h2 className="mb-2 text-xl font-bold text-slate-900">Dados não encontrados</h2>
+            <p className="mb-6 text-slate-500">Não foi possível encontrar os seus dados de motorista.</p>
+            <Button onClick={() => signOut()} className="bg-slate-900 text-white">Sair</Button>
           </CardContent>
         </Card>
       </div>
@@ -268,91 +201,97 @@ export function MotoristaDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur sticky-header-safe">
-        <div className="main-content-safe mx-auto flex max-w-6xl items-center justify-between gap-3 py-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <img src={logoSrc} alt="Década Ousada" className="h-8 shrink-0" />
-            <span className="hidden text-muted-foreground sm:inline">|</span>
-            <span className="hidden text-sm text-muted-foreground sm:inline">Área do Motorista</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right sm:block">
-              <p className="text-sm font-medium">{motorista.nome}</p>
-              <p className="text-xs text-muted-foreground">#{motorista.codigo}</p>
+    <div className="space-y-8 animate-in fade-in duration-700 pb-12">
+      <div className="flex flex-col gap-1 px-1">
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard</h1>
+        <p className="text-slate-500 text-sm font-medium">Bem-vindo de volta, {motorista.nome.split(' ')[0]}!</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="bg-white border-slate-200 shadow-sm rounded-[2rem] overflow-hidden group hover:shadow-md transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-slate-500 text-[10px] font-black tracking-widest uppercase">Saldo Atual</span>
+              <div className="p-2 bg-teal-50 rounded-lg">
+                <Wallet className="w-4 h-4 text-teal-600" />
+              </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => signOut()}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
-            </Button>
-          </div>
-        </div>
-      </header>
+            <p className="text-3xl font-black text-slate-900 mb-2">{formatCurrency(stats.saldoPendente)}</p>
+            <div className="flex items-center text-teal-600 text-[10px] font-bold">
+              <TrendingUp className="w-3 h-3 mr-1" />
+              Disponível para levantamento
+            </div>
+          </CardContent>
+        </Card>
 
-      <main className="main-content-safe mx-auto max-w-6xl space-y-6 py-6">
-        <div>
-          <h1 className="text-2xl font-bold">Olá, {motorista.nome.split(' ')[0]}!</h1>
-          <p className="text-muted-foreground">
-            Membro desde {format(new Date(motorista.data_contratacao), "MMMM 'de' yyyy", { locale: pt })}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <Card>
-            <CardContent className="pt-4">
-              <div className="mb-1 flex items-center gap-2 text-muted-foreground">
-                <Wallet className="h-4 w-4" />
-                <span className="text-xs">Saldo pendente</span>
+        <Card className="bg-white border-slate-200 shadow-sm rounded-[2rem] overflow-hidden group hover:shadow-md transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-slate-500 text-[10px] font-black tracking-widest uppercase">Recibos Pendentes</span>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Receipt className="w-4 h-4 text-blue-600" />
               </div>
-              <p className="text-xl font-bold text-foreground">
-                {formatCurrency(stats.saldoPendente)}
-              </p>
-            </CardContent>
-          </Card>
+            </div>
+            <p className="text-3xl font-black text-slate-900 mb-2">{stats.recibosPendentesAceitacao}</p>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-tight">Em validação</p>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="pt-4">
-              <div className="mb-1 flex items-center gap-2 text-muted-foreground">
-                <Receipt className="h-4 w-4" />
-                <span className="text-xs">Recibos pendentes</span>
+        <Card className={cn(
+          "bg-white border-slate-200 shadow-sm rounded-[2rem] overflow-hidden group hover:shadow-md transition-all duration-300",
+          stats.recibosEmFalta > 0 && "border-red-100 bg-red-50/30"
+        )}>
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-slate-500 text-[10px] font-black tracking-widest uppercase">Recibos em falta</span>
+              <div className={cn("p-2 rounded-lg", stats.recibosEmFalta > 0 ? "bg-red-100" : "bg-slate-50")}>
+                <AlertCircle className={cn("w-4 h-4", stats.recibosEmFalta > 0 ? "text-red-600" : "text-slate-300")} />
               </div>
-              <p className="text-xl font-bold text-foreground">{stats.recibosPendentesAceitacao}</p>
-            </CardContent>
-          </Card>
+            </div>
+            <p className={cn("text-3xl font-black mb-2", stats.recibosEmFalta > 0 ? "text-red-600" : "text-slate-900")}>
+              {stats.recibosEmFalta}
+            </p>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-tight">Semanas em atraso</p>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="pt-4">
-              <div className="mb-1 flex items-center gap-2 text-muted-foreground">
-                <AlertCircle className="h-4 w-4" />
-                <span className="text-xs">Recibos em falta</span>
+        <Card className={cn(
+          "bg-white border-slate-200 shadow-sm rounded-[2rem] overflow-hidden group hover:shadow-md transition-all duration-300",
+          stats.documentosAExpirar > 0 && "border-orange-100 bg-orange-50/30"
+        )}>
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-slate-500 text-[10px] font-black tracking-widest uppercase">DOCs a Expirar</span>
+              <div className={cn("p-2 rounded-lg", stats.documentosAExpirar > 0 ? "bg-orange-100" : "bg-slate-50")}>
+                <FileWarning className={cn("w-4 h-4", stats.documentosAExpirar > 0 ? "text-orange-600" : "text-slate-300")} />
               </div>
-              <p className="text-xl font-bold text-foreground">
-                {stats.recibosEmFalta > 0 ? stats.recibosEmFalta : 'Em dia'}
-              </p>
-            </CardContent>
-          </Card>
+            </div>
+            <p className={cn("text-3xl font-black mb-2", stats.documentosAExpirar > 0 ? "text-orange-600" : "text-slate-900")}>
+              {stats.documentosAExpirar}
+            </p>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-tight">Próximos 30 dias</p>
+          </CardContent>
+        </Card>
+      </div>
 
-          <Card>
-            <CardContent className="pt-4">
-              <div className="mb-1 flex items-center gap-2 text-muted-foreground">
-                <FileText className="h-4 w-4" />
-                <span className="text-xs">Docs a expirar</span>
-              </div>
-              <p className="text-xl font-bold text-foreground">{stats.documentosAExpirar}</p>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <MotoristaCombustivelCard motoristaId={motorista.id} />
+        <MotoristaMovimentosCard motoristaId={motorista.id} />
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <MotoristaViaturaCard motoristaId={motorista.id} />
         <MotoristaDanosCard motoristaId={motorista.id} />
+      </div>
+
+      <div className="space-y-8">
         <MotoristaDocumentosCard motorista={motorista} />
-        <MotoristaMovimentosCard motoristaId={motorista.id} />
         <MotoristaRecibosCard
           motoristaId={motorista.id}
           userId={user?.id || ''}
           dataContratacao={motorista.data_contratacao}
         />
-      </main>
+      </div>
     </div>
   );
 }

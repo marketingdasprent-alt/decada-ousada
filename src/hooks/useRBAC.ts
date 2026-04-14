@@ -22,6 +22,7 @@ export interface CargoPermissao {
   cargo_id: string;
   recurso_id: string;
   tem_acesso: boolean;
+  pode_editar: boolean;
   cargo?: Cargo;
   recurso?: Recurso;
 }
@@ -68,7 +69,8 @@ export const useRBAC = () => {
   const updatePermissao = async (
     cargoId: string,
     recursoId: string,
-    temAcesso: boolean
+    temAcesso: boolean,
+    podeEditar: boolean = false
   ) => {
     try {
       const { error } = await supabase
@@ -77,6 +79,7 @@ export const useRBAC = () => {
           cargo_id: cargoId,
           recurso_id: recursoId,
           tem_acesso: temAcesso,
+          pode_editar: podeEditar,
         });
 
       if (error) throw error;

@@ -1,30 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Plus, Wrench, Loader2, Trash2, Euro, Calendar, CreditCard } from 'lucide-react';
+import { Wrench, Loader2, Trash2, Euro, Calendar, CreditCard } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, addWeeks, startOfWeek } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { format } from 'date-fns';
 
 interface Reparacao {
   id: string;
@@ -64,41 +45,16 @@ interface ViaturaTabReparacoesProps {
 export function ViaturaTabReparacoes({ viaturaId }: ViaturaTabReparacoesProps) {
   const [reparacoes, setReparacoes] = useState<Reparacao[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
-  const [motoristaAssociado, setMotoristaAssociado] = useState<string | null>(null);
   const [parcelasMap, setParcelasMap] = useState<Record<string, Parcela[]>>({});
   const [expandedParcelas, setExpandedParcelas] = useState<string | null>(null);
-
-  // Form state
-  const [descricao, setDescricao] = useState('');
-  const [oficina, setOficina] = useState('');
-  const [custo, setCusto] = useState('');
-  const [dataEntrada, setDataEntrada] = useState('');
-  const [dataSaida, setDataSaida] = useState('');
-  const [kmEntrada, setKmEntrada] = useState('');
-  const [observacoes, setObservacoes] = useState('');
-  const [motoristaResponsavel, setMotoristaResponsavel] = useState('');
-  const [cobrarMotorista, setCobrarMotorista] = useState(false);
-  const [valorACobrar, setValorACobrar] = useState('');
-  const [numParcelas, setNumParcelas] = useState('');
-  const [dataInicioCobranca, setDataInicioCobranca] = useState('');
 
   useEffect(() => {
     if (viaturaId) {
       loadReparacoes();
       loadMotoristas();
-      loadMotoristaAssociado();
     }
   }, [viaturaId]);
-
-  // Quando custo muda e cobrar está ativo, atualizar valor a cobrar
-  useEffect(() => {
-    if (cobrarMotorista && !valorACobrar && custo) {
-      setValorACobrar(custo);
-    }
-  }, [custo, cobrarMotorista]);
 
   const loadMotoristas = async () => {
     const { data } = await supabase
@@ -107,17 +63,6 @@ export function ViaturaTabReparacoes({ viaturaId }: ViaturaTabReparacoesProps) {
       .eq('status_ativo', true)
       .order('nome');
     setMotoristas(data || []);
-  };
-
-  const loadMotoristaAssociado = async () => {
-    if (!viaturaId) return;
-    const { data } = await supabase
-      .from('motorista_viaturas')
-      .select('motorista_id')
-      .eq('viatura_id', viaturaId)
-      .eq('status', 'ativo')
-      .maybeSingle();
-    setMotoristaAssociado(data?.motorista_id || null);
   };
 
   const loadReparacoes = async () => {
@@ -142,7 +87,7 @@ export function ViaturaTabReparacoes({ viaturaId }: ViaturaTabReparacoesProps) {
           .select('*')
           .in('reparacao_id', idsComCobranca)
           .order('numero_parcela');
-        
+
         const map: Record<string, Parcela[]> = {};
         (parcData || []).forEach((p: any) => {
           if (!map[p.reparacao_id]) map[p.reparacao_id] = [];
@@ -155,97 +100,6 @@ export function ViaturaTabReparacoes({ viaturaId }: ViaturaTabReparacoesProps) {
       toast.error('Erro ao carregar reparações');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const gerarParcelas = async (reparacaoId: string, motoristaId: string, valorTotal: number, parcelas: number, dataInicio: string) => {
-    const parcelasData = [];
-    const valorParcela = Math.round((valorTotal / parcelas) * 100) / 100;
-    const inicioDate = new Date(dataInicio);
-    // Garantir que começa na segunda-feira
-    const primeiraSegunda = startOfWeek(inicioDate, { weekStartsOn: 1 });
-
-    for (let i = 0; i < parcelas; i++) {
-      const semana = addWeeks(primeiraSegunda, i);
-      parcelasData.push({
-        reparacao_id: reparacaoId,
-        motorista_id: motoristaId,
-        numero_parcela: i + 1,
-        valor: i === parcelas - 1 
-          ? Math.round((valorTotal - valorParcela * (parcelas - 1)) * 100) / 100 
-          : valorParcela,
-        semana_referencia: format(semana, 'yyyy-MM-dd'),
-        status: 'pendente',
-      });
-    }
-
-    const { error } = await supabase
-      .from('reparacao_parcelas')
-      .insert(parcelasData);
-
-    if (error) throw error;
-  };
-
-  const handleSubmit = async () => {
-    if (!viaturaId || !descricao.trim()) {
-      toast.error('Descrição é obrigatória');
-      return;
-    }
-
-    if (cobrarMotorista && !motoristaResponsavel) {
-      toast.error('Selecione o motorista responsável para cobrar');
-      return;
-    }
-
-    if (cobrarMotorista && (!valorACobrar || !numParcelas || !dataInicioCobranca)) {
-      toast.error('Preencha todos os campos de cobrança');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const { data, error } = await supabase
-        .from('viatura_reparacoes')
-        .insert({
-          viatura_id: viaturaId,
-          descricao: descricao.trim(),
-          oficina: oficina.trim() || null,
-          custo: custo ? parseFloat(custo) : null,
-          data_entrada: dataEntrada || null,
-          data_saida: dataSaida || null,
-          km_entrada: kmEntrada ? parseInt(kmEntrada) : null,
-          observacoes: observacoes.trim() || null,
-          motorista_responsavel_id: motoristaResponsavel || null,
-          cobrar_motorista: cobrarMotorista,
-          valor_a_cobrar: cobrarMotorista && valorACobrar ? parseFloat(valorACobrar) : null,
-          num_parcelas: cobrarMotorista && numParcelas ? parseInt(numParcelas) : null,
-          data_inicio_cobranca: cobrarMotorista && dataInicioCobranca ? dataInicioCobranca : null,
-        })
-        .select('id')
-        .single();
-
-      if (error) throw error;
-
-      // Gerar parcelas se cobrar motorista
-      if (cobrarMotorista && data?.id) {
-        await gerarParcelas(
-          data.id,
-          motoristaResponsavel,
-          parseFloat(valorACobrar),
-          parseInt(numParcelas),
-          dataInicioCobranca
-        );
-      }
-
-      toast.success('Reparação registada com sucesso!');
-      setDialogOpen(false);
-      resetForm();
-      loadReparacoes();
-    } catch (error) {
-      console.error('Erro ao registar reparação:', error);
-      toast.error('Erro ao registar reparação');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -267,33 +121,7 @@ export function ViaturaTabReparacoes({ viaturaId }: ViaturaTabReparacoesProps) {
     }
   };
 
-  const resetForm = () => {
-    setDescricao('');
-    setOficina('');
-    setCusto('');
-    setDataEntrada('');
-    setDataSaida('');
-    setKmEntrada('');
-    setObservacoes('');
-    setMotoristaResponsavel(motoristaAssociado || '');
-    setCobrarMotorista(false);
-    setValorACobrar('');
-    setNumParcelas('');
-    setDataInicioCobranca('');
-  };
-
-  const handleDialogOpen = (open: boolean) => {
-    setDialogOpen(open);
-    if (open) {
-      setMotoristaResponsavel(motoristaAssociado || '');
-    }
-  };
-
   const totalCusto = reparacoes.reduce((acc, r) => acc + (r.custo || 0), 0);
-
-  const parcelaPreview = cobrarMotorista && valorACobrar && numParcelas
-    ? (parseFloat(valorACobrar) / parseInt(numParcelas)).toFixed(2)
-    : null;
 
   const getMotoristaName = (id: string | null) => {
     if (!id) return null;
@@ -304,7 +132,7 @@ export function ViaturaTabReparacoes({ viaturaId }: ViaturaTabReparacoesProps) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          Guarde a viatura primeiro para registar reparações.
+          Guarde a viatura primeiro para ver reparações.
         </CardContent>
       </Card>
     );
@@ -333,186 +161,11 @@ export function ViaturaTabReparacoes({ viaturaId }: ViaturaTabReparacoesProps) {
       )}
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wrench className="h-5 w-5" />
             Histórico de Reparações
           </CardTitle>
-          <Dialog open={dialogOpen} onOpenChange={handleDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Reparação
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Registar Nova Reparação</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div>
-                  <Label htmlFor="descricao">Descrição *</Label>
-                  <Textarea
-                    id="descricao"
-                    placeholder="Descreva a reparação..."
-                    value={descricao}
-                    onChange={(e) => setDescricao(e.target.value)}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="oficina">Oficina</Label>
-                    <Input
-                      id="oficina"
-                      placeholder="Nome da oficina"
-                      value={oficina}
-                      onChange={(e) => setOficina(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="custo">Custo (€)</Label>
-                    <Input
-                      id="custo"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={custo}
-                      onChange={(e) => setCusto(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="data_entrada">Data Entrada</Label>
-                    <Input
-                      id="data_entrada"
-                      type="date"
-                      value={dataEntrada}
-                      onChange={(e) => setDataEntrada(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="data_saida">Data Saída</Label>
-                    <Input
-                      id="data_saida"
-                      type="date"
-                      value={dataSaida}
-                      onChange={(e) => setDataSaida(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="km_entrada">Km à Entrada</Label>
-                  <Input
-                    id="km_entrada"
-                    type="number"
-                    placeholder="Quilometragem"
-                    value={kmEntrada}
-                    onChange={(e) => setKmEntrada(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="observacoes">Observações</Label>
-                  <Textarea
-                    id="observacoes"
-                    placeholder="Notas adicionais..."
-                    value={observacoes}
-                    onChange={(e) => setObservacoes(e.target.value)}
-                  />
-                </div>
-
-                {/* Motorista Responsável */}
-                <div>
-                  <Label>Motorista Responsável</Label>
-                  <Select value={motoristaResponsavel} onValueChange={setMotoristaResponsavel}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar motorista..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {motoristas.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Cobrança */}
-                {motoristaResponsavel && (
-                  <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="cobrar"
-                        checked={cobrarMotorista}
-                        onCheckedChange={(checked) => {
-                          setCobrarMotorista(checked === true);
-                          if (checked && custo && !valorACobrar) {
-                            setValorACobrar(custo);
-                          }
-                        }}
-                      />
-                      <Label htmlFor="cobrar" className="font-medium flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        Cobrar ao motorista em parcelas semanais
-                      </Label>
-                    </div>
-
-                    {cobrarMotorista && (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label>Valor a cobrar (€)</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={valorACobrar}
-                              onChange={(e) => setValorACobrar(e.target.value)}
-                            />
-                          </div>
-                          <div>
-                            <Label>Nº de parcelas semanais</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              max="52"
-                              placeholder="Ex: 10"
-                              value={numParcelas}
-                              onChange={(e) => setNumParcelas(e.target.value)}
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label>Data início cobrança</Label>
-                          <Input
-                            type="date"
-                            value={dataInicioCobranca}
-                            onChange={(e) => setDataInicioCobranca(e.target.value)}
-                          />
-                        </div>
-                        {parcelaPreview && (
-                          <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 text-sm">
-                            <span className="font-medium text-blue-700 dark:text-blue-400">
-                              {numParcelas} parcelas de {parseFloat(parcelaPreview).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}€/semana
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleSubmit} disabled={saving}>
-                    {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Registar
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -523,6 +176,7 @@ export function ViaturaTabReparacoes({ viaturaId }: ViaturaTabReparacoesProps) {
             <div className="text-center py-8 text-muted-foreground">
               <Wrench className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Nenhuma reparação registada.</p>
+              <p className="text-xs mt-1">As reparações são criadas ao fechar tickets na página de Assistência.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -587,10 +241,10 @@ export function ViaturaTabReparacoes({ viaturaId }: ViaturaTabReparacoesProps) {
                             {reparacao.valor_a_cobrar?.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}€
                           </Badge>
                         </button>
-                        
+
                         {/* Barra de progresso */}
                         <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full bg-blue-500 rounded-full transition-all"
                             style={{ width: `${totalParcelas > 0 ? (parcelasCobradas / totalParcelas) * 100 : 0}%` }}
                           />

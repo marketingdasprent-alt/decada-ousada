@@ -6,6 +6,13 @@ import { CandidaturaFormulario } from '@/components/motorista/CandidaturaFormula
 import { CandidaturaEmAnalise } from '@/components/motorista/CandidaturaEmAnalise';
 import { CandidaturaRejeitada } from '@/components/motorista/CandidaturaRejeitada';
 import { MotoristaDashboard } from '@/components/motorista/MotoristaDashboard';
+import { MotoristaLayout } from '@/components/motorista/MotoristaLayout';
+
+interface MotoristaData {
+  id: string;
+  nome: string;
+  foto_url?: string;
+}
 
 export type CandidaturaStatus = 'rascunho' | 'submetido' | 'em_analise' | 'aprovado' | 'rejeitado';
 
@@ -71,12 +78,12 @@ const PainelMotorista: React.FC = () => {
     try {
       const { data: motoristaData } = await supabase
         .from('motoristas_ativos')
-        .select('id, user_id, status_ativo')
+        .select('id, nome, foto_url, status_ativo')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (motoristaData) {
-        setMotoristaAtivo(motoristaData);
+        setMotoristaAtivo(motoristaData as any);
         setLoading(false);
         return;
       }
@@ -110,27 +117,24 @@ const PainelMotorista: React.FC = () => {
     );
   }
 
-  if (motoristaAtivo) {
-    return <MotoristaDashboard />;
-  }
-
-  if (!candidatura || candidatura.status === 'rascunho') {
-    return <CandidaturaFormulario candidatura={candidatura} onUpdate={loadUserData} />;
-  }
-
-  if (candidatura.status === 'submetido' || candidatura.status === 'em_analise') {
-    return <CandidaturaEmAnalise candidatura={candidatura} />;
-  }
-
-  if (candidatura.status === 'aprovado') {
-    return <MotoristaDashboard />;
-  }
-
-  if (candidatura.status === 'rejeitado') {
-    return <CandidaturaRejeitada candidatura={candidatura} onResubmit={loadUserData} />;
-  }
-
-  return null;
+  return (
+    <div className="rota-liquida">
+      {motoristaAtivo || candidatura?.status === 'aprovado' ? (
+        <MotoristaLayout 
+          userName={(motoristaAtivo as any)?.nome} 
+          userPhoto={(motoristaAtivo as any)?.foto_url}
+        >
+          <MotoristaDashboard />
+        </MotoristaLayout>
+      ) : !candidatura || candidatura.status === 'rascunho' ? (
+        <CandidaturaFormulario candidatura={candidatura} onUpdate={loadUserData} />
+      ) : candidatura.status === 'submetido' || candidatura.status === 'em_analise' ? (
+        <CandidaturaEmAnalise candidatura={candidatura} />
+      ) : candidatura.status === 'rejeitado' ? (
+        <CandidaturaRejeitada candidatura={candidatura} onResubmit={loadUserData} />
+      ) : null}
+    </div>
+  );
 };
 
 export default PainelMotorista;

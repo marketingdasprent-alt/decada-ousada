@@ -208,7 +208,7 @@ const Register = () => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <UserPlus className="h-12 w-12 animate-pulse text-[#E53333] mx-auto mb-4" />
+          <UserPlus className="h-12 w-12 animate-pulse text-[#00C4B4] mx-auto mb-4" />
           <p className="text-white text-lg">Validando acesso...</p>
         </div>
       </div>
@@ -222,13 +222,13 @@ const Register = () => {
           <Card className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border-gray-700/50 backdrop-blur-sm max-w-md">
             <CardContent className="pt-6">
               <div className="text-center">
-                <UserPlus className="h-12 w-12 text-[#E53333] mx-auto mb-4" />
+                <UserPlus className="h-12 w-12 text-[#00C4B4] mx-auto mb-4" />
                 <h2 className="text-xl font-bold text-white mb-2">Convite Necessário</h2>
                 <p className="text-gray-400 mb-4">
                   É necessário um convite válido para se registrar.
                 </p>
                 <Link to="/login">
-                  <Button className="bg-gradient-to-r from-[#B20101] to-[#8E0101] hover:from-[#8E0101] hover:to-[#6B0101] text-white font-semibold">
+                  <Button className="bg-gradient-to-r from-[#00C4B4] to-[#008F83] hover:from-[#008F83] hover:to-[#005C55] text-white font-semibold">
                     Voltar ao Login
                   </Button>
                 </Link>
@@ -243,19 +243,19 @@ const Register = () => {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       {/* Background Effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#B20101]/20 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#00C4B4]/20 via-transparent to-transparent" />
       <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
       
       <div className="relative z-10 w-full max-w-md">
         <Card className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border-gray-700/50 backdrop-blur-sm">
           <CardHeader className="text-center pb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="p-3 rounded-full bg-gradient-to-r from-[#B20101]/20 to-[#8E0101]/20 border border-[#B20101]/30">
-                <Car className="h-8 w-8 text-[#E53333]" />
+              <div className="p-3 rounded-full bg-gradient-to-r from-[#00C4B4]/20 to-[#008F83]/20 border border-[#00C4B4]/30">
+                <Car className="h-8 w-8 text-[#00C4B4]" />
               </div>
             </div>
             <CardTitle className="text-2xl font-bold bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
-              {isFirstUser ? 'Primeiro Admin - Década Ousada' : 'Registro Década Ousada'}
+              {isFirstUser ? 'Primeiro Admin - Rota Líquida' : 'Registro Rota Líquida'}
             </CardTitle>
             <p className="text-gray-400 mt-2">
               {isFirstUser 
@@ -278,7 +278,7 @@ const Register = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={!isFirstUser}
                   required
-                  className="bg-gray-800/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-[#B20101]"
+                  className="bg-gray-800/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-[#00C4B4]"
                   placeholder="seu@email.com"
                 />
               </div>
@@ -291,7 +291,7 @@ const Register = () => {
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   required
-                  className="bg-gray-800/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-[#B20101]"
+                  className="bg-gray-800/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-[#00C4B4]"
                   placeholder="Seu nome completo"
                 />
               </div>
@@ -314,7 +314,7 @@ const Register = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="bg-gray-800/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-[#B20101] pr-10"
+                    className="bg-gray-800/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-[#00C4B4] pr-10"
                     placeholder="Mínimo 6 caracteres"
                   />
                   <button
@@ -335,15 +335,15 @@ const Register = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="bg-gray-800/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-[#B20101]"
+                  className="bg-gray-800/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-[#00C4B4]"
                   placeholder="Repita sua senha"
                 />
               </div>
               
-              <Button
+                <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-[#B20101] to-[#8E0101] hover:from-[#8E0101] hover:to-[#6B0101] text-white font-semibold mt-6"
+                className="w-full bg-gradient-to-r from-[#00C4B4] to-[#008F83] hover:from-[#008F83] hover:to-[#005C55] text-white font-semibold mt-6"
               >
                 {loading ? "Criando conta..." : (isFirstUser ? "Criar Conta Admin" : "Criar Conta")}
               </Button>
@@ -354,7 +354,7 @@ const Register = () => {
                 Já tem uma conta?{' '}
                 <Link 
                   to="/login" 
-                  className="text-[#E53333] hover:text-[#FF6B6B] font-medium"
+                  className="text-[#00C4B4] hover:text-[#52DED3] font-medium"
                 >
                   Fazer login
                 </Link>

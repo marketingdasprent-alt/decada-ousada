@@ -33,12 +33,15 @@ import RegistoMotorista from '@/pages/motorista/RegistoMotorista';
 import LoginMotorista from '@/pages/motorista/LoginMotorista';
 import PainelMotorista from '@/pages/motorista/PainelMotorista';
 import Assistencia from '@/pages/Assistencia';
+import AssistenciaNova from '@/pages/AssistenciaNova';
 import TicketDetails from '@/pages/TicketDetails';
+import Dashboard from '@/pages/Dashboard';
 import MeusTickets from '@/pages/MeusTickets';
 import Administrativo from '@/pages/Administrativo';
 import Instalar from '@/pages/Instalar';
 import Calendario from '@/pages/Calendario';
 import Marketing from '@/pages/Marketing';
+import MotoristaDetalhe from '@/pages/MotoristaDetalhe';
 import Index from '@/pages/Index';
 
 const WebAppRoutes = () => {
@@ -67,6 +70,16 @@ const WebAppRoutes = () => {
           element={
             <ProtectedRoute requiredResource={RECURSOS.MOTORISTA_PAINEL}>
               <PainelMotorista />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute requiredResource={RECURSOS.MOTORISTAS_GESTAO}>
+              <DashboardLayout>
+                <Dashboard />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
@@ -116,6 +129,16 @@ const WebAppRoutes = () => {
             <ProtectedRoute requiredResource={RECURSOS.MOTORISTAS_GESTAO}>
               <DashboardLayout>
                 <Motoristas />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/motoristas/:id"
+          element={
+            <ProtectedRoute requiredResource={RECURSOS.MOTORISTAS_GESTAO}>
+              <DashboardLayout>
+                <MotoristaDetalhe />
               </DashboardLayout>
             </ProtectedRoute>
           }
@@ -226,6 +249,16 @@ const WebAppRoutes = () => {
             <ProtectedRoute requiredResource={RECURSOS.MOTORISTAS_CRM}>
               <DashboardLayout>
                 <TicketDetails />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assistencia/nova"
+          element={
+            <ProtectedRoute requiredResource={RECURSOS.ASSISTENCIA_TICKETS}>
+              <DashboardLayout>
+                <AssistenciaNova />
               </DashboardLayout>
             </ProtectedRoute>
           }

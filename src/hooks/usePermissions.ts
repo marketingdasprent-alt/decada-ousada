@@ -5,25 +5,36 @@ export type Action = 'ver' | 'criar' | 'editar' | 'deletar';
 
 interface UsePermissionsReturn {
   hasRole: (role: AppRole) => boolean;
-  hasPermission: (resource: string, action?: Action) => boolean;
+  hasPermission: (resource: string) => boolean;
+  canEdit: (resource: string) => boolean;
   hasAccessToResource: (recurso: string) => boolean;
   isAdmin: boolean;
   loading: boolean;
   roles: AppRole[];
   recursos: string[];
+  recursosEditaveis: string[];
   cargo: string | null;
   cargo_id: string | null;
 }
 
 export const usePermissions = (): UsePermissionsReturn => {
-  const { isAdmin, recursos, cargo, cargo_id, loading, hasAccessToResource } = usePermissionsContext();
+  const {
+    isAdmin,
+    recursos,
+    recursosEditaveis,
+    cargo,
+    cargo_id,
+    loading,
+    hasAccessToResource,
+    canEdit,
+  } = usePermissionsContext();
 
   const hasRole = (role: AppRole): boolean => {
     if (role === 'admin') return isAdmin;
     return false;
   };
 
-  const hasPermission = (resource: string, action?: Action): boolean => {
+  const hasPermission = (resource: string): boolean => {
     if (isAdmin) return true;
     return recursos.includes(resource);
   };
@@ -31,11 +42,13 @@ export const usePermissions = (): UsePermissionsReturn => {
   return {
     hasRole,
     hasPermission,
+    canEdit,
     hasAccessToResource,
     isAdmin,
     loading,
     roles: isAdmin ? ['admin'] : [],
     recursos,
+    recursosEditaveis,
     cargo,
     cargo_id,
   };

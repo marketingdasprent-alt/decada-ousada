@@ -291,7 +291,11 @@ export const IntegracoesTab: React.FC = () => {
       const { data, error } = await supabase.functions.invoke('robot-execute', {
         body: { integracao_id: id },
       });
-      if (error) throw error;
+      if (error) {
+        let msg = error.message;
+        try { const body = await error.context?.json?.(); msg = body?.error || msg; } catch {}
+        throw new Error(msg);
+      }
       if (!data?.success) throw new Error(data?.error || 'Erro desconhecido');
       toast({ title: 'Robot iniciado', description: `Run ID: ${data.run_id}` });
     } catch (error: any) {

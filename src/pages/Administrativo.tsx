@@ -12,6 +12,7 @@ import { BPDataTab } from "@/components/administrativo/BPDataTab";
 import { RepsolDataTab } from "@/components/administrativo/RepsolDataTab";
 import { EdpDataTab } from "@/components/administrativo/EdpDataTab";
 import { ContasResumoTab } from "@/components/administrativo/ContasResumoTab";
+import { StickyPageHeader } from "@/components/ui/StickyPageHeader";
 
 interface Recibo {
   id: string;
@@ -145,56 +146,47 @@ export default function Administrativo() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-4 md:space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <Briefcase className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold">Administrativo</h1>
-          <p className="text-sm text-muted-foreground">
-            Gestão financeira e dados de plataformas
-          </p>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="recibos" className="w-full">
-        <TabsList className="flex w-full overflow-x-auto justify-start no-scrollbar border-b rounded-none bg-transparent h-auto p-0 gap-6 mb-4">
-          <TabsTrigger value="recibos" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2">
+    <Tabs defaultValue="recibos" className="w-full">
+      <StickyPageHeader
+        title="Administrativo"
+        description="Gestão financeira e dados de plataformas"
+        icon={Briefcase}
+        className="pb-0"
+      >
+        <TabsList className="flex w-full overflow-x-auto justify-start no-scrollbar border-b rounded-none bg-transparent h-auto p-0 gap-6">
+          <TabsTrigger value="recibos" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
             <Receipt className="h-4 w-4" />
             Recibos
           </TabsTrigger>
-          <TabsTrigger value="bolt" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2">
+          <TabsTrigger value="bolt" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
             <Zap className="h-4 w-4" />
             Bolt
           </TabsTrigger>
-          <TabsTrigger value="uber" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2">
+          <TabsTrigger value="uber" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
             <Car className="h-4 w-4" />
             Uber
           </TabsTrigger>
-          <TabsTrigger value="bp" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2">
+          <TabsTrigger value="bp" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
             <Fuel className="h-4 w-4 text-orange-400" />
             BP
           </TabsTrigger>
-          <TabsTrigger value="repsol" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2">
+          <TabsTrigger value="repsol" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
             <Fuel className="h-4 w-4 text-orange-500" />
             Repsol
           </TabsTrigger>
-          <TabsTrigger value="edp" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2">
+          <TabsTrigger value="edp" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
             <Zap className="h-4 w-4 text-green-500" />
             EDP
           </TabsTrigger>
-          <TabsTrigger value="contas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2">
+          <TabsTrigger value="contas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
             <Calculator className="h-4 w-4" />
             Contas
           </TabsTrigger>
         </TabsList>
+      </StickyPageHeader>
 
-        {/* Tab Recibos */}
+      <div className="space-y-6">
         <TabsContent value="recibos" className="space-y-4 mt-4">
-          {/* Stats Cards */}
           <FinanceiroStats recibos={recibos} />
 
           {/* Filtros */}
@@ -244,7 +236,7 @@ export default function Administrativo() {
         <TabsContent value="contas" className="mt-4">
           <ContasResumoTab />
         </TabsContent>
-      </Tabs>
-    </div>
+      </div>
+    </Tabs>
   );
 }

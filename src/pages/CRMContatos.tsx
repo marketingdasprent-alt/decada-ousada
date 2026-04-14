@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import CRM from "./CRM";
 import Contatos from "./Contatos";
+import { StickyPageHeader } from "@/components/ui/StickyPageHeader";
+import { Users2, MessageSquare } from "lucide-react";
 
 export default function CRMContatos() {
   const navigate = useNavigate();
@@ -19,12 +21,17 @@ export default function CRMContatos() {
   return (
     <div className="w-full">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <div className={`sticky ${isMobile ? 'top-16' : 'top-20'} z-40 bg-background border-b ${isMobile ? 'px-4 py-2' : 'px-6 py-4'} backdrop-blur-sm`}>
+        <StickyPageHeader
+          title={activeTab === 'crm' ? 'CRM de Leads' : 'Gestão de Contactos'}
+          description={activeTab === 'crm' ? 'Acompanhamento do funil de vendas' : 'Lista completa de contactos na base'}
+          icon={activeTab === 'crm' ? MessageSquare : Users2}
+          className="pb-2"
+        >
           <TabsList className={`grid w-full ${isMobile ? '' : 'max-w-md'} grid-cols-2`}>
-            <TabsTrigger value="crm" className="relative z-50">CRM</TabsTrigger>
-            <TabsTrigger value="contatos" className="relative z-50">Contactos</TabsTrigger>
+            <TabsTrigger value="crm" className="relative z-50 text-xs">CRM</TabsTrigger>
+            <TabsTrigger value="contatos" className="relative z-50 text-xs">Contactos</TabsTrigger>
           </TabsList>
-        </div>
+        </StickyPageHeader>
         
         <TabsContent value="crm" className="mt-0">
           <CRM />
