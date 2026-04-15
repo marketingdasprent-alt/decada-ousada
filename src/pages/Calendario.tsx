@@ -161,13 +161,13 @@ const Calendario: React.FC = () => {
         eventos={eventos}
         currentMonth={currentMonth}
         onMonthChange={setCurrentMonth}
-        onEventClick={(hasPermission('calendario_editar') || hasPermission('calendario_editar_todos')) ? handleEdit : undefined}
-        onDeleteEvent={(hasPermission('calendario_eliminar') || hasPermission('calendario_editar_todos')) ? (id) => deleteMutation.mutate(id) : undefined}
+        onEventClick={(hasPermission('calendario_editar') || hasPermission('calendario_gerir_todos')) ? handleEdit : undefined}
+        onDeleteEvent={(hasPermission('calendario_eliminar') || hasPermission('calendario_gerir_todos')) ? (id) => deleteMutation.mutate(id) : undefined}
         onEventDetails={handleDetails}
         onDaySelect={setSelectedDay}
         isLoading={isLoading}
         currentUserId={user?.id}
-        canEditAll={hasPermission('calendario_editar_todos')}
+        canEditAll={hasPermission('calendario_gerir_todos')}
       />
 
       <EventoDialog
