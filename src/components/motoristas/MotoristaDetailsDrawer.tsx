@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { FileSignature, Pencil, User, Phone, CreditCard, Car, FileText, MessageSquare, Fuel } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,18 @@ import {
 } from "@/components/ui/dialog";
 import { SectionCard } from "@/components/ui/section-card";
 import { MotoristaFullModal } from "./MotoristaFullModal";
+import { supabase } from "@/integrations/supabase/client";
 import type { Motorista } from "@/pages/Motoristas";
+
+interface ViaturaAtual {
+  matricula: string;
+  marca: string;
+  modelo: string;
+  ano: number | null;
+  cor: string | null;
+  categoria: string | null;
+  data_inicio: string;
+}
 
 interface MotoristaDetailsDrawerProps {
   open: boolean;
@@ -28,6 +39,28 @@ export function MotoristaDetailsDrawer({
 }: MotoristaDetailsDrawerProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [initialModalTab, setInitialModalTab] = useState<"dados" | "contratos">("dados");
+  const [viaturaAtual, setViaturaAtual] = useState<ViaturaAtual | null>(null);
+
+  useEffect(() => {
+    if (!motorista) return;
+    supabase
+      .from('motorista_viaturas')
+      .select('data_inicio, viaturas(matricula, marca, modelo, ano, cor, categoria)')
+      .eq('motorista_id', motorista.id)
+      .eq('status', 'ativo')
+      .is('data_fim', null)
+      .order('data_inicio', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.viaturas) {
+          const v = data.viaturas as any;
+          setViaturaAtual({ ...v, data_inicio: data.data_inicio });
+        } else {
+          setViaturaAtual(null);
+        }
+      });
+  }, [motorista?.id]);
 
   if (!motorista) return null;
 
@@ -204,6 +237,26 @@ export function MotoristaDetailsDrawer({
                 <p className="text-muted-foreground italic text-center py-2">Nenhum cartão associado</p>
               )}
             </div>
+          </SectionCard>
+
+          {/* Viatura Atual */}
+          <SectionCard
+            icon={<Car className="h-4 w-4" />}
+            title="Viatura Atual"
+            headerClassName="bg-sky-50 dark:bg-sky-950/30"
+          >
+            {viaturaAtual ? (
+              <div className="space-y-2 text-sm">
+                <InfoItem label="Matrícula" value={viaturaAtual.matricula} />
+                <InfoItem label="Marca / Modelo" value={`${viaturaAtual.marca} ${viaturaAtual.modelo}`} />
+                {viaturaAtual.ano && <InfoItem label="Ano" value={String(viaturaAtual.ano)} />}
+                {viaturaAtual.cor && <InfoItem label="Cor" value={viaturaAtual.cor} />}
+                {viaturaAtual.categoria && <InfoItem label="Categoria" value={viaturaAtual.categoria} />}
+                <InfoItem label="Desde" value={formatDate(viaturaAtual.data_inicio)} />
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic text-center py-2">Sem viatura associada</p>
+            )}
           </SectionCard>
         </div>
 

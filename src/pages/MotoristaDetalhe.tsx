@@ -34,6 +34,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface ViaturaAtual {
+  matricula: string;
+  marca: string;
+  modelo: string;
+  ano: number | null;
+  cor: string | null;
+  categoria: string | null;
+  data_inicio: string;
+}
+
 export default function MotoristaDetalhe() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -44,10 +54,12 @@ export default function MotoristaDetalhe() {
   const [initialModalTab, setInitialModalTab] = useState<"dados" | "contratos">("dados");
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const [viaturaAtual, setViaturaAtual] = useState<ViaturaAtual | null>(null);
 
   useEffect(() => {
     if (id) {
       loadMotorista();
+      loadViaturaAtual();
     }
   }, [id]);
 
@@ -77,6 +89,26 @@ export default function MotoristaDetalhe() {
       navigate("/motoristas");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadViaturaAtual = async () => {
+    if (!id) return;
+    const { data } = await supabase
+      .from('motorista_viaturas')
+      .select('data_inicio, viaturas(matricula, marca, modelo, ano, cor, categoria)')
+      .eq('motorista_id', id)
+      .eq('status', 'ativo')
+      .is('data_fim', null)
+      .order('data_inicio', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (data?.viaturas) {
+      const v = data.viaturas as any;
+      setViaturaAtual({ ...v, data_inicio: data.data_inicio });
+    } else {
+      setViaturaAtual(null);
     }
   };
 
@@ -364,6 +396,26 @@ export default function MotoristaDetalhe() {
             <InfoItem label="REPSOL" value={motorista.cartao_repsol || "-"} />
             <InfoItem label="EDP" value={motorista.cartao_edp || "-"} />
           </div>
+        </SectionCard>
+
+        <SectionCard
+          icon={<Car className="h-4 w-4" />}
+          title="Viatura Atual"
+          headerClassName="bg-sky-50 dark:bg-sky-950/30"
+          className="h-full"
+        >
+          {viaturaAtual ? (
+            <div className="space-y-1">
+              <InfoItem label="Matrícula" value={viaturaAtual.matricula} />
+              <InfoItem label="Marca / Modelo" value={`${viaturaAtual.marca} ${viaturaAtual.modelo}`} />
+              {viaturaAtual.ano && <InfoItem label="Ano" value={String(viaturaAtual.ano)} />}
+              {viaturaAtual.cor && <InfoItem label="Cor" value={viaturaAtual.cor} />}
+              {viaturaAtual.categoria && <InfoItem label="Categoria" value={viaturaAtual.categoria} />}
+              <InfoItem label="Desde" value={formatDate(viaturaAtual.data_inicio)} />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic text-center py-2">Sem viatura associada</p>
+          )}
         </SectionCard>
 
         {motorista.observacoes && (

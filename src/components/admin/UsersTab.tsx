@@ -80,6 +80,7 @@ export const UsersTab = () => {
             nome
           )
         `)
+        .or('cargo_id.neq.a0000000-0000-0000-0000-000000000001,cargo_id.is.null')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -100,6 +101,7 @@ export const UsersTab = () => {
       const { data, error } = await supabase
         .from('cargos')
         .select('*')
+        .neq('id', 'a0000000-0000-0000-0000-000000000001')
         .order('nome', { ascending: true });
 
       if (error) throw error;
