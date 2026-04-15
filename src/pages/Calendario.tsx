@@ -36,7 +36,6 @@ const Calendario: React.FC = () => {
   const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
   const [novoEventoOpen, setNovoEventoOpen] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
   const [historicoOpen, setHistoricoOpen] = useState(false);
   const [relatorioOpen, setRelatorioOpen] = useState(false);
@@ -114,7 +113,6 @@ const Calendario: React.FC = () => {
 
   const handleEdit = (evento: CalendarioEvento) => {
     setEditingEvento(evento);
-    setDialogOpen(true);
   };
 
   const handleNew = () => {
@@ -133,6 +131,13 @@ const Calendario: React.FC = () => {
         userId={user?.id || ''}
         defaultDate={selectedDay || undefined}
         onClose={() => setNovoEventoOpen(false)}
+      />
+    )}
+    {editingEvento && (
+      <EventoDialog
+        evento={editingEvento}
+        userId={user?.id || ''}
+        onClose={() => setEditingEvento(null)}
       />
     )}
     <div className="space-y-6">
@@ -170,15 +175,7 @@ const Calendario: React.FC = () => {
         canEditAll={hasPermission('calendario_gerir_todos')}
       />
 
-      <EventoDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        evento={editingEvento}
-        userId={user?.id || ''}
-        defaultDate={selectedDay || undefined}
-      />
-
-      <EventoHistoricoDialog
+<EventoHistoricoDialog
         open={historicoOpen}
         onOpenChange={setHistoricoOpen}
         evento={detailsEvento}

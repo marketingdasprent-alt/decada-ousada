@@ -1,236 +1,263 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { ArrowLeft, Loader2, Car, CalendarDays, MapPin, ArrowLeftRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { formatMatricula } from './NovoEventoPage';
 import type { CalendarioEvento } from '@/pages/Calendario';
 
 interface Props {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  evento: CalendarioEvento | null;
+  evento: CalendarioEvento;
   userId: string;
-  defaultDate?: Date;
+  onClose: () => void;
 }
 
 const TIPOS = [
-  { value: 'entrega', label: 'Entrega' },
-  { value: 'recolha', label: 'Recolha' },
-  { value: 'devolucao', label: 'Devolução' },
-  { value: 'troca', label: 'Troca' },
-  { value: 'upgrade', label: 'Upgrade' },
+  { value: 'entrega',   label: 'Entrega',             color: 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400',   desc: 'Entregar viatura a um motorista' },
+  { value: 'recolha',   label: 'Recolha',             color: 'border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-400',       desc: 'Motorista entrega a viatura — pendente chegada ao parque' },
+  { value: 'devolucao', label: 'Devolução',           color: 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-400', desc: 'Viatura já entregue no parque — fica disponível imediatamente' },
+  { value: 'troca',     label: 'Troca',               color: 'border-purple-500 bg-purple-500/10 text-purple-700 dark:text-purple-400', desc: 'Substituir viatura para o mesmo motorista' },
+  { value: 'upgrade',   label: 'Upgrade / Downgrade', color: 'border-yellow-500 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400', desc: 'Mudar categoria de viatura (impacto no dashboard)' },
 ];
 
-export const EventoDialog: React.FC<Props> = ({ open, onOpenChange, evento, userId, defaultDate }) => {
+function toLocalDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function toLocalTime(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
   const queryClient = useQueryClient();
-  const isEditing = !!evento;
 
-  const [matricula, setMatricula] = useState('');
-  const [matriculaDevolver, setMatriculaDevolver] = useState('');
-  const [cidade, setCidade] = useState('');
-  const [tipo, setTipo] = useState('entrega');
-  const [dataInicio, setDataInicio] = useState('');
-  const [dataFim, setDataFim] = useState('');
-  const [diaTodo, setDiaTodo] = useState(false);
-  const [observacoes, setObservacoes] = useState('');
+  const [tipo, setTipo] = useState(evento.tipo);
+  const [matricula, setMatricula] = useState(formatMatricula(evento.titulo));
+  const [matriculaDevolver, setMatriculaDevolver] = useState(
+    evento.matricula_devolver ? formatMatricula(evento.matricula_devolver) : ''
+  );
+  const [cidade, setCidade] = useState(evento.cidade || '');
+  const [data, setData] = useState(toLocalDate(evento.data_inicio));
+  const [hora, setHora] = useState(toLocalTime(evento.data_inicio));
+  const [diaTodo, setDiaTodo] = useState(evento.dia_todo);
+  const [observacoes, setObservacoes] = useState(evento.descricao || '');
 
+  // Reset matriculaDevolver when changing away from troca/upgrade
   useEffect(() => {
-    if (evento) {
-      setMatricula(evento.titulo);
-      setMatriculaDevolver(evento.matricula_devolver || '');
-      setCidade(evento.cidade || '');
-      setTipo(evento.tipo);
-      setDataInicio(evento.data_inicio.slice(0, 16));
-      setDataFim(evento.data_fim ? evento.data_fim.slice(0, 16) : '');
-      setDiaTodo(evento.dia_todo);
-      setObservacoes(evento.descricao || '');
-    } else {
-      const base = defaultDate || new Date();
-      const yyyy = base.getFullYear();
-      const mm = String(base.getMonth() + 1).padStart(2, '0');
-      const dd = String(base.getDate()).padStart(2, '0');
-      const local = `${yyyy}-${mm}-${dd}T00:00`;
-      setMatricula('');
-      setMatriculaDevolver('');
-      setCidade('');
-      setTipo('entrega');
-      setDataInicio(local);
-      setDataFim('');
-      setDiaTodo(false);
-      setObservacoes('');
-    }
-  }, [evento, open]);
+    if (tipo !== 'troca' && tipo !== 'upgrade') setMatriculaDevolver('');
+  }, [tipo]);
 
   const mutation = useMutation({
     mutationFn: async () => {
+      const dataISO = diaTodo
+        ? new Date(`${data}T00:00:00`).toISOString()
+        : new Date(`${data}T${hora}:00`).toISOString();
+
       const payload: any = {
         titulo: matricula.toUpperCase().replace(/[-\s]/g, ''),
-        cidade: cidade || null,
+        cidade: cidade.trim() || null,
         tipo,
-        data_inicio: new Date(dataInicio).toISOString(),
-        data_fim: dataFim ? new Date(dataFim).toISOString() : null,
+        data_inicio: dataISO,
+        data_fim: null,
         dia_todo: diaTodo,
         descricao: observacoes.trim() || null,
-        matricula_devolver: tipo === 'troca' ? (matriculaDevolver.toUpperCase().replace(/[-\s]/g, '') || null) : null,
+        matricula_devolver: (tipo === 'troca' || tipo === 'upgrade')
+          ? (matriculaDevolver.toUpperCase().replace(/[-\s]/g, '') || null)
+          : null,
       };
 
-      if (!isEditing) {
-        payload.criado_por = userId;
-      }
+      // Record changes for history
+      const changes: { campo: string; valor_anterior: string | null; valor_novo: string | null }[] = [];
+      const compare = (campo: string, oldVal: any, newVal: any) => {
+        const o = oldVal == null ? null : String(oldVal);
+        const n = newVal == null ? null : String(newVal);
+        if (o !== n) changes.push({ campo, valor_anterior: o, valor_novo: n });
+      };
+      compare('titulo', evento.titulo, payload.titulo);
+      compare('cidade', evento.cidade, payload.cidade);
+      compare('tipo', evento.tipo, payload.tipo);
+      compare('data_inicio', evento.data_inicio, payload.data_inicio);
+      compare('dia_todo', evento.dia_todo, payload.dia_todo);
+      compare('descricao', evento.descricao, payload.descricao);
+      compare('matricula_devolver', evento.matricula_devolver, payload.matricula_devolver);
 
-      if (isEditing) {
-        // Compare and record changes
-        const changes: { campo: string; valor_anterior: string | null; valor_novo: string | null }[] = [];
-        const compare = (campo: string, oldVal: any, newVal: any) => {
-          const o = oldVal == null ? null : String(oldVal);
-          const n = newVal == null ? null : String(newVal);
-          if (o !== n) changes.push({ campo, valor_anterior: o, valor_novo: n });
-        };
-        compare('titulo', evento.titulo, payload.titulo);
-        compare('cidade', evento.cidade, payload.cidade);
-        compare('tipo', evento.tipo, payload.tipo);
-        compare('data_inicio', evento.data_inicio, payload.data_inicio);
-        compare('data_fim', evento.data_fim, payload.data_fim);
-        compare('dia_todo', evento.dia_todo, payload.dia_todo);
-        compare('descricao', evento.descricao, payload.descricao);
-        compare('matricula_devolver', evento.matricula_devolver, payload.matricula_devolver);
+      const { error } = await supabase.from('calendario_eventos').update(payload).eq('id', evento.id);
+      if (error) throw error;
 
-        const { error } = await supabase
-          .from('calendario_eventos')
-          .update(payload)
-          .eq('id', evento.id);
-        if (error) throw error;
-
-        // Insert history records
-        if (changes.length > 0) {
-          const histRecords = changes.map(c => ({
-            evento_id: evento.id,
-            editado_por: userId,
-            campo: c.campo,
-            valor_anterior: c.valor_anterior,
-            valor_novo: c.valor_novo,
-          }));
-          await supabase.from('calendario_eventos_historico').insert(histRecords);
-        }
-      } else {
-        const { error } = await supabase
-          .from('calendario_eventos')
-          .insert(payload);
-        if (error) throw error;
-
-        // Notificar CC por email (apenas ao criar)
-        try {
-          await supabase.functions.invoke('send-calendar-notification', {
-            body: {
-              matricula: payload.titulo,
-              cidade: payload.cidade,
-              tipo: payload.tipo,
-              data_inicio: payload.data_inicio,
-              dia_todo: payload.dia_todo,
-            },
-          });
-        } catch (e) {
-          console.error('Erro ao enviar notificação CC:', e);
-        }
+      if (changes.length > 0) {
+        await supabase.from('calendario_eventos_historico').insert(
+          changes.map(c => ({ evento_id: evento.id, editado_por: userId, campo: c.campo, valor_anterior: c.valor_anterior, valor_novo: c.valor_novo }))
+        );
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendario-eventos'] });
-      toast.success(isEditing ? 'Evento actualizado' : 'Evento criado');
-      onOpenChange(false);
+      toast.success('Evento actualizado');
+      onClose();
     },
-    onError: () => toast.error('Erro ao guardar evento'),
+    onError: (err: any) => toast.error(err?.message || 'Erro ao guardar evento'),
   });
 
+  const canSave = !!matricula.trim() && !!data;
+  const tipoInfo = TIPOS.find(t => t.value === tipo);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Evento' : 'Novo Evento'}</DialogTitle>
-        </DialogHeader>
+    <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
 
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="matricula">{tipo === 'troca' ? 'Matrícula a Entregar' : 'Matrícula'}</Label>
-            <Input id="matricula" value={matricula} onChange={e => setMatricula(e.target.value)} placeholder="Ex: 26ZC03" />
-          </div>
-
-          {tipo === 'troca' && (
-            <div>
-              <Label htmlFor="matricula-devolver">Matrícula a Devolver</Label>
-              <Input id="matricula-devolver" value={matriculaDevolver} onChange={e => setMatriculaDevolver(e.target.value)} placeholder="Ex: 11AA22" />
-            </div>
+      {/* ── Header ── */}
+      <div className="flex items-center gap-3 border-b border-border px-4 py-3 bg-card shrink-0">
+        <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base font-semibold leading-tight">Editar Evento</h1>
+          {tipoInfo && (
+            <p className="text-xs text-muted-foreground truncate">{tipoInfo.desc}</p>
           )}
+        </div>
+        <Button onClick={() => mutation.mutate()} disabled={!canSave || mutation.isPending} className="shrink-0">
+          {mutation.isPending
+            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...</>
+            : 'Guardar'}
+        </Button>
+      </div>
 
-          <div>
-            <Label htmlFor="cidade">Cidade</Label>
-            <Input id="cidade" value={cidade} onChange={e => setCidade(e.target.value)} placeholder="Ex: Lisboa" />
+      {/* ── Body ── */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+
+          {/* Tipo de Evento */}
+          <div className="space-y-2">
+            <Label>Tipo de Evento</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {TIPOS.map(t => (
+                <button
+                  key={t.value}
+                  type="button"
+                  onClick={() => setTipo(t.value)}
+                  className={cn(
+                    'rounded-lg border-2 px-3 py-2.5 text-left transition-all text-sm',
+                    tipo === t.value
+                      ? t.color + ' font-semibold'
+                      : 'border-border hover:border-primary/40 hover:bg-muted/50 text-foreground'
+                  )}
+                >
+                  <div className="font-medium">{t.label}</div>
+                  <div className={cn('text-xs mt-0.5 leading-tight', tipo === t.value ? 'opacity-80' : 'text-muted-foreground')}>
+                    {t.desc}
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div>
-            <Label>Tipo</Label>
-            <Select value={tipo} onValueChange={setTipo}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TIPOS.map(t => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Viatura */}
+          <div className="space-y-4 rounded-lg border border-border p-4">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Car className="h-4 w-4 text-primary" />
+              Viatura
+            </h2>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="matricula">
+                {tipo === 'troca' || tipo === 'upgrade' ? 'Matrícula nova' : 'Matrícula'}
+              </Label>
+              <Input
+                id="matricula"
+                value={matricula}
+                onChange={e => setMatricula(e.target.value.toUpperCase())}
+                placeholder="Ex: AA-00-AA"
+                className="font-mono"
+              />
+            </div>
+
+            {(tipo === 'troca' || tipo === 'upgrade') && (
+              <div className="space-y-1.5">
+                <Label htmlFor="matricula-devolver" className="flex items-center gap-1.5">
+                  <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  Matrícula a devolver
+                </Label>
+                <Input
+                  id="matricula-devolver"
+                  value={matriculaDevolver}
+                  onChange={e => setMatriculaDevolver(e.target.value.toUpperCase())}
+                  placeholder="Ex: AA-00-AA"
+                  className="font-mono"
+                />
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Switch checked={diaTodo} onCheckedChange={setDiaTodo} id="dia-todo" />
-            <Label htmlFor="dia-todo">Dia inteiro</Label>
+          {/* Data e Localização */}
+          <div className="space-y-4 rounded-lg border border-border p-4">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-primary" />
+              Data e Localização
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="data">Data *</Label>
+                <Input id="data" type="date" value={data} onChange={e => setData(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-3">
+                  <Label htmlFor="hora">Hora</Label>
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={diaTodo}
+                      onChange={e => setDiaTodo(e.target.checked)}
+                      className="rounded"
+                    />
+                    Dia inteiro
+                  </label>
+                </div>
+                <Input
+                  id="hora"
+                  type="time"
+                  value={hora}
+                  onChange={e => setHora(e.target.value)}
+                  disabled={diaTodo}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="cidade" className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                Cidade
+              </Label>
+              <Input
+                id="cidade"
+                value={cidade}
+                onChange={e => setCidade(e.target.value)}
+                placeholder="Ex: Lisboa, Porto, Faro..."
+              />
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="data-inicio">{diaTodo ? 'Data' : 'Data e hora de início'}</Label>
-            <Input
-              id="data-inicio"
-              type={diaTodo ? 'date' : 'datetime-local'}
-              value={diaTodo ? dataInicio.slice(0, 10) : dataInicio}
-              onChange={e => setDataInicio(diaTodo ? e.target.value + 'T00:00' : e.target.value)}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="observacoes">Observações</Label>
+          {/* Observações */}
+          <div className="space-y-1.5">
+            <Label htmlFor="obs">Observações</Label>
             <Textarea
-              id="observacoes"
+              id="obs"
               value={observacoes}
               onChange={e => setObservacoes(e.target.value)}
-              placeholder="Notas adicionais sobre o evento..."
+              placeholder="Notas adicionais sobre este evento..."
               rows={3}
             />
           </div>
 
-          {!diaTodo && (
-            <div>
-              <Label htmlFor="data-fim">Data e hora de fim (opcional)</Label>
-              <Input
-                id="data-fim"
-                type="datetime-local"
-                value={dataFim}
-                onChange={e => setDataFim(e.target.value)}
-              />
-            </div>
-          )}
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={() => mutation.mutate()} disabled={!matricula || !dataInicio || mutation.isPending}>
-            {mutation.isPending ? 'A guardar...' : isEditing ? 'Guardar' : 'Criar'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 };
