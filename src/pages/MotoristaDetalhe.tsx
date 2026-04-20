@@ -11,15 +11,28 @@ import {
   FileText, 
   MessageSquare, 
   Fuel,
+  Receipt,
+  AlertTriangle,
   ArrowLeft,
   CheckCircle,
+  TrendingUp,
+  TrendingDown,
   XCircle,
-  Loader2
+  Loader2,
+  Wallet
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SectionCard } from "@/components/ui/section-card";
 import { MotoristaFullModal } from "@/components/motoristas/MotoristaFullModal";
+import { MotoristaTabDocumentos } from "@/components/motoristas/tabs/MotoristaTabDocumentos";
+import { MotoristaTabFinanceiro } from "@/components/motoristas/tabs/MotoristaTabFinanceiro";
+import { MotoristaTabRecibos } from "@/components/motoristas/tabs/MotoristaTabRecibos";
+import { MotoristaTabViaturas } from "@/components/motoristas/tabs/MotoristaTabViaturas";
+import { MotoristaTabContratos } from "@/components/motoristas/tabs/MotoristaTabContratos";
+import { MotoristaTabDanos } from "@/components/motoristas/tabs/MotoristaTabDanos";
 import type { Motorista } from "@/pages/Motoristas";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -55,11 +68,28 @@ export default function MotoristaDetalhe() {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const [viaturaAtual, setViaturaAtual] = useState<ViaturaAtual | null>(null);
+  const [activeTab, setActiveTab] = useState("dados");
+  const [financeiroResumo, setFinanceiroResumo] = useState({
+    totalCreditos: 0,
+    totalDebitos: 0,
+    saldo: 0
+  });
+
+  const TABS = [
+    { id: "dados", label: "Dados", icon: User },
+    { id: "documentos", label: "Documentos", icon: FileText },
+    { id: "financeiro", label: "Financeiro", icon: Wallet },
+    { id: "recibos", label: "Recibos", icon: Receipt },
+    { id: "viaturas", label: "Viaturas", icon: Car },
+    { id: "contratos", label: "Contratos", icon: FileSignature },
+    { id: "danos", label: "Danos", icon: AlertTriangle },
+  ];
 
   useEffect(() => {
     if (id) {
       loadMotorista();
       loadViaturaAtual();
+      loadFinanceiroResumo();
     }
   }, [id]);
 
@@ -89,6 +119,35 @@ export default function MotoristaDetalhe() {
       navigate("/motoristas");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadFinanceiroResumo = async () => {
+    if (!id) return;
+    try {
+      const { data, error } = await supabase
+        .from("motorista_financeiro")
+        .select("valor, tipo")
+        .eq("motorista_id", id)
+        .neq("status", "cancelado");
+
+      if (error) throw error;
+
+      let creditos = 0;
+      let debitos = 0;
+
+      (data || []).forEach(mov => {
+        if (mov.tipo === "credito") creditos += Number(mov.valor);
+        else if (mov.tipo === "debito") debitos += Number(mov.valor);
+      });
+
+      setFinanceiroResumo({
+        totalCreditos: creditos,
+        totalDebitos: debitos,
+        saldo: creditos - debitos
+      });
+    } catch (error) {
+      console.error("Erro ao carregar resumo financeiro:", error);
     }
   };
 
@@ -224,15 +283,6 @@ export default function MotoristaDetalhe() {
           </Button>
           
           <Button 
-            variant="outline" 
-            onClick={handleViewContracts}
-            className="flex-1 md:flex-none"
-          >
-            <FileSignature className="h-4 w-4 mr-2" />
-            Ver Contratos
-          </Button>
-
-          <Button 
             variant={motorista.status_ativo ? "destructive" : "default"}
             onClick={() => setIsStatusDialogOpen(true)}
             className={`flex-1 md:flex-none ${!motorista.status_ativo ? "bg-green-600 hover:bg-green-700" : ""}`}
@@ -246,189 +296,265 @@ export default function MotoristaDetalhe() {
         </div>
       </div>
 
-      {/* Grid de Informações - Layout unificado para alinhamento e tamanhos iguais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        
-        {/* Row 1 */}
-        <SectionCard
-          icon={<User className="h-4 w-4" />}
-          title="Dados Pessoais"
-          headerClassName="bg-blue-50 dark:bg-blue-950/30"
-          className="h-full"
-        >
-          <div className="space-y-1">
-            <InfoItem label="NIF" value={motorista.nif || "-"} />
-            <InfoItem label="Morada" value={motorista.morada || "-"} />
-            <InfoItem label="Código Postal" value={motorista.codigo_postal || "-"} />
-            <InfoItem label="Cidade" value={motorista.cidade || "-"} />
-          </div>
-        </SectionCard>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="bg-card border w-full h-auto p-1 flex-wrap justify-start">
+          {TABS.map((tab) => (
+            <TabsTrigger 
+              key={tab.id} 
+              value={tab.id}
+              className="flex items-center gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-        <SectionCard
-          icon={<CreditCard className="h-4 w-4" />}
-          title="Identificação"
-          headerClassName="bg-amber-50 dark:bg-amber-950/30"
-          className="h-full"
-        >
-          <div className="space-y-1">
-            <InfoItem label="Tipo" value={motorista.documento_tipo || "-"} />
-            <InfoItem label="Número" value={motorista.documento_numero || "-"} />
-            <InfoItem label="Validade" value={formatDate(motorista.documento_validade)} />
-            {(motorista.documento_ficheiro_url || motorista.documento_identificacao_verso_url) && (
-              <div className="flex gap-2 pt-3">
-                {motorista.documento_ficheiro_url && (
-                  <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
-                    <a href={motorista.documento_ficheiro_url} target="_blank" rel="noopener noreferrer">Ver Frente</a>
-                  </Button>
-                )}
-                {motorista.documento_identificacao_verso_url && (
-                  <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
-                    <a href={motorista.documento_identificacao_verso_url} target="_blank" rel="noopener noreferrer">Ver Verso</a>
-                  </Button>
+        <TabsContent value="dados" className="space-y-6 mt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <SectionCard
+              icon={<User className="h-4 w-4" />}
+              title="Dados Pessoais"
+              headerClassName="bg-blue-50 dark:bg-blue-950/30"
+              className="h-full"
+            >
+              <div className="space-y-1">
+                <InfoItem label="NIF" value={motorista.nif || "-"} />
+                <InfoItem label="Morada" value={motorista.morada || "-"} />
+                <InfoItem label="Código Postal" value={motorista.codigo_postal || "-"} />
+                <InfoItem label="Cidade" value={motorista.cidade || "-"} />
+                <InfoItem label="IBAN" value={motorista.iban || "-"} />
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              icon={<CreditCard className="h-4 w-4" />}
+              title="Identificação"
+              headerClassName="bg-amber-50 dark:bg-amber-950/30"
+              className="h-full"
+            >
+              <div className="space-y-1">
+                <InfoItem label="Tipo" value={motorista.documento_tipo || "-"} />
+                <InfoItem label="Número" value={motorista.documento_numero || "-"} />
+                <InfoItem label="Validade" value={formatDate(motorista.documento_validade)} />
+                {(motorista.documento_ficheiro_url || motorista.documento_identificacao_verso_url) && (
+                  <div className="flex gap-2 pt-3">
+                    {motorista.documento_ficheiro_url && (
+                      <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
+                        <a href={motorista.documento_ficheiro_url} target="_blank" rel="noopener noreferrer">Ver Frente</a>
+                      </Button>
+                    )}
+                    {motorista.documento_identificacao_verso_url && (
+                      <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
+                        <a href={motorista.documento_identificacao_verso_url} target="_blank" rel="noopener noreferrer">Ver Verso</a>
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        </SectionCard>
+            </SectionCard>
 
-        <SectionCard
-          icon={<FileText className="h-4 w-4" />}
-          title="Licença TVDE"
-          headerClassName="bg-cyan-50 dark:bg-cyan-950/30"
-          className="h-full"
-        >
-          <div className="space-y-1">
-            <InfoItem label="Número" value={motorista.licenca_tvde_numero || "-"} />
-            <InfoItem label="Validade" value={formatDate(motorista.licenca_tvde_validade)} />
-            {motorista.licenca_tvde_ficheiro_url && (
-              <div className="pt-3">
-                <Button variant="outline" size="sm" className="w-full text-xs" asChild>
-                  <a href={motorista.licenca_tvde_ficheiro_url} target="_blank" rel="noopener noreferrer">Ver Documento</a>
-                </Button>
-              </div>
-            )}
-          </div>
-        </SectionCard>
-
-        {/* Row 2 */}
-        <SectionCard
-          icon={<Phone className="h-4 w-4" />}
-          title="Contactos"
-          headerClassName="bg-green-50 dark:bg-green-950/30"
-          className="h-full"
-        >
-          <div className="space-y-1">
-            <InfoItem label="Telefone" value={motorista.telefone || "-"} />
-            <InfoItem label="Email" value={motorista.email || "-"} />
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          icon={<Car className="h-4 w-4" />}
-          title="Carta de Condução"
-          headerClassName="bg-purple-50 dark:bg-purple-950/30"
-          className="h-full"
-        >
-          <div className="space-y-1">
-            <InfoItem label="Número" value={motorista.carta_conducao || "-"} />
-            <InfoItem label="Categorias" value={motorista.carta_categorias?.join(", ") || "-"} />
-            <InfoItem label="Validade" value={formatDate(motorista.carta_validade)} />
-            {(motorista.carta_ficheiro_url || motorista.carta_conducao_verso_url) && (
-              <div className="flex gap-2 pt-3">
-                {motorista.carta_ficheiro_url && (
-                  <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
-                    <a href={motorista.carta_ficheiro_url} target="_blank" rel="noopener noreferrer">Ver Frente</a>
-                  </Button>
-                )}
-                {motorista.carta_conducao_verso_url && (
-                  <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
-                    <a href={motorista.carta_conducao_verso_url} target="_blank" rel="noopener noreferrer">Ver Verso</a>
-                  </Button>
+            <SectionCard
+              icon={<FileText className="h-4 w-4" />}
+              title="Licença TVDE"
+              headerClassName="bg-cyan-50 dark:bg-cyan-950/30"
+              className="h-full"
+            >
+              <div className="space-y-1">
+                <InfoItem label="Número" value={motorista.licenca_tvde_numero || "-"} />
+                <InfoItem label="Validade" value={formatDate(motorista.licenca_tvde_validade)} />
+                {motorista.licenca_tvde_ficheiro_url && (
+                  <div className="pt-3">
+                    <Button variant="outline" size="sm" className="w-full text-xs" asChild>
+                      <a href={motorista.licenca_tvde_ficheiro_url} target="_blank" rel="noopener noreferrer">Ver Documento</a>
+                    </Button>
+                  </div>
                 )}
               </div>
+            </SectionCard>
+
+            <SectionCard
+              icon={<Phone className="h-4 w-4" />}
+              title="Contactos"
+              headerClassName="bg-green-50 dark:bg-green-950/30"
+              className="h-full"
+            >
+              <div className="space-y-1">
+                <InfoItem label="Telefone" value={motorista.telefone || "-"} />
+                <InfoItem label="Email" value={motorista.email || "-"} />
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              icon={<Car className="h-4 w-4" />}
+              title="Carta de Condução"
+              headerClassName="bg-purple-50 dark:bg-purple-950/30"
+              className="h-full"
+            >
+              <div className="space-y-1">
+                <InfoItem label="Número" value={motorista.carta_conducao || "-"} />
+                <InfoItem label="Categorias" value={motorista.carta_categorias?.join(", ") || "-"} />
+                <InfoItem label="Validade" value={formatDate(motorista.carta_validade)} />
+                {(motorista.carta_ficheiro_url || motorista.carta_conducao_verso_url) && (
+                  <div className="flex gap-2 pt-3">
+                    {motorista.carta_ficheiro_url && (
+                      <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
+                        <a href={motorista.carta_ficheiro_url} target="_blank" rel="noopener noreferrer">Ver Frente</a>
+                      </Button>
+                    )}
+                    {motorista.carta_conducao_verso_url && (
+                      <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
+                        <a href={motorista.carta_conducao_verso_url} target="_blank" rel="noopener noreferrer">Ver Verso</a>
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              icon={<FileText className="h-4 w-4" />}
+              title="Documentos Adicionais"
+              headerClassName="bg-slate-50 dark:bg-slate-950/30"
+              className="h-full"
+            >
+              <div className="grid grid-cols-1 gap-2 pt-1">
+                {motorista.registo_criminal_url && (
+                  <Button variant="outline" size="sm" className="w-full justify-start text-xs" asChild>
+                    <a href={motorista.registo_criminal_url} target="_blank" rel="noopener noreferrer">
+                      <FileText className="h-3 w-3 mr-2" /> Registo Criminal
+                    </a>
+                  </Button>
+                )}
+                {motorista.comprovativo_morada_url && (
+                  <Button variant="outline" size="sm" className="w-full justify-start text-xs" asChild>
+                    <a href={motorista.comprovativo_morada_url} target="_blank" rel="noopener noreferrer">
+                      <FileText className="h-3 w-3 mr-2" /> Comprovativo Morada
+                    </a>
+                  </Button>
+                )}
+                {motorista.comprovativo_iban_url && (
+                  <Button variant="outline" size="sm" className="w-full justify-start text-xs" asChild>
+                    <a href={motorista.comprovativo_iban_url} target="_blank" rel="noopener noreferrer">
+                      <FileText className="h-3 w-3 mr-2" /> Comprovativo IBAN
+                    </a>
+                  </Button>
+                )}
+                {!motorista.registo_criminal_url && !motorista.comprovativo_morada_url && !motorista.comprovativo_iban_url && (
+                  <p className="text-muted-foreground italic text-center py-2 text-sm">Sem documentos extra</p>
+                )}
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              icon={<Fuel className="h-4 w-4" />}
+              title="Cartões Frota"
+              headerClassName="bg-orange-50 dark:bg-orange-950/30"
+              className="h-full"
+            >
+              <div className="space-y-1">
+                <InfoItem label="BP" value={motorista.cartao_bp || "-"} />
+                <InfoItem label="REPSOL" value={motorista.cartao_repsol || "-"} />
+                <InfoItem label="EDP" value={motorista.cartao_edp || "-"} />
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              icon={<Car className="h-4 w-4" />}
+              title="Viatura Atual"
+              headerClassName="bg-sky-50 dark:bg-sky-950/30"
+              className="h-full"
+            >
+              {viaturaAtual ? (
+                <div className="space-y-1">
+                  <InfoItem label="Matrícula" value={viaturaAtual.matricula} />
+                  <InfoItem label="Marca / Modelo" value={`${viaturaAtual.marca} ${viaturaAtual.modelo}`} />
+                  {viaturaAtual.ano && <InfoItem label="Ano" value={String(viaturaAtual.ano)} />}
+                  {viaturaAtual.cor && <InfoItem label="Cor" value={viaturaAtual.cor} />}
+                  {viaturaAtual.categoria && <InfoItem label="Categoria" value={viaturaAtual.categoria} />}
+                  <InfoItem label="Desde" value={formatDate(viaturaAtual.data_inicio)} />
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic text-center py-2">Sem viatura associada</p>
+              )}
+            </SectionCard>
+
+            {motorista.observacoes && (
+              <SectionCard
+                icon={<MessageSquare className="h-4 w-4" />}
+                title="Observações"
+                headerClassName="bg-muted/50"
+                className="h-full"
+              >
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{motorista.observacoes}</p>
+              </SectionCard>
             )}
+
+            <SectionCard
+              icon={<Wallet className="h-4 w-4" />}
+              title="Resumo Financeiro (Geral)"
+              headerClassName="bg-indigo-50 dark:bg-indigo-950/30"
+              className="h-full"
+            >
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-100 dark:border-green-900/30">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium">Total Créditos</span>
+                  </div>
+                  <span className="font-bold text-green-600">
+                    {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(financeiroResumo.totalCreditos)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30">
+                  <div className="flex items-center gap-2">
+                    <TrendingDown className="h-4 w-4 text-red-600" />
+                    <span className="text-sm font-medium">Total Débitos</span>
+                  </div>
+                  <span className="font-bold text-red-600">
+                    {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(financeiroResumo.totalDebitos)}
+                  </span>
+                </div>
+
+                <div className="pt-2 border-t flex justify-between items-center">
+                  <span className="text-sm font-semibold">Saldo Atual</span>
+                  <span className={cn(
+                    "font-bold text-lg",
+                    financeiroResumo.saldo >= 0 ? "text-green-600" : "text-red-600"
+                  )}>
+                    {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(financeiroResumo.saldo)}
+                  </span>
+                </div>
+              </div>
+            </SectionCard>
           </div>
-        </SectionCard>
+        </TabsContent>
 
-        <SectionCard
-          icon={<FileText className="h-4 w-4" />}
-          title="Documentos Adicionais"
-          headerClassName="bg-slate-50 dark:bg-slate-950/30"
-          className="h-full"
-        >
-          <div className="grid grid-cols-1 gap-2 pt-1">
-            {motorista.registo_criminal_url && (
-              <Button variant="outline" size="sm" className="w-full justify-start text-xs" asChild>
-                <a href={motorista.registo_criminal_url} target="_blank" rel="noopener noreferrer">
-                  <FileText className="h-3 w-3 mr-2" /> Registo Criminal
-                </a>
-              </Button>
-            )}
-            {motorista.comprovativo_morada_url && (
-              <Button variant="outline" size="sm" className="w-full justify-start text-xs" asChild>
-                <a href={motorista.comprovativo_morada_url} target="_blank" rel="noopener noreferrer">
-                  <FileText className="h-3 w-3 mr-2" /> Comprovativo Morada
-                </a>
-              </Button>
-            )}
-            {motorista.comprovativo_iban_url && (
-              <Button variant="outline" size="sm" className="w-full justify-start text-xs" asChild>
-                <a href={motorista.comprovativo_iban_url} target="_blank" rel="noopener noreferrer">
-                  <FileText className="h-3 w-3 mr-2" /> Comprovativo IBAN
-                </a>
-              </Button>
-            )}
-            {!motorista.registo_criminal_url && !motorista.comprovativo_morada_url && !motorista.comprovativo_iban_url && (
-              <p className="text-muted-foreground italic text-center py-2 text-sm">Sem documentos extra</p>
-            )}
-          </div>
-        </SectionCard>
+        <TabsContent value="documentos">
+          <MotoristaTabDocumentos motorista={motorista} />
+        </TabsContent>
 
-        {/* Row 3 */}
-        <SectionCard
-          icon={<Fuel className="h-4 w-4" />}
-          title="Cartões Frota"
-          headerClassName="bg-orange-50 dark:bg-orange-950/30"
-          className="h-full"
-        >
-          <div className="space-y-1">
-            <InfoItem label="BP" value={motorista.cartao_bp || "-"} />
-            <InfoItem label="REPSOL" value={motorista.cartao_repsol || "-"} />
-            <InfoItem label="EDP" value={motorista.cartao_edp || "-"} />
-          </div>
-        </SectionCard>
+        <TabsContent value="financeiro">
+          <MotoristaTabFinanceiro motorista={motorista} />
+        </TabsContent>
 
-        <SectionCard
-          icon={<Car className="h-4 w-4" />}
-          title="Viatura Atual"
-          headerClassName="bg-sky-50 dark:bg-sky-950/30"
-          className="h-full"
-        >
-          {viaturaAtual ? (
-            <div className="space-y-1">
-              <InfoItem label="Matrícula" value={viaturaAtual.matricula} />
-              <InfoItem label="Marca / Modelo" value={`${viaturaAtual.marca} ${viaturaAtual.modelo}`} />
-              {viaturaAtual.ano && <InfoItem label="Ano" value={String(viaturaAtual.ano)} />}
-              {viaturaAtual.cor && <InfoItem label="Cor" value={viaturaAtual.cor} />}
-              {viaturaAtual.categoria && <InfoItem label="Categoria" value={viaturaAtual.categoria} />}
-              <InfoItem label="Desde" value={formatDate(viaturaAtual.data_inicio)} />
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground italic text-center py-2">Sem viatura associada</p>
-          )}
-        </SectionCard>
+        <TabsContent value="recibos">
+          <MotoristaTabRecibos motorista={motorista} />
+        </TabsContent>
 
-        {motorista.observacoes && (
-          <SectionCard
-            icon={<MessageSquare className="h-4 w-4" />}
-            title="Observações"
-            headerClassName="bg-muted/50"
-            className="h-full lg:col-span-2"
-          >
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">{motorista.observacoes}</p>
-          </SectionCard>
-        )}
-      </div>
+        <TabsContent value="viaturas">
+          <MotoristaTabViaturas motorista={motorista} />
+        </TabsContent>
+
+        <TabsContent value="contratos">
+          <MotoristaTabContratos motorista={motorista} onMotoristaUpdated={loadMotorista} />
+        </TabsContent>
+
+        <TabsContent value="danos">
+          <MotoristaTabDanos motorista={motorista} />
+        </TabsContent>
+      </Tabs>
 
       {/* Modais de Suporte */}
       <MotoristaFullModal 

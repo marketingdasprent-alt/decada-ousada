@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -96,10 +95,8 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
   const [formData, setFormData] = useState({
     plataforma: '' as PlataformaOperacional | '',
     nome: '',
-    cookies_json: '',
     login: '',
     password: '',
-    uberAuthMode: 'cookies' as 'credentials' | 'cookies',
     cron_schedule: 'disabled' as 'disabled' | 'daily' | 'weekly' | 'custom',
     cron_custom: '',
   });
@@ -108,10 +105,8 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
     setFormData({
       plataforma: '',
       nome: '',
-      cookies_json: '',
       login: '',
       password: '',
-      uberAuthMode: 'cookies',
       cron_schedule: 'disabled',
       cron_custom: '',
     });
@@ -135,13 +130,11 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
     isRepsol ? REPSOL_DEFAULTS :
     isEdp ? EDP_DEFAULTS :
     UBER_DEFAULTS;
-  const needsLoginPassword = isBolt || isBp || isRepsol || isEdp || (isUber && formData.uberAuthMode === 'credentials');
+  const needsLoginPassword = isUber || isBolt || isBp || isRepsol || isEdp;
   const selectedPlatform = PLATFORMS.find((p) => p.id === formData.plataforma);
 
   const canProceedStep1 = !!formData.plataforma;
-  const canProceedStep2 = needsLoginPassword
-    ? !!(formData.login && formData.password)
-    : true; // cookies are optional for uber
+  const canProceedStep2 = !!(formData.login && formData.password);
 
   const handleNext = () => {
     if (step === 1 && !canProceedStep1) {
@@ -201,20 +194,9 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
         robot_target_platform: defaults.robot_target_platform,
       };
 
-      if (isUber && formData.uberAuthMode === 'credentials') {
-        insertData.auth_mode = 'password';
-        insertData.client_id = formData.login;
-        insertData.client_secret = formData.password;
-        insertData.cookies_json = null;
-      } else if (needsLoginPassword) {
-        insertData.client_id = formData.login;
-        insertData.client_secret = formData.password;
-        insertData.cookies_json = null;
-      } else {
-        insertData.client_id = null;
-        insertData.client_secret = null;
-        insertData.cookies_json = formData.cookies_json || null;
-      }
+      insertData.client_id = formData.login;
+      insertData.client_secret = formData.password;
+      insertData.cookies_json = null;
 
       const { data: insertedRows, error } = await supabase
         .from('plataformas_configuracao')
@@ -324,98 +306,48 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
 
             {/* Right: Form */}
             <div className="flex-1 space-y-4">
-              {isUber && (
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      formData.uberAuthMode === 'credentials' && 'bg-emerald-500 text-white hover:bg-emerald-600 hover:text-white border-emerald-500'
-                    )}
-                    onClick={() => setFormData((prev) => ({ ...prev, uberAuthMode: 'credentials' }))}
-                  >
-                    Credenciais
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      formData.uberAuthMode === 'cookies' && 'bg-emerald-500 text-white hover:bg-emerald-600 hover:text-white border-emerald-500'
-                    )}
-                    onClick={() => setFormData((prev) => ({ ...prev, uberAuthMode: 'cookies' }))}
-                  >
-                    Cookies
-                  </Button>
-                </div>
-              )}
-
               <p className="text-sm text-muted-foreground">
-                {needsLoginPassword
-                  ? `Introduza as credenciais da sua conta ${selectedPlatform.name}.`
-                  : `Introduza os cookies da sua conta ${selectedPlatform.name}.`}
+                Introduza as credenciais da sua conta {selectedPlatform.name}.
               </p>
-
-              {needsLoginPassword ? (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="login">Email *</Label>
-                    <Input
-                      id="login"
-                      type="email"
-                      placeholder="email@empresa.com"
-                      value={formData.login}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, login: e.target.value }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password *</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, password: e.target.value }))
-                        }
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-2">
-                  <Label htmlFor="cookies_json">Cookies (JSON)</Label>
-                  <Textarea
-                    id="cookies_json"
-                    placeholder='[{"name":"session","value":"abc123","domain":".uber.com"}]'
-                    className="min-h-[120px] font-mono text-xs"
-                    value={formData.cookies_json}
+              <div className="space-y-2">
+                <Label htmlFor="login">Email *</Label>
+                <Input
+                  id="login"
+                  type="email"
+                  placeholder="email@empresa.com"
+                  value={formData.login}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, login: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={formData.password}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, cookies_json: e.target.value }))
+                      setFormData((prev) => ({ ...prev, password: e.target.value }))
                     }
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Cole aqui o array JSON de cookies exportados do browser.
-                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         )}
@@ -432,15 +364,7 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
               />
               <div>
                 <p className="font-semibold text-foreground">{selectedPlatform.name}</p>
-                {needsLoginPassword && formData.login && (
-                  <p className="text-sm text-muted-foreground">
-                    {maskEmail(formData.login)}
-                  </p>
-                )}
-                {isUber && formData.uberAuthMode === 'cookies' && formData.cookies_json && (
-                  <p className="text-sm text-muted-foreground">Cookies configurados</p>
-                )}
-                {isUber && formData.uberAuthMode === 'credentials' && formData.login && (
+                {formData.login && (
                   <p className="text-sm text-muted-foreground">
                     {maskEmail(formData.login)}
                   </p>

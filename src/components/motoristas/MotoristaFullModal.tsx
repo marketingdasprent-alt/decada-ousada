@@ -7,7 +7,6 @@ import {
   FileSignature,
   Receipt,
   AlertTriangle,
-  PlusCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,10 +24,9 @@ import { MotoristaTabRecibos } from "./tabs/MotoristaTabRecibos";
 import { MotoristaTabViaturas } from "./tabs/MotoristaTabViaturas";
 import { MotoristaTabContratos } from "./tabs/MotoristaTabContratos";
 import { MotoristaTabDanos } from "./tabs/MotoristaTabDanos";
-import { MotoristaTabOutrosCustos } from "./tabs/MotoristaTabOutrosCustos";
 import type { Motorista } from "@/pages/Motoristas";
 
-type TabId = "dados" | "documentos" | "financeiro" | "recibos" | "viaturas" | "contratos" | "danos" | "custos";
+type TabId = "dados" | "documentos" | "financeiro" | "recibos" | "viaturas" | "contratos" | "danos";
 
 interface Tab {
   id: TabId;
@@ -44,7 +42,6 @@ const TABS: Tab[] = [
   { id: "viaturas", label: "Viaturas", icon: Car },
   { id: "contratos", label: "Contratos", icon: FileSignature },
   { id: "danos", label: "Danos", icon: AlertTriangle },
-  { id: "custos", label: "Outros Custos", icon: PlusCircle },
 ];
 
 interface MotoristaFullModalProps {
@@ -97,8 +94,6 @@ export function MotoristaFullModal({
         return <MotoristaTabContratos motorista={motorista} onMotoristaUpdated={onMotoristaUpdated} />;
       case "danos":
         return <MotoristaTabDanos motorista={motorista} />;
-      case "custos":
-        return <MotoristaTabOutrosCustos motorista={motorista} />;
       default:
         return null;
     }

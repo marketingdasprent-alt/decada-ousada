@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import { format, differenceInMonths, differenceInDays } from "date-fns";
+import { format, differenceInMonths, differenceInDays, addMonths } from "date-fns";
 import {
   Car,
   Plus,
   X,
-  RefreshCw,
   Calendar,
   History,
+  Flame,
+  ClipboardList,
+  AlertTriangle,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +72,9 @@ interface MotoristaViatura {
   data_fim: string | null;
   status: string;
   observacoes: string | null;
+  extintor_numero: string | null;
+  extintor_validade: string | null;
+  contrato_prestacao_assinatura: string | null;
   viatura: Viatura;
 }
 
@@ -82,12 +88,21 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [desassociarDialogOpen, setDesassociarDialogOpen] = useState(false);
+  const [editExtintorOpen, setEditExtintorOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editExtintorData, setEditExtintorData] = useState({
+    extintor_numero: "",
+    extintor_validade: "",
+    contrato_prestacao_assinatura: "",
+  });
 
   const [formData, setFormData] = useState({
     viatura_id: "",
     data_inicio: format(new Date(), "yyyy-MM-dd"),
     observacoes: "",
+    extintor_numero: "",
+    extintor_validade: "",
+    contrato_prestacao_assinatura: format(new Date(), "yyyy-MM-dd"),
   });
 
   useEffect(() => {
@@ -107,6 +122,9 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
           data_fim,
           status,
           observacoes,
+          extintor_numero,
+          extintor_validade,
+          contrato_prestacao_assinatura,
           viatura:viaturas (
             id,
             matricula,
@@ -149,6 +167,20 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
   const viaturaAtual = associacoes.find((a) => a.status === "ativo");
   const historico = associacoes.filter((a) => a.status !== "ativo");
 
+  const getValidityStatus = (date: string | null | undefined) => {
+    if (!date) return null;
+    const days = differenceInDays(new Date(date), new Date());
+    if (days < 0) return { status: 'expired', label: 'Expirado', days } as const;
+    if (days <= 30) return { status: 'expiring', label: `Expira em ${days} dia(s)`, days } as const;
+    return { status: 'valid', label: `Válido (${format(new Date(date), 'dd/MM/yyyy')})`, days } as const;
+  };
+
+  const extintorStatus = getValidityStatus(viaturaAtual?.extintor_validade);
+  const contratoValidade = viaturaAtual?.contrato_prestacao_assinatura
+    ? format(addMonths(new Date(viaturaAtual.contrato_prestacao_assinatura), 12), 'yyyy-MM-dd')
+    : null;
+  const contratoStatus = getValidityStatus(contratoValidade);
+
   const calcularDuracao = (dataInicio: string, dataFim: string | null) => {
     const inicio = new Date(dataInicio);
     const fim = dataFim ? new Date(dataFim) : new Date();
@@ -176,6 +208,9 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
         data_inicio: formData.data_inicio,
         observacoes: formData.observacoes || null,
         status: "ativo",
+        extintor_numero: formData.extintor_numero || null,
+        extintor_validade: formData.extintor_validade || null,
+        contrato_prestacao_assinatura: formData.contrato_prestacao_assinatura || null,
       });
 
       if (insertError) throw insertError;
@@ -193,11 +228,48 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
         viatura_id: "",
         data_inicio: format(new Date(), "yyyy-MM-dd"),
         observacoes: "",
+        extintor_numero: "",
+        extintor_validade: "",
+        contrato_prestacao_assinatura: format(new Date(), "yyyy-MM-dd"),
       });
       loadData();
     } catch (error) {
       console.error("Erro ao associar viatura:", error);
       toast.error("Erro ao associar viatura");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openEditExtintor = () => {
+    if (!viaturaAtual) return;
+    setEditExtintorData({
+      extintor_numero: viaturaAtual.extintor_numero || "",
+      extintor_validade: viaturaAtual.extintor_validade || "",
+      contrato_prestacao_assinatura: viaturaAtual.contrato_prestacao_assinatura || "",
+    });
+    setEditExtintorOpen(true);
+  };
+
+  const handleSaveExtintor = async () => {
+    if (!viaturaAtual) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("motorista_viaturas")
+        .update({
+          extintor_numero: editExtintorData.extintor_numero || null,
+          extintor_validade: editExtintorData.extintor_validade || null,
+          contrato_prestacao_assinatura: editExtintorData.contrato_prestacao_assinatura || null,
+        })
+        .eq("id", viaturaAtual.id);
+      if (error) throw error;
+      toast.success("Dados atualizados com sucesso!");
+      setEditExtintorOpen(false);
+      loadData();
+    } catch (error) {
+      console.error("Erro ao atualizar:", error);
+      toast.error("Erro ao atualizar dados");
     } finally {
       setIsSubmitting(false);
     }
@@ -306,6 +378,60 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
                     Duração: {calcularDuracao(viaturaAtual.data_inicio, null)}
                   </span>
                 </div>
+
+                {/* Extintor e Contrato */}
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground font-medium">Extintor &amp; Contrato</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-muted-foreground gap-1"
+                      onClick={openEditExtintor}
+                    >
+                      <Pencil className="h-3 w-3" /> Editar
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                    extintorStatus?.status === 'expired' ? 'bg-destructive/10 text-destructive' :
+                    extintorStatus?.status === 'expiring' ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400' :
+                    extintorStatus?.status === 'valid' ? 'bg-green-500/10 text-green-700 dark:text-green-400' :
+                    'bg-muted text-muted-foreground'
+                  }`}>
+                    <Flame className="h-4 w-4 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium leading-none">
+                        Extintor{viaturaAtual.extintor_numero ? ` #${viaturaAtual.extintor_numero}` : ''}
+                      </p>
+                      <p className="text-xs mt-0.5">
+                        {extintorStatus ? extintorStatus.label : 'Sem registo'}
+                      </p>
+                    </div>
+                    {(extintorStatus?.status === 'expired' || extintorStatus?.status === 'expiring') && (
+                      <AlertTriangle className="h-4 w-4 shrink-0 ml-auto" />
+                    )}
+                  </div>
+
+                  <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                    contratoStatus?.status === 'expired' ? 'bg-destructive/10 text-destructive' :
+                    contratoStatus?.status === 'expiring' ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400' :
+                    contratoStatus?.status === 'valid' ? 'bg-green-500/10 text-green-700 dark:text-green-400' :
+                    'bg-muted text-muted-foreground'
+                  }`}>
+                    <ClipboardList className="h-4 w-4 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium leading-none">Contrato Prestação</p>
+                      <p className="text-xs mt-0.5">
+                        {contratoStatus ? contratoStatus.label : 'Sem data de assinatura'}
+                      </p>
+                    </div>
+                    {(contratoStatus?.status === 'expired' || contratoStatus?.status === 'expiring') && (
+                      <AlertTriangle className="h-4 w-4 shrink-0 ml-auto" />
+                    )}
+                  </div>
+                  </div>
+                </div>
               </div>
             </div>
             <Button
@@ -398,6 +524,47 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
               <Label>Data de Início</Label>
               <Input type="date" value={formData.data_inicio} onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })} />
             </div>
+            <div className="border-t pt-3 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Flame className="h-3.5 w-3.5 text-orange-500" /> Extintor
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Nº de Registo</Label>
+                  <Input
+                    placeholder="Ex: EXT-2024-001"
+                    value={formData.extintor_numero}
+                    onChange={(e) => setFormData({ ...formData, extintor_numero: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Validade</Label>
+                  <Input
+                    type="date"
+                    value={formData.extintor_validade}
+                    onChange={(e) => setFormData({ ...formData, extintor_validade: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t pt-3 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <ClipboardList className="h-3.5 w-3.5 text-blue-500" /> Contrato de Prestação de Serviços
+              </p>
+              <div className="space-y-1.5">
+                <Label>Data de Assinatura</Label>
+                <Input
+                  type="date"
+                  value={formData.contrato_prestacao_assinatura}
+                  onChange={(e) => setFormData({ ...formData, contrato_prestacao_assinatura: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  A validade é calculada automaticamente: 12 meses a contar desta data.
+                </p>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Observações (opcional)</Label>
               <Textarea value={formData.observacoes} onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })} placeholder="Notas sobre esta associação..." />
@@ -407,6 +574,62 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
             <Button onClick={handleAssociar} disabled={isSubmitting}>
               {isSubmitting ? "A associar..." : "Associar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Editar Extintor / Contrato */}
+      <Dialog open={editExtintorOpen} onOpenChange={setEditExtintorOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Extintor e Contrato</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Flame className="h-3.5 w-3.5 text-orange-500" /> Extintor
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Nº de Registo</Label>
+                  <Input
+                    placeholder="Ex: EXT-2024-001"
+                    value={editExtintorData.extintor_numero}
+                    onChange={(e) => setEditExtintorData({ ...editExtintorData, extintor_numero: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Validade</Label>
+                  <Input
+                    type="date"
+                    value={editExtintorData.extintor_validade}
+                    onChange={(e) => setEditExtintorData({ ...editExtintorData, extintor_validade: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="border-t pt-3 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <ClipboardList className="h-3.5 w-3.5 text-blue-500" /> Contrato de Prestação de Serviços
+              </p>
+              <div className="space-y-1.5">
+                <Label>Data de Assinatura</Label>
+                <Input
+                  type="date"
+                  value={editExtintorData.contrato_prestacao_assinatura}
+                  onChange={(e) => setEditExtintorData({ ...editExtintorData, contrato_prestacao_assinatura: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  A validade é calculada automaticamente: 12 meses a contar desta data.
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditExtintorOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveExtintor} disabled={isSubmitting}>
+              {isSubmitting ? "A guardar..." : "Guardar"}
             </Button>
           </DialogFooter>
         </DialogContent>

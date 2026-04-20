@@ -10,6 +10,7 @@ import { FormulariosTab } from '@/components/admin/FormulariosTab';
 import { CategoriasAssistenciaTab } from '@/components/admin/CategoriasAssistenciaTab';
 import { IntegracoesTab } from '@/components/admin/IntegracoesTab';
 import { EstacoesTab } from '@/components/admin/EstacoesTab';
+import { EmpresasTab } from '@/components/admin/EmpresasTab';
 import { ImportExcelDialog } from '@/components/admin/ImportExcelDialog';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import { Settings2, FileSpreadsheet } from 'lucide-react';
@@ -65,6 +66,9 @@ const AdminSettings = () => {
         <TabsTrigger value="estacoes" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
           Estações
         </TabsTrigger>
+        <TabsTrigger value="empresas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+          Empresas
+        </TabsTrigger>
       </TabsList>
 
       <div className="space-y-6">
@@ -94,6 +98,10 @@ const AdminSettings = () => {
 
         <TabsContent value="estacoes" className="mt-0">
           <EstacoesTab />
+        </TabsContent>
+
+        <TabsContent value="empresas" className="mt-0">
+          <EmpresasTab />
         </TabsContent>
       </div>
     </Tabs>

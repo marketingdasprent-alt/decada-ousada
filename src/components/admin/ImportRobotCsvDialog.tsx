@@ -39,6 +39,10 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
   const [edpFile, setEdpFile] = useState<File | null>(null);
   const edpRef = useRef<HTMLInputElement>(null);
 
+  // Bolt file
+  const [boltFile, setBoltFile] = useState<File | null>(null);
+  const boltRef = useRef<HTMLInputElement>(null);
+
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const handleImportUber = async () => {
@@ -87,6 +91,51 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
     }
   };
 
+  const handleImportBolt = async () => {
+    if (!boltFile) return;
+
+    setImporting(true);
+    setResult(null);
+
+    try {
+      const csvText = await boltFile.text();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error('Sessão inválida.');
+
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const url = `https://${projectId}.supabase.co/functions/v1/bolt-import-csv`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          integracao_id: integracaoId, 
+          dados_csv_bolt: csvText,
+          origem: 'Upload Manual (Contas)' 
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || `Erro ${response.status}`);
+
+      setResult({
+        success: true,
+        message: `Importação Bolt concluída: ${data.imported ?? 0} registos processados.`,
+      });
+      toast.success('CSV Bolt importado com sucesso');
+      onImportComplete();
+    } catch (error: any) {
+      setResult({ success: false, message: error.message });
+      toast.error(error.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleImportFuel = async (platform: 'bp' | 'repsol' | 'edp', file: File | null) => {
     if (!file) return;
 
@@ -130,6 +179,7 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
 
   const handleImport = () => {
     if (activeTab === 'uber') handleImportUber();
+    else if (activeTab === 'bolt') handleImportBolt();
     else if (activeTab === 'bp') handleImportFuel('bp', combustivelFile);
     else if (activeTab === 'repsol') handleImportFuel('repsol', repsolFile);
     else if (activeTab === 'edp') handleImportFuel('edp', edpFile);
@@ -140,6 +190,7 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
       setPagamentosFile(null);
       setViagensFile(null);
       setCombustivelFile(null);
+      setBoltFile(null);
       setRepsolFile(null);
       setEdpFile(null);
       setResult(null);
@@ -149,6 +200,7 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
 
   const hasFiles = activeTab === 'uber'
     ? (!!pagamentosFile || !!viagensFile)
+    : activeTab === 'bolt' ? !!boltFile
     : activeTab === 'bp' ? !!combustivelFile
     : activeTab === 'repsol' ? !!repsolFile
     : !!edpFile;
@@ -167,8 +219,9 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setResult(null); }}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="uber">Uber</TabsTrigger>
+            <TabsTrigger value="bolt">Bolt</TabsTrigger>
             <TabsTrigger value="bp">BP</TabsTrigger>
             <TabsTrigger value="repsol">Repsol</TabsTrigger>
             <TabsTrigger value="edp">EDP</TabsTrigger>
@@ -194,6 +247,10 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
                 )}
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="bolt" className="space-y-4 mt-4">
+            <FileUploadField file={boltFile} setFile={setBoltFile} inputRef={boltRef} label="CSV Bolt (Settlements)" icon={<FileText className="h-4 w-4" />} />
           </TabsContent>
 
           <TabsContent value="bp" className="space-y-4 mt-4">

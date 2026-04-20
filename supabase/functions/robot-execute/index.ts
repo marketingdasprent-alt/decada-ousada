@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -98,16 +98,14 @@ Deno.serve(async (req) => {
       }
       actorInput.cookies = parsedCookies;
     } else {
-      // Universal fields
+      // Universal fields — send under multiple common field names so any actor variant picks them up
       actorInput.username = config.client_id || null;
+      actorInput.email = config.client_id || null;
+      actorInput.login = config.client_id || null;
       actorInput.password = config.client_secret || null;
-      
-      // Platform specific field names (some actors use different names)
-      if (config.robot_target_platform === 'repsol' || config.robot_target_platform === 'edp') {
-        actorInput.email = config.client_id || null; // Many actors use 'email' for the login
-        actorInput.login = config.client_id || null; // Others use 'login'
-        actorInput.pass = config.client_secret || null; // Some use 'pass'
-      }
+      actorInput.pass = config.client_secret || null;
+      actorInput.emailAppPassword = config.client_secret || null;
+      actorInput.appPassword = config.client_secret || null;
     }
 
     // Pass Anti-Captcha key if configured

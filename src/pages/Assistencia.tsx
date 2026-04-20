@@ -75,11 +75,11 @@ interface Criador {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  aberto: { label: 'Aberto', color: 'bg-blue-500', icon: <AlertCircle className="h-4 w-4" /> },
-  em_andamento: { label: 'Em Andamento', color: 'bg-yellow-500', icon: <Clock className="h-4 w-4" /> },
-  aguardando: { label: 'Aguardando', color: 'bg-orange-500', icon: <Clock className="h-4 w-4" /> },
-  resolvido: { label: 'Resolvido', color: 'bg-green-500', icon: <CheckCircle2 className="h-4 w-4" /> },
-  fechado: { label: 'Fechado', color: 'bg-gray-500', icon: <CheckCircle2 className="h-4 w-4" /> },
+  aberto:       { label: 'Aberto',           color: 'bg-blue-500',   icon: <AlertCircle className="h-4 w-4" /> },
+  em_andamento: { label: 'Em Manutenção',    color: 'bg-yellow-500', icon: <Clock className="h-4 w-4" /> },
+  aguardando:   { label: 'Aguardando Peças', color: 'bg-orange-500', icon: <Clock className="h-4 w-4" /> },
+  resolvido:    { label: 'Concluído',        color: 'bg-green-500',  icon: <CheckCircle2 className="h-4 w-4" /> },
+  fechado:      { label: 'Fechado',          color: 'bg-gray-500',   icon: <CheckCircle2 className="h-4 w-4" /> },
 };
 
 const prioridadeConfig: Record<string, { label: string; color: string }> = {
@@ -352,9 +352,9 @@ const Assistencia = () => {
               <SelectItem value="todos">Todos os estados</SelectItem>
               <SelectItem value="pendentes">Pendentes</SelectItem>
               <SelectItem value="aberto">Aberto</SelectItem>
-              <SelectItem value="em_andamento">Em Andamento</SelectItem>
-              <SelectItem value="aguardando">Aguardando</SelectItem>
-              <SelectItem value="resolvido">Resolvido</SelectItem>
+              <SelectItem value="em_andamento">Em Manutenção</SelectItem>
+              <SelectItem value="aguardando">Aguardando Peças</SelectItem>
+              <SelectItem value="resolvido">Concluído</SelectItem>
               <SelectItem value="fechado">Fechado</SelectItem>
             </SelectContent>
           </Select>

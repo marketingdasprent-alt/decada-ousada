@@ -31,7 +31,7 @@ import {
 import { SectionCard } from "@/components/ui/section-card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { EMPRESAS } from "@/config/empresas";
+import { useEmpresas } from "@/hooks/useEmpresas";
 import { generateDocumentFromTemplate } from "@/utils/generateDocumentFromTemplate";
 import { GenerateDocumentsDialog } from "../GenerateDocumentsDialog";
 import type { Motorista } from "@/pages/Motoristas";
@@ -56,6 +56,7 @@ interface MotoristaTabContratosProps {
 }
 
 export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: MotoristaTabContratosProps) {
+  const { getById: getEmpresaById } = useEmpresas();
   const [contratos, setContratos] = useState<Contrato[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<string | null>(null);
@@ -88,7 +89,7 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
   };
 
   const getEmpresaNome = (empresaId: string) => {
-    return EMPRESAS[empresaId as keyof typeof EMPRESAS]?.nome || empresaId;
+    return getEmpresaById(empresaId)?.nome || empresaId;
   };
 
   const getStatusBadge = (status: string) => {

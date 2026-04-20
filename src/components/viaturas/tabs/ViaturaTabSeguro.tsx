@@ -316,7 +316,6 @@ export function ViaturaTabSeguro({ viatura, onUpdate }: ViaturaTabSeguroProps) {
                   </FormItem>
                 )}
               />
-
               <div className="flex justify-end pt-4">
                 <Button type="submit" disabled={saving}>
                   {saving ? (

@@ -23,7 +23,17 @@ import {
   FileText,
   X,
   Eye,
+  RefreshCw,
+  ParkingSquare,
+  Search,
+  Wallet,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +72,7 @@ interface Ticket {
   combustivel_fim: string | null;
   valor_reparacao: number | null;
   cobrar_motorista: boolean;
+  viatura_substituta_id: string | null;
 }
 
 interface Mensagem {
@@ -107,11 +118,11 @@ interface Categoria {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  aberto: { label: 'Aberto', color: 'bg-blue-500', icon: <AlertCircle className="h-4 w-4" /> },
-  em_andamento: { label: 'Em Andamento', color: 'bg-yellow-500', icon: <Clock className="h-4 w-4" /> },
-  aguardando: { label: 'Aguardando', color: 'bg-orange-500', icon: <Clock className="h-4 w-4" /> },
-  resolvido: { label: 'Resolvido', color: 'bg-green-500', icon: <CheckCircle2 className="h-4 w-4" /> },
-  fechado: { label: 'Fechado', color: 'bg-gray-500', icon: <CheckCircle2 className="h-4 w-4" /> },
+  aberto:       { label: 'Aberto',            color: 'bg-blue-500',   icon: <AlertCircle className="h-4 w-4" /> },
+  em_andamento: { label: 'Em Manutenção',     color: 'bg-yellow-500', icon: <Clock className="h-4 w-4" /> },
+  aguardando:   { label: 'Aguardando Peças',  color: 'bg-orange-500', icon: <Clock className="h-4 w-4" /> },
+  resolvido:    { label: 'Concluído',         color: 'bg-green-500',  icon: <CheckCircle2 className="h-4 w-4" /> },
+  fechado:      { label: 'Fechado',           color: 'bg-gray-500',   icon: <CheckCircle2 className="h-4 w-4" /> },
 };
 
 const prioridadeConfig: Record<string, { label: string; color: string }> = {
@@ -152,10 +163,23 @@ const TicketDetails = () => {
     km_fim: '',
     combustivel_fim: 'meio',
     valor_reparacao: '',
-    cobrar_motorista: false,
+    cobrar_motorista: true,
     descricao_reparacao: '',
-    num_parcelas: '1',
+    numero_fatura: '',
   });
+  const [faturaFile, setFaturaFile] = useState<File | null>(null);
+  const faturaInputRef = useRef<HTMLInputElement>(null);
+
+  // Substituta
+  const [viaturaSubstituta, setViaturaSubstituta] = useState<Viatura | null>(null);
+  const [showSubstituteModal, setShowSubstituteModal] = useState(false);
+  const [viaturasDisponiveis, setViaturasDisponiveis] = useState<Viatura[]>([]);
+  const [substituteSearch, setSubstituteSearch] = useState('');
+  const [assigningSubstitute, setAssigningSubstitute] = useState(false);
+
+  // Decisões de fecho
+  const [closureDecisao, setClosureDecisao] = useState<'parque' | 'reassociar' | null>(null);
+  const [closureSubstDecisao, setClosureSubstDecisao] = useState<'devolver' | 'definitivo' | null>(null);
 
   // Permission logic is calculated after ticket loads in the return section
 
@@ -190,9 +214,15 @@ const TicketDetails = () => {
       // Fetch related data in parallel
       const [viaturaRes, motoristaRes, categoriaRes, criadorRes, mensagensRes, anexosRes] = await Promise.all([
         supabase.from('viaturas').select('id, matricula, marca, modelo').eq('id', ticketData.viatura_id).single(),
-        ticketData.motorista_id 
+        ticketData.motorista_id
           ? supabase.from('motoristas_ativos').select('id, nome, telefone').eq('id', ticketData.motorista_id).single()
-          : Promise.resolve({ data: null, error: null }),
+          : supabase.from('motorista_viaturas')
+              .select('motoristas_ativos!motorista_id(id, nome, telefone)')
+              .eq('viatura_id', ticketData.viatura_id)
+              .eq('status', 'ativo')
+              .is('data_fim', null)
+              .maybeSingle()
+              .then(({ data }) => ({ data: (data as any)?.motoristas_ativos || null, error: null })),
         ticketData.categoria_id
           ? supabase.from('assistencia_categorias').select('id, nome, cor').eq('id', ticketData.categoria_id).single()
           : Promise.resolve({ data: null, error: null }),
@@ -212,6 +242,16 @@ const TicketDetails = () => {
       ]);
 
       if (viaturaRes.data) setViatura(viaturaRes.data as Viatura);
+      if (ticketData.viatura_substituta_id) {
+        const { data: substData } = await supabase
+          .from('viaturas')
+          .select('id, matricula, marca, modelo, km_atual')
+          .eq('id', ticketData.viatura_substituta_id)
+          .single();
+        if (substData) setViaturaSubstituta(substData as Viatura);
+      } else {
+        setViaturaSubstituta(null);
+      }
       if (motoristaRes.data) setMotorista(motoristaRes.data as Motorista);
       if (categoriaRes.data) setCategoria(categoriaRes.data as Categoria);
       if (criadorRes.data) setCriador(criadorRes.data as { nome: string });
@@ -417,6 +457,70 @@ const TicketDetails = () => {
     }
   };
   
+  const handleAceitarTicket = async () => {
+    if (!ticket || !viatura) return;
+    try {
+      await supabase
+        .from('assistencia_tickets')
+        .update({ status: 'em_andamento' })
+        .eq('id', ticket.id);
+      
+      await supabase
+        .from('viaturas')
+        .update({ status: 'manutencao' })
+        .eq('id', viatura.id);
+        
+      await supabase.from('assistencia_mensagens').insert({
+        ticket_id: ticket.id,
+        autor_id: user?.id,
+        mensagem: 'Ticket aceite. Viatura colocada em manutenção.',
+        tipo: 'status_change',
+      });
+      toast({ title: 'Ticket aceite', description: 'Viatura colocada em manutenção.' });
+      fetchTicketData();
+    } catch (error: any) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const fetchViaturasDisponiveis = async () => {
+    const { data } = await supabase
+      .from('viaturas')
+      .select('id, matricula, marca, modelo, km_atual')
+      .eq('status', 'disponivel')
+      .order('matricula');
+    setViaturasDisponiveis(data || []);
+  };
+
+  const handleAtribuirSubstituta = async (viaturaId: string) => {
+    if (!ticket || !motorista) return;
+    try {
+      setAssigningSubstitute(true);
+      await supabase.from('motorista_viaturas').insert({
+        motorista_id: motorista.id,
+        viatura_id: viaturaId,
+        data_inicio: new Date().toISOString().split('T')[0],
+        status: 'ativo',
+        tipo: 'substituta',
+      });
+      await supabase.from('viaturas').update({ status: 'em_uso' }).eq('id', viaturaId);
+      await supabase.from('assistencia_tickets').update({ viatura_substituta_id: viaturaId }).eq('id', ticket.id);
+      await supabase.from('assistencia_mensagens').insert({
+        ticket_id: ticket.id,
+        autor_id: user?.id,
+        mensagem: `Viatura substituta atribuída ao motorista durante a reparação.`,
+        tipo: 'status_change',
+      });
+      setShowSubstituteModal(false);
+      toast({ title: 'Viatura substituta atribuída.' });
+      fetchTicketData();
+    } catch (error: any) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    } finally {
+      setAssigningSubstitute(false);
+    }
+  };
+
   const handleViaturaReparada = async () => {
     if (!ticket || !viatura) return;
     
@@ -424,9 +528,16 @@ const TicketDetails = () => {
       toast({ title: "Erro", description: "Informe a quilometragem final.", variant: "destructive" });
       return;
     }
-    
     if (!closureData.valor_reparacao) {
       toast({ title: "Erro", description: "Informe o valor da reparação.", variant: "destructive" });
+      return;
+    }
+    if (!closureDecisao) {
+      toast({ title: "Erro", description: "Indique o destino da viatura reparada.", variant: "destructive" });
+      return;
+    }
+    if (ticket?.viatura_substituta_id && !closureSubstDecisao) {
+      toast({ title: "Erro", description: "Indique o destino da viatura substituta.", variant: "destructive" });
       return;
     }
 
@@ -435,8 +546,8 @@ const TicketDetails = () => {
       const valor = parseFloat(closureData.valor_reparacao);
       const kmFim = parseInt(closureData.km_fim);
       
-      // 1. Criar registo em viatura_reparacoes para histórico financeiro
-      const { data: repData, error: repError } = await supabase
+      // 1. Criar registo em viatura_reparacoes para histórico
+      const { error: repError } = await supabase
         .from('viatura_reparacoes')
         .insert({
           viatura_id: viatura.id,
@@ -449,52 +560,44 @@ const TicketDetails = () => {
           motorista_responsavel_id: motorista?.id || null,
           cobrar_motorista: closureData.cobrar_motorista,
           valor_a_cobrar: closureData.cobrar_motorista ? valor : null,
-          num_parcelas: closureData.cobrar_motorista ? parseInt(closureData.num_parcelas) : null,
           data_inicio_cobranca: closureData.cobrar_motorista ? new Date().toISOString().split('T')[0] : null,
-        })
-        .select()
-        .single();
+        });
 
       if (repError) throw repError;
 
-      // 2. Se cobrar_motorista for true, gerar parcelas (Simplificado para 1 parcela ou as solicitadas)
-      if (closureData.cobrar_motorista && motorista?.id && repData) {
-        const numParcelas = parseInt(closureData.num_parcelas) || 1;
-        const valorParcela = Math.round((valor / numParcelas) * 100) / 100;
-        const parcelas = [];
-        
-        for (let i = 0; i < numParcelas; i++) {
-          const dataRef = new Date();
-          dataRef.setDate(dataRef.getDate() + (i * 7)); // Semanal
-          parcelas.push({
-            reparacao_id: repData.id,
-            motorista_id: motorista.id,
-            numero_parcela: i + 1,
-            valor: i === numParcelas - 1 ? (valor - (valorParcela * (numParcelas - 1))) : valorParcela,
-            semana_referencia: dataRef.toISOString().split('T')[0],
-            status: 'pendente',
-          });
-        }
-        
-        await supabase.from('reparacao_parcelas').insert(parcelas);
+      // 2. Upload da fatura (antes do financeiro para incluir URL na referência)
+      let faturaUrl: string | null = null;
+      if (faturaFile) {
+        const fileExt = faturaFile.name.split('.').pop();
+        const fileName = `faturas/${id}/${Date.now()}.${fileExt}`;
+        const { error: uploadErr } = await supabase.storage
+          .from('assistencia-anexos')
+          .upload(fileName, faturaFile);
+        if (uploadErr) throw uploadErr;
+        const { data: { publicUrl } } = supabase.storage
+          .from('assistencia-anexos')
+          .getPublicUrl(fileName);
+        faturaUrl = publicUrl;
+      }
 
-        // 3. Adicionar movimento à conta corrente do motorista (motorista_financeiro)
-        // Lançamos o valor total como um débito informativo se houver parcelas, 
-        // ou como débito direto se for pago de uma vez.
-        await supabase.from('motorista_financeiro').insert({
+      // 3. Se cobrar_motorista, criar lançamento pendente na conta do motorista
+      if (closureData.cobrar_motorista && motorista?.id) {
+        const refBase = `Ticket #${ticket.numero}`;
+        const { error: finError } = await supabase.from('motorista_financeiro').insert({
           motorista_id: motorista.id,
           tipo: 'debito',
-          categoria: 'outro',
-          descricao: `Reparação Viatura: ${ticket.titulo} (Ticket #${ticket.numero}) - ${numParcelas}x parcelas`,
+          categoria: 'reparacao',
+          descricao: `Reparação Viatura: ${viatura.matricula} - ${closureData.descricao_reparacao || ticket.titulo}`,
           valor: valor,
           data_movimento: new Date().toISOString().split('T')[0],
           status: 'pendente',
-          referencia: `Ticket #${ticket.numero}`
+          referencia: faturaUrl ? `${refBase} | ${faturaUrl}` : refBase,
         });
+        if (finError) throw finError;
       }
 
-      // 4. Atualizar o Ticket
-      await supabase
+      // 5. Atualizar o Ticket
+      const { error: ticketUpdateError } = await supabase
         .from('assistencia_tickets')
         .update({
           status: 'resolvido',
@@ -503,24 +606,58 @@ const TicketDetails = () => {
           combustivel_fim: closureData.combustivel_fim,
           valor_reparacao: valor,
           cobrar_motorista: closureData.cobrar_motorista,
-          reparacao_id: repData.id
+          numero_fatura: closureData.numero_fatura.trim() || null,
+          fatura_url: faturaUrl,
         })
         .eq('id', id);
+      if (ticketUpdateError) throw ticketUpdateError;
 
-      // 5. Atualizar Viatura (voltar a disponível e atualizar KM)
+      // 6. Atualizar Viatura original (KM + status conforme decisão)
+      const viaturaOriginalStatus = closureDecisao === 'reassociar' ? 'em_uso' : 'disponivel';
       await supabase
         .from('viaturas')
-        .update({ 
-          status: 'disponivel',
-          km_atual: kmFim
-        })
+        .update({ status: viaturaOriginalStatus, km_atual: kmFim })
         .eq('id', viatura.id);
 
-      // 6. Log status change
+      // 7a. Se reassociar: criar nova entrada em motorista_viaturas para viatura original
+      if (closureDecisao === 'reassociar' && motorista?.id) {
+        await supabase.from('motorista_viaturas').insert({
+          motorista_id: motorista.id,
+          viatura_id: viatura.id,
+          data_inicio: new Date().toISOString().split('T')[0],
+          status: 'ativo',
+          tipo: 'normal',
+        });
+      }
+
+      // 7b. Tratar viatura substituta (se existia)
+      if (ticket?.viatura_substituta_id && motorista?.id) {
+        if (closureSubstDecisao === 'devolver') {
+          await supabase
+            .from('motorista_viaturas')
+            .update({ data_fim: new Date().toISOString().split('T')[0], status: 'encerrado' })
+            .eq('viatura_id', ticket.viatura_substituta_id)
+            .eq('motorista_id', motorista.id)
+            .eq('tipo', 'substituta')
+            .is('data_fim', null);
+          await supabase.from('viaturas').update({ status: 'disponivel' }).eq('id', ticket.viatura_substituta_id);
+        } else if (closureSubstDecisao === 'definitivo') {
+          await supabase
+            .from('motorista_viaturas')
+            .update({ tipo: 'normal' })
+            .eq('viatura_id', ticket.viatura_substituta_id)
+            .eq('motorista_id', motorista.id)
+            .eq('tipo', 'substituta')
+            .is('data_fim', null);
+        }
+      }
+
+      // 7. Log status change
       await supabase.from('assistencia_mensagens').insert({
         ticket_id: id,
         autor_id: user?.id,
-        mensagem: `Viatura Reparada. Valor: ${valor}€. Viatura voltou a estar disponível.`,
+        mensagem: `Viatura Reparada. Valor: ${valor}€. Viatura voltou a estar disponível. ` + 
+                 (closureData.cobrar_motorista ? `(Débito de ${valor}€ lançado ao motorista ${motorista?.nome} - Aguarda acordo)` : "(Sem cobrança ao motorista)"),
         tipo: 'status_change',
       });
 
@@ -530,6 +667,9 @@ const TicketDetails = () => {
       });
 
       setShowClosureForm(false);
+      setFaturaFile(null);
+      setClosureDecisao(null);
+      setClosureSubstDecisao(null);
       fetchTicketData();
     } catch (error: any) {
       console.error('Erro ao concluir reparação:', error);
@@ -542,6 +682,8 @@ const TicketDetails = () => {
       setClosureLoading(false);
     }
   };
+
+
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -613,17 +755,15 @@ const TicketDetails = () => {
           <h1 className="text-2xl font-bold">{ticket.titulo}</h1>
         </div>
         
-        {canChangeStatus && (
+        {canChangeStatus && !['resolvido', 'fechado'].includes(ticket.status) && (
           <Select value={ticket.status} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[200px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="aberto">Aberto</SelectItem>
-              <SelectItem value="em_andamento">Em Andamento</SelectItem>
-              <SelectItem value="aguardando">Aguardando</SelectItem>
-              <SelectItem value="resolvido">Resolvido</SelectItem>
-              <SelectItem value="fechado">Fechado</SelectItem>
+              <SelectItem value="em_andamento">Em Manutenção</SelectItem>
+              <SelectItem value="aguardando">Aguardando Peças</SelectItem>
             </SelectContent>
           </Select>
         )}
@@ -797,16 +937,6 @@ const TicketDetails = () => {
                         onChange={(e) => setClosureData(prev => ({ ...prev, valor_reparacao: e.target.value }))}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Nº Parcelas (Semanal)</Label>
-                      <Input 
-                        type="number" 
-                        min="1"
-                        value={closureData.num_parcelas}
-                        onChange={(e) => setClosureData(prev => ({ ...prev, num_parcelas: e.target.value }))}
-                        disabled={!closureData.cobrar_motorista}
-                      />
-                    </div>
                   </div>
                   
                   <div className="space-y-2">
@@ -818,10 +948,48 @@ const TicketDetails = () => {
                     />
                   </div>
                   
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nº Fatura</Label>
+                      <Input
+                        placeholder="Ex: FT 2026/123"
+                        value={closureData.numero_fatura}
+                        onChange={(e) => setClosureData(prev => ({ ...prev, numero_fatura: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Anexar Fatura</Label>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => faturaInputRef.current?.click()}
+                          className="flex-1"
+                        >
+                          <Paperclip className="h-4 w-4 mr-2" />
+                          {faturaFile ? faturaFile.name : 'Selecionar ficheiro'}
+                        </Button>
+                        {faturaFile && (
+                          <Button type="button" variant="ghost" size="icon" onClick={() => setFaturaFile(null)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <input
+                          ref={faturaInputRef}
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="hidden"
+                          onChange={(e) => setFaturaFile(e.target.files?.[0] || null)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex items-center gap-2">
-                    <input 
-                      type="checkbox" 
-                      id="cobrar" 
+                    <input
+                      type="checkbox"
+                      id="cobrar"
                       checked={closureData.cobrar_motorista}
                       onChange={(e) => setClosureData(prev => ({ ...prev, cobrar_motorista: e.target.checked }))}
                       className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
@@ -831,11 +999,69 @@ const TicketDetails = () => {
                     </Label>
                   </div>
                   
+                  {/* Decisão: viatura reparada */}
+                  <div className="space-y-2">
+                    <Label className="font-semibold">O que fazer com a viatura reparada ({viatura?.matricula})?</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setClosureDecisao('parque')}
+                        className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'parque' ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-primary/40'}`}
+                      >
+                        <div className="flex items-center gap-2 font-medium text-sm">
+                          <ParkingSquare className="h-4 w-4" /> Disponível no parque
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Fica disponível sem motorista associado</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setClosureDecisao('reassociar')}
+                        className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'reassociar' ? 'border-green-500 bg-green-500/10' : 'border-border hover:border-primary/40'}`}
+                      >
+                        <div className="flex items-center gap-2 font-medium text-sm">
+                          <RefreshCw className="h-4 w-4" /> Reassociar ao motorista
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {motorista ? motorista.nome : 'Nenhum motorista'} volta a esta viatura
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Decisão: viatura substituta (só se existia) */}
+                  {ticket?.viatura_substituta_id && viaturaSubstituta && (
+                    <div className="space-y-2">
+                      <Label className="font-semibold">O que fazer com a viatura substituta ({viaturaSubstituta.matricula})?</Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setClosureSubstDecisao('devolver')}
+                          className={`rounded-lg border-2 p-3 text-left transition-all ${closureSubstDecisao === 'devolver' ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-primary/40'}`}
+                        >
+                          <div className="flex items-center gap-2 font-medium text-sm">
+                            <ParkingSquare className="h-4 w-4" /> Devolver ao parque
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Encerra associação temporária, fica disponível</p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setClosureSubstDecisao('definitivo')}
+                          className={`rounded-lg border-2 p-3 text-left transition-all ${closureSubstDecisao === 'definitivo' ? 'border-green-500 bg-green-500/10' : 'border-border hover:border-primary/40'}`}
+                        >
+                          <div className="flex items-center gap-2 font-medium text-sm">
+                            <RefreshCw className="h-4 w-4" /> Manter com o motorista
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Passa a associação definitiva, continua em uso</p>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex justify-end gap-2 pt-2">
-                    <Button variant="outline" onClick={() => setShowClosureForm(false)}>Cancelar</Button>
+                    <Button variant="outline" onClick={() => { setShowClosureForm(false); setClosureDecisao(null); setClosureSubstDecisao(null); }}>Cancelar</Button>
                     <Button onClick={handleViaturaReparada} disabled={closureLoading}>
                       {closureLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Finalizar e Colocar Viatura em Uso
+                      Concluir Reparação
                     </Button>
                   </div>
                 </div>
@@ -845,22 +1071,34 @@ const TicketDetails = () => {
               {!showClosureForm && (
                 <>
                   {/* Action Buttons for Managers */}
-                  {canChangeStatus && ticket.status !== 'resolvido' && ticket.status !== 'fechado' && (
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="default" 
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                        onClick={() => {
-                          setClosureData(prev => ({
-                            ...prev,
-                            km_fim: viatura?.km_atual?.toString() || '',
-                          }));
-                          setShowClosureForm(true);
-                        }}
-                      >
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Viatura Reparada
-                      </Button>
+                  {canChangeStatus && !['resolvido', 'fechado'].includes(ticket.status) && (
+                    <div className="flex flex-col gap-2">
+                      {ticket.status === 'aberto' ? (
+                        <Button
+                          variant="default"
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={handleAceitarTicket}
+                        >
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Aceitar — Colocar em Manutenção
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="default"
+                          className="w-full bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => {
+                            setClosureData(prev => ({
+                              ...prev,
+                              km_fim: viatura?.km_atual?.toString() || '',
+                              cobrar_motorista: !!motorista,
+                            }));
+                            setShowClosureForm(true);
+                          }}
+                        >
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Concluir Reparação (Viatura Reparada)
+                        </Button>
+                      )}
                     </div>
                   )}
                   
@@ -968,6 +1206,34 @@ const TicketDetails = () => {
                 </div>
               )}
 
+              {/* Viatura Substituta */}
+              {viaturaSubstituta && (
+                <div>
+                  <Label className="text-muted-foreground">Viatura Substituta</Label>
+                  <div className="mt-1 p-2 rounded-md bg-amber-500/10 border border-amber-500/30">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Car className="h-4 w-4 text-amber-600" />
+                      <span>{viaturaSubstituta.matricula}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{viaturaSubstituta.marca} {viaturaSubstituta.modelo}</p>
+                  </div>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Orçamento e Prioridade */}
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-muted-foreground">Orçamento Estimado</Label>
+                  <p className="text-sm font-bold text-amber-600 mt-1">
+                    {(ticket && typeof ticket.valor_orcamento === 'number') 
+                      ? `${ticket.valor_orcamento.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}` 
+                      : 'Não definido'}
+                  </p>
+                </div>
+              </div>
+
               <Separator />
 
               {/* Dates */}
@@ -1043,6 +1309,54 @@ const TicketDetails = () => {
           </Card>
         </div>
       </div>
+
+      {/* Modal de seleção de viatura substituta */}
+      <Dialog open={showSubstituteModal} onOpenChange={setShowSubstituteModal}>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Car className="h-5 w-5" /> Atribuir Viatura Substituta
+            </DialogTitle>
+          </DialogHeader>
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              className="w-full pl-9 pr-3 py-2 text-sm border rounded-md bg-background"
+              placeholder="Pesquisar matrícula ou modelo..."
+              value={substituteSearch}
+              onChange={(e) => setSubstituteSearch(e.target.value)}
+            />
+          </div>
+          <div className="overflow-y-auto flex-1 space-y-2">
+            {viaturasDisponiveis
+              .filter(v =>
+                v.matricula.toLowerCase().includes(substituteSearch.toLowerCase()) ||
+                v.marca.toLowerCase().includes(substituteSearch.toLowerCase()) ||
+                v.modelo.toLowerCase().includes(substituteSearch.toLowerCase())
+              )
+              .map(v => (
+                <button
+                  key={v.id}
+                  onClick={() => handleAtribuirSubstituta(v.id)}
+                  disabled={assigningSubstitute}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors text-left"
+                >
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Car className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-mono font-bold text-sm">{v.matricula}</p>
+                    <p className="text-xs text-muted-foreground">{v.marca} {v.modelo}</p>
+                  </div>
+                  {assigningSubstitute && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
+                </button>
+              ))}
+            {viaturasDisponiveis.length === 0 && (
+              <p className="text-center text-muted-foreground py-8 text-sm">Sem viaturas disponíveis.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

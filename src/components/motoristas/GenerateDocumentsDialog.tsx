@@ -10,7 +10,7 @@ import { Loader2, FileText, CheckCircle2, Search, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { generateDocumentFromTemplate } from '@/utils/generateDocumentFromTemplate';
-import { getEmpresasList, getEmpresaById } from '@/config/empresas';
+import { useEmpresas } from '@/hooks/useEmpresas';
 
 interface Motorista {
   id: string;
@@ -51,8 +51,8 @@ export const GenerateDocumentsDialog = ({
   motorista,
   onSuccess,
 }: GenerateDocumentsDialogProps) => {
-  const empresasList = getEmpresasList();
-  const defaultEmpresaId = empresasList[0]?.id || '';
+  const { empresas, getById } = useEmpresas();
+  const defaultEmpresaId = empresas[0]?.id || '';
 
   // Estado para seleção de motorista (quando não passado nas props)
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
@@ -227,7 +227,7 @@ export const GenerateDocumentsDialog = ({
         telefone: activeMotorista.telefone || '',
       };
 
-      const empresa = getEmpresaById(selectedEmpresa);
+      const empresa = getById(selectedEmpresa);
 
       // Separar templates por tipo
       const contratoTemplates = templatesToGenerate.filter(t => t.tipo === 'contrato_tvde' || t.tipo === 'contrato');
@@ -483,8 +483,9 @@ export const GenerateDocumentsDialog = ({
                       <SelectValue placeholder="Selecione a empresa" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="decada_ousada">Década Ousada</SelectItem>
-                      <SelectItem value="distancia_arrojada">Distância Arrojada</SelectItem>
+                      {empresas.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

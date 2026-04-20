@@ -64,14 +64,16 @@ export type Motorista = {
   cartao_bp: string | null;
   cartao_repsol: string | null;
   cartao_edp: string | null;
+  iban: string | null;
   observacoes: string | null;
   uber_uuid: string | null;
   bolt_id: string | null;
+  gestor_responsavel: string | null;
   created_at: string;
   updated_at: string;
 };
 
-type SortColumn = "codigo" | "nome" | "nif" | "telefone" | "email" | "cidade" | "status_ativo";
+type SortColumn = "codigo" | "nome" | "telefone" | "gestor_responsavel" | "cidade" | "status_ativo";
 
 export default function Motoristas() {
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
@@ -79,6 +81,7 @@ export default function Motoristas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [cidadeFilter, setCidadeFilter] = useState<string>("todas");
+  const [gestorFilter, setGestorFilter] = useState<string>("todos");
   const [selectedMotorista, setSelectedMotorista] = useState<Motorista | null>(null);
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -122,6 +125,14 @@ export default function Motoristas() {
       .map((m) => m.cidade)
       .filter((c): c is string => !!c);
     return [...new Set(cities)].sort();
+  }, [motoristas]);
+
+  // Get unique gestores for filter
+  const availableGestores = useMemo(() => {
+    const gestores = motoristas
+      .map((m) => m.gestor_responsavel)
+      .filter((g): g is string => !!g);
+    return [...new Set(gestores)].sort();
   }, [motoristas]);
 
   // Handle column sort
@@ -186,7 +197,11 @@ export default function Motoristas() {
       const matchesCidade =
         cidadeFilter === "todas" || m.cidade === cidadeFilter;
 
-      return matchesSearch && matchesStatus && matchesCidade;
+      // Gestor filter
+      const matchesGestor =
+        gestorFilter === "todos" || m.gestor_responsavel === gestorFilter;
+
+      return matchesSearch && matchesStatus && matchesCidade && matchesGestor;
     });
 
     // Apply sorting
@@ -220,7 +235,7 @@ export default function Motoristas() {
     });
 
     return result;
-  }, [motoristas, searchTerm, statusFilter, cidadeFilter, sortColumn, sortDirection]);
+  }, [motoristas, searchTerm, statusFilter, cidadeFilter, gestorFilter, sortColumn, sortDirection]);
 
   const handleRowClick = (motorista: Motorista) => {
     navigate(`/motoristas/${motorista.id}`);
@@ -266,40 +281,73 @@ export default function Motoristas() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Pesquisar por código, nome, NIF ou telefone..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="ativo">Ativos</SelectItem>
-              <SelectItem value="inativo">Inativos</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={cidadeFilter} onValueChange={setCidadeFilter}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Cidade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas</SelectItem>
-              {availableCities.map((cidade) => (
-                <SelectItem key={cidade} value={cidade}>
-                  {cidade}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="bg-card text-card-foreground border rounded-xl p-4 sm:p-5 shadow-sm">
+        <h2 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wider">
+          Filtros de Pesquisa
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-5 space-y-1.5">
+            <label className="text-sm font-medium">Pesquisa Rápida</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Código, nome, NIF ou telefone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-10 bg-background"
+              />
+            </div>
+          </div>
+          
+          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Estado</label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-10 bg-background">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="ativo">Ativos</SelectItem>
+                  <SelectItem value="inativo">Inativos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Cidade</label>
+              <Select value={cidadeFilter} onValueChange={setCidadeFilter}>
+                <SelectTrigger className="h-10 bg-background">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {availableCities.map((cidade) => (
+                    <SelectItem key={cidade} value={cidade}>
+                      {cidade}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Gestor</label>
+              <Select value={gestorFilter} onValueChange={setGestorFilter}>
+                <SelectTrigger className="h-10 bg-background">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {availableGestores.map((gestor) => (
+                    <SelectItem key={gestor} value={gestor}>
+                      {gestor}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -310,7 +358,7 @@ export default function Motoristas() {
         </div>
       ) : filteredMotoristas.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          {searchTerm || statusFilter !== "todos" || cidadeFilter !== "todas"
+          {searchTerm || statusFilter !== "todos" || cidadeFilter !== "todas" || gestorFilter !== "todos"
             ? "Nenhum motorista encontrado com os filtros aplicados"
             : "Nenhum motorista cadastrado"}
         </div>
@@ -333,9 +381,8 @@ export default function Motoristas() {
               <TableRow className="hover:bg-transparent">
                 <SortableHeader column="codigo" label="Cód." className="w-[70px]" />
                 <SortableHeader column="nome" label="Nome" />
-                <SortableHeader column="nif" label="NIF" className="w-[120px]" />
                 <SortableHeader column="telefone" label="Telefone" className="w-[130px]" />
-                <SortableHeader column="email" label="Email" className="hidden md:table-cell" />
+                <SortableHeader column="gestor_responsavel" label="Gestor" className="w-[140px] hidden md:table-cell" />
                 <SortableHeader column="cidade" label="Cidade" className="w-[120px] hidden lg:table-cell" />
                 <SortableHeader column="status_ativo" label="Status" className="w-[80px]" />
               </TableRow>
@@ -349,10 +396,9 @@ export default function Motoristas() {
                 >
                   <TableCell className="py-2 font-mono text-sm text-muted-foreground">{motorista.codigo}</TableCell>
                   <TableCell className="py-2 font-medium">{motorista.nome}</TableCell>
-                  <TableCell className="py-2 text-muted-foreground">{motorista.nif || "-"}</TableCell>
                   <TableCell className="py-2 text-muted-foreground">{motorista.telefone || "-"}</TableCell>
                   <TableCell className="py-2 text-muted-foreground hidden md:table-cell">
-                    {motorista.email || "-"}
+                    {motorista.gestor_responsavel || "-"}
                   </TableCell>
                   <TableCell className="py-2 text-muted-foreground hidden lg:table-cell">
                     {motorista.cidade || "-"}

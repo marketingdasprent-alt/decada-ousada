@@ -40,6 +40,7 @@ import {
   Calendar,
   Gauge,
   Droplet,
+  X,
 } from 'lucide-react';
 
 interface Viatura {
@@ -73,6 +74,11 @@ export default function AssistenciaNova() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
 
   const [selectedViatura, setSelectedViatura] = useState<Viatura | null>(null);
+  const [viaturaSubstituta, setViaturaSubstituta] = useState<Viatura | null>(null);
+  const [viaturasDisponiveis, setViaturasDisponiveis] = useState<Viatura[]>([]);
+  const [showSubstituteSearch, setShowSubstituteSearch] = useState(false);
+  const [substituteSearchTerm, setSubstituteSearchTerm] = useState('');
+  const [motoristaId, setMotoristaId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     categoria_id: '',
     titulo: '',
@@ -81,6 +87,7 @@ export default function AssistenciaNova() {
     km_inicio: '',
     combustivel_inicio: 'meio',
     data_entrada: new Date().toISOString().split('T')[0],
+    valor_orcamento: '',
   });
 
   useEffect(() => {
@@ -133,12 +140,29 @@ export default function AssistenciaNova() {
     );
   }, [searchTerm, viaturas]);
 
-  const handleSelectViatura = (viatura: Viatura) => {
+  const handleSelectViatura = async (viatura: Viatura) => {
     setSelectedViatura(viatura);
-    setFormData(prev => ({
-      ...prev,
-      km_inicio: viatura.km_atual?.toString() || '',
-    }));
+    setFormData(prev => ({ ...prev, km_inicio: viatura.km_atual?.toString() || '' }));
+
+    // Buscar motorista associado
+    const { data: assoc } = await supabase
+      .from('motorista_viaturas')
+      .select('motorista_id')
+      .eq('viatura_id', viatura.id)
+      .eq('status', 'ativo')
+      .is('data_fim', null)
+      .maybeSingle();
+    setMotoristaId(assoc?.motorista_id || null);
+
+    // Buscar viaturas disponíveis para eventual substituta
+    const { data: disponiveis } = await supabase
+      .from('viaturas')
+      .select('id, matricula, marca, modelo, status, km_atual')
+      .eq('status', 'disponivel')
+      .neq('id', viatura.id)
+      .order('matricula');
+    setViaturasDisponiveis(disponiveis || []);
+
     setStep(2);
   };
 
@@ -163,13 +187,15 @@ export default function AssistenciaNova() {
         .from('assistencia_tickets')
         .insert({
           viatura_id: selectedViatura.id,
+          motorista_id: motoristaId || null,
           categoria_id: formData.categoria_id || null,
           titulo: formData.titulo.trim(),
           descricao: formData.descricao.trim(),
           prioridade: formData.prioridade,
-          status: 'em_andamento', // Já começa em andamento pois estamos a dar entrada
+          status: 'em_andamento',
           km_inicio: parseInt(formData.km_inicio) || null,
           combustivel_inicio: formData.combustivel_inicio,
+          valor_orcamento: formData.valor_orcamento ? parseFloat(formData.valor_orcamento) : null,
           criado_por: user?.id,
         })
         .select()
@@ -177,17 +203,44 @@ export default function AssistenciaNova() {
 
       if (ticketError) throw ticketError;
 
-      // 2. Atualizar Status da Viatura para Manutenção
+       // 1.1 Criar mensagem inicial de log com orçamento e detalhes
+       await supabase.from('assistencia_mensagens').insert({
+         ticket_id: ticket.id,
+         autor_id: user?.id,
+         mensagem: `Ticket criado com check-in: 
+         - Orçamento Estimado: ${formData.valor_orcamento ? formData.valor_orcamento + '€' : 'Não definido'}
+         - KM Inicial: ${formData.km_inicio || 'Não informado'}
+         - Combustível: ${formData.combustivel_inicio}`,
+         tipo: 'status_change',
+       });
+
+      // 2. Viatura original → manutencao
       const { error: viaturaError } = await supabase
         .from('viaturas')
         .update({ status: 'manutencao' })
         .eq('id', selectedViatura.id);
-
       if (viaturaError) throw viaturaError;
+
+      // 3. Viatura substituta (se selecionada)
+      if (viaturaSubstituta && motoristaId && ticket) {
+        await supabase.from('motorista_viaturas').insert({
+          motorista_id: motoristaId,
+          viatura_id: viaturaSubstituta.id,
+          data_inicio: new Date().toISOString().split('T')[0],
+          status: 'ativo',
+          tipo: 'substituta',
+        });
+        await supabase.from('viaturas').update({ status: 'em_uso' }).eq('id', viaturaSubstituta.id);
+        await supabase.from('assistencia_tickets')
+          .update({ viatura_substituta_id: viaturaSubstituta.id })
+          .eq('id', ticket.id);
+      }
 
       toast({
         title: 'Sucesso',
-        description: 'Viatura colocada em assistência com sucesso.',
+        description: viaturaSubstituta
+          ? 'Viatura em manutenção. Substituta atribuída ao motorista.'
+          : 'Viatura colocada em assistência com sucesso.',
       });
 
       navigate('/assistencia');
@@ -417,6 +470,84 @@ export default function AssistenciaNova() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="valor_orcamento" className="flex items-center gap-2">
+                      Orçamento Estimado (€)
+                    </Label>
+                    <Input
+                      id="valor_orcamento"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.valor_orcamento}
+                      onChange={(e) => setFormData(prev => ({ ...prev, valor_orcamento: e.target.value }))}
+                    />
+                  </div>
+
+                  {/* Viatura Substituta */}
+                  {motoristaId && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Car className="h-4 w-4" /> Viatura Substituta (opcional)
+                      </Label>
+                      {viaturaSubstituta ? (
+                        <div className="flex items-center gap-2 p-2 rounded-lg border border-amber-400 bg-amber-50 dark:bg-amber-950/20">
+                          <Car className="h-4 w-4 text-amber-600 shrink-0" />
+                          <span className="flex-1 text-sm font-mono font-bold">{viaturaSubstituta.matricula}</span>
+                          <span className="text-xs text-muted-foreground">{viaturaSubstituta.marca} {viaturaSubstituta.modelo}</span>
+                          <button type="button" onClick={() => setViaturaSubstituta(null)} className="ml-1 text-muted-foreground hover:text-foreground">
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          {!showSubstituteSearch ? (
+                            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => setShowSubstituteSearch(true)}>
+                              <Car className="h-4 w-4 mr-2" /> Atribuir viatura substituta ao motorista
+                            </Button>
+                          ) : (
+                            <div className="space-y-2">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                <Input
+                                  placeholder="Pesquisar..."
+                                  value={substituteSearchTerm}
+                                  onChange={(e) => setSubstituteSearchTerm(e.target.value)}
+                                  className="pl-8 h-8 text-sm"
+                                  autoFocus
+                                />
+                              </div>
+                              <div className="max-h-40 overflow-y-auto space-y-1">
+                                {viaturasDisponiveis
+                                  .filter(v =>
+                                    v.matricula.toLowerCase().includes(substituteSearchTerm.toLowerCase()) ||
+                                    v.marca.toLowerCase().includes(substituteSearchTerm.toLowerCase()) ||
+                                    v.modelo.toLowerCase().includes(substituteSearchTerm.toLowerCase())
+                                  )
+                                  .map(v => (
+                                    <button
+                                      key={v.id}
+                                      type="button"
+                                      onClick={() => { setViaturaSubstituta(v); setShowSubstituteSearch(false); setSubstituteSearchTerm(''); }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border hover:bg-muted transition-colors text-left"
+                                    >
+                                      <span className="font-mono font-bold">{v.matricula}</span>
+                                      <span className="text-muted-foreground">{v.marca} {v.modelo}</span>
+                                    </button>
+                                  ))}
+                                {viaturasDisponiveis.length === 0 && (
+                                  <p className="text-xs text-muted-foreground text-center py-2">Sem viaturas disponíveis</p>
+                                )}
+                              </div>
+                              <Button type="button" variant="ghost" size="sm" className="w-full text-xs" onClick={() => setShowSubstituteSearch(false)}>
+                                Cancelar
+                              </Button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter className="pt-0">
                   <Button type="submit" className="w-full" disabled={submitting}>

@@ -237,13 +237,12 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
         logo_url: logoUrl,
       };
 
-      if (isUberSimplified) {
-        // Simplified Uber: only save cookies + name + ativo + logo
-        updatePayload.cookies_json = formData.cookies_json || null;
-      } else if (isBoltSimplified || isBpSimplified || isRepsolSimplified || isEdpSimplified) {
-        // Simplified Bolt/BP/Repsol/EDP: only save login + password + name + ativo + logo
+      if (isUberSimplified || isBoltSimplified || isBpSimplified || isRepsolSimplified || isEdpSimplified) {
+        // Simplified integrations (Uber/Bolt/BP/Repsol/EDP): login + password
         updatePayload.client_id = formData.client_id || null;
         updatePayload.client_secret = formData.client_secret || null;
+        updatePayload.cookies_json = null;
+        updatePayload.auth_mode = 'password';
       } else if (integracao.plataforma === 'bolt') {
         updatePayload.client_id = formData.client_id || null;
         updatePayload.client_secret = formData.client_secret || null;
@@ -394,24 +393,8 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
               </div>
             </div>}
 
-            {/* Cookies — shown for Uber simplified and robot with cookies mode (not Bolt simplified) */}
-            {(isUberSimplified || (!isBoltSimplified && integracao.plataforma === 'robot' && formData.auth_mode === 'cookies')) && (
-              <div className="space-y-2">
-                <Label>Cookies (JSON)</Label>
-                <Textarea
-                  placeholder='[{"name":"session","value":"abc123","domain":".uber.com"}]'
-                  className="min-h-[120px] font-mono text-xs"
-                  value={formData.cookies_json}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, cookies_json: e.target.value }))}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Cole aqui o array JSON de cookies exportados do browser.
-                </p>
-              </div>
-            )}
-
-            {/* Login + Password — shown for Bolt/BP/Repsol/EDP simplified */}
-            {(isBoltSimplified || isBpSimplified || isRepsolSimplified || isEdpSimplified) && (
+            {/* Login + Password — shown for all simplified integrations (Uber/Bolt/BP/Repsol/EDP) */}
+            {(isUberSimplified || isBoltSimplified || isBpSimplified || isRepsolSimplified || isEdpSimplified) && (
               <>
                 <div className="space-y-2">
                   <Label>Login (Email)</Label>

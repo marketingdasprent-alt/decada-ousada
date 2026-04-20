@@ -95,6 +95,7 @@ const formSchema = z.object({
   slot_valor_semanal: z.number().optional().nullable(),
   status_ativo: z.boolean().default(true),
   observacoes: z.string().optional(),
+  iban: z.string().optional(),
   uber_uuid: z.string().optional().nullable(),
   bolt_id: z.string().optional().nullable(),
 });
@@ -140,6 +141,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
       slot_valor_semanal: null,
       status_ativo: true,
       observacoes: "",
+      iban: "",
       uber_uuid: "",
       bolt_id: "",
     },
@@ -182,6 +184,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
         slot_valor_semanal: motorista.slot_valor_semanal ?? null,
         status_ativo: motorista.status_ativo ?? true,
         observacoes: motorista.observacoes || "",
+        iban: motorista.iban || "",
         uber_uuid: motorista.uber_uuid || "",
         bolt_id: motorista.bolt_id || "",
       });
@@ -218,6 +221,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
         slot_valor_semanal: data.is_slot ? data.slot_valor_semanal : null,
         status_ativo: data.status_ativo,
         observacoes: data.observacoes || null,
+        iban: data.iban || null,
         uber_uuid: data.uber_uuid || null,
         bolt_id: data.bolt_id || null,
       };
@@ -277,7 +281,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                   </FormItem>
                 )}
               />
-              <FormField
+               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
@@ -285,6 +289,19 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="iban"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel>IBAN</FormLabel>
+                    <FormControl>
+                      <Input placeholder="PT50..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

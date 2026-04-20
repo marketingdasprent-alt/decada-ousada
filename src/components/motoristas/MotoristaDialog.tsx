@@ -72,6 +72,7 @@ const formSchema = z.object({
   cidade_assinatura: z.string().optional(),
   status_ativo: z.boolean().optional(),
   observacoes: z.string().optional(),
+  iban: z.string().optional(),
   documento_ficheiro_url: z.string().optional(),
   documento_identificacao_verso_url: z.string().optional(),
   carta_ficheiro_url: z.string().optional(),
@@ -117,6 +118,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
       cidade_assinatura: "",
       status_ativo: true,
       observacoes: "",
+      iban: "",
       documento_ficheiro_url: "",
       documento_identificacao_verso_url: "",
       carta_ficheiro_url: "",
@@ -147,6 +149,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         cidade_assinatura: motorista.cidade_assinatura || "",
         status_ativo: motorista.status_ativo ?? true,
         observacoes: motorista.observacoes || "",
+        iban: motorista.iban || "",
         documento_ficheiro_url: motorista.documento_ficheiro_url || "",
         documento_identificacao_verso_url: motorista.documento_identificacao_verso_url || "",
         carta_ficheiro_url: motorista.carta_ficheiro_url || "",
@@ -174,6 +177,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         cidade_assinatura: "",
         status_ativo: true,
         observacoes: "",
+        iban: "",
         documento_ficheiro_url: "",
         documento_identificacao_verso_url: "",
         carta_ficheiro_url: "",
@@ -229,6 +233,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         cidade_assinatura: values.cidade_assinatura || null,
         status_ativo: values.status_ativo ?? true,
         observacoes: values.observacoes || null,
+        iban: values.iban || null,
         documento_ficheiro_url: values.documento_ficheiro_url || null,
         documento_identificacao_verso_url: values.documento_identificacao_verso_url || null,
         carta_ficheiro_url: values.carta_ficheiro_url || null,
@@ -359,6 +364,20 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="email@exemplo.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="iban"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>IBAN</FormLabel>
+                  <FormControl>
+                    <Input placeholder="PT50 0000 0000 0000 0000 0000 0" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

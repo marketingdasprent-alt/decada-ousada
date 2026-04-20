@@ -12,6 +12,8 @@ import {
   Loader2,
   Euro,
   LayoutDashboard,
+  AlertTriangle,
+  AlertCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -74,7 +76,7 @@ function getPeriodRange(preset: PeriodPreset): DateRange {
     case 'mes':
       return { from: startOfMonth(now), to: now };
     case 'trimestre':
-      return { from: startOfQuarter(now), to: now };
+      return { from: subMonths(now, 3), to: now };
     case 'ano':
       return { from: startOfYear(now), to: now };
   }
@@ -119,7 +121,7 @@ const Dashboard = () => {
   const [atividadeData, setAtividadeData] = useState<AtividadePoint[]>([]);
   const [upgradeData, setUpgradeData] = useState<UpgradeData>({ count: 0, rendaAtual: 0, rendaAnterior: 0 });
   const [trocasCount, setTrocasCount] = useState(0);
-  const [frotaPie, setFrotaPie] = useState<{ name: string; value: number; color: string }[]>([]);
+  const [extintoresAPrazo, setExtintoresAPrazo] = useState<any[]>([]);
 
   // ── Period change ────────────────────────────────────────────────────────
 
@@ -139,7 +141,7 @@ const Dashboard = () => {
       // ── 1. Fleet counts ────────────────────────────────────────────────
       const { data: viaturas } = await supabase
         .from('viaturas')
-        .select('id, status')
+        .select('id, status, matricula, valor_aluguer')
         .neq('status', 'vendida');
 
       const fleetCounts: FleetCounts = {
@@ -150,12 +152,25 @@ const Dashboard = () => {
       };
       setFleet(fleetCounts);
 
-      const pieData = [
-        { name: 'Disponíveis', value: fleetCounts.disponiveis, color: COLORS.disponivel },
-        { name: 'Ocupadas', value: fleetCounts.ocupadas, color: COLORS.ocupada },
-        { name: 'Reparação', value: fleetCounts.manutencao, color: COLORS.manutencao },
-      ].filter(d => d.value > 0);
-      setFrotaPie(pieData);
+      // ── Extintores a expirar (15 dias) ─────────────────────────────────────────
+      const limitExtintor = new Date();
+      limitExtintor.setDate(limitExtintor.getDate() + 15);
+      const extStrStr = limitExtintor.toISOString().split('T')[0];
+
+      const { data: extintoresData } = await supabase
+        .from('motorista_viaturas')
+        .select(`
+          id,
+          extintor_validade,
+          motoristas_ativos ( nome ),
+          viaturas ( matricula )
+        `)
+        .eq('status', 'ativo')
+        .not('extintor_validade', 'is', null)
+        .lte('extintor_validade', extStrStr)
+        .order('extintor_validade', { ascending: true });
+
+      setExtintoresAPrazo(extintoresData || []);
 
       // ── 2. Candidaturas pendentes ────────────────────────────────────
       const { count: pendentes } = await supabase
@@ -165,18 +180,27 @@ const Dashboard = () => {
 
       setCandidaturasPendentes(pendentes || 0);
 
-      // ── 3. Atividade & Rentabilidade ─────────────────────────────────
-      // Buscar todas as associações ativas ou que terminaram no período
-      const fromDate = range.from.toISOString().split('T')[0];
-      const toDate = range.to.toISOString().split('T')[0];
+      // ── 3. Atividade & Rentabilidade (Baseado nos Eventos do Calendário) ─────────────────────────────────
+      const { data: rawEventosAtividade } = await supabase
+        .from('calendario_eventos')
+        .select('tipo, data_inicio, titulo')
+        .in('tipo', ['entrega', 'devolucao', 'recolha'])
+        .gte('data_inicio', fromStr)
+        .lte('data_inicio', toStr);
+        
+      const eventosAtividade = rawEventosAtividade || [];
 
-      const { data: associacoes } = await supabase
-        .from('motorista_viaturas')
-        .select('data_inicio, data_fim, viaturas(valor_aluguer)')
-        .lte('data_inicio', toDate)
-        .or(`data_fim.is.null,data_fim.gte.${fromDate}`);
+      // Mapeamos os eventos de calendário com a respetiva viatura (para captar o valor de renda)
+      const atividadeComRenda = eventosAtividade.map(ev => {
+        const matNorm = ev.titulo ? ev.titulo.replace(/[-\s]/g, '').toUpperCase() : '';
+        const vMatch = (viaturas || []).find(v => v.matricula && v.matricula.replace(/[-\s]/g, '').toUpperCase() === matNorm);
+        return {
+          ...ev,
+          valor_aluguer: Number(vMatch?.valor_aluguer || 0)
+        };
+      });
 
-      const points = buildAtividadePoints(associacoes || [], range);
+      const points = buildAtividadePoints(atividadeComRenda, range);
       setAtividadeData(points);
 
       // ── 5. Upgrades/Downgrades ────────────────────────────────────────
@@ -187,34 +211,28 @@ const Dashboard = () => {
         .gte('data_inicio', fromStr)
         .lte('data_inicio', toStr);
 
-      // Renda anterior = soma do valor_aluguer das viaturas devolvidas (substituídas)
-      const matriculasDevolver = (upgradeEvents || [])
-        .map((e: any) => e.matricula_devolver)
-        .filter(Boolean);
+      // Find matching vehicles ignoring hyphens and spaces
+      const viaturasCompletas = viaturas || [];
 
       let rendaAnterior = 0;
-      if (matriculasDevolver.length > 0) {
-        const { data: viaturasAntigas } = await supabase
-          .from('viaturas')
-          .select('valor_aluguer')
-          .in('matricula', matriculasDevolver);
-        rendaAnterior = (viaturasAntigas || [])
-          .reduce((sum, v) => sum + Number((v as any).valor_aluguer || 0), 0);
-      }
-
-      // Renda atual = soma do valor_aluguer das viaturas NOVAS dos upgrades (titulo = matrícula nova)
-      const matriculasNovas = (upgradeEvents || [])
-        .map((e: any) => e.titulo)
-        .filter(Boolean);
-
       let rendaAtual = 0;
-      if (matriculasNovas.length > 0) {
-        const { data: viaturasNovas } = await supabase
-          .from('viaturas')
-          .select('valor_aluguer')
-          .in('matricula', matriculasNovas);
-        rendaAtual = (viaturasNovas || [])
-          .reduce((sum, v) => sum + Number((v as any).valor_aluguer || 0), 0);
+
+      for (const event of upgradeEvents || []) {
+        if (event.matricula_devolver) {
+          const matAntigaNormalized = event.matricula_devolver.replace(/[-\s]/g, '').toUpperCase();
+          const vAntiga = viaturasCompletas.find(v => v.matricula && v.matricula.replace(/[-\s]/g, '').toUpperCase() === matAntigaNormalized);
+          if (vAntiga) {
+            rendaAnterior += Number(vAntiga.valor_aluguer || 0);
+          }
+        }
+
+        if (event.titulo) {
+          const matNovaNormalized = event.titulo.replace(/[-\s]/g, '').toUpperCase();
+          const vNova = viaturasCompletas.find(v => v.matricula && v.matricula.replace(/[-\s]/g, '').toUpperCase() === matNovaNormalized);
+          if (vNova) {
+            rendaAtual += Number(vNova.valor_aluguer || 0);
+          }
+        }
       }
 
       setUpgradeData({
@@ -252,7 +270,7 @@ const Dashboard = () => {
   // ── Chart data builders ──────────────────────────────────────────────────
 
   function buildAtividadePoints(
-    associacoes: { data_inicio: string; data_fim: string | null; viaturas: { valor_aluguer: number | null } | null }[],
+    eventos: { tipo: string; data_inicio: string; valor_aluguer: number }[],
     r: DateRange
   ): AtividadePoint[] {
     const diffDays = (r.to.getTime() - r.from.getTime()) / (1000 * 60 * 60 * 24);
@@ -261,16 +279,20 @@ const Dashboard = () => {
       const bStartStr = bucketStart.toISOString().split('T')[0];
       const bEndStr = bucketEnd.toISOString().split('T')[0];
 
-      // Rentabilidade: soma valor_aluguer das associações ativas no bucket
-      const rentabilidade = associacoes
-        .filter(a => a.data_inicio <= bEndStr && (a.data_fim == null || a.data_fim >= bStartStr))
-        .reduce((sum, a) => sum + Number((a.viaturas as any)?.valor_aluguer || 0), 0);
+      const eventosBucket = eventos.filter(ev => {
+        const evDate = ev.data_inicio.split('T')[0];
+        return evDate >= bStartStr && evDate <= bEndStr;
+      });
 
-      // Alugadas: associações que iniciaram no bucket
-      const alugadas = associacoes.filter(a => a.data_inicio >= bStartStr && a.data_inicio <= bEndStr).length;
+      // Alugadas correspondentes a novas Entregas
+      const entregas = eventosBucket.filter(ev => ev.tipo === 'entrega');
+      const alugadas = entregas.length;
 
-      // Devolvidas: associações que terminaram no bucket
-      const devolvidas = associacoes.filter(a => a.data_fim != null && a.data_fim >= bStartStr && a.data_fim <= bEndStr).length;
+      // Devolvidas correspondentes a Recolhas/Devoluções
+      const devolvidas = eventosBucket.filter(ev => ev.tipo === 'devolucao' || ev.tipo === 'recolha').length;
+
+      // Rentabilidade contabiliza apenas as novas Entregas (geraram nova renda garantida)
+      const rentabilidade = entregas.reduce((sum, ev) => sum + ev.valor_aluguer, 0);
 
       return { periodo, label, rentabilidade, alugadas, devolvidas };
     };
@@ -301,6 +323,7 @@ const Dashboard = () => {
   // ── Derived values ───────────────────────────────────────────────────────
 
   const rendaDiff = formatPct(upgradeData.rendaAtual, upgradeData.rendaAnterior);
+  // Como agora o gráfico calcula apenas a renda nova de cada período, faz sentido apresentar a soma dessa renda no topo.
   const totalRentabilidade = atividadeData.reduce((sum, p) => sum + p.rentabilidade, 0);
   const totalAlugadas = atividadeData.reduce((sum, p) => sum + p.alugadas, 0);
   const totalDevolvidas = atividadeData.reduce((sum, p) => sum + p.devolvidas, 0);
@@ -444,12 +467,12 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <CardTitle className="text-base">Atividade & Rentabilidade</CardTitle>
-                    <CardDescription>Renda activa + movimentos de frota no período</CardDescription>
+                    <CardDescription>Evolução de novas entregas de viaturas no período</CardDescription>
                   </div>
                   <div className="flex gap-4 text-sm">
                     <div className="text-right">
                       <div className="text-lg font-bold text-primary">{formatCurrency(totalRentabilidade)}</div>
-                      <p className="text-xs text-muted-foreground">renda total</p>
+                      <p className="text-xs text-muted-foreground">nova renda contratada</p>
                     </div>
                     <div className="flex flex-col items-end text-xs text-muted-foreground">
                       <span>Alugadas <strong className="text-foreground">{totalAlugadas}</strong></span>
@@ -484,50 +507,53 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Pie Frota */}
+            {/* Extintores a Expirar */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Estado da Frota</CardTitle>
-                <CardDescription>Distribuição atual de {fleet.total} viaturas</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-orange-500" />
+                      Extintores a Expirar
+                    </CardTitle>
+                    <CardDescription>Expiração nos próximos 15 dias</CardDescription>
+                  </div>
+                  <Badge variant="outline" className="font-mono text-orange-500 border-orange-500/20 bg-orange-500/10">
+                    {extintoresAPrazo.length} Pendentes
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent>
-                {frotaPie.length === 0 ? (
+                {extintoresAPrazo.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
-                    <Car className="h-10 w-10 mb-2 opacity-20" />
-                    <p className="text-sm">Sem viaturas registadas</p>
+                    <AlertCircle className="h-10 w-10 mb-2 opacity-20 text-green-500" />
+                    <p className="text-sm">Sem extintores a expirar em breve</p>
                   </div>
                 ) : (
-                  <>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <PieChart>
-                        <Pie
-                          data={frotaPie}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={45}
-                          outerRadius={70}
-                          paddingAngle={3}
-                          dataKey="value"
-                        >
-                          {frotaPie.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value: number, name: string) => [value, name]} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="space-y-1.5 mt-2">
-                      {frotaPie.map(d => (
-                        <div key={d.name} className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                            <span className="text-muted-foreground">{d.name}</span>
+                  <div className="space-y-3 mt-1 max-h-[200px] overflow-y-auto pr-1">
+                    {extintoresAPrazo.map(ext => {
+                      const motoristaStr = (ext.motoristas_ativos as any)?.nome || 'Sem motorista';
+                      const viaturaStr = (ext.viaturas as any)?.matricula || 'Sem viatura';
+                      const isExpired = new Date(ext.extintor_validade) < new Date();
+                      
+                      return (
+                        <div key={ext.id} className="flex flex-col p-2.5 rounded-lg border border-border bg-muted/40 transition-colors hover:bg-muted">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="font-semibold text-sm tracking-tight">{viaturaStr}</span>
+                            <Badge variant={isExpired ? "destructive" : "outline"} className={!isExpired ? "text-orange-500 border-orange-500/30 bg-orange-500/10 text-[10px]" : "text-[10px]"}>
+                              {format(new Date(ext.extintor_validade), 'dd MMM', { locale: pt })}
+                            </Badge>
                           </div>
-                          <span className="font-semibold">{d.value}</span>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span className="truncate pr-2">👤 {motoristaStr}</span>
+                            <span className={isExpired ? "text-destructive font-medium shrink-0" : "shrink-0"}>
+                              {isExpired ? "Expirado" : "A expirar"}
+                            </span>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </>
+                      );
+                    })}
+                  </div>
                 )}
               </CardContent>
             </Card>

@@ -24,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { NovoTicketDialog } from '@/components/assistencia/NovoTicketDialog';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
@@ -66,17 +65,18 @@ const prioridadeConfig: Record<string, { label: string; color: string }> = {
 };
 
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+import { NovoTicketPage } from '@/components/assistencia/NovoTicketPage';
 
 const MeusTickets = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
+  const [novoTicketOpen, setNovoTicketOpen] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
-  const [novoTicketOpen, setNovoTicketOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -172,6 +172,13 @@ const MeusTickets = () => {
   }
 
   return (
+    <>
+    {novoTicketOpen && (
+      <NovoTicketPage
+        onClose={() => setNovoTicketOpen(false)}
+        onSuccess={() => { setNovoTicketOpen(false); fetchMyTickets(); }}
+      />
+    )}
     <div className="space-y-6">
       <StickyPageHeader
         title="Meus Tickets de Assistência"
@@ -324,16 +331,8 @@ const MeusTickets = () => {
         </div>
       )}
 
-      {/* Dialog para novo ticket */}
-      <NovoTicketDialog 
-        open={novoTicketOpen} 
-        onOpenChange={setNovoTicketOpen}
-        onSuccess={() => {
-          setNovoTicketOpen(false);
-          fetchMyTickets();
-        }}
-      />
     </div>
+    </>
   );
 };
 

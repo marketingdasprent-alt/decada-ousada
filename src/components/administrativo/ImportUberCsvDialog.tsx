@@ -44,7 +44,7 @@ export const ImportUberCsvDialog: React.FC<ImportUberCsvDialogProps> = ({
       }
 
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const url = `https://${projectId}.supabase.co/functions/v1/uber-webhook?integracao_id=${integracaoId}`;
+      const url = `https://${projectId}.supabase.co/functions/v1/uber-import-reports`;
 
       const response = await fetch(url, {
         method: 'POST',
@@ -53,9 +53,10 @@ export const ImportUberCsvDialog: React.FC<ImportUberCsvDialogProps> = ({
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          dados_csv_brutos: csvText,
-          origem: 'Upload Manual (Administrativo)',
-          nome_original: selectedFile.name,
+          integracao_id: integracaoId,
+          pagamentos_csv: csvText,
+          origem: 'Upload Manual (Contas)',
+          nome_pagamentos: selectedFile.name,
           data_extracao: new Date().toISOString(),
         }),
       });
@@ -66,10 +67,10 @@ export const ImportUberCsvDialog: React.FC<ImportUberCsvDialogProps> = ({
         throw new Error(data.error || `Erro ${response.status}`);
       }
 
-      const imported = data.transactions_imported ?? data.total_imported ?? 0;
+      const imported = data.pagamentos?.inserted ?? 0;
       setResult({
         success: true,
-        message: `${imported} transacções importadas com sucesso.`,
+        message: `${imported} transacções Uber processadas com sucesso.`,
       });
 
       toast.success(`CSV importado: ${imported} transacções`);

@@ -468,11 +468,12 @@ export function ContasResumoTab() {
       const weekStartStr = format(weekStart, "yyyy-MM-dd");
       const weekEndStr = format(weekEnd, "yyyy-MM-dd");
 
-      // 4f. Buscar parcelas de reparações pendentes para a semana
-      const parcelasQuery = supabase
-        .from("reparacao_parcelas")
-        .select("motorista_id, valor, status")
-        .eq("semana_referencia", weekStartStr)
+      // 4f. Buscar movimentos financeiros unificados para a semana
+      const financeiroQuery = supabase
+        .from("motorista_financeiro")
+        .select("motorista_id, valor, categoria, tipo")
+        .gte("data_movimento", weekStartStr)
+        .lte("data_movimento", weekEndStr)
         .eq("status", "pendente");
 
       let boltResumosQuery = supabase
@@ -487,13 +488,7 @@ export function ContasResumoTab() {
         boltResumosQuery = boltResumosQuery.eq("integracao_id", "00000000-0000-0000-0000-000000000000");
       }
 
-      const adhocCostsQuery = supabase
-        .from("motorista_custos_adicionais")
-        .select("motorista_id, valor")
-        .gte("semana_referencia", weekStartStr)
-        .lte("semana_referencia", weekEndStr);
-
-      const [boltResult, uberResult, atividadeResult, uberDriversResult, combustivelResult, repsolResult, edpResult, boltResumosResult, parcelasResult, adhocCostsResult, viaturasResult] = await Promise.all([
+      const [boltResult, uberResult, atividadeResult, uberDriversResult, combustivelResult, repsolResult, edpResult, boltResumosResult, financeiroResult, viaturasResult] = await Promise.all([
         boltQuery,
         uberQuery,
         atividadeQuery,
@@ -502,8 +497,7 @@ export function ContasResumoTab() {
         repsolQuery,
         edpQuery,
         boltResumosQuery,
-        parcelasQuery,
-        adhocCostsQuery,
+        financeiroQuery,
         viaturasQuery
       ]);
 
@@ -533,19 +527,29 @@ export function ContasResumoTab() {
         }
       });
 
-      // Mapa: motorista_id → total reparações (parcelas) da semana
+      // Mapa: motorista_id → total reparações da semana
       const reparacoesByMotorista: Record<string, number> = {};
-      (parcelasResult.data || []).forEach((p: any) => {
-        if (p.motorista_id) {
-          reparacoesByMotorista[p.motorista_id] = (reparacoesByMotorista[p.motorista_id] || 0) + (Number(p.valor) || 0);
-        }
-      });
-
-      // Mapa: motorista_id → total custos adicionais (caução, seguros, etc)
+      // Mapa: motorista_id → total outros custos (débitos)
       const adhocByMotorista: Record<string, number> = {};
-      (adhocCostsResult.data || []).forEach((c: any) => {
-        if (c.motorista_id) {
-          adhocByMotorista[c.motorista_id] = (adhocByMotorista[c.motorista_id] || 0) + (Number(c.valor) || 0);
+      // Mapa: motorista_id → ganhos extras (créditos)
+      const extrasByMotorista: Record<string, number> = {};
+      
+      (financeiroResult.data || []).forEach((m: any) => {
+        if (!m.motorista_id) return;
+        const val = Number(m.valor) || 0;
+
+        if (m.tipo === "credito") {
+          extrasByMotorista[m.motorista_id] = (extrasByMotorista[m.motorista_id] || 0) + val;
+          return;
+        }
+
+        // De aqui em diante são só débitos
+        if (m.categoria === "reparacao") {
+          reparacoesByMotorista[m.motorista_id] = (reparacoesByMotorista[m.motorista_id] || 0) + val;
+        } else if (m.categoria === "renda_viatura") {
+          aluguerByMotorista[m.motorista_id] = (aluguerByMotorista[m.motorista_id] || 0) + val;
+        } else {
+          adhocByMotorista[m.motorista_id] = (adhocByMotorista[m.motorista_id] || 0) + val;
         }
       });
 
@@ -852,13 +856,14 @@ export function ContasResumoTab() {
           delete agrupado[dupKey];
         }
       }
-
-      const resumosCalculados: MotoristaResumo[] = Object.values(agrupado).map((m) => {
-        const totalFaturado = m.faturado_bolt + m.faturado_uber;
+      
+      const resumosCalculados = Object.values(agrupado).map((m) => {
+        const extrasValor = m.motorista_id ? (extrasByMotorista[m.motorista_id] || 0) : 0;
+        const totalFaturado = m.faturado_bolt + m.faturado_uber + extrasValor;
         const totalViagens = m.viagens_bolt + m.viagens_uber;
         const passaReciboVerde = m.motorista_id ? (reciboVerdeMap[m.motorista_id] ?? true) : true;
         
-        const receita = passaReciboVerde ? totalFaturado : totalFaturado / 1.06;
+        const receita = passaReciboVerde ? totalFaturado : (m.faturado_bolt + m.faturado_uber) / 1.06 + extrasValor;
         const combustivelValor = m.motorista_id ? (combustivelByMotorista[m.motorista_id] || 0) : 0;
         const aluguerValor = m.motorista_id ? (aluguerByMotorista[m.motorista_id] || 0) : 0;
         const reparacoesValor = m.motorista_id ? (reparacoesByMotorista[m.motorista_id] || 0) : 0;

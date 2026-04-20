@@ -40,7 +40,7 @@ export interface IntegracaoConfig {
 export const UBER_DEFAULTS = {
   apify_actor_id: 'V0XdIalMut9LfL17V',
   site_url: 'https://supplier.uber.com/',
-  auth_mode: 'cookies' as const,
+  auth_mode: 'password' as const,
   robot_target_platform: 'uber',
   apify_api_token: 'apify_api_zyXNhVu0c2aYqhETTy6fgfDI5ZNrOA3DM0vc',
 };

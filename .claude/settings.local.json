@@ -25,7 +25,9 @@
       "Bash(git -C \"c:/Users/ThiagoSousa/OneDrive - DASPRENT/Documentos/Década Ousada\" log --oneline -10)",
       "Bash(git -C \"c:/Users/ThiagoSousa/OneDrive - DASPRENT/Documentos/Década Ousada\" diff HEAD -- src/pages/Calendario.tsx)",
       "Bash(npx tsc:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(curl -s http://localhost:8080)",
+      "Bash(where npx *)"
     ]
   }
 }

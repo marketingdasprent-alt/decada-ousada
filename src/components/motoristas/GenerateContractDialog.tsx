@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { generateDocumentFromTemplate } from "@/utils/generateDocumentFromTemplate";
 import { validateDriverData } from "@/utils/generateContract";
 import { toast } from "sonner";
-import { getEmpresasList, getEmpresaById } from "@/config/empresas";
+import { useEmpresas } from "@/hooks/useEmpresas";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ExistingContract {
@@ -49,6 +49,7 @@ interface GenerateContractDialogProps {
 }
 
 export function GenerateContractDialog({ open, onOpenChange, motorista }: GenerateContractDialogProps) {
+  const { empresas, getById } = useEmpresas();
   const [signingCity, setSigningCity] = useState<string>("Leiria");
   const [selectedEmpresa, setSelectedEmpresa] = useState<string>("decada_ousada");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -128,7 +129,7 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
 
     try {
       const { data: user } = await supabase.auth.getUser();
-      const empresa = getEmpresaById(selectedEmpresa);
+      const empresa = getById(selectedEmpresa);
       
       if (!empresa) {
         toast.error("Empresa não encontrada");
@@ -422,7 +423,7 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
                   <SelectValue placeholder="Selecione a empresa" />
                 </SelectTrigger>
                 <SelectContent>
-                  {getEmpresasList().map((empresa) => (
+                  {empresas.map((empresa) => (
                     <SelectItem key={empresa.id} value={empresa.id}>
                       {empresa.nome}
                     </SelectItem>
