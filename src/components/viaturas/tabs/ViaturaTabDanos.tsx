@@ -211,10 +211,25 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
       setDanos(danosComFotos);
 
       // --- BUSCAR FOTOS DE ASSISTÊNCIA (ESPELHAMENTO DIRETO) ---
+      // Debug: Ver quantos tickets existem no total
+      const { count: totalTickets } = await supabase
+        .from('assistencia_tickets')
+        .select('*', { count: 'exact', head: true });
+
       const { data: tickets } = await supabase
         .from('assistencia_tickets')
-        .select('id, numero, titulo, criado_em')
+        .select('id, numero, titulo, criado_em, viatura_id')
         .eq('viatura_id', viaturaId);
+
+      console.log('Tickets encontrados para esta viatura:', tickets?.length);
+      console.log('Total de tickets no sistema:', totalTickets);
+
+      window.debugInfo = {
+        totalTickets: totalTickets || 0,
+        viaturaTickets: tickets?.length || 0,
+        viaturaId: viaturaId
+      };
+
 
       if (tickets && tickets.length > 0) {
         const ticketIds = tickets.map(t => t.id);
@@ -652,9 +667,12 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
         ) : (
           <div className="space-y-8">
             {/* DEBUG INFO - REMOVER DEPOIS */}
-            <div className="bg-slate-900 text-green-400 p-2 text-[10px] font-mono rounded overflow-x-auto">
-              DEBUG: ViaturaID: {viaturaId} | Tickets: {assistancePhotos.length > 0 ? 'SIM' : 'NÃO'} | Fotos Encontradas: {assistancePhotos.length}
+            <div className="bg-slate-900 text-green-400 p-2 text-[10px] font-mono rounded overflow-x-auto flex gap-4">
+              <span>DEBUG: ViaturaID: {viaturaId}</span>
+              <span>Total Tickets BD: {window.debugInfo?.totalTickets || 0}</span>
+              <span>Tickets desta Viatura: {assistancePhotos.length}</span>
             </div>
+
 
             {danos.length === 0 && assistancePhotos.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
