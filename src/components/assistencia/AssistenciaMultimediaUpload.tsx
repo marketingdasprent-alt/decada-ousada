@@ -42,6 +42,7 @@ export function AssistenciaMultimediaUpload({
   // Estados para o Modo Câmara Mobile
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null); // Para o Lightbox
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,6 +75,7 @@ export function AssistenciaMultimediaUpload({
     if (!previewFile || !user) return;
 
     const fileToUpload = previewFile;
+    const localUrl = previewUrl; // Guardar o URL local para a miniatura
     const type = fileToUpload.type.startsWith('video') ? 'video' : 'image' as any;
     
     // Limpar preview imediatamente para dar feedback de velocidade
@@ -104,7 +106,7 @@ export function AssistenciaMultimediaUpload({
 
       setFiles(prev => [...prev, {
         id: Math.random().toString(36).substring(7),
-        url: publicUrl,
+        url: localUrl || publicUrl, // PRIORIDADE: URL Local para garantir que abre no telemóvel
         path: filePath,
         type
       }]);
@@ -122,7 +124,6 @@ export function AssistenciaMultimediaUpload({
 
     setUploading(true);
     setProgress(0);
-    // ... restante da lógica de upload em lote para galeria ...
 
     const totalFiles = selectedFiles.length;
     let completedFiles = 0;
@@ -130,6 +131,7 @@ export function AssistenciaMultimediaUpload({
     try {
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
+        const localUrl = URL.createObjectURL(file);
         
         // Validação simples de tamanho (20MB para vídeos, 5MB para fotos)
         const maxSize = type === 'video' ? 20 * 1024 * 1024 : 5 * 1024 * 1024;
@@ -158,7 +160,7 @@ export function AssistenciaMultimediaUpload({
 
         setFiles(prev => [...prev, {
           id: Math.random().toString(36).substring(7),
-          url: publicUrl,
+          url: localUrl || publicUrl, // Usar localUrl para visualização imediata
           path: filePath,
           type
         }]);
@@ -187,6 +189,27 @@ export function AssistenciaMultimediaUpload({
 
   return (
     <div className="space-y-6">
+      {/* LIGHTBOX (VISUALIZAR FOTO GRANDE) */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-5xl w-full h-full flex flex-col items-center justify-center">
+            <button className="absolute top-0 right-0 p-4 text-white hover:text-red-500 transition-colors">
+              <X className="h-8 w-8" />
+            </button>
+            <img 
+              src={selectedImage} 
+              alt="Viatura Full" 
+              className="max-w-full max-h-full object-contain shadow-2xl rounded-lg" 
+              onClick={(e) => e.stopPropagation()}
+            />
+            <p className="text-white/50 text-xs mt-4 font-mono">Toque fora para fechar</p>
+          </div>
+        </div>
+      )}
+
       {/* OVERLAY DE PREVIEW (MODO CÂMARA) */}
       {previewUrl && (
         <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-4">
@@ -217,7 +240,7 @@ export function AssistenciaMultimediaUpload({
               <div className="h-20 w-20 rounded-full bg-blue-600 flex items-center justify-center border-4 border-white/20 shadow-xl group-active:scale-95 transition-transform">
                 <Plus className="h-8 w-8 text-white" />
               </div>
-              <span className="text-xs font-black uppercase tracking-tighter">PRÓXIMA FOTO</span>
+              <span className="text-xs font-black uppercase tracking-tighter text-center">PRÓXIMA FOTO</span>
             </button>
 
             <button 
@@ -260,11 +283,16 @@ export function AssistenciaMultimediaUpload({
             </button>
 
             {photos.map(file => (
-              <div key={file.id} className="relative group aspect-square rounded-xl overflow-hidden border shadow-sm">
-                <img src={file.url} alt="Viatura" className="h-full w-full object-cover" />
+              <div key={file.id} className="relative group aspect-square rounded-xl overflow-hidden border shadow-sm bg-muted">
+                <img 
+                  src={file.url} 
+                  alt="Viatura" 
+                  className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition-transform" 
+                  onClick={() => setSelectedImage(file.url)}
+                />
                 <button 
                   onClick={() => removeFile(file)}
-                  className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full hover:bg-red-500 transition-colors"
+                  className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full hover:bg-red-500 transition-colors z-10"
                 >
                   <X className="h-3 w-3" />
                 </button>
