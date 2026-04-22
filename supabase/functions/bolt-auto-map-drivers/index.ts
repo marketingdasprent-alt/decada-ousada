@@ -137,23 +137,31 @@ Deno.serve(async (req) => {
 
         // 3b. Se não encontrou por email, tentar por telefone
         if (!existingMotorista && !searchError && phone) {
-          // Normalizar telefone para comparação (remover espaços)
-          const phoneNormalized = phone.replace(/\s+/g, '');
+          // Normalizar telefone para comparação (remover espaços e prefixos)
+          const phoneNormalized = phone.replace(/\s+/g, '').replace('+351', '');
           const { data, error } = await supabase
             .from("motoristas_ativos")
             .select("id, nome, telefone")
             .not("telefone", "is", null);
           
           if (!error && data) {
-            existingMotorista = data.find((m: any) => {
-              const mPhone = m.telefone?.replace(/\s+/g, '');
-              return mPhone === phoneNormalized || 
-                     mPhone === phoneNormalized.replace('+351', '') ||
-                     ('+351' + mPhone) === phoneNormalized;
-            }) || null;
+            // Primeiro procurar por telefone + nome similar (casos de telefones partilhados)
+            const driverFL = normalizeFirstLast(driverName);
+            const matches = data.filter((m: any) => {
+              const mPhone = (m.telefone || '').replace(/\s+/g, '').replace('+351', '');
+              return mPhone === phoneNormalized;
+            });
+
+            if (matches.length === 1) {
+              existingMotorista = matches[0];
+            } else if (matches.length > 1) {
+              // Se há múltiplos com o mesmo telefone, desampatar pelo nome
+              existingMotorista = matches.find((m: any) => normalizeFirstLast(m.nome) === driverFL) || null;
+            }
           }
           searchError = error;
         }
+
 
         // 3c. Se não encontrou por telefone, tentar por nome exacto
         if (!existingMotorista && !searchError && driverName !== "Sem nome") {

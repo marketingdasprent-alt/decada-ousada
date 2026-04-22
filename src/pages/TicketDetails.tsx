@@ -28,6 +28,7 @@ import {
   Search,
   Wallet,
 } from 'lucide-react';
+import { AssistenciaMultimediaUpload } from '@/components/assistencia/AssistenciaMultimediaUpload';
 import {
   Dialog,
   DialogContent,
@@ -168,6 +169,7 @@ const TicketDetails = () => {
     numero_fatura: '',
   });
   const [faturaFile, setFaturaFile] = useState<File | null>(null);
+  const [exitMediaFiles, setExitMediaFiles] = useState<{ url: string; path: string; type: 'image' | 'video' }[]>([]);
   const faturaInputRef = useRef<HTMLInputElement>(null);
 
   // Substituta
@@ -540,6 +542,10 @@ const TicketDetails = () => {
       toast({ title: "Erro", description: "Indique o destino da viatura substituta.", variant: "destructive" });
       return;
     }
+    if (exitMediaFiles.length < 5) {
+      toast({ title: "Fotos Obrigatórias", description: "É necessário carregar pelo menos 4 fotos e 1 vídeo para a saída.", variant: "destructive" });
+      return;
+    }
 
     try {
       setClosureLoading(true);
@@ -574,10 +580,55 @@ const TicketDetails = () => {
           .from('assistencia-anexos')
           .upload(fileName, faturaFile);
         if (uploadErr) throw uploadErr;
+        
         const { data: { publicUrl } } = supabase.storage
           .from('assistencia-anexos')
           .getPublicUrl(fileName);
+        
         faturaUrl = publicUrl;
+      }
+
+      // 3. Salvar Anexos de Saída (Fotos e Vídeos)
+      if (exitMediaFiles.length > 0) {
+        const anexosSaida = exitMediaFiles.map(file => ({
+          ticket_id: id,
+          tipo_ficheiro: file.type === 'image' ? 'foto' : 'video',
+          ficheiro_url: file.url,
+          nome_ficheiro: file.path.split('/').pop() || 'anexo_saida',
+          uploaded_by: user?.id
+        }));
+
+        await supabase.from('assistencia_anexos').insert(anexosSaida);
+
+        // 3.1 Registar Check-out em Danos
+        const { data: checkoutDano, error: cError } = await supabase
+          .from('viatura_danos')
+          .insert({
+            viatura_id: viatura.id,
+            ticket_id: id,
+            descricao: `Check-out de Assistência #${String(ticket.numero).padStart(4, '0')}`,
+            localizacao: 'outro',
+            estado: 'reparado',
+            data_ocorrencia: new Date().toISOString().split('T')[0],
+            observacoes: `Saída de assistência concluída: ${closureData.descricao_reparacao || ticket.titulo}`,
+          })
+          .select()
+          .single();
+
+        if (!cError && checkoutDano) {
+          const fotosCheckout = exitMediaFiles
+            .filter(f => f.type === 'image')
+            .map(file => ({
+              dano_id: checkoutDano.id,
+              ficheiro_url: file.url,
+              nome_ficheiro: file.path.split('/').pop() || 'foto_checkout',
+              uploaded_by: user?.id
+            }));
+          
+          if (fotosCheckout.length > 0) {
+            await supabase.from('viatura_dano_fotos').insert(fotosCheckout);
+          }
+        }
       }
 
       // 3. Se cobrar_motorista, criar lançamento pendente na conta do motorista
@@ -997,6 +1048,20 @@ const TicketDetails = () => {
                     <Label htmlFor="cobrar" className="cursor-pointer">
                       Cobrar valor ao motorista ({motorista?.nome || 'Nenhum motorista associado'})
                     </Label>
+                  </div>
+
+                  {/* Multimédia de Saída */}
+                  <div className="space-y-4 border-t pt-4">
+                    <Label className="text-base font-bold flex items-center gap-2">
+                      <Image className="h-5 w-5 text-blue-500" />
+                      Multimédia de Saída (Obrigatório)
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Registe o estado da viatura no momento da entrega (Mínimo 4 fotos e 1 vídeo).
+                    </p>
+                    <AssistenciaMultimediaUpload 
+                      onFilesChange={setExitMediaFiles}
+                    />
                   </div>
                   
                   {/* Decisão: viatura reparada */}

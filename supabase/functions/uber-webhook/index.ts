@@ -1,5 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +11,7 @@ type UpsertCount = { inserted: number; updated: number };
 type Lookups = {
   motoristasByEmail: Map<string, string>;
   motoristasByPhone: Map<string, string>;
+  motoristasByName: Map<string, string>;
   viaturasByPlate: Map<string, string>;
   uberDriverToMotorista: Map<string, string>;
   uberVehicleToViatura: Map<string, string>;
@@ -317,6 +317,11 @@ const normalizePlate = (input?: string | null) => {
   return normalized || null;
 };
 
+const normalizeName = (input?: string | null): string => {
+  if (!input) return '';
+  return input.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
+};
+
 const buildPhone = (value: unknown) => {
   if (typeof value === "string") return value.trim() || null;
   if (!isRecord(value)) return null;
@@ -458,7 +463,7 @@ const loadLookups = async (supabase: ReturnType<typeof createClient>, integracao
     { data: uberDriversData, error: uberDriversError },
     { data: uberVehiclesData, error: uberVehiclesError },
   ] = await Promise.all([
-    supabase.from("motoristas_ativos").select("id, email, telefone").eq("status_ativo", true),
+    supabase.from("motoristas_ativos").select("id, email, telefone, nome").eq("status_ativo", true),
     supabase.from("viaturas").select("id, matricula"),
     supabase.from("uber_drivers").select("uber_driver_id, motorista_id").eq("integracao_id", integracaoId).not("motorista_id", "is", null),
     supabase.from("uber_vehicles").select("uber_vehicle_id, viatura_id").eq("integracao_id", integracaoId).not("viatura_id", "is", null),
@@ -471,6 +476,7 @@ const loadLookups = async (supabase: ReturnType<typeof createClient>, integracao
 
   const motoristasByEmail = new Map<string, string>();
   const motoristasByPhone = new Map<string, string>();
+  const motoristasByName = new Map<string, string>();
   const viaturasByPlate = new Map<string, string>();
   const uberDriverToMotorista = new Map<string, string>();
   const uberVehicleToViatura = new Map<string, string>();
@@ -478,8 +484,10 @@ const loadLookups = async (supabase: ReturnType<typeof createClient>, integracao
   for (const motorista of motoristasData ?? []) {
     const email = typeof motorista.email === "string" ? motorista.email.trim().toLowerCase() : "";
     const phone = normalizePhone(typeof motorista.telefone === "string" ? motorista.telefone : null);
+    const name = normalizeName(typeof motorista.nome === "string" ? motorista.nome : null);
     if (email && !motoristasByEmail.has(email)) motoristasByEmail.set(email, motorista.id);
     if (phone && !motoristasByPhone.has(phone)) motoristasByPhone.set(phone, motorista.id);
+    if (name && !motoristasByName.has(name)) motoristasByName.set(name, motorista.id);
   }
 
   for (const viatura of viaturasData ?? []) {
@@ -499,7 +507,7 @@ const loadLookups = async (supabase: ReturnType<typeof createClient>, integracao
     }
   }
 
-  return { motoristasByEmail, motoristasByPhone, viaturasByPlate, uberDriverToMotorista, uberVehicleToViatura };
+  return { motoristasByEmail, motoristasByPhone, motoristasByName, viaturasByPlate, uberDriverToMotorista, uberVehicleToViatura };
 };
 
 const upsertRows = async ({
@@ -1448,9 +1456,9 @@ const processStoredEvent = async ({
 const CSV_COLUMN_ALIASES: Record<string, string[]> = {
   uber_transaction_id: ["trip id", "reference", "referência", "referencia", "transaction id", "payment id", "id"],
   trip_reference: ["trip id", "trip reference", "trip ref", "referência viagem", "referencia viagem"],
-  uber_driver_id: ["driver", "driver id", "motorista", "driver name", "nome motorista", "driver uuid", "uuid do motorista"],
-  driver_first_name: ["nome próprio do motorista", "nome proprio do motorista", "first name", "nome próprio", "nome proprio"],
-  driver_last_name: ["apelido do motorista", "last name", "apelido"],
+  uber_driver_id: ["driver", "driver id", "motorista", "driver name", "nome motorista", "driver uuid", "uuid do motorista", "uuid_do_motorista"],
+  driver_first_name: ["nome próprio do motorista", "nome proprio do motorista", "first name", "nome próprio", "nome proprio", "nome_proprio_do_motorista"],
+  driver_last_name: ["apelido do motorista", "last name", "apelido", "apelido_do_motorista"],
   uber_vehicle_id: ["vehicle", "vehicle id", "viatura", "plate", "license plate", "matrícula", "matricula", "veículo", "veiculo"],
   occurred_at: ["date", "data", "occurred at", "trip date", "data viagem", "datetime", "data/hora", "timestamp"],
   gross_amount: ["gross", "bruto", "total", "gross amount", "valor bruto", "valor total", "fare", "tarifa", "valor", "pago a si"],
@@ -1497,9 +1505,9 @@ const parseCsvLine = (line: string, separator: string): string[] => {
 
 const mapCsvHeaders = (headers: string[]): Map<number, string> => {
   const mapping = new Map<number, string>();
-  // Normalize: lowercase, trim, remove quotes, collapse spaces around colons
+  // Normalize: lowercase, remove BOM, trim, remove quotes, collapse spaces around colons
   const normalizedHeaders = headers.map((h) =>
-    h.toLowerCase().trim().replace(/['"]/g, "").replace(/\s*:\s*/g, ":")
+    h.toLowerCase().replace(/^\ufeff/, "").trim().replace(/['"]/g, "").replace(/\s*:\s*/g, ":")
   );
 
   for (let i = 0; i < normalizedHeaders.length; i++) {
@@ -1591,6 +1599,7 @@ const processCsvImport = async ({
   let parseErrors = 0;
   let skippedRows = 0;
   const skippedReasons: string[] = [];
+  const driverRowsMap = new Map<string, Record<string, unknown>>();
 
   // UUID v4 regex for validating driver IDs
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1619,11 +1628,11 @@ const processCsvImport = async ({
     const filenameMatch = nomeOriginal?.match(/(\d{8})-(\d{8})/);
     if (filenameMatch) {
       filenamePeriod = `${filenameMatch[1]}-${filenameMatch[2]}`;
-      // Use end date as occurred_at fallback
-      const endDateStr = filenameMatch[2];
-      const parsedEnd = new Date(`${endDateStr.slice(0, 4)}-${endDateStr.slice(4, 6)}-${endDateStr.slice(6, 8)}T23:59:59Z`);
-      if (!Number.isNaN(parsedEnd.getTime())) {
-        filenameDate = parsedEnd.toISOString();
+      // Use start date as occurred_at fallback so transactions fall in the correct week view
+      const startDateStr = filenameMatch[1];
+      const parsedStart = new Date(`${startDateStr.slice(0, 4)}-${startDateStr.slice(4, 6)}-${startDateStr.slice(6, 8)}T12:00:00Z`);
+      if (!Number.isNaN(parsedStart.getTime())) {
+        filenameDate = parsedStart.toISOString();
       }
     }
 
@@ -1649,8 +1658,14 @@ const processCsvImport = async ({
     const uberVehicleId = mapped.uber_vehicle_id || null;
     const normalizedPlate = normalizePlate(uberVehicleId);
 
+    const driverFullName = mapped.driver_first_name && mapped.driver_last_name
+      ? `${mapped.driver_first_name} ${mapped.driver_last_name}`.trim()
+      : (mapped.driver_first_name || null);
+
     const motoristaId =
-      (uberDriverId ? lookups.uberDriverToMotorista.get(uberDriverId) ?? null : null);
+      (uberDriverId ? lookups.uberDriverToMotorista.get(uberDriverId) ?? null : null)
+      ?? (driverFullName ? lookups.motoristasByName.get(normalizeName(driverFullName)) ?? null : null);
+
     const viaturaId =
       (uberVehicleId ? lookups.uberVehicleToViatura.get(uberVehicleId) ?? null : null)
       ?? (normalizedPlate ? lookups.viaturasByPlate.get(normalizedPlate) ?? null : null);
@@ -1679,6 +1694,27 @@ const processCsvImport = async ({
       skippedReasons.push(`Row ${i}: uber_driver_id="${uberDriverId}" is not a valid UUID`);
       console.warn(`[uber-webhook] CSV row ${i} skipped: uber_driver_id="${uberDriverId}" is not a valid UUID`);
       continue;
+    }
+
+    if (uberDriverId && UUID_REGEX.test(uberDriverId)) {
+      if (!driverRowsMap.has(uberDriverId)) {
+        const firstName = mapped.driver_first_name || "Motorista";
+        const lastName = mapped.driver_last_name || `(CSV ${nomeOriginal ? nomeOriginal.slice(0, 15) : "Import"})`;
+        driverRowsMap.set(uberDriverId, {
+          integracao_id: integracaoId,
+          uber_driver_id: uberDriverId,
+          first_name: firstName,
+          last_name: lastName,
+          full_name: `${firstName} ${lastName}`.trim(),
+          email: null,
+          phone: null,
+          status: "active",
+          motorista_id: motoristaId ?? undefined,
+        });
+      } else if (motoristaId && !driverRowsMap.get(uberDriverId)!.motorista_id) {
+        // Enrich existing entry with resolved motorista_id
+        driverRowsMap.get(uberDriverId)!.motorista_id = motoristaId;
+      }
     }
 
     rows.push({
@@ -1720,6 +1756,25 @@ const processCsvImport = async ({
     parseErrors = rows.length;
   }
 
+  // Upsert drivers that were found in the CSV
+  let newDrivers = 0;
+  if (driverRowsMap.size > 0) {
+    try {
+      const driverCounts = await upsertRows({
+        supabase,
+        table: "uber_drivers",
+        integracaoId,
+        idColumn: "uber_driver_id",
+        onConflict: "integracao_id,uber_driver_id",
+        rows: Array.from(driverRowsMap.values()),
+      });
+      newDrivers = driverCounts.inserted;
+      console.info(`[uber-webhook] CSV added ${newDrivers} new drivers`);
+    } catch (driverErr) {
+      console.warn("[uber-webhook] CSV upsert drivers error:", driverErr);
+    }
+  }
+
   // Log to uber_sync_logs
   await supabase.from("uber_sync_logs").insert({
     integracao_id: integracaoId,
@@ -1739,6 +1794,7 @@ const processCsvImport = async ({
       skipped_reasons: skippedReasons.slice(0, 20),
       columns_mapped: Array.from(columnMap.values()),
       separator,
+      motoristas_novos: newDrivers,
     },
   });
 
@@ -1761,7 +1817,7 @@ const processCsvImport = async ({
   };
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

@@ -24,10 +24,10 @@ export const UserMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="text-foreground hover:bg-primary/20">
-          <User className="h-4 w-4 mr-2" />
-          {user.email}
-          {isAdmin && <span className="ml-2 text-xs bg-primary text-primary-foreground px-1 rounded">ADMIN</span>}
+        <Button variant="ghost" className="text-foreground hover:bg-primary/20 px-2 sm:px-4">
+          <User className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">{user.email}</span>
+          {isAdmin && <span className="sm:ml-2 text-[10px] sm:text-xs bg-primary text-primary-foreground px-1 rounded">ADMIN</span>}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="bg-card border-border" align="end">

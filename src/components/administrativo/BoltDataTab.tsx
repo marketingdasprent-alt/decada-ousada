@@ -240,9 +240,8 @@ export const BoltDataTab: React.FC = () => {
         return;
       }
 
-      // 2. CLEANUP: Remove invalid records (orphans) from previous failed attempts
-      console.log('Cleaning up invalid bolt records...');
-      await supabase.from('bolt_resumos_semanais').delete().is('motorista_id', null);
+      // Removed cleanup: orphan records must be preserved for manual association
+      console.log('Fetching Bolt records from Apify...');
 
       toast({ title: "Resgatando do Apify", description: `Processando ${boltConfigs.length} integração(ões) Bolt...` });
 

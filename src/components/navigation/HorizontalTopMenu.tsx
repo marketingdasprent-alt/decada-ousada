@@ -74,139 +74,148 @@ export const HorizontalTopMenu: React.FC = () => {
   // Mobile version with Sheet
   if (isMobile) {
     return (
-      <header className="h-16 bg-card/95 backdrop-blur-sm border-b border-primary/30 sticky top-0 z-[60]">
-        <div className="h-full flex items-center justify-between px-4">
+      <header className="h-20 bg-card/95 backdrop-blur-sm border-b border-primary/30 sticky top-0 z-[60]">
+        <div className="h-full grid grid-cols-5 items-center px-4">
           {/* Mobile Menu Button */}
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="mr-2">
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <div className="flex flex-col h-full">
-                {/* Logo in Sheet */}
-                <div className="p-6 border-b">
-                  <img 
-                    src={logoSrc}
-                    alt="Década Ousada" 
-                    className="h-10 w-auto object-contain"
-                  />
-                </div>
-                
-                {/* Menu Items */}
-                <nav className="flex-1 py-4">
-                  {visibleMenuItems.map((item) => {
-                    const Icon = item.icon;
-                    
-                    // Se tem subitens, renderiza grupo
-                    if (item.subItems && item.subItems.length > 0) {
-                      return (
-                        <div key={item.label}>
-                          <div className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                            <Icon className="h-4 w-4" />
-                            <span>{item.label}</span>
+          <div className="col-span-1">
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-0">
+                <div className="flex flex-col h-full">
+                  {/* Logo in Sheet */}
+                  <div className="p-6 border-b">
+                    <img 
+                      src={logoSrc}
+                      alt="Década Ousada" 
+                      className="h-10 w-auto object-contain"
+                    />
+                  </div>
+                  
+                  {/* Menu Items */}
+                  <nav className="flex-1 py-4">
+                    {visibleMenuItems.map((item) => {
+                      const Icon = item.icon;
+                      
+                      // Se tem subitens, renderiza grupo
+                      if (item.subItems && item.subItems.length > 0) {
+                        return (
+                          <div key={item.label}>
+                            <div className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                              <Icon className="h-4 w-4" />
+                              <span>{item.label}</span>
+                            </div>
+                            {item.subItems.map((subItem) => {
+                              const SubIcon = subItem.icon || Icon;
+                              return (
+                                <NavLink
+                                  key={subItem.url}
+                                  to={subItem.url}
+                                  onClick={(e) => {
+                                    if (loading) {
+                                      e.preventDefault();
+                                      return false;
+                                    }
+                                    setIsOpen(false);
+                                  }}
+                                  className={({ isActive }) => cn(
+                                    "flex items-center gap-3 px-6 pl-10 py-3 transition-colors",
+                                    "hover:bg-primary/10",
+                                    "text-sm font-medium",
+                                    loading && "pointer-events-none opacity-50",
+                                    isActive 
+                                      ? "bg-primary/20 text-primary border-l-4 border-primary" 
+                                      : "text-muted-foreground hover:text-foreground"
+                                  )}
+                                >
+                                  <SubIcon className="h-4 w-4" />
+                                  <span>{subItem.label}</span>
+                                </NavLink>
+                              );
+                            })}
                           </div>
-                          {item.subItems.map((subItem) => {
-                            const SubIcon = subItem.icon || Icon;
-                            return (
-                              <NavLink
-                                key={subItem.url}
-                                to={subItem.url}
-                                onClick={(e) => {
-                                  if (loading) {
-                                    e.preventDefault();
-                                    return false;
-                                  }
-                                  setIsOpen(false);
-                                }}
-                                className={({ isActive }) => cn(
-                                  "flex items-center gap-3 px-6 pl-10 py-3 transition-colors",
-                                  "hover:bg-primary/10",
-                                  "text-sm font-medium",
-                                  loading && "pointer-events-none opacity-50",
-                                  isActive 
-                                    ? "bg-primary/20 text-primary border-l-4 border-primary" 
-                                    : "text-muted-foreground hover:text-foreground"
-                                )}
-                              >
-                                <SubIcon className="h-4 w-4" />
-                                <span>{subItem.label}</span>
-                              </NavLink>
-                            );
-                          })}
-                        </div>
+                        );
+                      }
+                      
+                      // Item normal sem subitens
+                      return (
+                        <NavLink
+                          key={item.url}
+                          to={item.url!}
+                          onClick={(e) => {
+                            if (loading) {
+                              e.preventDefault();
+                              return false;
+                            }
+                            setIsOpen(false);
+                          }}
+                          className={({ isActive }) => cn(
+                            "flex items-center gap-3 px-6 py-4 transition-colors",
+                            "hover:bg-primary/10",
+                            "text-base font-medium",
+                            loading && "pointer-events-none opacity-50",
+                            isActive 
+                              ? "bg-primary/20 text-primary border-l-4 border-primary" 
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span>{item.label}</span>
+                        </NavLink>
                       );
-                    }
-                    
-                    // Item normal sem subitens
-                    return (
+                    })}
+
+                    {/* Admin Link */}
+                    {hasAdminAccess && (
                       <NavLink
-                        key={item.url}
-                        to={item.url!}
-                        onClick={(e) => {
-                          if (loading) {
-                            e.preventDefault();
-                            return false;
-                          }
-                          setIsOpen(false);
-                        }}
+                        to="/admin/settings"
+                        onClick={() => setIsOpen(false)}
                         className={({ isActive }) => cn(
-                          "flex items-center gap-3 px-6 py-4 transition-colors",
+                          "flex items-center gap-3 px-6 py-4 transition-colors mt-2",
                           "hover:bg-primary/10",
                           "text-base font-medium",
-                          loading && "pointer-events-none opacity-50",
                           isActive 
                             ? "bg-primary/20 text-primary border-l-4 border-primary" 
                             : "text-muted-foreground hover:text-foreground"
                         )}
                       >
-                        <Icon className="h-5 w-5" />
-                        <span>{item.label}</span>
+                        <Settings className="h-5 w-5" />
+                        <span>Administração</span>
                       </NavLink>
-                    );
-                  })}
+                    )}
+                  </nav>
 
-                  {/* Admin Link */}
-                  {hasAdminAccess && (
-                    <NavLink
-                      to="/admin/settings"
-                      onClick={() => setIsOpen(false)}
-                      className={({ isActive }) => cn(
-                        "flex items-center gap-3 px-6 py-4 transition-colors mt-2",
-                        "hover:bg-primary/10",
-                        "text-base font-medium",
-                        isActive 
-                          ? "bg-primary/20 text-primary border-l-4 border-primary" 
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <Settings className="h-5 w-5" />
-                      <span>Administração</span>
-                    </NavLink>
-                  )}
-                </nav>
-
-                {/* User Menu at bottom */}
-                <div className="p-4 border-t flex items-center justify-between gap-2">
-                  <UserMenu />
-                  <ThemeToggle />
+                  {/* User Menu at bottom */}
+                  <div className="p-4 border-t flex items-center justify-between gap-2">
+                    <UserMenu />
+                    <ThemeToggle />
+                  </div>
                 </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+              </SheetContent>
+            </Sheet>
+          </div>
 
-          {/* Logo */}
-          <div className="flex-1 flex justify-center">
+          {/* Logo and Email Centered */}
+          <div className="col-span-3 flex flex-col items-center justify-center gap-0.5">
             <img 
               src={logoSrc}
               alt="Década Ousada" 
-              className="h-10 w-auto object-contain"
+              className="h-8 w-auto object-contain"
             />
+            {!loading && (
+              <span className="text-[10px] text-muted-foreground font-medium truncate max-w-full">
+                {useAuth().user?.email}
+              </span>
+            )}
           </div>
 
-          {/* User Menu */}
-          <div className="w-10" /> {/* Spacer for centering */}
+          {/* User & Theme Toggle Right */}
+          <div className="col-span-1 flex items-center justify-end gap-1">
+            <UserMenu />
+          </div>
         </div>
       </header>
     );

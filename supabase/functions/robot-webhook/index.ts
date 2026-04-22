@@ -72,17 +72,42 @@ Deno.serve(async (req) => {
 
     // Helper: find any string value that looks like CSV (has newlines + commas)
     const findCsvInPayload = (obj: any): string | null => {
-      // Check known field names first
-      const knownFields = ['dados_csv_bolt', 'csv_content', 'dados_csv', 'raw_csv', 'csvContent',
-        'csv', 'data', 'content', 'csvData', 'resultado', 'combustivel_csv', 'dados_csv_combustivel',
-        'pagamentos_csv', 'viagens_csv', 'dados_csv_pagamentos', 'dados_csv_atividades'];
-      for (const f of knownFields) {
-        if (typeof obj[f] === 'string' && obj[f].length > 50) return obj[f];
+      console.log('robot-webhook: Searching for CSV in payload keys:', Object.keys(obj).join(', '));
+      
+      // 1. Check known field names (case-insensitive and partial match)
+      const knownPatterns = [/csv/i, /data/i, /content/i, /bolt/i, /result/i, /raw/i];
+      for (const [k, v] of Object.entries(obj)) {
+        if (typeof v === 'string' && v.length > 50) {
+          if (knownPatterns.some(p => p.test(k))) {
+             // Basic CSV validation: must have at least one comma and one newline
+             if (v.includes(',') && v.includes('\n')) {
+               console.log(`robot-webhook: Found CSV-like content in key "${k}" (length: ${v.length})`);
+               return v;
+             }
+          }
+        }
       }
-      // Fallback: any long string with newlines (likely a CSV)
-      for (const [, v] of Object.entries(obj)) {
-        if (typeof v === 'string' && v.length > 100 && v.includes('\n')) return v as string;
+
+      // 2. Deep search: any string that looks like a CSV (newlines + many commas)
+      for (const [k, v] of Object.entries(obj)) {
+        if (typeof v === 'string' && v.length > 100) {
+          const commaCount = (v.match(/,/g) || []).length;
+          const newlineCount = (v.match(/\n/g) || []).length;
+          if (commaCount > 5 && newlineCount > 1) {
+            console.log(`robot-webhook: Deep search match found in key "${k}" (commas: ${commaCount}, lines: ${newlineCount})`);
+            return v;
+          }
+        }
       }
+
+      // 3. Nested object search (in case Apify wraps data)
+      for (const v of Object.values(obj)) {
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+          const nested = findCsvInPayload(v);
+          if (nested) return nested;
+        }
+      }
+
       return null;
     };
 
@@ -310,16 +335,17 @@ Deno.serve(async (req) => {
     }
 
     // If we reached here, data was technically received but not recognized as a known format
-    console.warn(`robot-webhook: Payload for integration ${integracaoId} (${config.nome}) not recognized. Keys received:`, Object.keys(payload).join(', '));
+    console.error(`robot-webhook ERROR: Payload for integration ${integracaoId} (${config.nome}) NOT recognized. Keys received:`, Object.keys(payload).join(', '));
 
     return new Response(
       JSON.stringify({
-        success: true,
-        message: 'Dados recebidos mas o formato não foi reconhecido para processamento imediato',
+        success: false,
+        error: 'Formato de dados não reconhecido. Nenhum CSV detetado.',
         integracao_id: integracaoId,
-        platform: config.robot_target_platform
+        platform: config.robot_target_platform,
+        keys_received: Object.keys(payload)
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
 
   } catch (error) {

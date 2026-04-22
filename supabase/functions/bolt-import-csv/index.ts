@@ -253,17 +253,52 @@ Deno.serve(async (req) => {
       .from('motoristas_ativos')
       .select('id, nome, telefone, email');
 
-    const normalizeStr = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+    const normalizeStr = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
 
     const motoristaByName: Record<string, string> = {};
     const motoristaByPhone: Record<string, string> = {};
-    (motoristas || []).forEach((m: any) => {
+    const allMotoristas = motoristas || [];
+
+    allMotoristas.forEach((m: any) => {
       motoristaByName[normalizeStr(m.nome)] = m.id;
       if (m.telefone) {
         const digits = m.telefone.replace(/\D/g, '').slice(-9);
         if (digits.length === 9) motoristaByPhone[digits] = m.id;
       }
     });
+
+    // Função de matching agressivo
+    const findMotoristaId = (nome?: string, telefone?: string, email?: string): string | null => {
+      if (!nome && !telefone && !email) return null;
+
+      const normNome = nome ? normalizeStr(nome) : '';
+      
+      // 1. Exact Name match (normalized)
+      if (normNome && motoristaByName[normNome]) return motoristaByName[normNome];
+
+      // 2. Phone match
+      if (telefone) {
+        const digits = telefone.replace(/\D/g, '').slice(-9);
+        if (digits.length === 9 && motoristaByPhone[digits]) return motoristaByPhone[digits];
+      }
+
+      // 3. Email match
+      if (email) {
+        const match = allMotoristas.find((m: any) => m.email?.toLowerCase().trim() === email.toLowerCase().trim());
+        if (match) return match.id;
+      }
+
+      // 4. Fuzzy Name Match (Starts with / Ends with / Includes)
+      if (normNome) {
+        const match = allMotoristas.find((m: any) => {
+          const mNorm = normalizeStr(m.nome);
+          return mNorm.includes(normNome) || normNome.includes(mNorm);
+        });
+        if (match) return match.id;
+      }
+
+      return null;
+    };
 
     let imported = 0;
     let errors = 0;
@@ -293,18 +328,12 @@ Deno.serve(async (req) => {
         }
 
         // Try to match motorista
-        const nome = record.motorista_nome;
-        if (nome) {
-          const normNome = normalizeStr(nome);
-          if (motoristaByName[normNome]) {
-            record.motorista_id = motoristaByName[normNome];
-          }
-        }
-        if (!record.motorista_id && record.telefone) {
-          const digits = record.telefone.replace(/\D/g, '').slice(-9);
-          if (digits.length === 9 && motoristaByPhone[digits]) {
-            record.motorista_id = motoristaByPhone[digits];
-          }
+        record.motorista_id = findMotoristaId(record.motorista_nome, record.telefone, record.email);
+        
+        if (record.motorista_id) {
+          console.log(`bolt-import-csv: Match found for ${record.motorista_nome} -> ID: ${record.motorista_id}`);
+        } else {
+          console.warn(`bolt-import-csv: NO match found for ${record.motorista_nome} (${record.telefone || 'no phone'})`);
         }
 
         // Upsert

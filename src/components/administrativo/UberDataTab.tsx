@@ -326,7 +326,104 @@ export const UberDataTab: React.FC = () => {
     }
   };
 
+  const handleEmergencyFix = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || integracoes.length === 0) return;
+
+    setLoading(true);
+    try {
+      const integracaoId = selectedIntegracao === 'all' ? integracoes[0].id : selectedIntegracao;
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+      
+      if (lines.length < 2) throw new Error("Ficheiro CSV vazio ou inválido.");
+
+      const separator = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(separator).map(h => h.trim().toLowerCase().replace(/['"]/g, ""));
+      
+      const idxUuid = headers.findIndex(h => h.includes('uuid do motorista') || h.includes('uber_driver_id'));
+      const idxFirst = headers.findIndex(h => h.includes('nome próprio') || h.includes('nome proprio') || h.includes('first_name'));
+      const idxLast = headers.findIndex(h => h.includes('apelido') || h.includes('last_name'));
+
+      if (idxUuid === -1 || idxFirst === -1) {
+        throw new Error("Não foi possível encontrar as colunas de UUID ou Nome no CSV. Verifique o formato.");
+      }
+
+      toast({ title: "Processando", description: `Lendo ${lines.length - 1} linhas do CSV...` });
+
+      // 1. Carregar motoristas ativos para matching
+      const { data: motoristas, error: mError } = await supabase
+        .from('motoristas_ativos')
+        .select('id, nome');
+      
+      if (mError) throw mError;
+
+      const normalize = (s: string) => s?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " ") || "";
+      
+      let fixedCount = 0;
+      let driverUpserted = 0;
+
+      for (let i = 1; i < lines.length; i++) {
+        const cells = lines[i].split(separator).map(c => c.trim().replace(/['"]/g, ""));
+        const uuid = cells[idxUuid];
+        const firstName = cells[idxFirst] || "";
+        const lastName = idxLast !== -1 ? cells[idxLast] : "";
+        const fullName = `${firstName} ${lastName}`.trim();
+
+        if (!uuid || uuid.length < 10) continue;
+
+        // A. Garantir que o motorista Uber existe na tabela uber_drivers
+        const { error: udError } = await supabase
+          .from('uber_drivers')
+          .upsert({
+            uber_driver_id: uuid,
+            first_name: firstName,
+            last_name: lastName,
+            full_name: fullName,
+            integracao_id: integracaoId,
+            flow_type: 'emergency_fix'
+          }, { onConflict: 'uber_driver_id,integracao_id' });
+
+        if (!udError) driverUpserted++;
+
+        // B. Tentar encontrar matching agressivo (ignora nomes do meio e acentos)
+        const normFullName = normalize(fullName);
+        const match = motoristas.find(m => {
+          const normM = normalize(m.nome);
+          // Match se o nome administrativo estiver contido no nome do Uber ou vice-versa
+          return normM.length > 3 && (normFullName.includes(normM) || normM.includes(normFullName));
+        });
+
+        if (match) {
+          // C. Ligar os dois
+          await supabase.from('uber_drivers').update({ motorista_id: match.id }).eq('uber_driver_id', uuid);
+          await supabase.from('motoristas').update({ uber_uuid: uuid }).eq('id', match.id);
+          fixedCount++;
+        }
+      }
+
+      toast({ 
+        title: "Reparação Concluída", 
+        description: `Processados ${driverUpserted} motoristas Uber. ${fixedCount} associações feitas com sucesso!` 
+      });
+      
+      fetchUberDrivers();
+      fetchAllTransactions();
+
+    } catch (error: any) {
+      console.error('Erro na reparação Uber:', error);
+      toast({ title: "Erro", description: error.message || "Falha na reparação.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+      // Reset input
+      const input = document.getElementById('emergency-fix-input') as HTMLInputElement;
+      if (input) input.value = '';
+    }
+  };
+
   const handleStopLoading = () => {
+
+
     loadRequestIdRef.current++;
     setLoadingAll(false);
     setLoading(false);
@@ -544,6 +641,37 @@ export const UberDataTab: React.FC = () => {
                 {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Clock className="h-3 w-3" />}
                 Resgatar do Apify
               </Button>
+              <input
+                type="file"
+                id="emergency-fix-input"
+                className="hidden"
+                accept=".csv"
+                onChange={handleEmergencyFix}
+              />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => document.getElementById('emergency-fix-input')?.click()}
+                disabled={loading}
+                className="text-xs text-orange-500 hover:text-orange-600 hidden md:flex items-center gap-1"
+                title="Use isto se houver motoristas sem UUID após a importação regular"
+              >
+                {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldAlert className="h-3 w-3" />}
+                Reparar Associação
+              </Button>
+
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleAutoMap}
+                disabled={loading}
+                className="text-xs text-muted-foreground hidden md:flex items-center gap-1"
+              >
+                {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCcw className="h-3 w-3" />}
+                Auto-Mapear
+              </Button>
+
+
               <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
                 <Upload className="h-4 w-4 mr-2" />
                 Importar CSV

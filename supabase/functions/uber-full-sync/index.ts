@@ -62,19 +62,24 @@ async function getClientCredentialsToken(
     body: new URLSearchParams({
       client_id: clientId,
       client_secret: clientSecret,
-      grant_type: "client_credentials",
+      grant_type: "client_credentials"
     }),
   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    console.error(`Client credentials token failed: ${response.status} ${text}`);
-    throw new Error(
-      `Falha ao obter token Uber (${response.status}). Verifique o Client ID e Client Secret.`
-    );
+  const bodyText = await response.text();
+  let data;
+  try {
+    data = JSON.parse(bodyText);
+  } catch(e) {
+    data = {};
   }
 
-  const data = await response.json();
+  if (!response.ok) {
+    const errorDetails = data.error_description || data.error || bodyText;
+    console.error(`Client credentials token failed: ${response.status} ${errorDetails}`);
+    throw new Error(`Falha ao obter token Uber (HTTP ${response.status}): ${errorDetails}`);
+  }
+
   if (!data.access_token) {
     throw new Error("Token Uber obtido sem access_token.");
   }

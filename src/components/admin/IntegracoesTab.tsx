@@ -56,6 +56,7 @@ import { IntegracaoDialog } from './IntegracaoDialog';
 import { IntegracaoDetailModal } from './IntegracaoDetailModal';
 import { ImportRobotCsvDialog } from './ImportRobotCsvDialog';
 import { ViaVerdeContaDialog } from './via-verde/ViaVerdeContaDialog';
+import { ImportUberCsvDialog } from '../administrativo/ImportUberCsvDialog';
 import type { IntegracaoConfig } from './integracoes/types';
 import type { ViaVerdeConta } from './via-verde/types';
 
@@ -96,6 +97,8 @@ export const IntegracoesTab: React.FC = () => {
   const [selectedViaVerdeConta, setSelectedViaVerdeConta] = useState<ViaVerdeConta | null>(null);
   const [importRobotDialogOpen, setImportRobotDialogOpen] = useState(false);
   const [selectedRobotIntegracaoId, setSelectedRobotIntegracaoId] = useState<string>('');
+  const [importUberDialogOpen, setImportUberDialogOpen] = useState(false);
+  const [selectedUberIntegracaoId, setSelectedUberIntegracaoId] = useState<string>('');
   const [executingRobots, setExecutingRobots] = useState<Set<string>>(new Set());
 
   // Webhooks
@@ -279,8 +282,13 @@ export const IntegracoesTab: React.FC = () => {
 
   const handleCardImport = (card: IntegracaoCardData) => {
     const integracao = card.rawData as IntegracaoConfig;
-    setSelectedRobotIntegracaoId(integracao.id);
-    setImportRobotDialogOpen(true);
+    if (integracao.plataforma === 'uber') {
+      setSelectedUberIntegracaoId(integracao.id);
+      setImportUberDialogOpen(true);
+    } else {
+      setSelectedRobotIntegracaoId(integracao.id);
+      setImportRobotDialogOpen(true);
+    }
   };
 
   const handleExecuteRobot = async (card: IntegracaoCardData) => {
@@ -467,14 +475,17 @@ export const IntegracoesTab: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {cards.map((card) => {
-            const isRobotBacked = (card.rawData as IntegracaoConfig)?.plataforma === 'robot';
+            const rawPlataforma = (card.rawData as IntegracaoConfig)?.plataforma;
+            const isRobotBacked = rawPlataforma === 'robot';
+            const isUberBacked = rawPlataforma === 'uber';
+            const hasImport = isRobotBacked || isUberBacked;
             return (
               <IntegracaoCard
                 key={card.id}
                 data={card}
                 onEdit={handleCardEdit}
                 onSync={card.type !== 'via_verde' ? handleCardSync : undefined}
-                onImport={isRobotBacked ? handleCardImport : undefined}
+                onImport={hasImport ? handleCardImport : undefined}
                 onExecute={isRobotBacked ? handleExecuteRobot : undefined}
                 isExecuting={executingRobots.has(card.id)}
               />
@@ -660,6 +671,14 @@ export const IntegracoesTab: React.FC = () => {
         open={importRobotDialogOpen}
         onOpenChange={setImportRobotDialogOpen}
         integracaoId={selectedRobotIntegracaoId}
+        onImportComplete={fetchAll}
+      />
+
+      {/* Import Uber CSV Dialog */}
+      <ImportUberCsvDialog
+        open={importUberDialogOpen}
+        onOpenChange={setImportUberDialogOpen}
+        integracaoId={selectedUberIntegracaoId}
         onImportComplete={fetchAll}
       />
     </div>

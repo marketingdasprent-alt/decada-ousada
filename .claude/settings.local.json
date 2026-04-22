@@ -27,7 +27,8 @@
       "Bash(npx tsc:*)",
       "Bash(npx vite:*)",
       "Bash(curl -s http://localhost:8080)",
-      "Bash(where npx *)"
+      "Bash(where npx *)",
+      "Bash(find \"c:\\\\Users\\\\ThiagoSousa\\\\OneDrive - DASPRENT\\\\Documentos\\\\Década Ousada\\\\supabase\\\\migrations\" -type f -name \"*.sql\" -exec grep -l \"CREATE TABLE.*profiles\" {} \\\\;)"
     ]
   }
 }

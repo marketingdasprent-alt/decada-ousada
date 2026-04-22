@@ -41,7 +41,14 @@ import {
   Gauge,
   Droplet,
   X,
+  Camera,
+  CheckCircle2,
+  AlertTriangle,
+  Zap,
+  Flame,
+  Eraser
 } from 'lucide-react';
+import { AssistenciaMultimediaUpload } from '@/components/assistencia/AssistenciaMultimediaUpload';
 
 interface Viatura {
   id: string;
@@ -52,6 +59,7 @@ interface Viatura {
   ano?: number | null;
   status: string;
   km_atual?: number | null;
+  combustivel?: string | null;
 }
 
 interface Categoria {
@@ -79,6 +87,8 @@ export default function AssistenciaNova() {
   const [showSubstituteSearch, setShowSubstituteSearch] = useState(false);
   const [substituteSearchTerm, setSubstituteSearchTerm] = useState('');
   const [motoristaId, setMotoristaId] = useState<string | null>(null);
+  const [mediaFiles, setMediaFiles] = useState<any[]>([]);
+
   const [formData, setFormData] = useState({
     categoria_id: '',
     titulo: '',
@@ -86,6 +96,10 @@ export default function AssistenciaNova() {
     prioridade: 'media',
     km_inicio: '',
     combustivel_inicio: 'meio',
+    adblue_nivel: 'cheio',
+    gpl_qtd: '',
+    eletricidade_qtd: '',
+    estado_limpeza: 'limpa',
     data_entrada: new Date().toISOString().split('T')[0],
     valor_orcamento: '',
   });
@@ -100,7 +114,7 @@ export default function AssistenciaNova() {
       const [vRes, cRes] = await Promise.all([
         supabase
           .from('viaturas')
-          .select('id, matricula, marca, modelo, cor, ano, status, km_atual')
+          .select('id, matricula, marca, modelo, cor, ano, status, km_atual, combustivel')
           .neq('status', 'vendida')
           .order('matricula'),
         supabase
@@ -163,7 +177,12 @@ export default function AssistenciaNova() {
       .order('matricula');
     setViaturasDisponiveis(disponiveis || []);
 
-    setStep(2);
+    setStep(2); // Vai para Multimédia
+  };
+
+  const handleMultimediaComplete = (files: any[]) => {
+    setMediaFiles(files);
+    setStep(3); // Vai para Estado da Viatura
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -174,6 +193,15 @@ export default function AssistenciaNova() {
       toast({
         title: 'Erro',
         description: 'Por favor, insira um título descritivo.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!formData.km_inicio) {
+      toast({
+        title: 'Erro',
+        description: 'Quilometragem é obrigatória.',
         variant: 'destructive',
       });
       return;
@@ -195,6 +223,10 @@ export default function AssistenciaNova() {
           status: 'em_andamento',
           km_inicio: parseInt(formData.km_inicio) || null,
           combustivel_inicio: formData.combustivel_inicio,
+          adblue_nivel: formData.adblue_nivel,
+          gpl_qtd: formData.gpl_qtd ? parseFloat(formData.gpl_qtd) : null,
+          eletricidade_qtd: formData.eletricidade_qtd ? parseFloat(formData.eletricidade_qtd) : null,
+          estado_limpeza: formData.estado_limpeza,
           valor_orcamento: formData.valor_orcamento ? parseFloat(formData.valor_orcamento) : null,
           criado_por: user?.id,
         })
@@ -203,14 +235,65 @@ export default function AssistenciaNova() {
 
       if (ticketError) throw ticketError;
 
-       // 1.1 Criar mensagem inicial de log com orçamento e detalhes
+      // 2. Salvar Anexos (Fotos e Vídeos) na Assistência
+      if (mediaFiles.length > 0) {
+        const anexos = mediaFiles.map(file => ({
+          ticket_id: ticket.id,
+          tipo_ficheiro: file.type === 'image' ? 'foto' : 'video',
+          ficheiro_url: file.url,
+          nome_ficheiro: file.path.split('/').pop() || 'anexo',
+          uploaded_by: user?.id
+        }));
+
+        const { error: anexosError } = await supabase
+          .from('assistencia_anexos')
+          .insert(anexos);
+        
+        if (anexosError) console.error('Erro ao salvar anexos:', anexosError);
+
+        // 2.1 TAMBÉM salvar como "Dano" da viatura para histórico centralizado
+        const { data: novoDano, error: danoError } = await supabase
+          .from('viatura_danos')
+          .insert({
+            viatura_id: selectedViatura.id,
+            ticket_id: ticket.id,
+            descricao: `Check-in de Assistência #${String(ticket.numero).padStart(4, '0')}`,
+            localizacao: 'outro',
+            estado: 'pendente',
+            data_ocorrencia: new Date().toISOString().split('T')[0],
+            observacoes: `Registado automaticamente na abertura da assistência: ${formData.titulo}`,
+          })
+          .select()
+          .single();
+
+        if (!danoError && novoDano) {
+          // Apenas fotos (o gallery de danos geralmente não mostra vídeos)
+          const fotosDano = mediaFiles
+            .filter(f => f.type === 'image')
+            .map(file => ({
+              dano_id: novoDano.id,
+              ficheiro_url: file.url,
+              nome_ficheiro: file.path.split('/').pop() || 'foto_checkin',
+              uploaded_by: user?.id
+            }));
+
+          if (fotosDano.length > 0) {
+            await supabase.from('viatura_dano_fotos').insert(fotosDano);
+          }
+        }
+      }
+
+       // 1.1 Criar mensagem inicial de log
        await supabase.from('assistencia_mensagens').insert({
          ticket_id: ticket.id,
          autor_id: user?.id,
-         mensagem: `Ticket criado com check-in: 
+         mensagem: `Ticket criado com check-in completo: 
          - Orçamento Estimado: ${formData.valor_orcamento ? formData.valor_orcamento + '€' : 'Não definido'}
-         - KM Inicial: ${formData.km_inicio || 'Não informado'}
-         - Combustível: ${formData.combustivel_inicio}`,
+         - KM Inicial: ${formData.km_inicio}
+         - Combustível: ${formData.combustivel_inicio}
+         - AdBlue: ${formData.adblue_nivel}
+         - Limpeza: ${formData.estado_limpeza}
+         - Média: ${mediaFiles.length} ficheiros anexados`,
          tipo: 'status_change',
        });
 
@@ -238,9 +321,7 @@ export default function AssistenciaNova() {
 
       toast({
         title: 'Sucesso',
-        description: viaturaSubstituta
-          ? 'Viatura em manutenção. Substituta atribuída ao motorista.'
-          : 'Viatura colocada em assistência com sucesso.',
+        description: 'Entrada em assistência registada com sucesso.',
       });
 
       navigate('/assistencia');
@@ -256,6 +337,11 @@ export default function AssistenciaNova() {
     }
   };
 
+  const isElectric = selectedViatura?.combustivel?.toLowerCase().includes('elétrico') || 
+                     selectedViatura?.combustivel?.toLowerCase().includes('híbrido');
+  const isGas = selectedViatura?.combustivel?.toLowerCase().includes('gpl') || 
+                selectedViatura?.combustivel?.toLowerCase().includes('gás');
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
       {/* Header */}
@@ -263,7 +349,10 @@ export default function AssistenciaNova() {
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={() => step === 1 ? navigate('/assistencia') : setStep(1)}
+          onClick={() => {
+            if (step === 1) navigate('/assistencia');
+            else setStep(step - 1);
+          }}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -273,12 +362,23 @@ export default function AssistenciaNova() {
             Nova Entrada em Assistência
           </h1>
           <p className="text-muted-foreground">
-            {step === 1 ? 'Selecione a viatura' : `Entrada para ${selectedViatura?.matricula}`}
+            Passo {step} de 4: {
+              step === 1 ? 'Selecione a viatura' : 
+              step === 2 ? 'Documentação Multimédia' : 
+              step === 3 ? 'Estado da Viatura' : 'Detalhes Técnicos'
+            }
           </p>
         </div>
       </div>
 
-      {step === 1 ? (
+      {/* Progress Bar */}
+      <div className="flex gap-2 h-1.5 w-full">
+        {[1, 2, 3, 4].map(s => (
+          <div key={s} className={`flex-1 rounded-full ${s <= step ? 'bg-primary' : 'bg-muted'}`} />
+        ))}
+      </div>
+
+      {step === 1 && (
         <Card className="border-border/50">
           <CardHeader>
             <div className="relative">
@@ -326,7 +426,7 @@ export default function AssistenciaNova() {
                             </div>
                             <div>
                               <p className="font-mono font-bold">{v.matricula}</p>
-                              <p className="text-xs text-muted-foreground">{v.marca} {v.modelo}</p>
+                              <p className="text-xs text-muted-foreground">{v.marca} {v.modelo} ({v.combustivel || 'N/I'})</p>
                             </div>
                           </div>
                         </TableCell>
@@ -352,14 +452,161 @@ export default function AssistenciaNova() {
             )}
           </CardContent>
         </Card>
-      ) : (
+      )}
+
+      {step === 2 && (
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle>Documentação Multimédia</CardTitle>
+            <CardDescription>Carregue fotografias do estado atual e um vídeo de 15 segundos.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AssistenciaMultimediaUpload onComplete={handleMultimediaComplete} />
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 3 && (
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle>Estado da Viatura</CardTitle>
+            <CardDescription>Registe o estado atual dos consumíveis e limpeza.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="km_inicio" className="flex items-center gap-2">
+                    <Gauge className="h-4 w-4" /> Quilometragem (Obrigatório)
+                  </Label>
+                  <Input
+                    id="km_inicio"
+                    type="number"
+                    placeholder="KM à entrada"
+                    value={formData.km_inicio}
+                    onChange={(e) => setFormData(prev => ({ ...prev, km_inicio: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="adblue" className="flex items-center gap-2">
+                    <Droplet className="h-4 w-4" /> Nível AdBlue (Obrigatório)
+                  </Label>
+                  <Select 
+                    value={formData.adblue_nivel} 
+                    onValueChange={(val) => setFormData(prev => ({ ...prev, adblue_nivel: val }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cheio">Cheio</SelectItem>
+                      <SelectItem value="medio">Médio</SelectItem>
+                      <SelectItem value="baixo">Baixo</SelectItem>
+                      <SelectItem value="critico">Crítico (Reserva)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="combustivel" className="flex items-center gap-2">
+                    <Droplet className="h-4 w-4" /> Nível Combustível (Diesel/Gasolina)
+                  </Label>
+                  <Select 
+                    value={formData.combustivel_inicio} 
+                    onValueChange={(val) => setFormData(prev => ({ ...prev, combustivel_inicio: val }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="vazio">Vazio</SelectItem>
+                      <SelectItem value="reserva">Reserva</SelectItem>
+                      <SelectItem value="1/4">1/4</SelectItem>
+                      <SelectItem value="meio">1/2 (Meio)</SelectItem>
+                      <SelectItem value="3/4">3/4</SelectItem>
+                      <SelectItem value="cheio">Cheio</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="limpeza" className="flex items-center gap-2">
+                    <Eraser className="h-4 w-4" /> Estado de Limpeza
+                  </Label>
+                  <Select 
+                    value={formData.estado_limpeza} 
+                    onValueChange={(val) => setFormData(prev => ({ ...prev, estado_limpeza: val }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="limpa">Limpa</SelectItem>
+                      <SelectItem value="aceitavel">Aceitável</SelectItem>
+                      <SelectItem value="suja">Suja</SelectItem>
+                      <SelectItem value="muito_suja">Muito Suja</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {isGas && (
+                  <div className="space-y-2 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-900/50">
+                    <Label htmlFor="gpl_qtd" className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                      <Flame className="h-4 w-4" /> Quantidade GPL (%)
+                    </Label>
+                    <Input
+                      id="gpl_qtd"
+                      type="number"
+                      placeholder="Ex: 75"
+                      value={formData.gpl_qtd}
+                      onChange={(e) => setFormData(prev => ({ ...prev, gpl_qtd: e.target.value }))}
+                      className="bg-background"
+                    />
+                  </div>
+                )}
+
+                {isElectric && (
+                  <div className="space-y-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900/50">
+                    <Label htmlFor="eletricidade_qtd" className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                      <Zap className="h-4 w-4" /> Carga Elétrica (%)
+                    </Label>
+                    <Input
+                      id="eletricidade_qtd"
+                      type="number"
+                      placeholder="Ex: 85"
+                      value={formData.eletricidade_qtd}
+                      onChange={(e) => setFormData(prev => ({ ...prev, eletricidade_qtd: e.target.value }))}
+                      className="bg-background"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button variant="ghost" onClick={() => setStep(2)}>Voltar</Button>
+            <Button onClick={() => {
+              if (!formData.km_inicio) {
+                toast({ title: "Campo Obrigatório", description: "Por favor insira a quilometragem.", variant: "destructive" });
+                return;
+              }
+              setStep(4);
+            }}>Continuar</Button>
+          </CardFooter>
+        </Card>
+      )}
+
+      {step === 4 && (
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
               <Card className="border-border/50">
                 <CardHeader>
-                  <CardTitle>Detalhes do Problema</CardTitle>
-                  <CardDescription>O que precisa ser verificado ou reparado?</CardDescription>
+                  <CardTitle>Detalhes da Assistência</CardTitle>
+                  <CardDescription>Qual o motivo desta entrada?</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -422,8 +669,7 @@ export default function AssistenciaNova() {
             <div className="space-y-6">
               <Card className="border-border/50">
                 <CardHeader>
-                  <CardTitle className="text-lg">Check-in</CardTitle>
-                  <CardDescription>Estado no momento da entrega</CardDescription>
+                  <CardTitle className="text-lg">Resumo Check-in</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -437,39 +683,7 @@ export default function AssistenciaNova() {
                       onChange={(e) => setFormData(prev => ({ ...prev, data_entrada: e.target.value }))}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="km_inicio" className="flex items-center gap-2">
-                      <Gauge className="h-4 w-4" /> Quilometragem
-                    </Label>
-                    <Input
-                      id="km_inicio"
-                      type="number"
-                      placeholder="KM à entrada"
-                      value={formData.km_inicio}
-                      onChange={(e) => setFormData(prev => ({ ...prev, km_inicio: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="combustivel" className="flex items-center gap-2">
-                      <Droplet className="h-4 w-4" /> Nível Combustível
-                    </Label>
-                    <Select 
-                      value={formData.combustivel_inicio} 
-                      onValueChange={(val) => setFormData(prev => ({ ...prev, combustivel_inicio: val }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="vazio">Vazio</SelectItem>
-                        <SelectItem value="reserva">Reserva</SelectItem>
-                        <SelectItem value="1/4">1/4</SelectItem>
-                        <SelectItem value="meio">1/2 (Meio)</SelectItem>
-                        <SelectItem value="3/4">3/4</SelectItem>
-                        <SelectItem value="cheio">Cheio</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="valor_orcamento" className="flex items-center gap-2">
                       Orçamento Estimado (€)
@@ -494,71 +708,48 @@ export default function AssistenciaNova() {
                         <div className="flex items-center gap-2 p-2 rounded-lg border border-amber-400 bg-amber-50 dark:bg-amber-950/20">
                           <Car className="h-4 w-4 text-amber-600 shrink-0" />
                           <span className="flex-1 text-sm font-mono font-bold">{viaturaSubstituta.matricula}</span>
-                          <span className="text-xs text-muted-foreground">{viaturaSubstituta.marca} {viaturaSubstituta.modelo}</span>
                           <button type="button" onClick={() => setViaturaSubstituta(null)} className="ml-1 text-muted-foreground hover:text-foreground">
                             <X className="h-4 w-4" />
                           </button>
                         </div>
                       ) : (
-                        <>
+                        <div className="space-y-2">
                           {!showSubstituteSearch ? (
                             <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => setShowSubstituteSearch(true)}>
-                              <Car className="h-4 w-4 mr-2" /> Atribuir viatura substituta ao motorista
+                              <Car className="h-4 w-4 mr-2" /> Atribuir substituta
                             </Button>
                           ) : (
                             <div className="space-y-2">
-                              <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                                <Input
-                                  placeholder="Pesquisar..."
-                                  value={substituteSearchTerm}
-                                  onChange={(e) => setSubstituteSearchTerm(e.target.value)}
-                                  className="pl-8 h-8 text-sm"
-                                  autoFocus
-                                />
-                              </div>
-                              <div className="max-h-40 overflow-y-auto space-y-1">
+                              <Input
+                                placeholder="Pesquisar..."
+                                value={substituteSearchTerm}
+                                onChange={(e) => setSubstituteSearchTerm(e.target.value)}
+                                className="h-8 text-sm"
+                              />
+                              <div className="max-h-32 overflow-y-auto space-y-1">
                                 {viaturasDisponiveis
-                                  .filter(v =>
-                                    v.matricula.toLowerCase().includes(substituteSearchTerm.toLowerCase()) ||
-                                    v.marca.toLowerCase().includes(substituteSearchTerm.toLowerCase()) ||
-                                    v.modelo.toLowerCase().includes(substituteSearchTerm.toLowerCase())
-                                  )
+                                  .filter(v => v.matricula.toLowerCase().includes(substituteSearchTerm.toLowerCase()))
                                   .map(v => (
                                     <button
                                       key={v.id}
                                       type="button"
-                                      onClick={() => { setViaturaSubstituta(v); setShowSubstituteSearch(false); setSubstituteSearchTerm(''); }}
-                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border hover:bg-muted transition-colors text-left"
+                                      onClick={() => { setViaturaSubstituta(v); setShowSubstituteSearch(false); }}
+                                      className="w-full text-left px-2 py-1 text-xs hover:bg-muted rounded"
                                     >
-                                      <span className="font-mono font-bold">{v.matricula}</span>
-                                      <span className="text-muted-foreground">{v.marca} {v.modelo}</span>
+                                      {v.matricula} - {v.marca}
                                     </button>
                                   ))}
-                                {viaturasDisponiveis.length === 0 && (
-                                  <p className="text-xs text-muted-foreground text-center py-2">Sem viaturas disponíveis</p>
-                                )}
                               </div>
-                              <Button type="button" variant="ghost" size="sm" className="w-full text-xs" onClick={() => setShowSubstituteSearch(false)}>
-                                Cancelar
-                              </Button>
                             </div>
                           )}
-                        </>
+                        </div>
                       )}
                     </div>
                   )}
                 </CardContent>
                 <CardFooter className="pt-0">
                   <Button type="submit" className="w-full" disabled={submitting}>
-                    {submitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        A processar...
-                      </>
-                    ) : (
-                      'Colocar em Assistência'
-                    )}
+                    {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Finalizar e Salvar'}
                   </Button>
                 </CardFooter>
               </Card>

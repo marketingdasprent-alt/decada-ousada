@@ -1,5 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,9 +88,9 @@ const computeWeekPeriod = (refDateStr: string): { period: string; startIso: stri
 const PAGAMENTOS_ALIASES: Record<string, string[]> = {
   uber_transaction_id: ["trip id", "reference", "referência", "referencia", "transaction id", "payment id", "id"],
   trip_reference: ["trip id", "trip reference", "trip ref", "referência viagem", "referencia viagem"],
-  uber_driver_id: ["driver", "driver id", "motorista", "driver name", "nome motorista", "driver uuid", "uuid do motorista"],
-  driver_first_name: ["nome próprio do motorista", "nome proprio do motorista", "first name", "nome próprio", "nome proprio"],
-  driver_last_name: ["apelido do motorista", "last name", "apelido"],
+  uber_driver_id: ["driver", "driver id", "motorista", "driver name", "nome motorista", "driver uuid", "uuid do motorista", "uuid_do_motorista"],
+  driver_first_name: ["nome próprio do motorista", "nome proprio do motorista", "first name", "nome próprio", "nome proprio", "nome_proprio_do_motorista"],
+  driver_last_name: ["apelido do motorista", "last name", "apelido", "apelido_do_motorista"],
   uber_vehicle_id: ["vehicle", "vehicle id", "viatura", "plate", "license plate", "matrícula", "matricula", "veículo", "veiculo"],
   occurred_at: ["date", "data", "occurred at", "trip date", "data viagem", "datetime", "data/hora", "timestamp"],
   gross_amount: ["gross", "bruto", "total", "gross amount", "valor bruto", "valor total", "fare", "tarifa", "valor", "pago a si"],
@@ -101,6 +100,7 @@ const PAGAMENTOS_ALIASES: Record<string, string[]> = {
   status: ["status", "estado", "state", "trip status"],
   transaction_type: ["type", "tipo", "transaction type", "trip type"],
 };
+
 
 // ─── Atividade Motoristas (Driver Activity) CSV Column Aliases ───
 const ATIVIDADE_ALIASES: Record<string, string[]> = {
@@ -450,7 +450,7 @@ const processAtividadeCsv = async (
 
 // ─── Main Handler ───
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -577,5 +577,25 @@ serve(async (req) => {
     .update({ last_webhook_at: nowIso, ultimo_sync: nowIso, ativo: true })
     .eq("id", integracaoId);
 
+  // Trigger auto-mapping for this integration
+  try {
+    console.info(`[uber-import-reports] Triggering auto-map for integration: ${integracaoId}`);
+    const { data: autoMapData, error: autoMapError } = await supabase.functions.invoke("uber-auto-map-drivers", {
+      body: { integracao_id: integracaoId },
+    });
+    
+    if (autoMapError) {
+      console.error("[uber-import-reports] Auto-map trigger failed:", autoMapError);
+      results.auto_map = { error: autoMapError.message };
+    } else {
+      results.auto_map = autoMapData || { success: true };
+      console.info(`[uber-import-reports] Auto-map result: ${autoMapData?.message || 'success'}`);
+    }
+  } catch (err) {
+    console.error("[uber-import-reports] Auto-map exception:", err);
+    results.auto_map = { error: err instanceof Error ? err.message : String(err) };
+  }
+
   return jsonResponse({ success: true, ...results });
+
 });

@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   AlertTriangle,
   AlertCircle,
+  ClipboardList,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +33,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { format, startOfWeek, startOfMonth, startOfQuarter, startOfYear, subMonths, subWeeks, endOfMonth, endOfWeek, parseISO, eachMonthOfInterval, eachWeekOfInterval } from 'date-fns';
+import { format, startOfWeek, startOfMonth, startOfQuarter, startOfYear, subMonths, subWeeks, endOfMonth, endOfWeek, parseISO, eachMonthOfInterval, eachWeekOfInterval, addMonths, addDays, subDays } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
@@ -122,6 +123,7 @@ const Dashboard = () => {
   const [upgradeData, setUpgradeData] = useState<UpgradeData>({ count: 0, rendaAtual: 0, rendaAnterior: 0 });
   const [trocasCount, setTrocasCount] = useState(0);
   const [extintoresAPrazo, setExtintoresAPrazo] = useState<any[]>([]);
+  const [contratosAPrazo, setContratosAPrazo] = useState<any[]>([]);
 
   // ── Period change ────────────────────────────────────────────────────────
 
@@ -171,6 +173,28 @@ const Dashboard = () => {
         .order('extintor_validade', { ascending: true });
 
       setExtintoresAPrazo(extintoresData || []);
+
+      // ── Contratos a expirar (15 dias) ──────────────────────────────────────
+      // Expiry = assinatura + 12 meses; queremos expiry <= hoje + 15 dias
+      // => assinatura <= hoje + 15 dias - 12 meses
+      const upperContrato = addMonths(addDays(new Date(), 15), -12);
+      const lowerContrato = addMonths(subDays(new Date(), 30), -12);
+
+      const { data: contratosData } = await supabase
+        .from('motorista_viaturas')
+        .select(`
+          id,
+          contrato_prestacao_assinatura,
+          motoristas_ativos ( nome ),
+          viaturas ( matricula )
+        `)
+        .eq('status', 'ativo')
+        .not('contrato_prestacao_assinatura', 'is', null)
+        .gte('contrato_prestacao_assinatura', lowerContrato.toISOString().split('T')[0])
+        .lte('contrato_prestacao_assinatura', upperContrato.toISOString().split('T')[0])
+        .order('contrato_prestacao_assinatura', { ascending: true });
+
+      setContratosAPrazo(contratosData || []);
 
       // ── 2. Candidaturas pendentes ────────────────────────────────────
       const { count: pendentes } = await supabase
@@ -459,8 +483,8 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* ── Linha 2: Atividade & Rentabilidade + Pie da Frota ────── */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* ── Linha 2: Atividade & Rentabilidade + Alertas ────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Atividade & Rentabilidade combinado */}
             <Card className="lg:col-span-2">
               <CardHeader className="pb-2">
@@ -542,6 +566,58 @@ const Dashboard = () => {
                             <span className="font-semibold text-sm tracking-tight">{viaturaStr}</span>
                             <Badge variant={isExpired ? "destructive" : "outline"} className={!isExpired ? "text-orange-500 border-orange-500/30 bg-orange-500/10 text-[10px]" : "text-[10px]"}>
                               {format(new Date(ext.extintor_validade), 'dd MMM', { locale: pt })}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span className="truncate pr-2">👤 {motoristaStr}</span>
+                            <span className={isExpired ? "text-destructive font-medium shrink-0" : "shrink-0"}>
+                              {isExpired ? "Expirado" : "A expirar"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Contratos a Expirar */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4 text-blue-500" />
+                      Contratos a Expirar
+                    </CardTitle>
+                    <CardDescription>Expiração nos próximos 15 dias</CardDescription>
+                  </div>
+                  <Badge variant="outline" className="font-mono text-blue-500 border-blue-500/20 bg-blue-500/10">
+                    {contratosAPrazo.length} Pendentes
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {contratosAPrazo.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                    <AlertCircle className="h-10 w-10 mb-2 opacity-20 text-green-500" />
+                    <p className="text-sm">Sem contratos a expirar em breve</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 mt-1 max-h-[200px] overflow-y-auto pr-1">
+                    {contratosAPrazo.map(ct => {
+                      const motoristaStr = (ct.motoristas_ativos as any)?.nome || 'Sem motorista';
+                      const viaturaStr = (ct.viaturas as any)?.matricula || 'Sem viatura';
+                      const expiryDate = addMonths(new Date(ct.contrato_prestacao_assinatura), 12);
+                      const isExpired = expiryDate < new Date();
+
+                      return (
+                        <div key={ct.id} className="flex flex-col p-2.5 rounded-lg border border-border bg-muted/40 transition-colors hover:bg-muted">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="font-semibold text-sm tracking-tight">{viaturaStr}</span>
+                            <Badge variant={isExpired ? "destructive" : "outline"} className={!isExpired ? "text-blue-500 border-blue-500/30 bg-blue-500/10 text-[10px]" : "text-[10px]"}>
+                              {format(expiryDate, 'dd MMM', { locale: pt })}
                             </Badge>
                           </div>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
