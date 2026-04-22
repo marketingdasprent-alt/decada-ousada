@@ -211,24 +211,43 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
       setDanos(danosComFotos);
 
       // --- BUSCAR FOTOS DE ASSISTÊNCIA (ESPELHAMENTO DIRETO) ---
-      // Debug: Ver quantos tickets existem no total
-      const { count: totalTickets } = await supabase
-        .from('assistencia_tickets')
-        .select('*', { count: 'exact', head: true });
-
-      const { data: tickets } = await supabase
+      // 1. Tentar pelo ID (UUID)
+      let { data: tickets } = await supabase
         .from('assistencia_tickets')
         .select('id, numero, titulo, criado_em, viatura_id')
         .eq('viatura_id', viaturaId);
 
-      console.log('Tickets encontrados para esta viatura:', tickets?.length);
-      console.log('Total de tickets no sistema:', totalTickets);
+      // 2. Se não encontrar, tentar pela matrícula (segurança extra)
+      if (!tickets || tickets.length === 0) {
+        console.log("Tentando busca de tickets pela matrícula...");
+        const { data: viaturaInfo } = await supabase
+          .from('viaturas')
+          .select('matricula')
+          .eq('id', viaturaId)
+          .single();
+        
+        if (viaturaInfo?.matricula) {
+           const { data: ticketsByPlate } = await supabase
+            .from('assistencia_tickets')
+            .select('id, numero, titulo, criado_em, viatura_id, viaturas!inner(matricula)')
+            .eq('viaturas.matricula', viaturaInfo.matricula);
+           
+           if (ticketsByPlate && ticketsByPlate.length > 0) {
+             tickets = ticketsByPlate;
+           }
+        }
+      }
+
+      const { count: totalTickets } = await supabase
+        .from('assistencia_tickets')
+        .select('*', { count: 'exact', head: true });
 
       window.debugInfo = {
         totalTickets: totalTickets || 0,
         viaturaTickets: tickets?.length || 0,
         viaturaId: viaturaId
       };
+
 
 
       if (tickets && tickets.length > 0) {
