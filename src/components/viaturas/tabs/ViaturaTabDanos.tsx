@@ -649,14 +649,21 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : danos.length === 0 && assistancePhotos.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhum dano registado.</p>
-            <p className="text-sm">A viatura está em bom estado!</p>
-          </div>
         ) : (
           <div className="space-y-8">
+            {/* DEBUG INFO - REMOVER DEPOIS */}
+            <div className="bg-slate-900 text-green-400 p-2 text-[10px] font-mono rounded overflow-x-auto">
+              DEBUG: ViaturaID: {viaturaId} | Tickets: {assistancePhotos.length > 0 ? 'SIM' : 'NÃO'} | Fotos Encontradas: {assistancePhotos.length}
+            </div>
+
+            {danos.length === 0 && assistancePhotos.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhum dano registado.</p>
+                <p className="text-sm">A viatura está em bom estado!</p>
+              </div>
+            )}
+
             {/* Danos Registados Manualmente */}
             {danos.length > 0 && (
               <div className="space-y-4">
