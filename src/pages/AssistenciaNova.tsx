@@ -237,6 +237,8 @@ export default function AssistenciaNova() {
 
       // 2. Salvar Anexos (Fotos e Vídeos) na Assistência
       if (mediaFiles.length > 0) {
+        console.log("Iniciando criação de registo de danos com", mediaFiles.length, "ficheiros");
+        
         const anexos = mediaFiles.map(file => ({
           ticket_id: ticket.id,
           tipo_ficheiro: file.type === 'image' ? 'foto' : 'video',
@@ -269,23 +271,17 @@ export default function AssistenciaNova() {
           .single();
 
         if (danoError) {
-          console.error('Erro crítico ao criar dano:', danoError);
-          // Tentar criar sem ticket_id se a migração ainda não estiver lá
-          if (danoError.message.includes('ticket_id')) {
-             await supabase.from('viatura_danos').insert({
-              viatura_id: selectedViatura.id,
-              motorista_id: motoristaId || null,
-              descricao: `Check-in de Assistência #${String(ticket.numero).padStart(4, '0')}`,
-              localizacao: 'outro',
-              estado: 'pendente',
-              data_registo: new Date().toISOString().split('T')[0],
-              registado_por: user?.id,
-            });
-          }
+          console.error('Erro ao criar dano:', danoError);
+          toast({
+            title: "Aviso",
+            description: "Não foi possível criar histórico de danos: " + danoError.message,
+            variant: "destructive"
+          });
         }
 
         if (!danoError && novoDano) {
-          // Apenas fotos (o gallery de danos geralmente não mostra vídeos)
+          toast({ title: "Histórico de danos criado", duration: 2000 });
+          
           const fotosDano = mediaFiles
             .filter(f => f.type === 'image')
             .map(file => ({
@@ -296,9 +292,15 @@ export default function AssistenciaNova() {
             }));
 
           if (fotosDano.length > 0) {
-            await supabase.from('viatura_dano_fotos').insert(fotosDano);
+            const { error: fotosError } = await supabase.from('viatura_dano_fotos').insert(fotosDano);
+            if (fotosError) {
+              console.error('Erro ao salvar fotos do dano:', fotosError);
+              toast({ title: "Erro ao salvar fotos no histórico", variant: "destructive" });
+            }
           }
         }
+      } else {
+        console.warn("Nenhum ficheiro multimédia para criar registo de danos");
       }
 
        // 1.1 Criar mensagem inicial de log
