@@ -86,6 +86,7 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [assistancePhotos, setAssistancePhotos] = useState<any[]>([]);
   
   // Form state
   const [descricao, setDescricao] = useState('');
@@ -208,6 +209,34 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
       }
 
       setDanos(danosComFotos);
+
+      // --- BUSCAR FOTOS DE ASSISTÊNCIA (ESPELHAMENTO DIRETO) ---
+      const { data: tickets } = await supabase
+        .from('assistencia_tickets')
+        .select('id, numero, titulo, criado_em')
+        .eq('viatura_id', viaturaId);
+
+      if (tickets && tickets.length > 0) {
+        const ticketIds = tickets.map(t => t.id);
+        const { data: anexos } = await supabase
+          .from('assistencia_anexos')
+          .select('*')
+          .in('ticket_id', ticketIds)
+          .eq('tipo_ficheiro', 'foto');
+
+        if (anexos) {
+          const formattedAssistance = anexos.map(anexo => {
+            const ticket = tickets.find(t => t.id === anexo.ticket_id);
+            return {
+              ...anexo,
+              ticket_numero: ticket?.numero,
+              ticket_titulo: ticket?.titulo,
+              data: ticket?.criado_em
+            };
+          });
+          setAssistancePhotos(formattedAssistance);
+        }
+      }
     } catch (error) {
       console.error('Erro ao carregar danos:', error);
       toast.error('Erro ao carregar danos');
@@ -620,76 +649,116 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : danos.length === 0 ? (
+        ) : danos.length === 0 && assistancePhotos.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Nenhum dano registado.</p>
             <p className="text-sm">A viatura está em bom estado!</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {danos.map((dano) => {
-              const estadoConfig = getEstadoConfig(dano.estado);
-              const locLabel = LOCALIZACOES.find(l => l.value === dano.localizacao)?.label;
-              const dataDisplay = dano.data_ocorrencia || dano.data_registo;
+          <div className="space-y-8">
+            {/* Danos Registados Manualmente */}
+            {danos.length > 0 && (
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Danos Manuais</h4>
+                {danos.map((dano) => {
+                  const estadoConfig = getEstadoConfig(dano.estado);
+                  const locLabel = LOCALIZACOES.find(l => l.value === dano.localizacao)?.label;
+                  const dataDisplay = dano.data_ocorrencia || dano.data_registo;
 
-              return (
-                <div key={dano.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <p className="font-medium">{dano.descricao}</p>
-                      <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-muted-foreground">
-                        {locLabel && <span>{locLabel}</span>}
-                        {locLabel && <span>•</span>}
-                        <span>{format(new Date(dataDisplay), "d 'de' MMMM 'de' yyyy", { locale: pt })}</span>
-                        {dano.valor > 0 && (
-                          <>
-                            <span>•</span>
-                            <span className="font-semibold text-destructive">{formatCurrency(dano.valor)}</span>
-                          </>
-                        )}
-                      </div>
-                      {dano.motorista && (
-                        <div className="flex items-center gap-1 mt-1 text-sm text-primary">
-                          <User className="h-3 w-3" />
-                          <span>#{dano.motorista.codigo} - {dano.motorista.nome}</span>
+                  return (
+                    <div key={dano.id} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="font-medium">{dano.descricao}</p>
+                          <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-muted-foreground">
+                            {locLabel && <span>{locLabel}</span>}
+                            {locLabel && <span>•</span>}
+                            <span>{format(new Date(dataDisplay), "d 'de' MMMM 'de' yyyy", { locale: pt })}</span>
+                            {dano.valor > 0 && (
+                              <>
+                                <span>•</span>
+                                <span className="font-semibold text-destructive">{formatCurrency(dano.valor)}</span>
+                              </>
+                            )}
+                          </div>
+                          {dano.motorista && (
+                            <div className="flex items-center gap-1 mt-1 text-sm text-primary">
+                              <User className="h-3 w-3" />
+                              <span>#{dano.motorista.codigo} - {dano.motorista.nome}</span>
+                            </div>
+                          )}
                         </div>
+                        <div className="flex items-center gap-2">
+                          <Select value={dano.estado} onValueChange={(v) => handleUpdateEstado(dano.id, v)}>
+                            <SelectTrigger className="w-[140px]">
+                              <Badge variant="outline" className={estadoConfig.color}>
+                                {estadoConfig.label}
+                              </Badge>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ESTADOS.map((est) => (
+                                <SelectItem key={est.value} value={est.value}>{est.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(dano.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {dano.observacoes && (
+                        <p className="text-sm text-muted-foreground bg-muted/50 rounded p-2">
+                          {dano.observacoes}
+                        </p>
                       )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Select value={dano.estado} onValueChange={(v) => handleUpdateEstado(dano.id, v)}>
-                        <SelectTrigger className="w-[140px]">
-                          <Badge variant="outline" className={estadoConfig.color}>
-                            {estadoConfig.label}
-                          </Badge>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ESTADOS.map((est) => (
-                            <SelectItem key={est.value} value={est.value}>{est.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(dano.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
 
-                  {dano.observacoes && (
-                    <p className="text-sm text-muted-foreground bg-muted/50 rounded p-2">
-                      {dano.observacoes}
-                    </p>
-                  )}
+                      <DanoFotosGallery
+                        danoId={dano.id}
+                        fotos={dano.fotos}
+                        onFotosChange={loadDanos}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-                  {/* Galeria de fotos */}
-                  <DanoFotosGallery
-                    danoId={dano.id}
-                    fotos={dano.fotos}
-                    onFotosChange={loadDanos}
-                  />
+            {/* Fotos de Assistência (Espelhamento Automático) */}
+            {assistancePhotos.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-t pt-6">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                    <Camera className="h-4 w-4" />
+                    Fotos de Histórico (Assistência)
+                  </h4>
+                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                    {assistancePhotos.length} fotos detetadas
+                  </Badge>
                 </div>
-              );
-            })}
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {assistancePhotos.map((foto, idx) => (
+                    <div key={idx} className="group relative aspect-square rounded-xl overflow-hidden border bg-muted shadow-sm hover:ring-2 hover:ring-primary/50 transition-all">
+                      <img 
+                        src={foto.ficheiro_url} 
+                        alt="Foto Assistência" 
+                        className="h-full w-full object-cover cursor-pointer hover:scale-110 transition-transform duration-500" 
+                        onClick={() => window.open(foto.ficheiro_url, '_blank')}
+                      />
+                      <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm p-1.5 translate-y-full group-hover:translate-y-0 transition-transform">
+                        <p className="text-[9px] text-white font-bold truncate">Ticket #{foto.ticket_numero}</p>
+                        <p className="text-[8px] text-white/70 truncate">{foto.ticket_titulo}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground italic text-center">
+                  Estas fotos são espelhadas automaticamente a partir dos tickets de assistência da viatura.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
