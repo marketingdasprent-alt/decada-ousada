@@ -69,6 +69,12 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
     loadContratos();
   }, [motorista.id]);
 
+  // Sincronizar estado local quando os dados do motorista mudarem (ex: após um save)
+  useEffect(() => {
+    setDataContratacao(sanitizeDate(motorista.data_contratacao));
+    setCidadeAssinatura(motorista.cidade_assinatura || "");
+  }, [motorista.data_contratacao, motorista.cidade_assinatura]);
+
   const loadContratos = async () => {
     try {
       setLoading(true);
@@ -191,12 +197,20 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
     loadContratos();
   };
 
+  // Função para garantir que a data está no formato YYYY-MM-DD para o input
+  const sanitizeDate = (dateString: string | null) => {
+    if (!dateString) return "";
+    return dateString.split("T")[0];
+  };
+
   const handleSaveContratual = async () => {
     try {
+      const formattedDate = sanitizeDate(dataContratacao);
+      
       const { error } = await supabase
         .from("motoristas_ativos")
         .update({
-          data_contratacao: dataContratacao || null,
+          data_contratacao: formattedDate || null,
           cidade_assinatura: cidadeAssinatura || null,
         })
         .eq("id", motorista.id);

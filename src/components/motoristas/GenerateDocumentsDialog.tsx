@@ -29,6 +29,7 @@ interface Motorista {
   telefone: string | null;
   data_contratacao?: string | null;
   cidade?: string | null;
+  cidade_assinatura?: string | null;
 }
 
 interface DocumentTemplate {
@@ -76,18 +77,19 @@ export const GenerateDocumentsDialog = ({
 
   useEffect(() => {
     if (open) {
-      // Se não tem motorista nas props, carregar lista de motoristas
       if (!motorista) {
         loadMotoristas();
+      } else {
+        // Usar a cidade de assinatura salva ou a cidade do motorista como fallback
+        const defaultCidade = motorista.cidade_assinatura || motorista.cidade || 'Leiria';
+        setCidadeAssinatura(defaultCidade);
       }
       loadTemplates();
     } else {
-      // Reset ao fechar
       setSelectedTemplates(new Set());
       setGeneratedTemplates(new Set());
       setCurrentGenerating(null);
       setSelectedEmpresa(defaultEmpresaId);
-      setCidadeAssinatura('Leiria');
       setSearchTerm('');
       setSelectedMotorista(null);
     }

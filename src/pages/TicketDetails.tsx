@@ -27,6 +27,11 @@ import {
   ParkingSquare,
   Search,
   Wallet,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  UserPlus,
+  Users,
 } from 'lucide-react';
 import { AssistenciaMultimediaUpload } from '@/components/assistencia/AssistenciaMultimediaUpload';
 import {
@@ -156,7 +161,55 @@ const TicketDetails = () => {
   const [uploading, setUploading] = useState(false);
   const [novaMensagem, setNovaMensagem] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [currentMediaList, setCurrentMediaList] = useState<any[]>([]);
+  const [acessos, setAcessos] = useState<any[]>([]);
+  const [showAddAccessDialog, setShowAddAccessDialog] = useState(false);
+  const [showAllAccessDialog, setShowAllAccessDialog] = useState(false);
+  const [searchUser, setSearchUser] = useState('');
+  const [allProfiles, setAllProfiles] = useState<any[]>([]);
+  const [addingUser, setAddingUser] = useState(false);
   
+  const downloadMedia = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = filename || 'download';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      window.open(url, '_blank');
+    }
+  };
+
+  const openLightbox = (mediaList: any[], index: number) => {
+    const list = mediaList.filter(a => 
+      a.tipo_ficheiro === 'foto' || 
+      a.tipo_ficheiro === 'video' ||
+      a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp|mp4|webm|mov|ogg)$/i)
+    );
+    const newIndex = list.findIndex(a => a.id === mediaList[index].id);
+    if (newIndex === -1) return;
+    
+    setCurrentMediaList(list);
+    setCurrentMediaIndex(newIndex);
+    setLightboxOpen(true);
+  };
+
+  const nextMedia = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setCurrentMediaIndex(prev => (prev + 1) % currentMediaList.length);
+  };
+
+  const prevMedia = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setCurrentMediaIndex(prev => (prev - 1 + currentMediaList.length) % currentMediaList.length);
+  };
+
   // closure states
   const [showClosureForm, setShowClosureForm] = useState(false);
   const [closureLoading, setClosureLoading] = useState(false);
@@ -188,6 +241,41 @@ const TicketDetails = () => {
   useEffect(() => {
     if (id) {
       fetchTicketData();
+      
+      // Subscrever em Tempo Real (WhatsApp style)
+      const channel = supabase
+        .channel(`ticket-${id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'assistencia_mensagens',
+            filter: `ticket_id=eq.${id}`
+          },
+          () => {
+            console.log('Nova mensagem detetada! Atualizando...');
+            fetchMensagensAndAnexos();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'assistencia_anexos',
+            filter: `ticket_id=eq.${id}`
+          },
+          () => {
+            console.log('Novo anexo detetado! Atualizando...');
+            fetchMensagensAndAnexos();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [id]);
 
@@ -214,8 +302,8 @@ const TicketDetails = () => {
       setTicket(ticketData);
 
       // Fetch related data in parallel
-      const [viaturaRes, motoristaRes, categoriaRes, criadorRes, mensagensRes, anexosRes] = await Promise.all([
-        supabase.from('viaturas').select('id, matricula, marca, modelo').eq('id', ticketData.viatura_id).single(),
+      const [viaturaRes, motoristaRes, categoriaRes, criadorRes] = await Promise.all([
+        supabase.from('viaturas').select('id, matricula, marca, modelo, km_atual').eq('id', ticketData.viatura_id).single(),
         ticketData.motorista_id
           ? supabase.from('motoristas_ativos').select('id, nome, telefone').eq('id', ticketData.motorista_id).single()
           : supabase.from('motorista_viaturas')
@@ -231,6 +319,35 @@ const TicketDetails = () => {
         ticketData.criado_por
           ? supabase.from('profiles').select('id, nome').eq('id', ticketData.criado_por).single()
           : Promise.resolve({ data: null, error: null }),
+      ]);
+
+      if (viaturaRes.data) setViatura(viaturaRes.data as Viatura);
+      if (motoristaRes.data) setMotorista(motoristaRes.data as Motorista);
+      if (categoriaRes.data) setCategoria(categoriaRes.data as Categoria);
+      if (criadorRes.data) setCriador(criadorRes.data);
+      
+      // Separar a lógica de mensagens para poder atualizar em tempo real
+      await fetchMensagensAndAnexos();
+      await fetchAcessos();
+
+    } catch (error: any) {
+      console.error('Erro ao carregar ticket:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os detalhes do ticket.",
+        variant: "destructive",
+      });
+      navigate('/assistencia');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMensagensAndAnexos = async () => {
+    if (!id) return;
+    
+    try {
+      const [mensagensRes, anexosRes] = await Promise.all([
         supabase
           .from('assistencia_mensagens')
           .select('id, mensagem, tipo, created_at, autor_id')
@@ -243,53 +360,164 @@ const TicketDetails = () => {
           .order('created_at', { ascending: false }),
       ]);
 
-      if (viaturaRes.data) setViatura(viaturaRes.data as Viatura);
-      if (ticketData.viatura_substituta_id) {
-        const { data: substData } = await supabase
-          .from('viaturas')
-          .select('id, matricula, marca, modelo, km_atual')
-          .eq('id', ticketData.viatura_substituta_id)
-          .single();
-        if (substData) setViaturaSubstituta(substData as Viatura);
-      } else {
-        setViaturaSubstituta(null);
-      }
-      if (motoristaRes.data) setMotorista(motoristaRes.data as Motorista);
-      if (categoriaRes.data) setCategoria(categoriaRes.data as Categoria);
-      if (criadorRes.data) setCriador(criadorRes.data as { nome: string });
-      
-      // Fetch authors for messages
-      const mensagensData = mensagensRes.data || [];
-      const todosAnexos = (anexosRes.data || []) as Anexo[];
-      const autorIds = [...new Set(mensagensData.map((m: any) => m.autor_id).filter(Boolean))] as string[];
-      
-      let autoresMap = new Map<string, { id: string; nome: string }>();
-      if (autorIds.length > 0) {
-        const { data: autoresData } = await supabase.from('profiles').select('id, nome').in('id', autorIds);
-        autoresMap = new Map((autoresData || []).map(a => [a.id, a]));
-      }
-      
-      // Mapear anexos às mensagens correspondentes
-      const enrichedMensagens = mensagensData.map((msg: any) => ({
-        ...msg,
-        autor: msg.autor_id ? autoresMap.get(msg.autor_id) || null : null,
-        anexos: todosAnexos.filter(a => a.mensagem_id === msg.id),
-      }));
-      
-      setMensagens(enrichedMensagens as Mensagem[]);
-      // Manter apenas anexos sem mensagem_id para sidebar (anexos antigos)
-      setAnexos(todosAnexos.filter(a => !a.mensagem_id));
+      if (mensagensRes.data) {
+        // Buscar autores para as mensagens
+        const autorIds = [...new Set(mensagensRes.data.map(m => m.autor_id).filter(Boolean))];
+        const { data: autores } = await supabase
+          .from('profiles')
+          .select('id, nome')
+          .in('id', autorIds);
 
-    } catch (error: any) {
-      console.error('Erro ao carregar ticket:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os detalhes do ticket.",
-        variant: "destructive",
+        const msgsComAutor = mensagensRes.data.map(m => ({
+          ...m,
+          autor: autores?.find(a => a.id === m.autor_id) || null
+        }));
+        
+        setMensagens(msgsComAutor as any);
+      }
+      
+      if (anexosRes.data) setAnexos(anexosRes.data as Anexo[]);
+    } catch (error) {
+      console.error('Erro ao atualizar mensagens:', error);
+    }
+  };
+
+  const fetchAcessos = async () => {
+    if (!id) return;
+    try {
+      // 1. Buscar quem tem acesso na tabela de junção
+      const { data: accessData, error: accessError } = await supabase
+        .from('assistencia_ticket_acessos')
+        .select(`
+          profile_id,
+          profiles:profile_id (id, nome, cargo, is_admin)
+        `)
+        .eq('ticket_id', id);
+
+      // 2. Buscar também o criador (que tem sempre acesso)
+      const { data: ticketData } = await supabase
+        .from('assistencia_tickets')
+        .select('criado_por')
+        .eq('id', id)
+        .single();
+
+      let peopleMap = new Map();
+      
+      // Adicionar criador
+      if (ticketData?.criado_por) {
+        const { data: creatorProf } = await supabase.from('profiles').select('id, nome, cargo, is_admin').eq('id', ticketData.criado_por).single();
+        if (creatorProf) peopleMap.set(creatorProf.id, creatorProf);
+      }
+
+      // Adicionar pessoas da tabela de acessos
+      if (accessData) {
+        accessData.forEach((item: any) => {
+          if (item.profiles) peopleMap.set(item.profiles.id, item.profiles);
+        });
+      }
+
+      setAcessos(Array.from(peopleMap.values()));
+    } catch (error) {
+      console.error('Erro ao buscar acessos:', error);
+      // Fallback para não quebrar a UI se a tabela não existir
+      fetchAcessosFallback();
+    }
+  };
+
+  const fetchAcessosFallback = async () => {
+    if (!id) return;
+    const { data: ticketData } = await supabase.from('assistencia_tickets').select('criado_por, atribuido_a').eq('id', id).single();
+    if (ticketData) {
+      const ids = [ticketData.criado_por, ticketData.atribuido_a].filter(Boolean) as string[];
+      const { data: profs } = await supabase.from('profiles').select('id, nome, cargo, is_admin').in('id', ids);
+      setAcessos(profs || []);
+    }
+  };
+
+  const fetchAllProfiles = async () => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, nome, is_admin, cargo, created_at')
+        .or('is_admin.eq.true,cargo.neq.null')
+        .not('cargo', 'ilike', '%motorista%')
+        .not('cargo', 'ilike', '%condutor%')
+        .order('nome')
+        .limit(100);
+      
+      const seenNames = new Set();
+      const filtered = (data || []).filter(p => {
+        if (!p.nome) return false;
+        const isStaff = p.is_admin || (p.cargo && p.cargo.length > 2);
+        if (!isStaff) return false;
+        
+        if (seenNames.has(p.nome)) return false;
+        seenNames.add(p.nome);
+        return true;
       });
-      navigate(isFromMeusTickets ? '/meus-tickets' : '/assistencia');
+      
+      setAllProfiles(filtered);
+    } catch (error) {
+      console.error('Erro ao buscar perfis:', error);
+    }
+  };
+
+  const handleAddAccess = async (profileId: string) => {
+    try {
+      setAddingUser(true);
+      
+      // 1. Tentar inserir na tabela de acessos
+      const { error } = await supabase
+        .from('assistencia_ticket_acessos')
+        .insert({
+          ticket_id: id,
+          profile_id: profileId
+        });
+
+      if (error) {
+        console.error('Erro ao adicionar acesso:', error);
+        // Se a tabela não existir (42P01), fazemos o fallback para o atribuido_a (campo antigo)
+        if (error.code === '42P01') {
+          console.log('Tabela assistencia_ticket_acessos não existe. Usando fallback...');
+          const { error: fallbackError } = await supabase
+            .from('assistencia_tickets')
+            .update({ atribuido_a: profileId })
+            .eq('id', id);
+          
+          if (fallbackError) throw fallbackError;
+        } else {
+          throw error;
+        }
+      }
+      
+      toast({ title: 'Acesso concedido', description: 'O utilizador foi adicionado ao ticket.' });
+      setShowAddAccessDialog(false);
+      fetchAcessos();
+    } catch (error: any) {
+      if (error.code === '23505') {
+        toast({ title: 'Aviso', description: 'Este utilizador já tem acesso ao ticket.' });
+      } else {
+        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      }
     } finally {
-      setLoading(false);
+      setAddingUser(false);
+    }
+  };
+
+  const handleRemoveAccess = async (profileId: string) => {
+    try {
+      const { error } = await supabase
+        .from('assistencia_ticket_acessos')
+        .delete()
+        .eq('ticket_id', id)
+        .eq('profile_id', profileId);
+
+      if (error) throw error;
+      
+      toast({ title: 'Acesso removido' });
+      fetchAcessos();
+    } catch (error: any) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -422,12 +650,22 @@ const TicketDetails = () => {
   };
 
   const handleStatusChange = async (newStatus: string) => {
+    if (!id || !ticket) return;
+
+    // Se o novo status for 'resolvido', abrir o formulário de conclusão em vez de atualizar direto
+    if (newStatus === 'resolvido') {
+      setClosureData(prev => ({
+        ...prev,
+        km_fim: viatura?.km_atual?.toString() || '',
+        cobrar_motorista: !!motorista,
+      }));
+      setShowClosureForm(true);
+      return;
+    }
+
     try {
       const updates: any = { status: newStatus };
-      if (newStatus === 'resolvido') {
-        updates.data_resolucao = new Date().toISOString();
-      }
-
+      
       const { error } = await supabase
         .from('assistencia_tickets')
         .update(updates)
@@ -799,7 +1037,9 @@ const TicketDetails = () => {
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <span className="font-mono">#{String(ticket.numero).padStart(4, '0')}</span>
+            <span className="font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+              #{String(ticket.numero).padStart(4, '0')}
+            </span>
             {categoria && (
               <Badge variant="outline" style={{ borderColor: categoria.cor, color: categoria.cor }}>
                 {categoria.nome}
@@ -814,45 +1054,49 @@ const TicketDetails = () => {
         
         {canChangeStatus && !['resolvido', 'fechado'].includes(ticket.status) && (
           <Select value={ticket.status} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="aberto">Aberto</SelectItem>
               <SelectItem value="em_andamento">Em Manutenção</SelectItem>
-              <SelectItem value="aguardando">Aguardando Peças</SelectItem>
+              <SelectItem value="aguardando">Peças/Aguardar</SelectItem>
+              <SelectItem value="resolvido" className="text-green-600 font-bold">✓ Concluir</SelectItem>
             </SelectContent>
           </Select>
         )}
         
-        <Badge className={`${statusConfig[ticket.status]?.color} flex items-center gap-1`}>
+        <Badge className={`${statusConfig[ticket.status]?.color} flex items-center gap-1 h-9 px-4`}>
           {statusConfig[ticket.status]?.icon}
           {statusConfig[ticket.status]?.label}
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Main Content (Chat) */}
+        <div className="lg:col-span-3 space-y-6">
           {/* Description */}
           {ticket.descricao && (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Descrição</CardTitle>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Descrição do Problema</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-wrap">{ticket.descricao}</p>
+                <p className="text-sm whitespace-pre-wrap">{ticket.descricao}</p>
               </CardContent>
             </Card>
           )}
 
           {/* Messages */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Conversação</CardTitle>
+          <Card className="flex flex-col">
+            <CardHeader className="border-b py-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Send className="h-5 w-5 text-primary" />
+                Conversação em Tempo Real
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <ScrollArea className="h-[400px] pr-4">
+            <CardContent className="p-0 flex flex-col">
+              <ScrollArea className="h-[500px] p-4">
                 {mensagens.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     Ainda não há mensagens neste ticket.
@@ -1141,38 +1385,6 @@ const TicketDetails = () => {
               {/* Message input area */}
               {!showClosureForm && (
                 <>
-                  {/* Action Buttons for Managers */}
-                  {canChangeStatus && !['resolvido', 'fechado'].includes(ticket.status) && (
-                    <div className="flex flex-col gap-2">
-                      {ticket.status === 'aberto' ? (
-                        <Button
-                          variant="default"
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                          onClick={handleAceitarTicket}
-                        >
-                          <CheckCircle2 className="mr-2 h-4 w-4" />
-                          Aceitar — Colocar em Manutenção
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="default"
-                          className="w-full bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => {
-                            setClosureData(prev => ({
-                              ...prev,
-                              km_fim: viatura?.km_atual?.toString() || '',
-                              cobrar_motorista: !!motorista,
-                            }));
-                            setShowClosureForm(true);
-                          }}
-                        >
-                          <CheckCircle2 className="mr-2 h-4 w-4" />
-                          Concluir Reparação (Viatura Reparada)
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                  
                   <Separator />
                   
                   {/* Selected files preview */}
@@ -1241,145 +1453,251 @@ const TicketDetails = () => {
       </Card>
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar (Fixo) */}
         <div className="space-y-6">
+          {/* Access Section */}
+          <Card>
+            <CardHeader className="py-3 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Users className="h-4 w-4" /> Acesso
+              </CardTitle>
+              {canChangeStatus && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-primary"
+                  onClick={() => {
+                    fetchAllProfiles();
+                    setShowAddAccessDialog(true);
+                  }}
+                >
+                  <UserPlus className="h-4 w-4" />
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3 pt-0">
+              {acessos.slice(0, 2).map(user => (
+                <div key={user.id} className="flex items-center gap-2 text-sm group">
+                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold shrink-0">
+                    {user.nome?.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate font-medium">{user.nome}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase">{getAutorRole(user.id) || (user.cargo || 'Staff')}</p>
+                  </div>
+                  {canChangeStatus && user.id !== ticket?.criado_por && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
+                      onClick={() => handleRemoveAccess(user.id)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              
+              {acessos.length > 2 && (
+                <Button 
+                  variant="link" 
+                  className="text-xs p-0 h-auto w-full text-center text-primary"
+                  onClick={() => setShowAllAccessDialog(true)}
+                >
+                  Ver todos os {acessos.length}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Info Card */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Informações</CardTitle>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" /> Informações
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-0">
               {/* Viatura */}
               {viatura && (
                 <div>
-                  <Label className="text-muted-foreground">Viatura</Label>
+                  <Label className="text-[10px] uppercase text-muted-foreground font-bold">Viatura</Label>
                   <div className="flex items-center gap-2 mt-1">
-                    <Car className="h-4 w-4" />
-                    <span>{viatura.matricula}</span>
+                    <Car className="h-4 w-4 text-blue-500" />
+                    <span className="font-mono font-bold text-sm">{viatura.matricula}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {viatura.marca} {viatura.modelo}
-                  </p>
                 </div>
               )}
 
               {/* Motorista */}
               {motorista && (
                 <div>
-                  <Label className="text-muted-foreground">Motorista</Label>
+                  <Label className="text-[10px] uppercase text-muted-foreground font-bold">Motorista</Label>
                   <div className="flex items-center gap-2 mt-1">
-                    <User className="h-4 w-4" />
-                    <span>{motorista.nome}</span>
-                  </div>
-                  {motorista.telefone && (
-                    <p className="text-sm text-muted-foreground">{motorista.telefone}</p>
-                  )}
-                </div>
-              )}
-
-              {/* Viatura Substituta */}
-              {viaturaSubstituta && (
-                <div>
-                  <Label className="text-muted-foreground">Viatura Substituta</Label>
-                  <div className="mt-1 p-2 rounded-md bg-amber-500/10 border border-amber-500/30">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <Car className="h-4 w-4 text-amber-600" />
-                      <span>{viaturaSubstituta.matricula}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{viaturaSubstituta.marca} {viaturaSubstituta.modelo}</p>
+                    <User className="h-4 w-4 text-green-500" />
+                    <span className="text-sm font-medium">{motorista.nome}</span>
                   </div>
                 </div>
               )}
-
-              <Separator />
-
-              {/* Orçamento e Prioridade */}
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-muted-foreground">Orçamento Estimado</Label>
-                  <p className="text-sm font-bold text-amber-600 mt-1">
-                    {(ticket && typeof ticket.valor_orcamento === 'number') 
-                      ? `${ticket.valor_orcamento.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}` 
-                      : 'Não definido'}
-                  </p>
-                </div>
-              </div>
 
               <Separator />
 
               {/* Dates */}
-              <div>
-                <Label className="text-muted-foreground">Criado em</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>{format(new Date(ticket.created_at), "dd/MM/yyyy HH:mm", { locale: pt })}</span>
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <Label className="text-[10px] uppercase text-muted-foreground font-bold">Criado em</Label>
+                  <div className="flex items-center gap-2 mt-1 text-xs">
+                    <Calendar className="h-3 w-3" />
+                    <span>{format(new Date(ticket.created_at), "dd/MM/yyyy HH:mm")}</span>
+                  </div>
+                  {criador && (
+                    <p className="text-[10px] text-muted-foreground mt-1 ml-5">por {criador.nome}</p>
+                  )}
                 </div>
-                {criador && (
-                  <p className="text-sm text-muted-foreground">por {criador.nome}</p>
+
+                {ticket.data_estimada && (
+                  <div>
+                    <Label className="text-[10px] uppercase text-muted-foreground font-bold">Previsão</Label>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-amber-600">
+                      <Clock className="h-3 w-3" />
+                      <span>{format(new Date(ticket.data_estimada), "dd/MM/yyyy")}</span>
+                    </div>
+                  </div>
                 )}
               </div>
-
-              {ticket.data_estimada && (
-                <div>
-                  <Label className="text-muted-foreground">Previsão</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{format(new Date(ticket.data_estimada), "dd/MM/yyyy", { locale: pt })}</span>
-                  </div>
-                </div>
-              )}
-
-              {ticket.data_resolucao && (
-                <div>
-                  <Label className="text-muted-foreground">Resolvido em</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <span>{format(new Date(ticket.data_resolucao), "dd/MM/yyyy HH:mm", { locale: pt })}</span>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
-          {/* Attachments Card */}
+          {/* Gallery Card */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Paperclip className="h-4 w-4" />
-                Anexos ({anexos.length})
+            <CardHeader className="py-3 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Image className="h-4 w-4" /> Galeria
               </CardTitle>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-primary"
+                onClick={() => document.getElementById('sidebar-file-upload')?.click()}
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
             </CardHeader>
-            <CardContent>
-              {anexos.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Sem anexos
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {anexos.map((anexo) => (
-                    <a
-                      key={anexo.id}
-                      href={anexo.ficheiro_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors"
-                    >
-                      {getFileIcon(anexo.tipo_ficheiro)}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm truncate">{anexo.nome_ficheiro}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(anexo.created_at), "dd/MM/yyyy", { locale: pt })}
-                        </p>
-                      </div>
-                      <Download className="h-4 w-4 text-muted-foreground" />
-                    </a>
-                  ))}
-                </div>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-3 gap-2">
+                {anexos.filter(a => a.tipo_ficheiro === 'foto' || a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i)).slice(0, 9).map((anexo, idx) => (
+                  <div 
+                    key={anexo.id} 
+                    className="aspect-square rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}
+                  >
+                    <img src={anexo.ficheiro_url} className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+              {anexos.length > 9 && (
+                <Button variant="link" className="text-xs p-0 h-auto mt-2 w-full text-center" onClick={() => {}}>
+                  Ver todos os {anexos.length} anexos
+                </Button>
               )}
+              {anexos.length === 0 && (
+                <p className="text-[10px] text-muted-foreground text-center py-2 italic">Sem ficheiros multimédia</p>
+              )}
+              <input 
+                id="sidebar-file-upload" 
+                type="file" 
+                multiple 
+                className="hidden" 
+                onChange={handleFileSelect}
+              />
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Modal Adicionar Acesso */}
+      <Dialog open={showAddAccessDialog} onOpenChange={setShowAddAccessDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Conceder Acesso ao Ticket</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Pesquisar utilizador..." 
+                className="pl-9"
+                value={searchUser}
+                onChange={(e) => setSearchUser(e.target.value)}
+              />
+            </div>
+            <ScrollArea className="h-[300px]">
+              <div className="space-y-2">
+                {allProfiles
+                  .filter(p => p.nome?.toLowerCase().includes(searchUser.toLowerCase()))
+                  .map(profile => (
+                    <button
+                      key={profile.id}
+                      onClick={() => handleAddAccess(profile.id)}
+                      disabled={addingUser}
+                      className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-muted transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xs">
+                          {profile.nome?.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{profile.nome}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-2">
+                            <span>{profile.is_admin ? 'Administrador' : (profile.cargo || 'Sem Cargo')}</span>
+                            {profile.created_at && (
+                              <span className="opacity-50 font-normal">Criado em: {new Date(profile.created_at).toLocaleDateString()}</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      {addingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4 text-muted-foreground" />}
+                    </button>
+                  ))}
+              </div>
+            </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modal Ver Todos os Acessos */}
+      <Dialog open={showAllAccessDialog} onOpenChange={setShowAllAccessDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Pessoas com Acesso</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-4">
+              {acessos.map(user => (
+                <div key={user.id} className="flex items-center gap-3 p-2 rounded-lg border bg-muted/30">
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center font-bold">
+                    {user.nome?.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{user.nome}</p>
+                    <p className="text-xs text-muted-foreground uppercase">{user.cargo || 'Colaborador'}</p>
+                  </div>
+                  {canChangeStatus && user.id !== ticket?.criado_por && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-destructive"
+                      onClick={() => handleRemoveAccess(user.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de seleção de viatura substituta */}
       <Dialog open={showSubstituteModal} onOpenChange={setShowSubstituteModal}>
@@ -1425,6 +1743,78 @@ const TicketDetails = () => {
             {viaturasDisponiveis.length === 0 && (
               <p className="text-center text-muted-foreground py-8 text-sm">Sem viaturas disponíveis.</p>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Lightbox Galeria */}
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 bg-black/95 border-none flex flex-col items-center justify-center overflow-hidden">
+          <div className="absolute top-4 right-4 z-50 flex gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-white hover:bg-white/20 rounded-full"
+              onClick={() => downloadMedia(currentMediaList[currentMediaIndex]?.ficheiro_url, currentMediaList[currentMediaIndex]?.nome_ficheiro)}
+            >
+              <Download className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-white hover:bg-white/20 rounded-full"
+              onClick={() => setLightboxOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+          <div className="relative w-full h-full flex items-center justify-center p-4 sm:p-12">
+            {currentMediaList.length > 1 && (
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute left-2 sm:left-6 z-40 text-white hover:bg-white/20 rounded-full h-12 w-12"
+                  onClick={prevMedia}
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-2 sm:right-6 z-40 text-white hover:bg-white/20 rounded-full h-12 w-12"
+                  onClick={nextMedia}
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </Button>
+              </>
+            )}
+
+            <div className="max-w-full max-h-full flex flex-col items-center gap-4">
+              {currentMediaList[currentMediaIndex]?.tipo_ficheiro === 'video' || currentMediaList[currentMediaIndex]?.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i) ? (
+                <video 
+                  src={currentMediaList[currentMediaIndex]?.ficheiro_url} 
+                  controls 
+                  autoPlay 
+                  className="max-w-full max-h-[75vh] rounded-lg shadow-2xl"
+                />
+              ) : (
+                <img 
+                  src={currentMediaList[currentMediaIndex]?.ficheiro_url} 
+                  alt="Preview" 
+                  className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
+                />
+              )}
+              
+              <div className="text-white text-center space-y-1">
+                <p className="text-sm font-semibold truncate max-w-md">
+                  {currentMediaList[currentMediaIndex]?.nome_ficheiro}
+                </p>
+                <p className="text-xs text-white/60">
+                  {currentMediaIndex + 1} de {currentMediaList.length}
+                </p>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
