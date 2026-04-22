@@ -605,15 +605,21 @@ const TicketDetails = () => {
           .from('viatura_danos')
           .insert({
             viatura_id: viatura.id,
+            motorista_id: motorista?.id || null,
             ticket_id: id,
             descricao: `Check-out de Assistência #${String(ticket.numero).padStart(4, '0')}`,
             localizacao: 'outro',
             estado: 'reparado',
-            data_ocorrencia: new Date().toISOString().split('T')[0],
+            data_registo: new Date().toISOString().split('T')[0],
+            registado_por: user?.id,
             observacoes: `Saída de assistência concluída: ${closureData.descricao_reparacao || ticket.titulo}`,
           })
           .select()
           .single();
+
+        if (cError) {
+          console.error('Erro ao criar dano no checkout:', cError);
+        }
 
         if (!cError && checkoutDano) {
           const fotosCheckout = exitMediaFiles

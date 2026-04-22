@@ -256,15 +256,33 @@ export default function AssistenciaNova() {
           .from('viatura_danos')
           .insert({
             viatura_id: selectedViatura.id,
+            motorista_id: motoristaId || null,
             ticket_id: ticket.id,
             descricao: `Check-in de Assistência #${String(ticket.numero).padStart(4, '0')}`,
             localizacao: 'outro',
             estado: 'pendente',
-            data_ocorrencia: new Date().toISOString().split('T')[0],
+            data_registo: new Date().toISOString().split('T')[0],
+            registado_por: user?.id,
             observacoes: `Registado automaticamente na abertura da assistência: ${formData.titulo}`,
           })
           .select()
           .single();
+
+        if (danoError) {
+          console.error('Erro crítico ao criar dano:', danoError);
+          // Tentar criar sem ticket_id se a migração ainda não estiver lá
+          if (danoError.message.includes('ticket_id')) {
+             await supabase.from('viatura_danos').insert({
+              viatura_id: selectedViatura.id,
+              motorista_id: motoristaId || null,
+              descricao: `Check-in de Assistência #${String(ticket.numero).padStart(4, '0')}`,
+              localizacao: 'outro',
+              estado: 'pendente',
+              data_registo: new Date().toISOString().split('T')[0],
+              registado_por: user?.id,
+            });
+          }
+        }
 
         if (!danoError && novoDano) {
           // Apenas fotos (o gallery de danos geralmente não mostra vídeos)
@@ -684,19 +702,6 @@ export default function AssistenciaNova() {
                     />
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="valor_orcamento" className="flex items-center gap-2">
-                      Orçamento Estimado (€)
-                    </Label>
-                    <Input
-                      id="valor_orcamento"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={formData.valor_orcamento}
-                      onChange={(e) => setFormData(prev => ({ ...prev, valor_orcamento: e.target.value }))}
-                    />
-                  </div>
 
                   {/* Viatura Substituta */}
                   {motoristaId && (
