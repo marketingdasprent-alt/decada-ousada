@@ -75,7 +75,6 @@ export function AssistenciaMultimediaUpload({
     if (!previewFile || !user) return;
 
     const fileToUpload = previewFile;
-    const localUrl = previewUrl; // Guardar o URL local para a miniatura
     const type = fileToUpload.type.startsWith('video') ? 'video' : 'image' as any;
     
     // Limpar preview imediatamente para dar feedback de velocidade
@@ -106,7 +105,7 @@ export function AssistenciaMultimediaUpload({
 
       setFiles(prev => [...prev, {
         id: Math.random().toString(36).substring(7),
-        url: localUrl || publicUrl, // PRIORIDADE: URL Local para garantir que abre no telemóvel
+        url: publicUrl,
         path: filePath,
         type
       }]);
@@ -131,8 +130,7 @@ export function AssistenciaMultimediaUpload({
     try {
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
-        const localUrl = URL.createObjectURL(file);
-        
+
         // Validação simples de tamanho (20MB para vídeos, 5MB para fotos)
         const maxSize = type === 'video' ? 20 * 1024 * 1024 : 5 * 1024 * 1024;
         if (file.size > maxSize) {
@@ -160,7 +158,7 @@ export function AssistenciaMultimediaUpload({
 
         setFiles(prev => [...prev, {
           id: Math.random().toString(36).substring(7),
-          url: localUrl || publicUrl, // Usar localUrl para visualização imediata
+          url: publicUrl,
           path: filePath,
           type
         }]);

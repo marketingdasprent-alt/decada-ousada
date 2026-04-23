@@ -79,6 +79,7 @@ const RegistoMotorista: React.FC = () => {
             telefone,
             cargo_id: CARGO_MOTORISTA_ID,
             cargo_nome: 'Motorista',
+            tipo_utilizador: 'motorista',
           },
         },
       });

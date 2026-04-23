@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import {
   ArrowLeft,
+  ArrowRight,
   Wrench,
   Car,
   User,
@@ -30,8 +31,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Play,
+  PlayCircle,
   UserPlus,
   Users,
+  Building2,
+  Coins,
+  Gauge,
+  Fuel,
+  Droplets,
+  Sparkles,
 } from 'lucide-react';
 import { AssistenciaMultimediaUpload } from '@/components/assistencia/AssistenciaMultimediaUpload';
 import {
@@ -101,6 +109,8 @@ interface Anexo {
   tamanho: number | null;
   created_at: string;
   mensagem_id: string | null;
+  tipo_inspecao?: string | null;
+  legenda?: string | null;
 }
 
 interface Viatura {
@@ -170,6 +180,8 @@ const TicketDetails = () => {
   const [searchUser, setSearchUser] = useState('');
   const [allProfiles, setAllProfiles] = useState<any[]>([]);
   const [addingUser, setAddingUser] = useState(false);
+  const [editingLegenda, setEditingLegenda] = useState<{ id: string, legenda: string } | null>(null);
+  const [updatingLegenda, setUpdatingLegenda] = useState(false);
   
   const downloadMedia = async (url: string, filename: string) => {
     try {
@@ -355,28 +367,52 @@ const TicketDetails = () => {
           .order('created_at', { ascending: true }),
         supabase
           .from('assistencia_anexos')
-          .select('id, nome_ficheiro, ficheiro_url, tipo_ficheiro, tamanho, created_at, mensagem_id')
+          .select('*')
           .eq('ticket_id', id)
           .order('created_at', { ascending: false }),
       ]);
 
       if (mensagensRes.data) {
+        // Garantir que todos os URLs sejam URLs públicos válidos antes de agrupar
+        const formattedAnexos = (anexosRes.data || []).map(a => {
+          let url = a.ficheiro_url;
+          if (url && !url.startsWith('http')) {
+            const { data } = supabase.storage.from('assistencia-anexos').getPublicUrl(url);
+            url = data.publicUrl;
+          }
+          
+          // Heurística para detetar tipo se a coluna não existir ou for nula
+          let tipo = (a as any).tipo_inspecao;
+          if (!tipo) {
+            if (a.nome_ficheiro?.toLowerCase().includes('saida') || a.nome_ficheiro?.toLowerCase().includes('checkout')) {
+              tipo = 'checkout';
+            } else {
+              tipo = 'checkin';
+            }
+          }
+
+          return { ...a, ficheiro_url: url, tipo_inspecao: tipo };
+        });
+
         // Buscar autores para as mensagens
         const autorIds = [...new Set(mensagensRes.data.map(m => m.autor_id).filter(Boolean))];
         const { data: autores } = await supabase
           .from('profiles')
-          .select('id, nome')
+          .select('id, nome, cargo, grupo:cargo_id(nome)')
           .in('id', autorIds);
 
-        const msgsComAutor = mensagensRes.data.map(m => ({
-          ...m,
-          autor: autores?.find(a => a.id === m.autor_id) || null
-        }));
+        const msgsComAutor = mensagensRes.data.map(m => {
+          const msgAnexos = formattedAnexos.filter(a => a.mensagem_id === m.id);
+          return {
+            ...m,
+            autor: autores?.find(a => a.id === m.autor_id) || null,
+            anexos: msgAnexos
+          };
+        });
         
         setMensagens(msgsComAutor as any);
+        setAnexos(formattedAnexos as Anexo[]);
       }
-      
-      if (anexosRes.data) setAnexos(anexosRes.data as Anexo[]);
     } catch (error) {
       console.error('Erro ao atualizar mensagens:', error);
     }
@@ -385,42 +421,69 @@ const TicketDetails = () => {
   const fetchAcessos = async () => {
     if (!id) return;
     try {
-      // 1. Buscar quem tem acesso na tabela de junção
-      const { data: accessData, error: accessError } = await supabase
-        .from('assistencia_ticket_acessos')
-        .select(`
-          profile_id,
-          profiles:profile_id (id, nome, cargo, is_admin)
-        `)
-        .eq('ticket_id', id);
+      const GESTOR_ASSISTENCIA_CARGO_IDS = ['d8680e20-5025-47c1-bcc0-ae432f8afb96'];
 
-      // 2. Buscar também o criador (que tem sempre acesso)
-      const { data: ticketData } = await supabase
-        .from('assistencia_tickets')
-        .select('criado_por')
-        .eq('id', id)
-        .single();
+      const [accessRes, ticketRes, adminsRes, gestoresByIdRes, gestoresByNomeRes] = await Promise.all([
+        supabase
+          .from('assistencia_ticket_acessos')
+          .select(`profile_id, profiles:profile_id (id, nome, cargo, is_admin, grupo:cargo_id (nome))`)
+          .eq('ticket_id', id),
+        supabase.from('assistencia_tickets').select('criado_por').eq('id', id).single(),
+        supabase.from('profiles').select('id, nome, cargo, is_admin, grupo:cargo_id(nome)').eq('is_admin', true),
+        supabase.from('profiles').select('id, nome, cargo, is_admin, grupo:cargo_id(nome)').in('cargo_id', GESTOR_ASSISTENCIA_CARGO_IDS),
+        supabase.from('profiles').select('id, nome, cargo, is_admin, grupo:cargo_id(nome)').ilike('cargo', '%Gestor%Assist%'),
+      ]);
 
-      let peopleMap = new Map();
+      const peopleMap = new Map<string, any>();
+
+      // Admins e Gestores de Assistência têm sempre acesso (grupo)
+      adminsRes.data?.forEach(p => peopleMap.set(p.id, p));
+      gestoresByIdRes.data?.forEach(p => peopleMap.set(p.id, p));
+      gestoresByNomeRes.data?.forEach(p => peopleMap.set(p.id, p));
       
-      // Adicionar criador
-      if (ticketData?.criado_por) {
-        const { data: creatorProf } = await supabase.from('profiles').select('id, nome, cargo, is_admin').eq('id', ticketData.criado_por).single();
-        if (creatorProf) peopleMap.set(creatorProf.id, creatorProf);
+      // Criador do ticket também tem acesso
+      if (ticketRes.data?.criado_por) {
+        const { data: creator } = await supabase
+          .from('profiles')
+          .select('id, nome, cargo, is_admin, grupo:cargo_id(nome)')
+          .eq('id', ticketRes.data.criado_por)
+          .single();
+        if (creator) peopleMap.set(creator.id, creator);
       }
 
-      // Adicionar pessoas da tabela de acessos
-      if (accessData) {
-        accessData.forEach((item: any) => {
-          if (item.profiles) peopleMap.set(item.profiles.id, item.profiles);
-        });
-      }
+      // Adicionar utilizadores com acesso explícito
+      accessRes.data?.forEach((acc: any) => {
+        if (acc.profiles) {
+          peopleMap.set(acc.profiles.id, acc.profiles);
+        }
+      });
 
-      setAcessos(Array.from(peopleMap.values()));
+      const finalList = Array.from(peopleMap.values());
+      setAcessos(finalList);
     } catch (error) {
       console.error('Erro ao buscar acessos:', error);
-      // Fallback para não quebrar a UI se a tabela não existir
-      fetchAcessosFallback();
+    }
+  };
+
+  const handleUpdateLegenda = async () => {
+    if (!editingLegenda) return;
+    
+    setUpdatingLegenda(true);
+    try {
+      const { error } = await supabase
+        .from('assistencia_anexos')
+        .update({ legenda: editingLegenda.legenda })
+        .eq('id', editingLegenda.id);
+
+      if (error) throw error;
+      
+      toast({ title: "Sucesso", description: "Legenda atualizada." });
+      setEditingLegenda(null);
+      fetchMensagensAndAnexos();
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } finally {
+      setUpdatingLegenda(false);
     }
   };
 
@@ -429,7 +492,7 @@ const TicketDetails = () => {
     const { data: ticketData } = await supabase.from('assistencia_tickets').select('criado_por, atribuido_a').eq('id', id).single();
     if (ticketData) {
       const ids = [ticketData.criado_por, ticketData.atribuido_a].filter(Boolean) as string[];
-      const { data: profs } = await supabase.from('profiles').select('id, nome, cargo, is_admin').in('id', ids);
+      const { data: profs } = await supabase.from('profiles').select('id, nome, cargo, is_admin, grupo:cargo_id(nome)').in('id', ids);
       setAcessos(profs || []);
     }
   };
@@ -768,12 +831,8 @@ const TicketDetails = () => {
       toast({ title: "Erro", description: "Informe a quilometragem final.", variant: "destructive" });
       return;
     }
-    if (!closureData.valor_reparacao) {
-      toast({ title: "Erro", description: "Informe o valor da reparação.", variant: "destructive" });
-      return;
-    }
     if (!closureDecisao) {
-      toast({ title: "Erro", description: "Indique o destino da viatura reparada.", variant: "destructive" });
+      toast({ title: "Erro", description: "Indique a responsabilidade financeira da reparação.", variant: "destructive" });
       return;
     }
     if (ticket?.viatura_substituta_id && !closureSubstDecisao) {
@@ -787,11 +846,10 @@ const TicketDetails = () => {
 
     try {
       setClosureLoading(true);
-      const valor = parseFloat(closureData.valor_reparacao);
+      const valor = closureData.valor_reparacao ? parseFloat(closureData.valor_reparacao) : 0;
       const kmFim = parseInt(closureData.km_fim);
       
-      // 1. Criar registo em viatura_reparacoes para histórico
-      const { error: repError } = await supabase
+      const { data: novoReparacao, error: repError } = await supabase
         .from('viatura_reparacoes')
         .insert({
           viatura_id: viatura.id,
@@ -802,10 +860,13 @@ const TicketDetails = () => {
           km_entrada: ticket.km_inicio,
           registado_por: user?.id,
           motorista_responsavel_id: motorista?.id || null,
-          cobrar_motorista: closureData.cobrar_motorista,
-          valor_a_cobrar: closureData.cobrar_motorista ? valor : null,
-          data_inicio_cobranca: closureData.cobrar_motorista ? new Date().toISOString().split('T')[0] : null,
-        });
+          cobrar_motorista: closureDecisao === 'motorista',
+          valor_a_cobrar: closureDecisao === 'motorista' ? valor : null,
+          data_inicio_cobranca: closureDecisao === 'motorista' ? new Date().toISOString().split('T')[0] : null,
+          status_financeiro: closureDecisao, // 'motorista', 'empresa' ou 'aberto'
+        })
+        .select()
+        .single();
 
       if (repError) throw repError;
 
@@ -833,7 +894,8 @@ const TicketDetails = () => {
           tipo_ficheiro: file.type === 'image' ? 'foto' : 'video',
           ficheiro_url: file.url,
           nome_ficheiro: file.path.split('/').pop() || 'anexo_saida',
-          uploaded_by: user?.id
+          uploaded_by: user?.id,
+          tipo_inspecao: 'checkout'
         }));
 
         await supabase.from('assistencia_anexos').insert(anexosSaida);
@@ -875,8 +937,8 @@ const TicketDetails = () => {
         }
       }
 
-      // 3. Se cobrar_motorista, criar lançamento pendente na conta do motorista
-      if (closureData.cobrar_motorista && motorista?.id) {
+      // 4. Se cobrar_motorista (através da nova decisão) e valor > 0, criar lançamento na conta do motorista
+      if (closureDecisao === 'motorista' && motorista?.id && valor > 0) {
         const refBase = `Ticket #${ticket.numero}`;
         const { error: finError } = await supabase.from('motorista_financeiro').insert({
           motorista_id: motorista.id,
@@ -886,6 +948,7 @@ const TicketDetails = () => {
           valor: valor,
           data_movimento: new Date().toISOString().split('T')[0],
           status: 'pendente',
+          reparacao_id: novoReparacao?.id,
           referencia: faturaUrl ? `${refBase} | ${faturaUrl}` : refBase,
         });
         if (finError) throw finError;
@@ -900,29 +963,42 @@ const TicketDetails = () => {
           km_fim: kmFim,
           combustivel_fim: closureData.combustivel_fim,
           valor_reparacao: valor,
-          cobrar_motorista: closureData.cobrar_motorista,
+          cobrar_motorista: closureDecisao === 'motorista',
           numero_fatura: closureData.numero_fatura.trim() || null,
           fatura_url: faturaUrl,
         })
         .eq('id', id);
       if (ticketUpdateError) throw ticketUpdateError;
 
-      // 6. Atualizar Viatura original (KM + status conforme decisão)
-      const viaturaOriginalStatus = closureDecisao === 'reassociar' ? 'em_uso' : 'disponivel';
+      // 6. Atualizar Viatura original (KM + status conforme motorista)
+      // Como a decisão agora é financeira, assumimos que se havia motorista, ela volta a estar em uso
+      const viaturaOriginalStatus = motorista?.id ? 'em_uso' : 'disponivel';
       await supabase
         .from('viaturas')
         .update({ status: viaturaOriginalStatus, km_atual: kmFim })
         .eq('id', viatura.id);
 
-      // 7a. Se reassociar: criar nova entrada em motorista_viaturas para viatura original
-      if (closureDecisao === 'reassociar' && motorista?.id) {
-        await supabase.from('motorista_viaturas').insert({
-          motorista_id: motorista.id,
-          viatura_id: viatura.id,
-          data_inicio: new Date().toISOString().split('T')[0],
-          status: 'ativo',
-          tipo: 'normal',
-        });
+      // 7a. Se havia motorista: garantir que existe entrada ativa em motorista_viaturas (reassociar)
+      if (motorista?.id) {
+        // Verificar se já não está ativo para evitar duplicados
+        const { data: existingAssoc } = await supabase
+          .from('motorista_viaturas')
+          .select('id')
+          .eq('motorista_id', motorista.id)
+          .eq('viatura_id', viatura.id)
+          .eq('status', 'ativo')
+          .is('data_fim', null)
+          .maybeSingle();
+
+        if (!existingAssoc) {
+          await supabase.from('motorista_viaturas').insert({
+            motorista_id: motorista.id,
+            viatura_id: viatura.id,
+            data_inicio: new Date().toISOString().split('T')[0],
+            status: 'ativo',
+            tipo: 'normal',
+          });
+        }
       }
 
       // 7b. Tratar viatura substituta (se existia)
@@ -1004,6 +1080,75 @@ const TicketDetails = () => {
     return null;
   };
 
+  const renderMessageContent = (text: string) => {
+    if (text.startsWith("Ticket criado com check-in completo")) {
+      const parts = text.split(" - ");
+      const data: Record<string, string> = {};
+      
+      parts.forEach(part => {
+        if (part.includes(": ")) {
+          const [key, ...val] = part.split(": ");
+          data[key.trim()] = val.join(": ").trim();
+        }
+      });
+
+      return (
+        <div className="bg-background/40 backdrop-blur-sm border border-primary/20 rounded-xl p-4 my-2 space-y-4 shadow-sm">
+          <div className="flex items-center gap-2 border-b border-primary/10 pb-2">
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            <span className="font-bold text-sm text-primary uppercase tracking-wider">Check-in de Entrada Efetuado</span>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase text-muted-foreground font-bold flex items-center gap-1">
+                <Gauge className="h-3 w-3 text-blue-500" /> KM Inicial
+              </span>
+              <p className="text-sm font-mono font-bold">{data["KM Inicial"] || '---'}</p>
+            </div>
+            
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase text-muted-foreground font-bold flex items-center gap-1">
+                <Fuel className="h-3 w-3 text-orange-500" /> Combustível
+              </span>
+              <p className="text-sm font-bold">{data["Combustível"] || '---'}</p>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase text-muted-foreground font-bold flex items-center gap-1">
+                <Droplets className="h-3 w-3 text-cyan-500" /> AdBlue
+              </span>
+              <p className="text-sm font-bold capitalize">{data["AdBlue"] || '---'}</p>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase text-muted-foreground font-bold flex items-center gap-1">
+                <Sparkles className="h-3 w-3 text-yellow-500" /> Limpeza
+              </span>
+              <p className="text-sm font-bold capitalize">{data["Limpeza"] || '---'}</p>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase text-muted-foreground font-bold flex items-center gap-1">
+                <Wallet className="h-3 w-3 text-green-500" /> Orçamento
+              </span>
+              <p className="text-sm font-bold">{data["Orçamento Estimado"] || '---'}</p>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase text-muted-foreground font-bold flex items-center gap-1">
+                <Image className="h-3 w-3 text-purple-500" /> Media
+              </span>
+              <p className="text-sm font-bold">{data["Média"]?.split(' ')[0] || '0'} ficheiros</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return <p className="text-sm whitespace-pre-wrap">{text}</p>;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -1052,24 +1197,24 @@ const TicketDetails = () => {
           <h1 className="text-2xl font-bold">{ticket.titulo}</h1>
         </div>
         
-        {canChangeStatus && !['resolvido', 'fechado'].includes(ticket.status) && (
-          <Select value={ticket.status} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-[180px]">
+        <Select 
+          value={ticket.status} 
+          onValueChange={handleStatusChange}
+          disabled={!canChangeStatus || ['resolvido', 'fechado'].includes(ticket.status)}
+        >
+          <SelectTrigger className={`w-[180px] font-bold text-white transition-all ${statusConfig[ticket.status]?.color}`}>
+            <div className="flex items-center gap-2">
+              {statusConfig[ticket.status]?.icon}
               <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="aberto">Aberto</SelectItem>
-              <SelectItem value="em_andamento">Em Manutenção</SelectItem>
-              <SelectItem value="aguardando">Peças/Aguardar</SelectItem>
-              <SelectItem value="resolvido" className="text-green-600 font-bold">✓ Concluir</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-        
-        <Badge className={`${statusConfig[ticket.status]?.color} flex items-center gap-1 h-9 px-4`}>
-          {statusConfig[ticket.status]?.icon}
-          {statusConfig[ticket.status]?.label}
-        </Badge>
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="aberto">Aberto</SelectItem>
+            <SelectItem value="em_andamento">Em Manutenção</SelectItem>
+            <SelectItem value="aguardando">Peças/Aguardar</SelectItem>
+            <SelectItem value="resolvido" className="text-green-600 font-bold">✓ Concluir</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -1119,16 +1264,16 @@ const TicketDetails = () => {
                             <span className="font-medium text-sm">
                               {msg.autor?.nome || 'Sistema'}
                             </span>
-                            {getAutorRole(msg.autor?.id) && (
+                            {(msg.autor?.cargo || getAutorRole(msg.autor?.id)) && (
                               <Badge 
                                 variant="outline" 
                                 className={
-                                  getAutorRole(msg.autor?.id) === 'Gestor' 
+                                  (msg.autor?.cargo || getAutorRole(msg.autor?.id)) === 'Gestor' || (msg.autor?.cargo || '').includes('Gestor')
                                     ? 'border-blue-500 text-blue-500 text-xs py-0 px-1.5' 
                                     : 'border-green-500 text-green-500 text-xs py-0 px-1.5'
                                 }
                               >
-                                {getAutorRole(msg.autor?.id)}
+                                {msg.autor?.grupo?.nome || msg.autor?.cargo || getAutorRole(msg.autor?.id)}
                               </Badge>
                             )}
                             <span className="text-xs text-muted-foreground">
@@ -1137,44 +1282,81 @@ const TicketDetails = () => {
                           </div>
                         )}
                         {msg.tipo !== 'anexo' && (
-                          <p className={msg.tipo === 'status_change' ? 'italic' : ''}>
-                            {msg.mensagem}
-                          </p>
+                          <div className={msg.tipo === 'status_change' ? 'italic' : ''}>
+                            {renderMessageContent(msg.mensagem)}
+                          </div>
                         )}
                         
                         {/* Anexos inline na conversação */}
                         {msg.anexos && msg.anexos.length > 0 && (
-                          <div className="mt-2 space-y-1">
-                            {msg.anexos.map(anexo => (
-                              <div 
-                                key={anexo.id} 
-                                className="flex items-center gap-2 p-2 bg-background rounded border"
-                              >
-                                {anexo.tipo_ficheiro?.startsWith('image/') ? (
-                                  <Image className="h-4 w-4 text-muted-foreground" />
-                                ) : (
-                                  <FileText className="h-4 w-4 text-muted-foreground" />
-                                )}
-                                <span className="flex-1 text-sm truncate">{anexo.nome_ficheiro}</span>
-                                <a
-                                  href={anexo.ficheiro_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-1 hover:bg-muted rounded"
-                                  title="Ver"
+                          <div className="mt-2 grid grid-cols-1 gap-2">
+                            {msg.anexos.map(anexo => {
+                              const isImage = anexo.tipo_ficheiro?.startsWith('image/') || anexo.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i);
+                              return (
+                                <div 
+                                  key={anexo.id} 
+                                  className="flex flex-col p-2 bg-background rounded border"
                                 >
-                                  <Eye className="h-4 w-4 text-muted-foreground" />
-                                </a>
-                                <a
-                                  href={anexo.ficheiro_url}
-                                  download={anexo.nome_ficheiro}
-                                  className="p-1 hover:bg-muted rounded"
-                                  title="Descarregar"
-                                >
-                                  <Download className="h-4 w-4 text-muted-foreground" />
-                                </a>
-                              </div>
-                            ))}
+                                  <div className="flex items-center gap-2 mb-2">
+                                    {isImage ? (
+                                      <Image className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                      <FileText className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                    <span className="flex-1 text-sm truncate font-medium">{anexo.nome_ficheiro}</span>
+                                    <div className="flex gap-1">
+                                      <a
+                                        href={anexo.ficheiro_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-1 hover:bg-muted rounded"
+                                        title="Ver"
+                                      >
+                                        <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                                      </a>
+                                      <a
+                                        href={anexo.ficheiro_url}
+                                        download={anexo.nome_ficheiro}
+                                        className="p-1 hover:bg-muted rounded"
+                                        title="Descarregar"
+                                      >
+                                        <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                                      </a>
+                                      {(isAdmin || hasAccessToResource('assistencia_tickets')) && (
+                                        <button
+                                          onClick={() => setEditingLegenda({ id: anexo.id, legenda: anexo.legenda || '' })}
+                                          className="p-1 hover:bg-muted rounded text-primary"
+                                          title="Editar Legenda"
+                                        >
+                                          <Wrench className="h-3.5 w-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {isImage && (
+                                    <div 
+                                      className="relative rounded overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                      onClick={() => openLightbox(msg.anexos || [], (msg.anexos || []).indexOf(anexo))}
+                                    >
+                                      <img 
+                                        src={anexo.ficheiro_url} 
+                                        alt={anexo.nome_ficheiro} 
+                                        className="max-h-[300px] w-auto object-contain rounded"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=Imagem+Indispon%C3%ADvel';
+                                        }}
+                                      />
+                                      {anexo.legenda && (
+                                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 backdrop-blur-sm italic">
+                                          "{anexo.legenda}"
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -1229,7 +1411,7 @@ const TicketDetails = () => {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Valor Total (€) *</Label>
+                      <Label>Valor Total (€)</Label>
                       <Input 
                         type="number" 
                         step="0.01"
@@ -1287,19 +1469,6 @@ const TicketDetails = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="cobrar"
-                      checked={closureData.cobrar_motorista}
-                      onChange={(e) => setClosureData(prev => ({ ...prev, cobrar_motorista: e.target.checked }))}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <Label htmlFor="cobrar" className="cursor-pointer">
-                      Cobrar valor ao motorista ({motorista?.nome || 'Nenhum motorista associado'})
-                    </Label>
-                  </div>
-
                   {/* Multimédia de Saída */}
                   <div className="space-y-4 border-t pt-4">
                     <Label className="text-base font-bold flex items-center gap-2">
@@ -1314,31 +1483,39 @@ const TicketDetails = () => {
                     />
                   </div>
                   
-                  {/* Decisão: viatura reparada */}
+                  {/* Decisão Financeira */}
                   <div className="space-y-2">
-                    <Label className="font-semibold">O que fazer com a viatura reparada ({viatura?.matricula})?</Label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Label className="font-semibold">Responsabilidade Financeira ({viatura?.matricula})</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <button
                         type="button"
-                        onClick={() => setClosureDecisao('parque')}
-                        className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'parque' ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-primary/40'}`}
+                        onClick={() => setClosureDecisao('motorista')}
+                        className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'motorista' ? 'border-orange-500 bg-orange-500/10' : 'border-border hover:border-primary/40'}`}
                       >
                         <div className="flex items-center gap-2 font-medium text-sm">
-                          <ParkingSquare className="h-4 w-4" /> Disponível no parque
+                          <Coins className="h-4 w-4 text-orange-500" /> Cobrar do Motorista
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">Fica disponível sem motorista associado</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Gera débito na conta do motorista</p>
                       </button>
                       <button
                         type="button"
-                        onClick={() => setClosureDecisao('reassociar')}
-                        className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'reassociar' ? 'border-green-500 bg-green-500/10' : 'border-border hover:border-primary/40'}`}
+                        onClick={() => setClosureDecisao('empresa')}
+                        className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'empresa' ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-primary/40'}`}
                       >
                         <div className="flex items-center gap-2 font-medium text-sm">
-                          <RefreshCw className="h-4 w-4" /> Reassociar ao motorista
+                          <Building2 className="h-4 w-4 text-blue-500" /> Cobrar da Empresa
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {motorista ? motorista.nome : 'Nenhum motorista'} volta a esta viatura
-                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Registado como despesa da viatura</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setClosureDecisao('aberto')}
+                        className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'aberto' ? 'border-yellow-500 bg-yellow-500/10' : 'border-border hover:border-primary/40'}`}
+                      >
+                        <div className="flex items-center gap-2 font-medium text-sm">
+                          <Clock className="h-4 w-4 text-yellow-600" /> Deixar Em Aberto
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-1">Gera aviso na ficha até ser definido</p>
                       </button>
                     </div>
                   </div>
@@ -1414,6 +1591,14 @@ const TicketDetails = () => {
                     placeholder="Escreva uma mensagem..."
                     value={novaMensagem}
                     onChange={(e) => setNovaMensagem(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (novaMensagem.trim() || selectedFiles.length > 0) {
+                          handleSendMessage();
+                        }
+                      }
+                    }}
                     className="flex-1 min-h-[80px]"
                     disabled={sending}
                   />
@@ -1483,7 +1668,7 @@ const TicketDetails = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="truncate font-medium">{user.nome}</p>
-                    <p className="text-[9px] text-muted-foreground uppercase">{getAutorRole(user.id) || (user.cargo || 'Staff')}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase">{user.grupo?.nome || user.cargo || (user.is_admin ? 'Administrador' : 'Colaborador')}</p>
                   </div>
                   {canChangeStatus && user.id !== ticket?.criado_por && (
                     <Button 
@@ -1583,25 +1768,113 @@ const TicketDetails = () => {
                 <Paperclip className="h-4 w-4" />
               </Button>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="grid grid-cols-3 gap-2">
-                {anexos.filter(a => a.tipo_ficheiro === 'foto' || a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i)).slice(0, 9).map((anexo, idx) => (
-                  <div 
-                    key={anexo.id} 
-                    className="aspect-square rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}
-                  >
-                    <img src={anexo.ficheiro_url} className="w-full h-full object-cover" />
-                  </div>
-                ))}
+            <CardContent className="pt-0 space-y-4">
+              {/* Check-in Group */}
+              <div>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-2 flex items-center gap-1">
+                  <ArrowRight className="h-3 w-3 text-blue-500" /> Check-in (Entrada)
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {anexos.filter(a => (a.tipo_inspecao === 'checkin' || !a.tipo_inspecao) && (a.tipo_ficheiro?.startsWith('image/') || a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i))).slice(0, 6).map((anexo, idx) => (
+                    <div 
+                      key={anexo.id} 
+                      className="aspect-square rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-muted relative group"
+                    >
+                      <img 
+                        src={anexo.ficheiro_url} 
+                        className="w-full h-full object-cover" 
+                        onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=Indispon%C3%ADvel';
+                        }}
+                      />
+                      {anexo.tipo_ficheiro === 'video' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20" onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}>
+                          <PlayCircle className="h-6 w-6 text-white" />
+                        </div>
+                      )}
+                      
+                      {/* Legend Indicator/Button */}
+                      {(isAdmin || hasAccessToResource('assistencia_tickets')) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingLegenda({ id: anexo.id, legenda: anexo.legenda || '' });
+                          }}
+                          className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] py-0.5 px-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between"
+                        >
+                          <span className="truncate flex-1">{anexo.legenda || 'Sem legenda'}</span>
+                          <Wrench className="h-2 w-2 ml-1" />
+                        </button>
+                      )}
+                      {anexo.legenda && (
+                        <div className="absolute top-0 left-0 right-0 bg-green-600/90 text-white text-[9px] px-1.5 py-0.5 font-bold truncate group-hover:hidden shadow-sm">
+                          {anexo.legenda}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {anexos.filter(a => (a.tipo_inspecao === 'checkin' || !a.tipo_inspecao) && (a.tipo_ficheiro?.startsWith('image/') || a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i))).length === 0 && (
+                    <p className="col-span-3 text-[10px] text-muted-foreground italic py-1">Nenhuma foto de entrada</p>
+                  )}
+                </div>
               </div>
-              {anexos.length > 9 && (
-                <Button variant="link" className="text-xs p-0 h-auto mt-2 w-full text-center" onClick={() => {}}>
+
+              {/* Check-out Group */}
+              <div>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-2 flex items-center gap-1">
+                  <ArrowLeft className="h-3 w-3 text-green-500" /> Check-out (Saída)
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {anexos.filter(a => a.tipo_inspecao === 'checkout' && (a.tipo_ficheiro?.startsWith('image/') || a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i))).slice(0, 6).map((anexo, idx) => (
+                    <div 
+                      key={anexo.id} 
+                      className="aspect-square rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-muted relative group"
+                    >
+                      <img 
+                        src={anexo.ficheiro_url} 
+                        className="w-full h-full object-cover" 
+                        onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=Indispon%C3%ADvel';
+                        }}
+                      />
+                      {anexo.tipo_ficheiro === 'video' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20" onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}>
+                          <PlayCircle className="h-6 w-6 text-white" />
+                        </div>
+                      )}
+
+                      {/* Legend Indicator/Button */}
+                      {(isAdmin || hasAccessToResource('assistencia_tickets')) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingLegenda({ id: anexo.id, legenda: anexo.legenda || '' });
+                          }}
+                          className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] py-0.5 px-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between"
+                        >
+                          <span className="truncate flex-1">{anexo.legenda || 'Sem legenda'}</span>
+                          <Wrench className="h-2 w-2 ml-1" />
+                        </button>
+                      )}
+                      {anexo.legenda && (
+                        <div className="absolute top-0 left-0 right-0 bg-green-600/90 text-white text-[9px] px-1.5 py-0.5 font-bold truncate group-hover:hidden shadow-sm">
+                          {anexo.legenda}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {anexos.filter(a => a.tipo_inspecao === 'checkout' && (a.tipo_ficheiro?.startsWith('image/') || a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i))).length === 0 && (
+                    <p className="col-span-3 text-[10px] text-muted-foreground italic py-1">Nenhuma foto de saída</p>
+                  )}
+                </div>
+              </div>
+
+              {anexos.length > 12 && (
+                <Button variant="link" className="text-xs p-0 h-auto w-full text-center" onClick={() => {}}>
                   Ver todos os {anexos.length} anexos
                 </Button>
-              )}
-              {anexos.length === 0 && (
-                <p className="text-[10px] text-muted-foreground text-center py-2 italic">Sem ficheiros multimédia</p>
               )}
               <input 
                 id="sidebar-file-upload" 
@@ -1806,14 +2079,52 @@ const TicketDetails = () => {
                 />
               )}
               
-              <div className="text-white text-center space-y-1">
-                <p className="text-sm font-semibold truncate max-w-md">
-                  {currentMediaList[currentMediaIndex]?.nome_ficheiro}
-                </p>
-                <p className="text-xs text-white/60">
-                  {currentMediaIndex + 1} de {currentMediaList.length}
-                </p>
+              <div className="text-white text-center space-y-3 bg-black/60 p-4 rounded-xl backdrop-blur-md max-w-xl border border-white/10 shadow-2xl">
+                {currentMediaList[currentMediaIndex]?.legenda ? (
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Legenda</p>
+                    <p className="text-lg text-green-400 font-semibold leading-tight">
+                      {currentMediaList[currentMediaIndex]?.legenda}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-white/30 italic">Sem legenda definida</p>
+                )}
+                
+                <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-4">
+                  <p className="text-[10px] text-white/40 truncate max-w-[200px]">
+                    {currentMediaList[currentMediaIndex]?.nome_ficheiro}
+                  </p>
+                  <p className="text-[10px] font-mono text-white/40 whitespace-nowrap">
+                    {currentMediaIndex + 1} / {currentMediaList.length}
+                  </p>
+                </div>
               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Editar Legenda */}
+      <Dialog open={!!editingLegenda} onOpenChange={(open) => !open && setEditingLegenda(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Legenda da Imagem</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Descrição / Legenda</Label>
+              <Textarea 
+                placeholder="Ex: Pneu dianteiro esquerdo desgastado..."
+                value={editingLegenda?.legenda || ''}
+                onChange={(e) => setEditingLegenda(prev => prev ? { ...prev, legenda: e.target.value } : null)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditingLegenda(null)}>Cancelar</Button>
+              <Button onClick={handleUpdateLegenda} disabled={updatingLegenda}>
+                {updatingLegenda ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : 'Guardar'}
+              </Button>
             </div>
           </div>
         </DialogContent>

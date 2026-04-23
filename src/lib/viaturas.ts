@@ -24,7 +24,6 @@ export const STATUS_OPTIONS = [
   { value: 'disponivel', label: 'Disponível' },
   { value: 'em_uso', label: 'Em Uso' },
   { value: 'manutencao', label: 'Manutenção' },
-  { value: 'vendida', label: 'Vendida' },
   { value: 'inativo', label: 'Inativo' },
 ];
 
@@ -60,6 +59,23 @@ export const getStatusBadgeClass = (status?: string | null) => {
       return 'bg-muted text-muted-foreground border-border';
     default:
       return 'bg-muted text-muted-foreground border-border';
+  }
+};
+
+export const getStatusColorClass = (status?: string | null) => {
+  switch (status) {
+    case 'disponivel':
+      return 'bg-green-500 text-white hover:bg-green-600';
+    case 'em_uso':
+      return 'bg-blue-500 text-white hover:bg-blue-600';
+    case 'manutencao':
+      return 'bg-amber-500 text-white hover:bg-amber-600';
+    case 'vendida':
+      return 'bg-destructive text-white hover:bg-destructive/90';
+    case 'inativo':
+      return 'bg-gray-500 text-white hover:bg-gray-600';
+    default:
+      return 'bg-gray-400 text-white hover:bg-gray-500';
   }
 };
 

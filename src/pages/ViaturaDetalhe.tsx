@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Car, FileText, AlertTriangle, Wrench, History, Calendar, Receipt, Radio, Paperclip, Loader2 } from 'lucide-react';
+import { ArrowLeft, Car, FileText, AlertTriangle, Wrench, History, Calendar, Receipt, Radio, Paperclip, Loader2, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,10 +11,10 @@ import { ViaturaTabSeguro } from '@/components/viaturas/tabs/ViaturaTabSeguro';
 import { ViaturaTabDanos } from '@/components/viaturas/tabs/ViaturaTabDanos';
 import { ViaturaTabReparacoes } from '@/components/viaturas/tabs/ViaturaTabReparacoes';
 import { ViaturaTabHistorico } from '@/components/viaturas/tabs/ViaturaTabHistorico';
-import { ViaturaTabReservas } from '@/components/viaturas/tabs/ViaturaTabReservas';
 import { ViaturaTabMultas } from '@/components/viaturas/tabs/ViaturaTabMultas';
 import { ViaturaTabOBE } from '@/components/viaturas/tabs/ViaturaTabOBE';
 import { ViaturaTabAnexos } from '@/components/viaturas/tabs/ViaturaTabAnexos';
+import { ViaturaTabFinanceira } from '@/components/viaturas/tabs/ViaturaTabFinanceira';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getCategoriaBadgeClass, getStatusBadgeClass, getStatusLabel } from '@/lib/viaturas';
 
@@ -42,6 +42,29 @@ interface Viatura {
   valor_aluguer?: number | null;
   proprietario_id?: string | null;
   data_venda?: string | null;
+  // Financeiro
+  tipo_frota?: string | null;
+  tipo_financiamento?: string | null;
+  custo_viatura?: number | null;
+  custos_operacionais?: number | null;
+  custos_adicionais?: number | null;
+  impostos_aquisicao?: number | null;
+  total_viatura?: number | null;
+  iva_tipo?: string | null;
+  data_primeiro_pagamento?: string | null;
+  num_prestacoes?: number | null;
+  valor_prestacao?: number | null;
+  valor_residual?: number | null;
+  limite_kms?: number | null;
+  custo_km_adicional?: number | null;
+  data_aquisicao?: string | null;
+  data_validade_financeira?: string | null;
+  metodo_depreciacao?: string | null;
+  vida_util_anos?: number | null;
+  is_vendida?: boolean | null;
+  valor_venda?: number | null;
+  venda_observacoes?: string | null;
+  checklist_saida?: any | null;
 }
 
 const TABS = [
@@ -50,8 +73,8 @@ const TABS = [
   { id: 'danos', label: 'Danos', icon: AlertTriangle },
   { id: 'reparacoes', label: 'Reparações', icon: Wrench },
   { id: 'historico', label: 'Histórico', icon: History },
-  { id: 'reservas', label: 'Reservas', icon: Calendar },
   { id: 'multas', label: 'Multas', icon: Receipt },
+  { id: 'financeiro', label: 'Financeiro', icon: Wallet },
   { id: 'obe', label: 'OBE', icon: Radio },
   { id: 'anexos', label: 'Anexos', icon: Paperclip },
 ];
@@ -66,12 +89,24 @@ export default function ViaturaDetalhe() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('dados');
+  const [reparacoesAbertas, setReparacoesAbertas] = useState<any[]>([]);
 
   useEffect(() => {
     if (!isNew && id) {
       loadViatura();
+      loadReparacoesAbertas();
     }
   }, [id, isNew]);
+
+  const loadReparacoesAbertas = async () => {
+    if (!id || isNew) return;
+    const { data } = await supabase
+      .from('viatura_reparacoes')
+      .select('*')
+      .eq('viatura_id', id)
+      .eq('status_financeiro', 'aberto');
+    setReparacoesAbertas(data || []);
+  };
 
   const loadViatura = async () => {
     if (!id || isNew) return;
@@ -142,6 +177,30 @@ export default function ViaturaDetalhe() {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
+      {reparacoesAbertas.length > 0 && (
+        <Card className="border-yellow-500 bg-yellow-500/10 shadow-lg animate-pulse">
+          <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-yellow-500 flex items-center justify-center shrink-0">
+                <AlertTriangle className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-yellow-800 dark:text-yellow-400">Decisão Financeira Pendente!</h3>
+                <p className="text-sm text-yellow-700 dark:text-yellow-500/80">
+                  Existem {reparacoesAbertas.length} reparações com custos por definir (Empresa ou Motorista).
+                </p>
+              </div>
+            </div>
+            <Button 
+              className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold"
+              onClick={() => setActiveTab('reparacoes')}
+            >
+              Resolver Agora
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -164,9 +223,6 @@ export default function ViaturaDetalhe() {
                 <div className="mt-1 flex items-center gap-2">
                   <Badge className={getCategoriaBadgeClass(viatura?.categoria)}>
                     {viatura?.categoria || 'Sem categoria'}
-                  </Badge>
-                  <Badge variant="outline" className={getStatusBadgeClass(viatura?.status)}>
-                    {getStatusLabel(viatura?.status)}
                   </Badge>
                 </div>
               </>
@@ -216,19 +272,19 @@ export default function ViaturaDetalhe() {
         </TabsContent>
 
         <TabsContent value="reparacoes" className="mt-0">
-          <ViaturaTabReparacoes viaturaId={viatura?.id} />
+          <ViaturaTabReparacoes viaturaId={viatura?.id} onUpdate={loadReparacoesAbertas} />
         </TabsContent>
 
         <TabsContent value="historico" className="mt-0">
           <ViaturaTabHistorico viaturaId={viatura?.id} />
         </TabsContent>
 
-        <TabsContent value="reservas" className="mt-0">
-          <ViaturaTabReservas viaturaId={viatura?.id} />
-        </TabsContent>
-
         <TabsContent value="multas" className="mt-0">
           <ViaturaTabMultas viaturaId={viatura?.id} />
+        </TabsContent>
+
+        <TabsContent value="financeiro" className="mt-0">
+          <ViaturaTabFinanceira viatura={viatura} onUpdate={loadViatura} />
         </TabsContent>
 
         <TabsContent value="obe" className="mt-0">

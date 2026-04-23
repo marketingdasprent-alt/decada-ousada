@@ -19,30 +19,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { 
-  Plus, 
-  AlertTriangle, 
-  CheckCircle2, 
-  Loader2, 
-  Trash2, 
-  User, 
-  FileText, 
-  Camera, 
-  ImagePlus, 
-  X, 
-  Calendar, 
-  Image as ImageIcon,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Play
-} from 'lucide-react';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  Plus,
+  AlertTriangle,
+  CheckCircle2,
+  Loader2,
+  Trash2,
+  ImagePlus,
+  X,
+  Camera,
+  User,
+  FileText,
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -53,7 +41,7 @@ interface Dano {
   id: string;
   descricao: string;
   localizacao: string | null;
-  data_registo: string;
+  created_at: string;
   data_ocorrencia: string | null;
   estado: string;
   observacoes: string | null;
@@ -97,7 +85,7 @@ const LOCALIZACOES = [
 ];
 
 const ESTADOS = [
-  { value: 'pendente', label: 'Pendente', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
+  { value: 'existente', label: 'Existente', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
   { value: 'em_reparacao', label: 'Em Reparação', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
   { value: 'reparado', label: 'Reparado', color: 'bg-green-500/10 text-green-500 border-green-500/20' },
   { value: 'irreparavel', label: 'Irreparável', color: 'bg-destructive/10 text-destructive border-destructive/20' },
@@ -109,15 +97,11 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [assistancePhotos, setAssistancePhotos] = useState<any[]>([]);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
-  const [currentMediaList, setCurrentMediaList] = useState<any[]>([]);
   
   // Form state
   const [descricao, setDescricao] = useState('');
   const [localizacao, setLocalizacao] = useState('');
-  const [estado, setEstado] = useState('pendente');
+  const [estado, setEstado] = useState('existente');
   const [observacoes, setObservacoes] = useState('');
   const [valor, setValor] = useState('');
   const [dataOcorrencia, setDataOcorrencia] = useState('');
@@ -236,94 +220,10 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
 
       setDanos(danosComFotos);
 
-      setDanos(danosComFotos);
-
-      // --- BUSCAR FOTOS DE ASSISTÊNCIA (ESPELHAMENTO DIRETO) ---
-      const { data: tickets, error: ticketsError } = await supabase
-        .from('assistencia_tickets')
-        .select('id, numero, titulo, created_at, criado_por')
-        .eq('viatura_id', viaturaId)
-        .order('created_at', { ascending: false });
-
-      if (ticketsError) console.error('Erro nos tickets:', ticketsError);
-
-      if (tickets && tickets.length > 0) {
-        // Buscar nomes dos criadores separadamente para evitar erros de Join
-        const criadoresIds = [...new Set(tickets.map(t => t.criado_por).filter(Boolean))];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, nome')
-          .in('id', criadoresIds);
-
-        const ticketIds = tickets.map(t => t.id);
-        const { data: anexos } = await supabase
-          .from('assistencia_anexos')
-          .select('*')
-          .in('ticket_id', ticketIds);
-
-        if (anexos) {
-          const formattedAssistance = anexos
-            .filter(a => 
-              a.tipo_ficheiro === 'foto' || 
-              a.tipo_ficheiro === 'video' ||
-              a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp|mp4|webm|mov|ogg)$/i)
-            )
-            .map(anexo => {
-              const ticket = tickets.find(t => t.id === anexo.ticket_id);
-              const perfil = profiles?.find(p => p.id === ticket?.criado_por);
-              
-              return {
-                ...anexo,
-                ticket_numero: ticket?.numero,
-                ticket_titulo: ticket?.titulo,
-                data: ticket?.created_at,
-                criador_nome: perfil?.nome || 'Sistema'
-              };
-            });
-          
-          setAssistancePhotos(formattedAssistance);
-        }
-      }
-
-
-
-
     } catch (error) {
       console.error('Erro ao carregar danos:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Handlers para o Lightbox
-  const openLightbox = (mediaList: any[], index: number) => {
-    setCurrentMediaList(mediaList);
-    setCurrentMediaIndex(index);
-    setLightboxOpen(true);
-  };
-
-  const nextMedia = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setCurrentMediaIndex(prev => (prev + 1) % currentMediaList.length);
-  };
-
-  const prevMedia = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setCurrentMediaIndex(prev => (prev - 1 + currentMediaList.length) % currentMediaList.length);
-  };
-
-  const downloadMedia = async (url: string, filename: string) => {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = filename || 'download';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      window.open(url, '_blank');
     }
   };
 
@@ -733,7 +633,7 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
           </div>
         ) : (
           <div className="space-y-8">
-            {danos.length === 0 && assistancePhotos.length === 0 && (
+            {danos.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Nenhum dano registado.</p>
@@ -748,17 +648,25 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
                 {danos.map((dano) => {
                   const estadoConfig = getEstadoConfig(dano.estado);
                   const locLabel = LOCALIZACOES.find(l => l.value === dano.localizacao)?.label;
-                  const dataDisplay = dano.data_ocorrencia || dano.data_registo;
+                  const dataDisplay = dano.data_ocorrencia || dano.created_at;
 
                   return (
                     <div key={dano.id} className="border rounded-lg p-4 space-y-3">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <p className="font-medium">{dano.descricao}</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium">{dano.descricao}</p>
+                            {dano.descricao.includes('Check-in') && (
+                              <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] h-5 px-1.5 uppercase font-bold">Entrada</Badge>
+                            )}
+                            {dano.descricao.includes('Check-out') && (
+                              <Badge className="bg-green-600 hover:bg-green-700 text-white text-[10px] h-5 px-1.5 uppercase font-bold">Saída</Badge>
+                            )}
+                          </div>
                           <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-muted-foreground">
                             {locLabel && <span>{locLabel}</span>}
                             {locLabel && <span>•</span>}
-                            <span>{format(new Date(dataDisplay), "d 'de' MMMM 'de' yyyy", { locale: pt })}</span>
+                            <span>{dataDisplay ? format(new Date(dataDisplay), "d 'de' MMMM 'de' yyyy", { locale: pt }) : 'Data N/D'}</span>
                             {dano.valor > 0 && (
                               <>
                                 <span>•</span>
@@ -809,177 +717,9 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
               </div>
             )}
 
-            {/* Fotos de Assistência (Espelhamento Automático) */}
-            {assistancePhotos.length > 0 && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between border-t pt-6">
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                    <Camera className="h-4 w-4" />
-                    Histórico de Assistência
-                  </h4>
-                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-                    {assistancePhotos.length} ficheiros detetados
-                  </Badge>
-                </div>
-                
-                <Accordion type="single" collapsible className="w-full space-y-3">
-                  {Object.values(
-                    assistancePhotos.reduce((acc: any, foto) => {
-                      if (!acc[foto.ticket_id]) {
-                        acc[foto.ticket_id] = {
-                          ticket_id: foto.ticket_id,
-                          numero: foto.ticket_numero,
-                          titulo: foto.ticket_titulo,
-                          data: foto.data,
-                          criador: foto.criador_nome,
-                          fotos: []
-                        };
-                      }
-                      acc[foto.ticket_id].fotos.push(foto);
-                      return acc;
-                    }, {})
-                  ).map((group: any) => (
-                    <AccordionItem key={group.ticket_id} value={group.ticket_id} className="border rounded-xl px-4 bg-muted/20 overflow-hidden">
-                      <AccordionTrigger className="hover:no-underline py-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-left w-full">
-                          <div className="flex items-center gap-2 min-w-[120px]">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">
-                              {format(new Date(group.data), "d 'de' MMM", { locale: pt })}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2 flex-1">
-                            <FileText className="h-4 w-4 text-primary/60" />
-                            <span className="text-sm font-semibold truncate">
-                              Ticket #{group.numero} - {group.titulo}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              {group.criador}
-                            </div>
-                            <div className="flex items-center gap-1 bg-background px-2 py-0.5 rounded-full border">
-                              <ImageIcon className="h-3 w-3" />
-                              {group.fotos.length}
-                            </div>
-                          </div>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="pb-4 pt-2">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                          {group.fotos.map((foto: any, idx: number) => {
-                            const isVideo = foto.tipo_ficheiro === 'video' || foto.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i);
-                            return (
-                              <div 
-                                key={idx} 
-                                className="group relative aspect-square rounded-lg overflow-hidden border bg-background shadow-sm hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer"
-                                onClick={() => openLightbox(group.fotos, idx)}
-                              >
-                                {isVideo ? (
-                                  <div className="w-full h-full bg-slate-900 flex items-center justify-center relative">
-                                    <video src={foto.ficheiro_url} className="h-full w-full object-cover opacity-50" />
-                                    <Play className="h-8 w-8 text-white absolute z-10 opacity-80 group-hover:scale-125 transition-transform" />
-                                  </div>
-                                ) : (
-                                  <img 
-                                    src={foto.ficheiro_url} 
-                                    alt="Foto Assistência" 
-                                    className="h-full w-full object-cover hover:scale-110 transition-transform duration-500" 
-                                  />
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-
-                <p className="text-[10px] text-muted-foreground italic text-center">
-                  Estas fotos são espelhadas automaticamente a partir dos tickets de assistência da viatura.
-                </p>
-              </div>
-            )}
           </div>
         )}
       </CardContent>
-
-      {/* Lightbox Galeria */}
-      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 bg-black/95 border-none flex flex-col items-center justify-center overflow-hidden">
-          <div className="absolute top-4 right-4 z-50 flex gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-white hover:bg-white/20 rounded-full"
-              onClick={() => downloadMedia(currentMediaList[currentMediaIndex]?.ficheiro_url, currentMediaList[currentMediaIndex]?.nome_ficheiro)}
-            >
-              <Download className="h-5 w-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-white hover:bg-white/20 rounded-full"
-              onClick={() => setLightboxOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-
-          <div className="relative w-full h-full flex items-center justify-center p-4 sm:p-12">
-            {currentMediaList.length > 1 && (
-              <>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute left-2 sm:left-6 z-40 text-white hover:bg-white/20 rounded-full h-12 w-12"
-                  onClick={prevMedia}
-                >
-                  <ChevronLeft className="h-8 w-8" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-2 sm:right-6 z-40 text-white hover:bg-white/20 rounded-full h-12 w-12"
-                  onClick={nextMedia}
-                >
-                  <ChevronRight className="h-8 w-8" />
-                </Button>
-              </>
-            )}
-
-            <div className="max-w-full max-h-full flex flex-col items-center gap-4">
-              {currentMediaList[currentMediaIndex]?.tipo_ficheiro === 'video' || currentMediaList[currentMediaIndex]?.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i) ? (
-                <video 
-                  src={currentMediaList[currentMediaIndex]?.ficheiro_url} 
-                  controls 
-                  autoPlay 
-                  className="max-w-full max-h-[75vh] rounded-lg shadow-2xl"
-                />
-              ) : (
-                <img 
-                  src={currentMediaList[currentMediaIndex]?.ficheiro_url} 
-                  alt="Preview" 
-                  className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
-                />
-              )}
-              
-              <div className="text-white text-center space-y-1">
-                <p className="text-sm font-semibold">
-                  Ticket #{currentMediaList[currentMediaIndex]?.ticket_numero} - {currentMediaList[currentMediaIndex]?.ticket_titulo}
-                </p>
-                <p className="text-xs text-white/60">
-                  {currentMediaIndex + 1} de {currentMediaList.length} • {currentMediaList[currentMediaIndex]?.criador_nome}
-                </p>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }

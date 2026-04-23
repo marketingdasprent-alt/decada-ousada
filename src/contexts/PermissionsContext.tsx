@@ -4,14 +4,15 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export type AppRole = 'admin' | 'gestor_tvde' | 'gestor_comercial' | 'colaborador';
 
+const CARGO_MOTORISTA_ID = 'a0000000-0000-0000-0000-000000000001';
+
 interface PermissionsState {
   isAdmin: boolean;
-  /** Recursos com tem_acesso = true (ver ou editar) */
   recursos: string[];
-  /** Recursos com pode_editar = true (só disponível após migração) */
   recursosEditaveis: string[];
   cargo: string | null;
   cargo_id: string | null;
+  tipoUtilizador: 'motorista' | 'colaborador';
   loading: boolean;
   initialized: boolean;
 }
@@ -22,21 +23,24 @@ interface PermissionsContextType extends PermissionsState {
   refreshPermissions: () => Promise<void>;
 }
 
+const DEFAULT_STATE: PermissionsState = {
+  isAdmin: false,
+  recursos: [],
+  recursosEditaveis: [],
+  cargo: null,
+  cargo_id: null,
+  tipoUtilizador: 'colaborador',
+  loading: true,
+  initialized: false,
+};
+
 const PermissionsContext = createContext<PermissionsContextType | undefined>(undefined);
 
 export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
   const fetchIdRef = useRef(0);
 
-  const [state, setState] = useState<PermissionsState>({
-    isAdmin: false,
-    recursos: [],
-    recursosEditaveis: [],
-    cargo: null,
-    cargo_id: null,
-    loading: true,
-    initialized: false,
-  });
+  const [state, setState] = useState<PermissionsState>(DEFAULT_STATE);
 
   const fetchPermissions = useCallback(async () => {
     const currentFetchId = ++fetchIdRef.current;
@@ -44,15 +48,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (authLoading) return;
 
     if (!user) {
-      setState({
-        isAdmin: false,
-        recursos: [],
-        recursosEditaveis: [],
-        cargo: null,
-        cargo_id: null,
-        loading: false,
-        initialized: true,
-      });
+      setState({ ...DEFAULT_STATE, loading: false, initialized: true });
       return;
     }
 
@@ -63,29 +59,47 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     try {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('is_admin, cargo_id, cargo')
+        .select('is_admin, cargo_id, cargo, tipo_utilizador')
         .eq('id', user.id)
         .single();
 
       if (profileError || currentFetchId !== fetchIdRef.current) {
         if (currentFetchId === fetchIdRef.current) {
-          setState({ isAdmin: false, recursos: [], recursosEditaveis: [], cargo: null, cargo_id: null, loading: false, initialized: true });
+          setState({ ...DEFAULT_STATE, loading: false, initialized: true });
         }
         return;
       }
 
+      const tipoUtilizador: 'motorista' | 'colaborador' =
+        (profile?.tipo_utilizador as 'motorista' | 'colaborador') ||
+        (profile?.cargo_id === CARGO_MOTORISTA_ID ? 'motorista' : 'colaborador');
+
       // Admins têm tudo
       if (profile?.is_admin) {
-        setState({ isAdmin: true, cargo: profile?.cargo || null, cargo_id: profile?.cargo_id || null, recursos: [], recursosEditaveis: [], loading: false, initialized: true });
+        setState({
+          isAdmin: true,
+          cargo: profile.cargo || null,
+          cargo_id: profile.cargo_id || null,
+          tipoUtilizador,
+          recursos: [],
+          recursosEditaveis: [],
+          loading: false,
+          initialized: true,
+        });
         return;
       }
 
       if (!profile?.cargo_id) {
-        setState({ isAdmin: false, cargo: profile?.cargo || null, cargo_id: null, recursos: [], recursosEditaveis: [], loading: false, initialized: true });
+        setState({
+          ...DEFAULT_STATE,
+          cargo: profile?.cargo || null,
+          tipoUtilizador,
+          loading: false,
+          initialized: true,
+        });
         return;
       }
 
-      // ── Buscar permissões — APENAS tem_acesso para compatibilidade com DB sem pode_editar ──
       const { data: permissoesList, error: permissoesError } = await supabase
         .from('cargo_permissoes')
         .select('recurso_id, tem_acesso')
@@ -94,19 +108,32 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       if (permissoesError || currentFetchId !== fetchIdRef.current) {
         if (currentFetchId === fetchIdRef.current) {
-          setState({ isAdmin: false, cargo: profile?.cargo || null, cargo_id: profile.cargo_id, recursos: [], recursosEditaveis: [], loading: false, initialized: true });
+          setState({
+            ...DEFAULT_STATE,
+            cargo: profile.cargo || null,
+            cargo_id: profile.cargo_id,
+            tipoUtilizador,
+            loading: false,
+            initialized: true,
+          });
         }
         return;
       }
 
       if (!permissoesList || permissoesList.length === 0) {
-        setState({ isAdmin: false, cargo: profile?.cargo || null, cargo_id: profile.cargo_id, recursos: [], recursosEditaveis: [], loading: false, initialized: true });
+        setState({
+          ...DEFAULT_STATE,
+          cargo: profile.cargo || null,
+          cargo_id: profile.cargo_id,
+          tipoUtilizador,
+          loading: false,
+          initialized: true,
+        });
         return;
       }
 
       const allRecursoIds = permissoesList.map(p => p.recurso_id);
 
-      // ── Buscar nomes de todos os recursos com acesso ──
       const { data: recursosList, error: recursosError } = await supabase
         .from('recursos')
         .select('id, nome')
@@ -116,7 +143,6 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       const allNomes = recursosError ? [] : (recursosList?.map(r => r.nome) || []);
 
-      // ── Tentar buscar pode_editar (falha silenciosa se a coluna não existir) ──
       let editNomes: string[] = [];
       try {
         const { data: editData } = await supabase
@@ -133,13 +159,14 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
             .map(r => r.nome);
         }
       } catch {
-        // pode_editar ainda não existe na DB — ok, editNomes fica []
+        // pode_editar ainda não existe na DB
       }
 
       setState({
         isAdmin: false,
-        cargo: profile?.cargo || null,
+        cargo: profile.cargo || null,
         cargo_id: profile.cargo_id,
+        tipoUtilizador,
         recursos: allNomes,
         recursosEditaveis: editNomes,
         loading: false,
@@ -148,7 +175,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } catch (error) {
       console.error('[PermissionsContext] Erro:', error);
       if (currentFetchId === fetchIdRef.current) {
-        setState({ isAdmin: false, recursos: [], recursosEditaveis: [], cargo: null, cargo_id: null, loading: false, initialized: true });
+        setState({ ...DEFAULT_STATE, loading: false, initialized: true });
       }
     }
   }, [user, authLoading, state.initialized]);
@@ -164,7 +191,6 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const canEdit = useCallback((recurso: string): boolean => {
     if (state.isAdmin) return true;
-    // Se recursosEditaveis está vazio (coluna não existe), fallback para tem_acesso
     if (state.recursosEditaveis.length === 0 && state.recursos.includes(recurso)) return true;
     return state.recursosEditaveis.includes(recurso);
   }, [state.isAdmin, state.recursos, state.recursosEditaveis]);

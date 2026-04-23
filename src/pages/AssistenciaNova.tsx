@@ -244,7 +244,8 @@ export default function AssistenciaNova() {
           tipo_ficheiro: file.type === 'image' ? 'foto' : 'video',
           ficheiro_url: file.url,
           nome_ficheiro: file.path.split('/').pop() || 'anexo',
-          uploaded_by: user?.id
+          uploaded_by: user?.id,
+          tipo_inspecao: 'checkin'
         }));
 
         const { error: anexosError } = await supabase
@@ -338,6 +339,56 @@ export default function AssistenciaNova() {
           .update({ viatura_substituta_id: viaturaSubstituta.id })
           .eq('id', ticket.id);
       }
+
+      // --- ACESSO AUTOMÁTICO ---
+      try {
+        const userIdsSet = new Set<string>();
+        if (user?.id) userIdsSet.add(user.id);
+
+        const GESTOR_ASSISTENCIA_CARGO_IDS = ['d8680e20-5025-47c1-bcc0-ae432f8afb96'];
+
+        const [adminsRes, gestoresByIdRes, gestoresByNomeRes] = await Promise.all([
+          supabase.from('profiles').select('id').eq('is_admin', true),
+          supabase.from('profiles').select('id').in('cargo_id', GESTOR_ASSISTENCIA_CARGO_IDS),
+          supabase.from('profiles').select('id').ilike('cargo', '%Gestor%Assist%'),
+        ]);
+
+        adminsRes.data?.forEach(p => userIdsSet.add(p.id));
+        gestoresByIdRes.data?.forEach(p => userIdsSet.add(p.id));
+        gestoresByNomeRes.data?.forEach(p => userIdsSet.add(p.id));
+
+        if (motoristaId) {
+          const { data: motorista } = await supabase
+            .from('motoristas_ativos')
+            .select('gestor_responsavel')
+            .eq('id', motoristaId)
+            .maybeSingle();
+
+          if (motorista?.gestor_responsavel) {
+            const { data: gestorProfile } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('nome', motorista.gestor_responsavel)
+              .maybeSingle();
+            if (gestorProfile) userIdsSet.add(gestorProfile.id);
+          }
+        }
+
+        const accessEntries = Array.from(userIdsSet).map(uid => ({
+          ticket_id: ticket.id,
+          profile_id: uid,
+        }));
+
+        if (accessEntries.length > 0) {
+          const { error: accessError } = await supabase
+            .from('assistencia_ticket_acessos')
+            .insert(accessEntries);
+          if (accessError) console.error('Erro ao configurar acessos automáticos:', accessError);
+        }
+      } catch (accessErr) {
+        console.error('Erro silencioso na configuração de acessos:', accessErr);
+      }
+      // --- FIM ACESSO AUTOMÁTICO ---
 
       toast({
         title: 'Sucesso',

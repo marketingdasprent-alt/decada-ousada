@@ -334,6 +334,8 @@ serve(async (req) => {
         data_matricula: parseDate(getCell(sourceRow, 'Data Matrícula')),
         seguradora: String(getCell(sourceRow, 'Seguradora')).trim() || null,
         obe_numero: String(getCell(sourceRow, 'Nº OBE')).trim() || null,
+        is_vendida: status === 'vendida',
+        status: status === 'vendida' ? 'inativo' : status,
         data_venda: status === 'vendida' ? parseDate(getCell(sourceRow, 'Data Venda')) : null,
         updated_at: new Date().toISOString(),
       } as Record<string, unknown>;

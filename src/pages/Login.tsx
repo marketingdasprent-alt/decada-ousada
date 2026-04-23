@@ -156,9 +156,9 @@ const Login = () => {
       footer={
         !resetMode ? (
           <p>
-            Não tem acesso?{' '}
-            <Link to="/auth/register" className="auth-link">
-              Registar com convite
+            É motorista?{' '}
+            <Link to="/motorista/login" className="auth-link">
+              Aceda à sua área
             </Link>
           </p>
         ) : null

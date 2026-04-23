@@ -139,7 +139,7 @@ export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
                   <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     <span>
-                      {format(new Date(item.data_inicio), "d 'de' MMMM 'de' yyyy", { locale: pt })}
+                      {item.data_inicio ? format(new Date(item.data_inicio), "d 'de' MMMM 'de' yyyy", { locale: pt }) : 'Data N/D'}
                       {item.data_fim 
                         ? ` — ${format(new Date(item.data_fim), "d 'de' MMMM 'de' yyyy", { locale: pt })}`
                         : ' — Presente'

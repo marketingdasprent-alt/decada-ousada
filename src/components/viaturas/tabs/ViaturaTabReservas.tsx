@@ -296,7 +296,7 @@ export function ViaturaTabReservas({ viaturaId }: ViaturaTabReservasProps) {
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">
-                          {format(new Date(reserva.data_inicio), "d 'de' MMMM", { locale: pt })}
+                          {reserva.data_inicio ? format(new Date(reserva.data_inicio), "d 'de' MMMM", { locale: pt }) : 'Data N/D'}
                           {reserva.data_fim && ` — ${format(new Date(reserva.data_fim), "d 'de' MMMM", { locale: pt })}`}
                         </span>
                         {isUpcoming && (

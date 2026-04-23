@@ -353,7 +353,7 @@ export function ViaturaTabMultas({ viaturaId }: ViaturaTabMultasProps) {
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">
-                            {format(new Date(multa.data_infracao), "d 'de' MMMM 'de' yyyy", { locale: pt })}
+                            {multa.data_infracao ? format(new Date(multa.data_infracao), "d 'de' MMMM 'de' yyyy", { locale: pt }) : 'Data N/D'}
                           </span>
                         </div>
                         {multa.descricao && (

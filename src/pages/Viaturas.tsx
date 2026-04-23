@@ -62,6 +62,7 @@ interface Viatura {
   created_at?: string;
   data_venda?: string | null;
   proprietario_id?: string | null;
+  is_vendida?: boolean | null;
 }
 
 type SortColumn = 'matricula' | 'marca' | 'ano' | 'km_atual' | 'status';
@@ -74,7 +75,7 @@ export default function Viaturas() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>(() => searchParams.get('status') || 'all');
-  const [mostrarVendidas, setMostrarVendidas] = useState(() => searchParams.get('status') === 'vendida');
+  const [mostrarVendidas, setMostrarVendidas] = useState(false);
   const [categoriaFilter, setCategoriaFilter] = useState<string>('all');
   const [combustivelFilter, setCombustivelFilter] = useState<string>('all');
   const [sortColumn, setSortColumn] = useState<SortColumn>('matricula');
@@ -112,10 +113,10 @@ export default function Viaturas() {
   const stats = useMemo(() => {
     return {
       total: viaturas.length,
-      disponiveis: viaturas.filter((v) => v.status === 'disponivel').length,
-      emUso: viaturas.filter((v) => v.status === 'em_uso').length,
-      manutencao: viaturas.filter((v) => v.status === 'manutencao').length,
-      vendidas: viaturas.filter((v) => v.status === 'vendida').length,
+      disponiveis: viaturas.filter((v) => v.status === 'disponivel' && !v.is_vendida).length,
+      emUso: viaturas.filter((v) => v.status === 'em_uso' && !v.is_vendida).length,
+      manutencao: viaturas.filter((v) => v.status === 'manutencao' && !v.is_vendida).length,
+      vendidas: viaturas.filter((v) => v.is_vendida).length,
     };
   }, [viaturas]);
 
@@ -141,8 +142,8 @@ export default function Viaturas() {
     let result = [...viaturas];
 
     // Ocultar vendidas por defeito
-    if (!mostrarVendidas && statusFilter === 'all') {
-      result = result.filter(v => v.status !== 'vendida');
+    if (!mostrarVendidas) {
+      result = result.filter(v => !v.is_vendida);
     }
 
     // Filtro de pesquisa
@@ -264,9 +265,13 @@ export default function Viaturas() {
         stats={stats}
         activeFilter={statusFilter}
         onFilter={(filter) => {
-          setStatusFilter(filter);
-          if (filter === 'vendida') setMostrarVendidas(true);
-          else if (filter === 'all') setMostrarVendidas(false);
+          if (filter === 'vendida') {
+            setMostrarVendidas(true);
+            setStatusFilter('all');
+          } else {
+            setStatusFilter(filter);
+            setMostrarVendidas(false);
+          }
         }}
       />
 
@@ -290,7 +295,6 @@ export default function Viaturas() {
             <SelectItem value="disponivel">Disponível</SelectItem>
             <SelectItem value="em_uso">Em Uso</SelectItem>
             <SelectItem value="manutencao">Manutenção</SelectItem>
-            <SelectItem value="vendida">Vendida</SelectItem>
             <SelectItem value="inativo">Inativo</SelectItem>
           </SelectContent>
         </Select>

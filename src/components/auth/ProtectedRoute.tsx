@@ -19,7 +19,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredResource,
 }) => {
   const { user, loading: authLoading } = useAuth();
-  const { isAdmin, hasAccessToResource, loading: permissionsLoading, cargo_id, recursos } = usePermissions();
+  const { isAdmin, hasAccessToResource, loading: permissionsLoading, cargo_id, recursos, tipoUtilizador } = usePermissions();
   const navigate = useNavigate();
   const location = useLocation();
   const unauthenticatedRoute = getUnauthenticatedRoute();
@@ -31,8 +31,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return null;
     }
 
-    return computeDefaultRoute(isAdmin, cargo_id, recursos, hasAccessToResource);
-  }, [isAdmin, cargo_id, recursos, hasAccessToResource, loading, user]);
+    return computeDefaultRoute(isAdmin, cargo_id, recursos, hasAccessToResource, tipoUtilizador);
+  }, [isAdmin, cargo_id, recursos, hasAccessToResource, tipoUtilizador, loading, user]);
 
   useEffect(() => {
     if (!loading && !user) {
