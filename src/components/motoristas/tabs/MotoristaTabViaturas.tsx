@@ -63,6 +63,8 @@ interface Viatura {
   cor: string | null;
   categoria: string | null;
   status: string;
+  extintor_numero?: string | null;
+  extintor_validade?: string | null;
 }
 
 interface MotoristaViatura {
@@ -133,7 +135,9 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
             ano,
             cor,
             categoria,
-            status
+            status,
+            extintor_numero,
+            extintor_validade
           )
         `)
         .eq("motorista_id", motorista.id)
@@ -175,7 +179,7 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
     return { status: 'valid', label: `Válido (${format(new Date(date), 'dd/MM/yyyy')})`, days } as const;
   };
 
-  const extintorStatus = getValidityStatus(viaturaAtual?.extintor_validade);
+  const extintorStatus = getValidityStatus(viaturaAtual?.viatura?.extintor_validade);
   const contratoValidade = viaturaAtual?.contrato_prestacao_assinatura
     ? format(addMonths(new Date(viaturaAtual.contrato_prestacao_assinatura), 12), 'yyyy-MM-dd')
     : null;
@@ -208,8 +212,6 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
         data_inicio: formData.data_inicio,
         observacoes: formData.observacoes || null,
         status: "ativo",
-        extintor_numero: formData.extintor_numero || null,
-        extintor_validade: formData.extintor_validade || null,
         contrato_prestacao_assinatura: formData.contrato_prestacao_assinatura || null,
       });
 
@@ -217,7 +219,11 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
 
       const { error: updateError } = await supabase
         .from("viaturas")
-        .update({ status: "em_uso" })
+        .update({ 
+          status: "em_uso",
+          extintor_numero: formData.extintor_numero || null,
+          extintor_validade: formData.extintor_validade || null,
+        })
         .eq("id", formData.viatura_id);
 
       if (updateError) throw updateError;
@@ -244,8 +250,8 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
   const openEditExtintor = () => {
     if (!viaturaAtual) return;
     setEditExtintorData({
-      extintor_numero: viaturaAtual.extintor_numero || "",
-      extintor_validade: viaturaAtual.extintor_validade || "",
+      extintor_numero: viaturaAtual.viatura.extintor_numero || "",
+      extintor_validade: viaturaAtual.viatura.extintor_validade || "",
       contrato_prestacao_assinatura: viaturaAtual.contrato_prestacao_assinatura || "",
     });
     setEditExtintorOpen(true);
@@ -255,11 +261,21 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
     if (!viaturaAtual) return;
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("motorista_viaturas")
+      // Update Viatura table for extinguisher
+      const { error: viaturaError } = await supabase
+        .from("viaturas")
         .update({
           extintor_numero: editExtintorData.extintor_numero || null,
           extintor_validade: editExtintorData.extintor_validade || null,
+        })
+        .eq("id", viaturaAtual.viatura_id);
+
+      if (viaturaError) throw viaturaError;
+
+      // Update motorista_viaturas only for contract
+      const { error } = await supabase
+        .from("motorista_viaturas")
+        .update({
           contrato_prestacao_assinatura: editExtintorData.contrato_prestacao_assinatura || null,
         })
         .eq("id", viaturaAtual.id);
@@ -402,7 +418,7 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
                     <Flame className="h-4 w-4 shrink-0" />
                     <div className="min-w-0">
                       <p className="font-medium leading-none">
-                        Extintor{viaturaAtual.extintor_numero ? ` #${viaturaAtual.extintor_numero}` : ''}
+                        Extintor{viaturaAtual.viatura.extintor_numero ? ` #${viaturaAtual.viatura.extintor_numero}` : ''}
                       </p>
                       <p className="text-xs mt-0.5">
                         {extintorStatus ? extintorStatus.label : 'Sem registo'}

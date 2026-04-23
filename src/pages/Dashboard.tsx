@@ -160,19 +160,32 @@ const Dashboard = () => {
       const extStrStr = limitExtintor.toISOString().split('T')[0];
 
       const { data: extintoresData } = await supabase
-        .from('motorista_viaturas')
+        .from('viaturas')
         .select(`
           id,
+          matricula,
           extintor_validade,
-          motoristas_ativos ( nome ),
-          viaturas ( matricula )
+          motorista_viaturas(
+            status,
+            motoristas_ativos(nome)
+          )
         `)
-        .eq('status', 'ativo')
         .not('extintor_validade', 'is', null)
         .lte('extintor_validade', extStrStr)
         .order('extintor_validade', { ascending: true });
 
-      setExtintoresAPrazo(extintoresData || []);
+      // Filtrar para pegar apenas o motorista ativo de cada viatura
+      const extintoresComMotorista = (extintoresData || []).map(v => {
+        const motoristaAtivo = (v.motorista_viaturas as any[])?.find(mv => mv.status === 'ativo');
+        return {
+          id: v.id,
+          extintor_validade: v.extintor_validade,
+          matricula: v.matricula,
+          motorista_nome: motoristaAtivo?.motoristas_ativos?.nome || 'Livre'
+        };
+      });
+
+      setExtintoresAPrazo(extintoresComMotorista);
 
       // ── Contratos a expirar (15 dias) ──────────────────────────────────────
       // Expiry = assinatura + 12 meses; queremos expiry <= hoje + 15 dias
@@ -556,20 +569,17 @@ const Dashboard = () => {
                 ) : (
                   <div className="space-y-3 mt-1 max-h-[200px] overflow-y-auto pr-1">
                     {extintoresAPrazo.map(ext => {
-                      const motoristaStr = (ext.motoristas_ativos as any)?.nome || 'Sem motorista';
-                      const viaturaStr = (ext.viaturas as any)?.matricula || 'Sem viatura';
                       const isExpired = new Date(ext.extintor_validade) < new Date();
-                      
                       return (
                         <div key={ext.id} className="flex flex-col p-2.5 rounded-lg border border-border bg-muted/40 transition-colors hover:bg-muted">
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="font-semibold text-sm tracking-tight">{viaturaStr}</span>
+                            <span className="font-semibold text-sm tracking-tight">{ext.matricula}</span>
                             <Badge variant={isExpired ? "destructive" : "outline"} className={!isExpired ? "text-orange-500 border-orange-500/30 bg-orange-500/10 text-[10px]" : "text-[10px]"}>
                               {format(new Date(ext.extintor_validade), 'dd MMM', { locale: pt })}
                             </Badge>
                           </div>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="truncate pr-2">👤 {motoristaStr}</span>
+                            <span className="truncate pr-2">👤 {ext.motorista_nome}</span>
                             <span className={isExpired ? "text-destructive font-medium shrink-0" : "shrink-0"}>
                               {isExpired ? "Expirado" : "A expirar"}
                             </span>

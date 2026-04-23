@@ -385,13 +385,14 @@ const TicketDetails = () => {
         let url = a.ficheiro_url;
         let path = url;
 
-        // Limpeza e extração robusta do path
+        // Limpeza e extração robusta do path via Regex
         if (url && url.startsWith('http')) {
-          // Tentar extrair o path de várias formas
-          if (url.includes('/assistencia-anexos/')) {
-            path = url.split('/assistencia-anexos/')[1].split('?')[0];
+          // Regex para capturar tudo após o nome do bucket no formato padrão do Supabase
+          const storageMatch = url.match(/\/storage\/v1\/object\/(?:public|authenticated|sign)\/assistencia-anexos\/(.+)$/);
+          if (storageMatch && storageMatch[1]) {
+            path = storageMatch[1].split('?')[0];
           } else {
-            // Heurística: procurar por 'assistencia/' que é o prefixo usado no upload
+            // Fallback: procurar por 'assistencia/' que é o prefixo usado no upload
             const assistIndex = url.indexOf('assistencia/');
             if (assistIndex !== -1) {
               path = url.substring(assistIndex).split('?')[0];

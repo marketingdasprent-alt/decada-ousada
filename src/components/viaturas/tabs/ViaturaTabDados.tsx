@@ -47,6 +47,8 @@ const viaturaSchema = z.object({
   valor_aluguer: z.string().optional(),
   is_slot: z.boolean().default(false),
   estacao_id: z.string().optional(),
+  extintor_numero: z.string().optional(),
+  extintor_validade: z.string().optional(),
 });
 
 type ViaturaFormData = z.infer<typeof viaturaSchema>;
@@ -69,6 +71,8 @@ interface Viatura {
   valor_aluguer?: number | null;
   is_slot?: boolean | null;
   estacao_id?: string | null;
+  extintor_numero?: string | null;
+  extintor_validade?: string | null;
 }
 
 interface ViaturaDocument {
@@ -150,6 +154,8 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       valor_aluguer: '',
       is_slot: false,
       estacao_id: '',
+      extintor_numero: '',
+      extintor_validade: '',
     },
   });
 
@@ -172,6 +178,8 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
         valor_aluguer: viatura.valor_aluguer?.toString() || '',
         is_slot: viatura.is_slot || false,
         estacao_id: viatura.estacao_id || '',
+        extintor_numero: viatura.extintor_numero || '',
+        extintor_validade: viatura.extintor_validade || '',
       });
       loadDocuments();
     }
@@ -215,6 +223,8 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       valor_aluguer: data.valor_aluguer ? parseFloat(data.valor_aluguer) : null,
       is_slot: data.is_slot,
       estacao_id: data.estacao_id || null,
+      extintor_numero: data.extintor_numero || null,
+      extintor_validade: data.extintor_validade || null,
     };
 
     await onSave(payload);
@@ -603,6 +613,41 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                         <FormLabel>Km Atual</FormLabel>
                         <FormControl>
                           <Input type="number" placeholder="0" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Segurança / Extintor */}
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-4">Segurança / Extintor</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="extintor_numero"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nº Extintor</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Série ou identificação do extintor" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="extintor_validade"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Validade Extintor</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

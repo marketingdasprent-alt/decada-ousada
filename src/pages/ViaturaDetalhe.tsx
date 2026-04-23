@@ -65,6 +65,8 @@ interface Viatura {
   valor_venda?: number | null;
   venda_observacoes?: string | null;
   checklist_saida?: any | null;
+  extintor_numero?: string | null;
+  extintor_validade?: string | null;
 }
 
 const TABS = [
