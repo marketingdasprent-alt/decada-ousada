@@ -78,6 +78,9 @@ const formSchema = z.object({
   carta_ficheiro_url: z.string().optional(),
   carta_conducao_verso_url: z.string().optional(),
   licenca_tvde_ficheiro_url: z.string().optional(),
+  registo_criminal_url: z.string().optional(),
+  comprovativo_morada_url: z.string().optional(),
+  comprovativo_iban_url: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -124,6 +127,9 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
       carta_ficheiro_url: "",
       carta_conducao_verso_url: "",
       licenca_tvde_ficheiro_url: "",
+      registo_criminal_url: "",
+      comprovativo_morada_url: "",
+      comprovativo_iban_url: "",
     },
   });
 
@@ -155,6 +161,9 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         carta_ficheiro_url: motorista.carta_ficheiro_url || "",
         carta_conducao_verso_url: motorista.carta_conducao_verso_url || "",
         licenca_tvde_ficheiro_url: motorista.licenca_tvde_ficheiro_url || "",
+        registo_criminal_url: motorista.registo_criminal_url || "",
+        comprovativo_morada_url: motorista.comprovativo_morada_url || "",
+        comprovativo_iban_url: motorista.comprovativo_iban_url || "",
       });
     } else {
       form.reset({
@@ -183,6 +192,9 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         carta_ficheiro_url: "",
         carta_conducao_verso_url: "",
         licenca_tvde_ficheiro_url: "",
+        registo_criminal_url: "",
+        comprovativo_morada_url: "",
+        comprovativo_iban_url: "",
       });
     }
   }, [motorista, form]);
@@ -239,6 +251,9 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         carta_ficheiro_url: values.carta_ficheiro_url || null,
         carta_conducao_verso_url: values.carta_conducao_verso_url || null,
         licenca_tvde_ficheiro_url: values.licenca_tvde_ficheiro_url || null,
+        registo_criminal_url: values.registo_criminal_url || null,
+        comprovativo_morada_url: values.comprovativo_morada_url || null,
+        comprovativo_iban_url: values.comprovativo_iban_url || null,
       };
 
       if (motorista) {
@@ -449,6 +464,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
                       <FormControl>
                         <DocumentUploader
                           folder="documentos"
+                          motoristaId={motorista?.id}
                           currentUrl={field.value}
                           onUpload={field.onChange}
                         />
@@ -466,6 +482,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
                       <FormControl>
                         <DocumentUploader
                           folder="documentos"
+                          motoristaId={motorista?.id}
                           currentUrl={field.value}
                           onUpload={field.onChange}
                         />
@@ -519,6 +536,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
                       <FormControl>
                         <DocumentUploader
                           folder="cartas"
+                          motoristaId={motorista?.id}
                           currentUrl={field.value}
                           onUpload={field.onChange}
                         />
@@ -536,6 +554,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
                       <FormControl>
                         <DocumentUploader
                           folder="cartas"
+                          motoristaId={motorista?.id}
                           currentUrl={field.value}
                           onUpload={field.onChange}
                         />
@@ -635,6 +654,68 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
                       <FormControl>
                         <DocumentUploader
                           folder="tvde"
+                          motoristaId={motorista?.id}
+                          currentUrl={field.value}
+                          onUpload={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Documentação Adicional */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium">Documentação Adicional</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="registo_criminal_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Registo Criminal</FormLabel>
+                      <FormControl>
+                        <DocumentUploader
+                          folder="documentos"
+                          motoristaId={motorista?.id}
+                          currentUrl={field.value}
+                          onUpload={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="comprovativo_morada_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Comprovativo Morada</FormLabel>
+                      <FormControl>
+                        <DocumentUploader
+                          folder="documentos"
+                          motoristaId={motorista?.id}
+                          currentUrl={field.value}
+                          onUpload={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="comprovativo_iban_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Comprovativo IBAN</FormLabel>
+                      <FormControl>
+                        <DocumentUploader
+                          folder="documentos"
+                          motoristaId={motorista?.id}
                           currentUrl={field.value}
                           onUpload={field.onChange}
                         />

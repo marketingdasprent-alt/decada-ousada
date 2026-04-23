@@ -27,8 +27,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import type { Motorista } from "@/pages/Motoristas";
+import { Motorista } from "@/pages/Motoristas";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { DocumentUploader } from "@/components/motorista/DocumentUploader";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,8 +97,15 @@ const formSchema = z.object({
   status_ativo: z.boolean().default(true),
   observacoes: z.string().optional(),
   iban: z.string().optional(),
-  uber_uuid: z.string().optional().nullable(),
   bolt_id: z.string().optional().nullable(),
+  documento_ficheiro_url: z.string().optional().nullable(),
+  documento_identificacao_verso_url: z.string().optional().nullable(),
+  carta_ficheiro_url: z.string().optional().nullable(),
+  carta_conducao_verso_url: z.string().optional().nullable(),
+  licenca_tvde_ficheiro_url: z.string().optional().nullable(),
+  registo_criminal_url: z.string().optional().nullable(),
+  comprovativo_morada_url: z.string().optional().nullable(),
+  comprovativo_iban_url: z.string().optional().nullable(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -142,8 +150,15 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
       status_ativo: true,
       observacoes: "",
       iban: "",
-      uber_uuid: "",
       bolt_id: "",
+      documento_ficheiro_url: "",
+      documento_identificacao_verso_url: "",
+      carta_ficheiro_url: "",
+      carta_conducao_verso_url: "",
+      licenca_tvde_ficheiro_url: "",
+      registo_criminal_url: "",
+      comprovativo_morada_url: "",
+      comprovativo_iban_url: "",
     },
   });
 
@@ -187,6 +202,14 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
         iban: motorista.iban || "",
         uber_uuid: motorista.uber_uuid || "",
         bolt_id: motorista.bolt_id || "",
+        documento_ficheiro_url: motorista.documento_ficheiro_url || "",
+        documento_identificacao_verso_url: motorista.documento_identificacao_verso_url || "",
+        carta_ficheiro_url: motorista.carta_ficheiro_url || "",
+        carta_conducao_verso_url: motorista.carta_conducao_verso_url || "",
+        licenca_tvde_ficheiro_url: motorista.licenca_tvde_ficheiro_url || "",
+        registo_criminal_url: motorista.registo_criminal_url || "",
+        comprovativo_morada_url: motorista.comprovativo_morada_url || "",
+        comprovativo_iban_url: motorista.comprovativo_iban_url || "",
       });
     }
   }, [motorista, form]);
@@ -224,6 +247,14 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
         iban: data.iban || null,
         uber_uuid: data.uber_uuid || null,
         bolt_id: data.bolt_id || null,
+        documento_ficheiro_url: data.documento_ficheiro_url || null,
+        documento_identificacao_verso_url: data.documento_identificacao_verso_url || null,
+        carta_ficheiro_url: data.carta_ficheiro_url || null,
+        carta_conducao_verso_url: data.carta_conducao_verso_url || null,
+        licenca_tvde_ficheiro_url: data.licenca_tvde_ficheiro_url || null,
+        registo_criminal_url: data.registo_criminal_url || null,
+        comprovativo_morada_url: data.comprovativo_morada_url || null,
+        comprovativo_iban_url: data.comprovativo_iban_url || null,
       };
 
       const { error } = await supabase
@@ -432,6 +463,34 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                   </FormItem>
                 )}
               />
+              <div className="grid grid-cols-2 gap-4 pt-2 sm:col-span-2">
+                <FormField
+                  control={form.control}
+                  name="documento_ficheiro_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Frente do Documento</FormLabel>
+                      <FormControl>
+                        <DocumentUploader folder="documentos" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="documento_identificacao_verso_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Verso do Documento</FormLabel>
+                      <FormControl>
+                        <DocumentUploader folder="documentos" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
           </SectionCard>
 
@@ -468,6 +527,34 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                   </FormItem>
                 )}
               />
+              <div className="grid grid-cols-2 gap-4 pt-2 sm:col-span-2">
+                <FormField
+                  control={form.control}
+                  name="carta_ficheiro_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Frente da Carta</FormLabel>
+                      <FormControl>
+                        <DocumentUploader folder="cartas" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="carta_conducao_verso_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Verso da Carta</FormLabel>
+                      <FormControl>
+                        <DocumentUploader folder="cartas" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="carta_categorias"
@@ -538,6 +625,70 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                     <FormLabel>Validade</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="pt-2 sm:col-span-2">
+                <FormField
+                  control={form.control}
+                  name="licenca_tvde_ficheiro_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Ficheiro da Licença TVDE</FormLabel>
+                      <FormControl>
+                        <DocumentUploader folder="tvde" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* Documentação Adicional */}
+          <SectionCard
+            icon={<FileText className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
+            title="Documentação Adicional"
+            headerClassName="bg-rose-50 dark:bg-rose-950/30 border-b"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="registo_criminal_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Registo Criminal</FormLabel>
+                    <FormControl>
+                      <DocumentUploader folder="documentos" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="comprovativo_morada_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Comprovativo Morada</FormLabel>
+                    <FormControl>
+                      <DocumentUploader folder="documentos" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="comprovativo_iban_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Comprovativo IBAN</FormLabel>
+                    <FormControl>
+                      <DocumentUploader folder="documentos" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

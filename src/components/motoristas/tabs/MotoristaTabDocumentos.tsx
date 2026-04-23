@@ -39,6 +39,7 @@ import {
 import { SectionCard } from "@/components/ui/section-card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Motorista } from "@/pages/Motoristas";
 
 interface MotoristDocumento {
@@ -52,20 +53,24 @@ interface MotoristDocumento {
 }
 
 const TIPOS_DOCUMENTO = [
-  { value: "cartao_cidadao", label: "Cartão de Cidadão" },
-  { value: "carta_conducao", label: "Carta de Condução" },
-  { value: "licenca_tvde", label: "Licença TVDE" },
-  { value: "comprovativo_morada", label: "Comprovativo de Morada" },
-  { value: "registo_criminal", label: "Registo Criminal" },
-  { value: "iban", label: "Comprovativo IBAN" },
-  { value: "outros", label: "Outros Documentos" },
+  { value: "documento_identificacao", label: "Cartão Cidadão (Frente)", field: "documento_ficheiro_url", validityField: "documento_validade", storageFolder: "documentos" },
+  { value: "documento_identificacao_verso", label: "Cartão Cidadão (Verso)", field: "documento_identificacao_verso_url", validityField: "documento_validade", storageFolder: "documentos" },
+  { value: "carta_conducao", label: "Carta Condução (Frente)", field: "carta_ficheiro_url", validityField: "carta_validade", storageFolder: "cartas" },
+  { value: "carta_conducao_verso", label: "Carta Condução (Verso)", field: "carta_conducao_verso_url", validityField: "carta_validade", storageFolder: "cartas" },
+  { value: "licenca_tvde", label: "Licença TVDE", field: "licenca_tvde_ficheiro_url", validityField: "licenca_tvde_validade", storageFolder: "tvde" },
+  { value: "registo_criminal", label: "Registo Criminal", field: "registo_criminal_url", storageFolder: "documentos" },
+  { value: "comprovativo_morada", label: "Comprovativo Morada", field: "comprovativo_morada_url", storageFolder: "documentos" },
+  { value: "comprovativo_iban", label: "Comprovativo IBAN", field: "comprovativo_iban_url", storageFolder: "documentos" },
+  { value: "outros", label: "Outros Documentos", storageFolder: "documentos" },
 ];
 
 interface MotoristaTabDocumentosProps {
   motorista: Motorista;
+  onMotoristaUpdated?: () => void;
 }
 
-export function MotoristaTabDocumentos({ motorista }: MotoristaTabDocumentosProps) {
+export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: MotoristaTabDocumentosProps) {
+  const { user } = useAuth();
   const [documentos, setDocumentos] = useState<MotoristDocumento[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -96,8 +101,25 @@ export function MotoristaTabDocumentos({ motorista }: MotoristaTabDocumentosProp
     }
   };
 
-  const getDocumentoByTipo = (tipo: string): MotoristDocumento | undefined => {
-    return documentos.find((d) => d.tipo_documento === tipo);
+  const getDocumentoByTipo = (tipoValue: string, field?: string) => {
+    // Primeiro tenta buscar nos campos oficiais do motorista
+    if (field && (motorista as any)[field]) {
+      return {
+        id: field,
+        tipo_documento: tipoValue,
+        ficheiro_url: (motorista as any)[field],
+        nome_ficheiro: `${tipoValue.replace(/_/g, " ").toUpperCase()}`,
+        data_validade: null, // As validades principais são tratadas à parte se necessário
+        created_at: motorista.created_at || new Date().toISOString(),
+        is_official: true
+      };
+    }
+    
+    // Se não encontrar no motorista, busca na tabela de documentos extras
+    const extra = documentos.find((d) => d.tipo_documento === tipoValue);
+    if (extra) return { ...extra, is_official: false };
+    
+    return undefined;
   };
 
   const getValidadeStatus = (dataValidade: string | null) => {
@@ -128,45 +150,73 @@ export function MotoristaTabDocumentos({ motorista }: MotoristaTabDocumentosProp
     setUploading(tipo);
 
     try {
+      if (!user) throw new Error("Utilizador não autenticado");
+      
       const fileExt = file.name.split(".").pop();
-      const fileName = `${motorista.id}/${tipo}_${Date.now()}.${fileExt}`;
+      const tipoDef = TIPOS_DOCUMENTO.find(t => t.value === tipo);
+      const storageFolder = tipoDef?.storageFolder || "documentos";
+      
+      // Mimetizar EXACTAMENTE o DocumentUploader.tsx (usando user.id para evitar RLS)
+      const filePath = `${user.id}/${storageFolder}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("motorista-documentos")
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const existente = getDocumentoByTipo(tipo);
-
-      if (existente) {
-        const { error: updateError } = await supabase
-          .from("motorista_documentos")
-          .update({
-            ficheiro_url: fileName,
-            nome_ficheiro: file.name,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existente.id);
-
-        if (updateError) throw updateError;
-        await supabase.storage.from("motorista-documentos").remove([existente.ficheiro_url]);
-      } else {
-        const { error: insertError } = await supabase.from("motorista_documentos").insert({
-          motorista_id: motorista.id,
-          tipo_documento: tipo,
-          ficheiro_url: fileName,
-          nome_ficheiro: file.name,
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
         });
 
-        if (insertError) throw insertError;
+      if (uploadError) {
+        console.error("Erro no Storage:", uploadError);
+        throw new Error(`Erro no servidor de ficheiros: ${uploadError.message}`);
       }
 
-      toast.success("Documento carregado com sucesso!");
+      // Se for um tipo que mapeia para um campo oficial, atualiza o motorista
+      if (tipoDef?.field) {
+        const { error: updateMotoristaError } = await supabase
+          .from("motoristas_ativos")
+          .update({ [tipoDef.field]: filePath })
+          .eq("id", motorista.id);
+
+        if (updateMotoristaError) {
+          console.error("Erro ao atualizar motorista:", updateMotoristaError);
+          throw new Error(`Erro na base de dados: ${updateMotoristaError.message}`);
+        }
+        toast.success(`${tipoDef.label} atualizado com sucesso!`);
+      } else {
+        // Caso contrário, trata como documento extra na tabela secundária
+        const existente = documentos.find(d => d.tipo_documento === tipo);
+
+        if (existente) {
+          const { error: updateError } = await supabase
+            .from("motorista_documentos")
+            .update({
+              ficheiro_url: filePath,
+              nome_ficheiro: file.name,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", existente.id);
+
+          if (updateError) throw updateError;
+          await supabase.storage.from("motorista-documentos").remove([existente.ficheiro_url]);
+        } else {
+          const { error: insertError } = await supabase.from("motorista_documentos").insert({
+            motorista_id: motorista.id,
+            tipo_documento: tipo,
+            ficheiro_url: filePath,
+            nome_ficheiro: file.name,
+          });
+
+          if (insertError) throw insertError;
+        }
+        toast.success("Documento extra carregado com sucesso!");
+      }
+
       loadDocumentos();
-    } catch (error) {
+      if (onMotoristaUpdated) onMotoristaUpdated();
+    } catch (error: any) {
       console.error("Erro ao carregar documento:", error);
-      toast.error("Erro ao carregar documento");
+      toast.error(`Erro ao carregar documento: ${error.message || "Erro desconhecido"}`);
     } finally {
       setUploading(null);
     }
@@ -212,19 +262,33 @@ export function MotoristaTabDocumentos({ motorista }: MotoristaTabDocumentosProp
     if (!documentoToDelete) return;
 
     try {
+      // Se for oficial, limpa o campo na tabela principal
+      const tipoDef = TIPOS_DOCUMENTO.find(t => t.value === documentoToDelete.tipo_documento);
+      if (tipoDef?.field) {
+        const { error: updateMotoristaError } = await supabase
+          .from("motoristas_ativos")
+          .update({ [tipoDef.field]: null })
+          .eq("id", motorista.id);
+
+        if (updateMotoristaError) throw updateMotoristaError;
+      } else {
+        // Se for extra, remove da tabela secundária
+        const { error } = await supabase
+          .from("motorista_documentos")
+          .delete()
+          .eq("id", documentoToDelete.id);
+
+        if (error) throw error;
+      }
+
+      // Em ambos os casos, tenta remover o ficheiro do storage
       await supabase.storage
         .from("motorista-documentos")
         .remove([documentoToDelete.ficheiro_url]);
 
-      const { error } = await supabase
-        .from("motorista_documentos")
-        .delete()
-        .eq("id", documentoToDelete.id);
-
-      if (error) throw error;
-
       toast.success("Documento removido com sucesso!");
       loadDocumentos();
+      if (onMotoristaUpdated) onMotoristaUpdated();
     } catch (error) {
       console.error("Erro ao remover documento:", error);
       toast.error("Erro ao remover documento");
@@ -240,7 +304,7 @@ export function MotoristaTabDocumentos({ motorista }: MotoristaTabDocumentosProp
 
   // Stats calculations
   const totalTipos = TIPOS_DOCUMENTO.length;
-  const anexados = TIPOS_DOCUMENTO.filter(t => getDocumentoByTipo(t.value)).length;
+  const anexados = TIPOS_DOCUMENTO.filter(t => getDocumentoByTipo(t.value, t.field)).length;
   const emFalta = totalTipos - anexados;
   const aExpirar = documentos.filter(d => {
     if (!d.data_validade) return false;
@@ -311,15 +375,33 @@ export function MotoristaTabDocumentos({ motorista }: MotoristaTabDocumentosProp
           </TableHeader>
           <TableBody>
             {TIPOS_DOCUMENTO.map((tipo) => {
-              const documento = getDocumentoByTipo(tipo.value);
-              const validadeInfo = documento ? getValidadeStatus(documento.data_validade) : null;
+              const documento = getDocumentoByTipo(tipo.value, tipo.field);
+              
+              // Determina a validade com base no campo oficial ou no documento extra
+              let dataValidade = documento?.data_validade;
+              if (tipo.validityField) {
+                dataValidade = (motorista as any)[tipo.validityField];
+              }
+              
+              const validadeInfo = documento || dataValidade ? getValidadeStatus(dataValidade) : null;
 
               return (
-                <TableRow key={tipo.value}>
+                <TableRow key={tipo.value} className={tipo.field ? "bg-muted/5" : ""}>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{tipo.label}</span>
+                      {tipo.field ? (
+                        <ShieldCheck className="h-4 w-4 text-blue-500" />
+                      ) : (
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <div className="flex flex-col">
+                        <span className="font-medium">{tipo.label}</span>
+                        {tipo.field && (
+                          <span className="text-[10px] text-blue-600 uppercase font-bold tracking-wider">
+                            Documento Oficial
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>

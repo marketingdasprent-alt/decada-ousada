@@ -227,6 +227,34 @@ export default function MotoristaDetalhe() {
     }
   };
 
+  const handleViewDocument = async (path: string | null, bucket: string = "motorista-documentos") => {
+    if (!path) return;
+    
+    try {
+      // Se já for uma URL completa (http...), abre direto
+      if (path.startsWith('http')) {
+        window.open(path, '_blank');
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(path, 3600);
+
+      if (error) throw error;
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      }
+    } catch (error) {
+      console.error("Erro ao gerar link do documento:", error);
+      toast({
+        title: "Erro ao abrir documento",
+        description: "Não foi possível gerar um link seguro para o ficheiro.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -340,13 +368,13 @@ export default function MotoristaDetalhe() {
                 {(motorista.documento_ficheiro_url || motorista.documento_identificacao_verso_url) && (
                   <div className="flex gap-2 pt-3">
                     {motorista.documento_ficheiro_url && (
-                      <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
-                        <a href={motorista.documento_ficheiro_url} target="_blank" rel="noopener noreferrer">Ver Frente</a>
+                      <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => handleViewDocument(motorista.documento_ficheiro_url)}>
+                        Ver Frente
                       </Button>
                     )}
                     {motorista.documento_identificacao_verso_url && (
-                      <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
-                        <a href={motorista.documento_identificacao_verso_url} target="_blank" rel="noopener noreferrer">Ver Verso</a>
+                      <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => handleViewDocument(motorista.documento_identificacao_verso_url)}>
+                        Ver Verso
                       </Button>
                     )}
                   </div>
@@ -365,8 +393,8 @@ export default function MotoristaDetalhe() {
                 <InfoItem label="Validade" value={formatDate(motorista.licenca_tvde_validade)} />
                 {motorista.licenca_tvde_ficheiro_url && (
                   <div className="pt-3">
-                    <Button variant="outline" size="sm" className="w-full text-xs" asChild>
-                      <a href={motorista.licenca_tvde_ficheiro_url} target="_blank" rel="noopener noreferrer">Ver Documento</a>
+                    <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => handleViewDocument(motorista.licenca_tvde_ficheiro_url)}>
+                      Ver Documento
                     </Button>
                   </div>
                 )}
@@ -398,13 +426,13 @@ export default function MotoristaDetalhe() {
                 {(motorista.carta_ficheiro_url || motorista.carta_conducao_verso_url) && (
                   <div className="flex gap-2 pt-3">
                     {motorista.carta_ficheiro_url && (
-                      <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
-                        <a href={motorista.carta_ficheiro_url} target="_blank" rel="noopener noreferrer">Ver Frente</a>
+                      <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => handleViewDocument(motorista.carta_ficheiro_url)}>
+                        Ver Frente
                       </Button>
                     )}
                     {motorista.carta_conducao_verso_url && (
-                      <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
-                        <a href={motorista.carta_conducao_verso_url} target="_blank" rel="noopener noreferrer">Ver Verso</a>
+                      <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => handleViewDocument(motorista.carta_conducao_verso_url)}>
+                        Ver Verso
                       </Button>
                     )}
                   </div>
@@ -420,24 +448,18 @@ export default function MotoristaDetalhe() {
             >
               <div className="grid grid-cols-1 gap-2 pt-1">
                 {motorista.registo_criminal_url && (
-                  <Button variant="outline" size="sm" className="w-full justify-start text-xs" asChild>
-                    <a href={motorista.registo_criminal_url} target="_blank" rel="noopener noreferrer">
-                      <FileText className="h-3 w-3 mr-2" /> Registo Criminal
-                    </a>
+                  <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={() => handleViewDocument(motorista.registo_criminal_url)}>
+                    <FileText className="h-3 w-3 mr-2" /> Registo Criminal
                   </Button>
                 )}
                 {motorista.comprovativo_morada_url && (
-                  <Button variant="outline" size="sm" className="w-full justify-start text-xs" asChild>
-                    <a href={motorista.comprovativo_morada_url} target="_blank" rel="noopener noreferrer">
-                      <FileText className="h-3 w-3 mr-2" /> Comprovativo Morada
-                    </a>
+                  <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={() => handleViewDocument(motorista.comprovativo_morada_url)}>
+                    <FileText className="h-3 w-3 mr-2" /> Comprovativo Morada
                   </Button>
                 )}
                 {motorista.comprovativo_iban_url && (
-                  <Button variant="outline" size="sm" className="w-full justify-start text-xs" asChild>
-                    <a href={motorista.comprovativo_iban_url} target="_blank" rel="noopener noreferrer">
-                      <FileText className="h-3 w-3 mr-2" /> Comprovativo IBAN
-                    </a>
+                  <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={() => handleViewDocument(motorista.comprovativo_iban_url)}>
+                    <FileText className="h-3 w-3 mr-2" /> Comprovativo IBAN
                   </Button>
                 )}
                 {!motorista.registo_criminal_url && !motorista.comprovativo_morada_url && !motorista.comprovativo_iban_url && (
@@ -532,7 +554,7 @@ export default function MotoristaDetalhe() {
         </TabsContent>
 
         <TabsContent value="documentos">
-          <MotoristaTabDocumentos motorista={motorista} />
+          <MotoristaTabDocumentos motorista={motorista} onMotoristaUpdated={loadMotorista} />
         </TabsContent>
 
         <TabsContent value="financeiro">

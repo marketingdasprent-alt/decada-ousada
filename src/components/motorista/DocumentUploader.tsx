@@ -7,6 +7,7 @@ import { Upload, X, FileText, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface DocumentUploaderProps {
   folder: string;
+  motoristaId?: string;
   currentUrl: string | null;
   onUpload: (url: string) => void;
   accept?: string;
@@ -44,7 +45,8 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 
     try {
       const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/${folder}/${Date.now()}.${fileExt}`;
+      const rootFolder = motoristaId || user.id;
+      const filePath = `${rootFolder}/${folder}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('motorista-documentos')
