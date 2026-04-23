@@ -839,10 +839,7 @@ const TicketDetails = () => {
       toast({ title: "Erro", description: "Indique o destino da viatura substituta.", variant: "destructive" });
       return;
     }
-    if (exitMediaFiles.length < 5) {
-      toast({ title: "Fotos Obrigatórias", description: "É necessário carregar pelo menos 4 fotos e 1 vídeo para a saída.", variant: "destructive" });
-      return;
-    }
+    // Media files are now optional as per user request
 
     try {
       setClosureLoading(true);
@@ -1473,13 +1470,15 @@ const TicketDetails = () => {
                   <div className="space-y-4 border-t pt-4">
                     <Label className="text-base font-bold flex items-center gap-2">
                       <Image className="h-5 w-5 text-blue-500" />
-                      Multimédia de Saída (Obrigatório)
+                      Multimédia de Saída
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      Registe o estado da viatura no momento da entrega (Mínimo 4 fotos e 1 vídeo).
+                      Registe o estado da viatura no momento da entrega.
                     </p>
                     <AssistenciaMultimediaUpload 
                       onFilesChange={setExitMediaFiles}
+                      requiredPhotos={0}
+                      requiredVideos={0}
                     />
                   </div>
                   

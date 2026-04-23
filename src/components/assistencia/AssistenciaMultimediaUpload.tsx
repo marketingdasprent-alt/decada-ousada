@@ -22,15 +22,17 @@ interface MediaFile {
 }
 
 interface AssistenciaMultimediaUploadProps {
-  onComplete: (files: MediaFile[]) => void;
+  onComplete?: (files: MediaFile[]) => void;
+  onFilesChange?: (files: MediaFile[]) => void;
   requiredPhotos?: number;
   requiredVideos?: number;
 }
 
 export function AssistenciaMultimediaUpload({ 
-  onComplete, 
-  requiredPhotos = 4, 
-  requiredVideos = 1 
+  onComplete,
+  onFilesChange,
+  requiredPhotos = 1, 
+  requiredVideos = 0 
 }: AssistenciaMultimediaUploadProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -38,6 +40,13 @@ export function AssistenciaMultimediaUpload({
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  // Notificar mudanças
+  React.useEffect(() => {
+    if (onFilesChange) {
+      onFilesChange(files);
+    }
+  }, [files, onFilesChange]);
   
   // Estados para o Modo Câmara Mobile
   const [previewFile, setPreviewFile] = useState<File | null>(null);
