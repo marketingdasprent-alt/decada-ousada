@@ -26,41 +26,40 @@ export const MotoristaLayout: React.FC<MotoristaLayoutProps> = ({
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-slate-50 rota-liquida">
+      <div className="flex min-h-screen w-full bg-background rota-liquida">
         <MotoristaSidebar />
         
         <SidebarInset className="flex-1 flex flex-col bg-transparent">
           {/* Header Superior */}
-          <header className="h-20 flex items-center justify-between px-8 border-b border-slate-200 sticky top-0 bg-white/80 backdrop-blur-xl z-20">
+          <header className="h-20 flex items-center justify-between px-8 border-b border-border sticky top-0 bg-background/80 backdrop-blur-xl z-20">
             <div className="flex items-center gap-4 flex-1 max-w-xl">
-              <SidebarTrigger className="text-slate-500 hover:text-slate-900 md:hidden" />
+              <SidebarTrigger className="text-muted-foreground hover:text-foreground md:hidden" />
               <div className="relative w-full group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-teal-600 transition-colors" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input 
                   placeholder="Pesquisar corridas, faturas ou suporte..." 
-                  className="w-full bg-slate-100 border-none h-11 pl-12 rounded-xl text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-teal-600/50 transition-all"
+                  className="w-full bg-muted/50 border-none h-11 pl-12 rounded-xl text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50 transition-all"
                 />
               </div>
             </div>
 
             <div className="flex items-center gap-6 pl-8">
-              <button className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors">
+              <button className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-muted text-muted-foreground hover:text-foreground transition-colors">
                 <Bell className="w-5 h-5" />
-                <div className="absolute top-2 right-2 w-2 h-2 bg-teal-600 rounded-full border-2 border-white" />
+                <div className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-background" />
               </button>
 
-              <div className="flex items-center gap-3 border-l border-slate-200 pl-6">
+              <div className="flex items-center gap-3 border-l border-border pl-6">
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-bold text-slate-900 leading-none">{userName || "Motorista"}</p>
-                  <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-tighter">Gold Partner</p>
+                  <p className="text-sm font-bold text-foreground leading-none">{userName || "Motorista"}</p>
                 </div>
-                <Avatar className="h-10 w-10 border border-slate-200">
+                <Avatar className="h-10 w-10 border border-border">
                   <AvatarImage src={userPhoto} />
-                  <AvatarFallback className="bg-teal-50 text-teal-600 font-bold">
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold">
                     {userName?.charAt(0) || "M"}
                   </AvatarFallback>
                 </Avatar>
-                <Button variant="ghost" size="icon" onClick={() => signOut()} className="text-slate-400 hover:text-red-600">
+                <Button variant="ghost" size="icon" onClick={() => signOut()} className="text-muted-foreground hover:text-destructive">
                   <LogOut className="h-5 w-5" />
                 </Button>
               </div>

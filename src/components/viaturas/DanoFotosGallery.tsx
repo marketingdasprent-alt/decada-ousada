@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Camera, Upload, Loader2, Eye, Trash2, ImageIcon } from "lucide-react";
+import { Camera, Upload, Loader2, Eye, Trash2, ImageIcon, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 interface DanoFoto {
@@ -34,6 +34,8 @@ export function DanoFotosGallery({
   const [uploading, setUploading] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedFoto, setSelectedFoto] = useState<DanoFoto | null>(null);
+  const [editingDescricao, setEditingDescricao] = useState<{ id: string, descricao: string } | null>(null);
+  const [updating, setUpdating] = useState(false);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -98,6 +100,29 @@ export function DanoFotosGallery({
     }
   };
 
+  const handleUpdateDescricao = async () => {
+    if (!editingDescricao) return;
+    
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('viatura_dano_fotos')
+        .update({ descricao: editingDescricao.descricao })
+        .eq('id', editingDescricao.id);
+
+      if (error) throw error;
+      
+      toast.success('Descrição atualizada!');
+      setEditingDescricao(null);
+      onFotosChange();
+    } catch (error) {
+      console.error('Erro ao atualizar descrição:', error);
+      toast.error('Erro ao atualizar descrição');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const openLightbox = (foto: DanoFoto) => {
     setSelectedFoto(foto);
     setLightboxOpen(true);
@@ -129,16 +154,31 @@ export function DanoFotosGallery({
                   <Eye className="h-4 w-4" />
                 </Button>
                 {!readonly && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 text-white hover:text-destructive hover:bg-white/20"
-                    onClick={() => handleDelete(foto.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-white hover:text-primary hover:bg-white/20"
+                      onClick={() => setEditingDescricao({ id: foto.id, descricao: foto.descricao || '' })}
+                    >
+                      <Wrench className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-white hover:text-destructive hover:bg-white/20"
+                      onClick={() => handleDelete(foto.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
                 )}
               </div>
+              {foto.descricao && (
+                <div className="absolute top-0 left-0 right-0 bg-black/60 text-white text-[8px] px-1 py-0.5 truncate pointer-events-none group-hover:hidden">
+                  {foto.descricao}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -205,17 +245,48 @@ export function DanoFotosGallery({
           <DialogHeader>
             <DialogTitle>{selectedFoto?.nome_ficheiro || 'Foto do Dano'}</DialogTitle>
           </DialogHeader>
-          {selectedFoto && (
-            <div className="flex items-center justify-center">
-              <img
-                src={selectedFoto.ficheiro_url}
-                alt={selectedFoto.nome_ficheiro || 'Foto do dano'}
-                className="max-h-[70vh] max-w-full object-contain rounded-lg"
-              />
+            {selectedFoto && (
+              <div className="flex flex-col items-center gap-4">
+                <img
+                  src={selectedFoto.ficheiro_url}
+                  alt={selectedFoto.nome_ficheiro || 'Foto do dano'}
+                  className="max-h-[60vh] max-w-full object-contain rounded-lg"
+                />
+                {selectedFoto.descricao && (
+                  <p className="text-center italic text-muted-foreground border-t pt-2 w-full">
+                    {selectedFoto.descricao}
+                  </p>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Editar Descrição */}
+        <Dialog open={!!editingDescricao} onOpenChange={(open) => !open && setEditingDescricao(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Legenda da Foto</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Legenda / Descrição</Label>
+                <Input 
+                  placeholder="Ex: Risco na porta traseira esquerda..."
+                  value={editingDescricao?.descricao || ''}
+                  onChange={(e) => setEditingDescricao(prev => prev ? { ...prev, descricao: e.target.value } : null)}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditingDescricao(null)}>Cancelar</Button>
+                <Button onClick={handleUpdateDescricao} disabled={updating}>
+                  {updating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Guardar
+                </Button>
+              </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }

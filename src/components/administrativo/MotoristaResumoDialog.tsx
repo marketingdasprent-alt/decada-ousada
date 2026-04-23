@@ -335,7 +335,8 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
           ficheiro_url: uploadData.path,
           nome_ficheiro: fileName,
           status: 'validado',
-          data_validacao: new Date().toISOString()
+          data_validacao: new Date().toISOString(),
+          tipo: 'relatorio'
         }, {
           onConflict: 'motorista_id,semana_referencia_inicio'
         });

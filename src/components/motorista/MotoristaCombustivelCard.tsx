@@ -113,12 +113,17 @@ export function MotoristaCombustivelCard({ motoristaId }: MotoristaCombustivelCa
   }
 
   return (
-    <Card className="bg-white border-slate-200 shadow-sm rounded-[2rem] overflow-hidden">
+    <Card className="shadow-sm rounded-[2rem] overflow-hidden border-border bg-background">
       <CardHeader className="p-8 pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-black text-slate-900 px-1">Transações Recentes</CardTitle>
-          <Button variant="ghost" size="sm" className="bg-slate-100 text-slate-500 hover:text-slate-900 rounded-xl text-[10px] font-bold uppercase tracking-wider h-8">
-            Filtrar por Status
+          <CardTitle className="text-lg font-black px-1 flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Fuel className="w-5 h-5 text-primary" />
+            </div>
+            Abastecimentos Recentes
+          </CardTitle>
+          <Button variant="ghost" size="sm" className="bg-muted text-muted-foreground hover:text-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider h-8 border border-border">
+            Ver Todos
           </Button>
         </div>
       </CardHeader>
@@ -126,28 +131,28 @@ export function MotoristaCombustivelCard({ motoristaId }: MotoristaCombustivelCa
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="text-[10px] uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100">
+              <tr className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground border-b border-border">
                 <th className="px-8 py-4 font-black">Posto</th>
                 <th className="px-8 py-4 font-black">Data</th>
                 <th className="px-8 py-4 font-black">Valor</th>
                 <th className="px-8 py-4 font-black">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-border">
               {transactions.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="p-12 text-center text-slate-400 italic text-sm">
-                    Nenhuma transação encontrada.
+                  <td colSpan={4} className="p-12 text-center text-muted-foreground italic text-sm">
+                    Nenhum abastecimento encontrado.
                   </td>
                 </tr>
               ) : (
                 transactions.map((t) => (
-                  <tr key={t.id} className="group hover:bg-slate-50 transition-colors">
+                  <tr key={t.id} className="group hover:bg-muted/30 transition-colors">
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
                         <div className={cn(
-                          "w-10 h-10 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm",
-                          t.type === 'bp' ? "bg-green-50" : t.type === 'repsol' ? "bg-orange-50" : "bg-red-50"
+                          "w-10 h-10 rounded-xl flex items-center justify-center border border-border shadow-sm",
+                          t.type === 'bp' ? "bg-green-500/10" : t.type === 'repsol' ? "bg-orange-500/10" : "bg-red-500/10"
                         )}>
                           <Fuel className={cn(
                             "w-5 h-5",
@@ -155,26 +160,26 @@ export function MotoristaCombustivelCard({ motoristaId }: MotoristaCombustivelCa
                           )} />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-slate-900">{t.station}</p>
-                          <p className="text-[10px] text-slate-400 font-medium">
-                            {t.quantity.toFixed(2)} {t.type === 'edp' ? 'kWh' : 'Lts'}
+                          <p className="text-sm font-bold text-foreground">{t.station}</p>
+                          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">
+                            {t.quantity.toFixed(2)} {t.type === 'edp' ? 'kWh' : 'Lts'} • {t.type}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-8 py-5">
-                      <p className="text-xs text-slate-500 font-medium whitespace-nowrap">
+                      <p className="text-xs text-muted-foreground font-medium whitespace-nowrap">
                         {format(new Date(t.date), "MMM dd, HH:mm", { locale: pt })}
                       </p>
                     </td>
                     <td className="px-8 py-5">
-                      <p className="text-sm font-black text-slate-900">
+                      <p className="text-sm font-black text-foreground">
                         {formatCurrency(t.amount)}
                       </p>
                     </td>
                     <td className="px-8 py-5">
-                      <div className="inline-flex items-center px-3 py-1 rounded-full bg-teal-50 text-teal-600 text-[10px] font-black uppercase tracking-wider">
-                        Pago
+                      <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-500/10 text-green-600 text-[10px] font-black uppercase tracking-wider">
+                        Processado
                       </div>
                     </td>
                   </tr>

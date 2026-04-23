@@ -25,7 +25,7 @@ export const CandidaturaEmAnalise: React.FC<CandidaturaEmAnaliseProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 rota-liquida">
+    <div className="min-h-screen bg-background rota-liquida">
       {/* Header */}
       <div className="bg-card/50 backdrop-blur border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -47,7 +47,7 @@ export const CandidaturaEmAnalise: React.FC<CandidaturaEmAnaliseProps> = ({
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         {/* Status Card */}
-        <Card className="bg-card/95 backdrop-blur border-border">
+        <Card className="border-border">
           <CardHeader className="text-center pb-2">
             <div className="mx-auto w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mb-4">
               <Clock className="w-8 h-8 text-amber-500" />
@@ -68,7 +68,7 @@ export const CandidaturaEmAnalise: React.FC<CandidaturaEmAnaliseProps> = ({
         </Card>
 
         {/* Timeline */}
-        <Card className="bg-card/95 backdrop-blur border-border">
+        <Card className="border-border">
           <CardHeader>
             <CardTitle className="text-lg">Progresso</CardTitle>
           </CardHeader>

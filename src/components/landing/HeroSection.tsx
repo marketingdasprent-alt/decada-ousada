@@ -22,8 +22,8 @@ export const HeroSection = ({ onRentClick, onSlotClick }: HeroSectionProps) => {
       <div className="absolute inset-0 bg-gradient-to-br from-gray-800/20 via-transparent to-gray-900/30 opacity-60" />
       
       {/* Animated gradient orbs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#B20101]/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#B20101]/10 rounded-full blur-3xl animate-pulse delay-1000" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse delay-1000" />
       
       <div className="relative z-10 container mx-auto px-4 py-20">
         <motion.div
@@ -39,8 +39,8 @@ export const HeroSection = ({ onRentClick, onSlotClick }: HeroSectionProps) => {
             transition={{ delay: 0.2 }}
           >
             <img
-              src="/images/logo-decada-ousada-white.png"
-              alt="Década Ousada - Motoristas TVDE Portugal"
+              src="/images/logo-rota-liquida.png.png"
+              alt="Rota Líquida - Motoristas TVDE Portugal"
               className="h-16 md:h-20 w-auto mx-auto mb-8"
               fetchPriority="high"
             />
@@ -65,8 +65,8 @@ export const HeroSection = ({ onRentClick, onSlotClick }: HeroSectionProps) => {
             className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight"
           >
             Trabalhe Para{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E53333] to-[#B20101]">
-              Si Mesmo
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00DBC8] to-primary">
+              Eficiência e Liquidez
             </span>
             <br />
             Sem Burocracia
@@ -79,7 +79,7 @@ export const HeroSection = ({ onRentClick, onSlotClick }: HeroSectionProps) => {
             transition={{ delay: 0.5 }}
             className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto"
           >
-            Junte-se a centenas de motoristas que já faturam com a Década Ousada. 
+            Junte-se a centenas de motoristas que já faturam com a Rota Líquida. 
             Custos claros e fixos, suporte 7 dias por semana.
           </motion.p>
           
@@ -94,7 +94,7 @@ export const HeroSection = ({ onRentClick, onSlotClick }: HeroSectionProps) => {
               onClick={onRentClick}
               size="lg"
               aria-label="Candidatar-me para alugar um carro TVDE"
-              className="bg-[#B20101] hover:bg-[#8E0101] text-white font-bold px-8 py-6 text-lg rounded-xl shadow-lg shadow-[#B20101]/25 hover:shadow-[#B20101]/40 transition-all duration-300 w-full sm:w-auto"
+              className="bg-primary hover:bg-primary/90 text-white font-bold px-8 py-6 text-lg rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 w-full sm:w-auto"
             >
               <Car className="mr-2 h-5 w-5" />
               Quero alugar um carro
@@ -105,7 +105,7 @@ export const HeroSection = ({ onRentClick, onSlotClick }: HeroSectionProps) => {
               size="lg"
               variant="outline"
               aria-label="Candidatar-me como motorista Slot"
-              className="border-2 border-[#B20101]/50 text-[#E53333] hover:bg-[#B20101]/10 font-bold px-8 py-6 text-lg rounded-xl w-full sm:w-auto"
+              className="border-2 border-primary/50 text-primary hover:bg-primary/10 font-bold px-8 py-6 text-lg rounded-xl w-full sm:w-auto"
             >
               <Zap className="mr-2 h-5 w-5" />
               Quero ser Slot

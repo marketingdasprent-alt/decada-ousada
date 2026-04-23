@@ -24,7 +24,7 @@ export function AuthMobileShell({
   
   const logoSrc = isMotoristaRoute 
     ? '/images/logo-rota-liquida.png.png'
-    : '/images/logo-decada-ousada-white.png';
+    : '/images/logo-rota-liquida.png.png';
 
   return (
     <div className={`auth-screen auth-screen-safe ${isMotoristaRoute ? 'rota-liquida' : ''}`}>
@@ -42,7 +42,7 @@ export function AuthMobileShell({
                 onError={(e) => {
                   const img = e.currentTarget;
                   if (!isMotoristaRoute && img.src.includes('-white')) {
-                    img.src = "/images/logo-decada-ousada.png";
+                    img.src = "/images/logo-rota-liquida.png.png";
                   } else {
                     img.style.display = 'none';
                   }

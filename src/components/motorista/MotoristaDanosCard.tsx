@@ -7,8 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertTriangle, Car, ImageIcon, Eye, ChevronRight } from "lucide-react";
+import { AlertTriangle, Car, ImageIcon, Eye, ChevronRight, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 
@@ -166,35 +167,40 @@ export function MotoristaDanosCard({ motoristaId }: MotoristaDanosCardProps) {
 
   return (
     <>
-      <Card>
-        <CardHeader>
+      <Card className="shadow-sm rounded-[2rem] overflow-hidden border-border bg-background leading-relaxed">
+        <CardHeader className="p-8 pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
+            <CardTitle className="text-lg font-black flex items-center gap-3">
+              <div className="p-2 bg-destructive/10 rounded-xl">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
               Danos Registados
             </CardTitle>
             {danos.length > 0 && (
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="font-bold text-destructive">{formatCurrency(totalDanos)}</p>
+                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Total Acumulado</p>
+                <p className="text-xl font-black text-destructive">{formatCurrency(totalDanos)}</p>
               </div>
             )}
           </div>
           {danosPorPagar > 0 && (
-            <p className="text-sm text-yellow-600">
-              {danosPorPagar} dano(s) por pagar
-            </p>
+            <div className="mt-2 flex items-center gap-2 text-xs font-bold text-orange-600 bg-orange-500/10 px-3 py-1.5 rounded-lg w-fit">
+              <Clock className="w-3 h-3" />
+              {danosPorPagar} dano(s) por liquidar
+            </div>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {danos.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p>Nenhum dano registado.</p>
-              <p className="text-sm">Bom trabalho!</p>
+            <div className="text-center py-16 text-muted-foreground">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
+                <Car className="h-8 w-8 opacity-20" />
+              </div>
+              <p className="font-bold text-foreground">Viatura sem danos</p>
+              <p className="text-xs font-medium">Bom trabalho! Continue a conduzir com cuidado.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-border max-h-[320px] overflow-y-auto scrollbar-hide">
               {danos.map((dano) => {
                 const statusConfig = getStatusConfig(dano.status_pagamento);
                 const dataDisplay = dano.data_ocorrencia || dano.data_registo;
@@ -202,40 +208,48 @@ export function MotoristaDanosCard({ motoristaId }: MotoristaDanosCardProps) {
                 return (
                   <div
                     key={dano.id}
-                    className="border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="p-6 cursor-pointer hover:bg-muted/30 transition-all group flex items-center justify-between gap-4"
                     onClick={() => setSelectedDano(dano)}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{dano.descricao}</p>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                          {dano.viatura && (
-                            <>
-                              <Car className="h-3 w-3" />
-                              <span>{dano.viatura.matricula}</span>
-                              <span>•</span>
-                            </>
-                          )}
-                          <span>
-                            {format(new Date(dataDisplay), "d MMM yyyy", { locale: pt })}
-                          </span>
-                        </div>
-                        {dano.fotos.length > 0 && (
-                          <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                            <ImageIcon className="h-3 w-3" />
-                            <span>{dano.fotos.length} foto(s)</span>
-                          </div>
-                        )}
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className={cn(
+                        "w-12 h-12 rounded-2xl flex items-center justify-center border border-border shadow-sm group-hover:border-primary/20 transition-all",
+                        dano.status_pagamento === 'pago' ? "bg-green-500/5" : "bg-destructive/5"
+                      )}>
+                        <AlertTriangle className={cn(
+                          "w-6 h-6",
+                          dano.status_pagamento === 'pago' ? "text-green-600" : "text-destructive"
+                        )} />
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="font-bold text-destructive">
+                      <div className="min-w-0">
+                        <p className="font-bold text-foreground group-hover:text-primary transition-colors truncate">{dano.descricao}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                            {format(new Date(dataDisplay), "dd MMM yyyy", { locale: pt })}
+                          </span>
+                          {dano.fotos.length > 0 && (
+                            <div className="flex items-center gap-1 text-[10px] font-black text-primary uppercase">
+                              <ImageIcon className="h-3 w-3" />
+                              <span>{dano.fotos.length} FOTOS</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="font-black text-foreground">
                           {formatCurrency(dano.valor)}
                         </p>
-                        <Badge variant="outline" className={`mt-1 ${statusConfig.color}`}>
+                        <div className={cn(
+                          "inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider mt-1 border",
+                          statusConfig.color
+                        )}>
                           {statusConfig.label}
-                        </Badge>
+                        </div>
                       </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <ChevronRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-1 transition-all" />
                     </div>
                   </div>
                 );

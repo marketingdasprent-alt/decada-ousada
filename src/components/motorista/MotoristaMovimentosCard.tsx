@@ -109,16 +109,16 @@ export function MotoristaMovimentosCard({ motoristaId }: MotoristaMovimentosCard
   }
 
   return (
-    <Card className="bg-white border-slate-200 shadow-sm rounded-[2rem] overflow-hidden leading-relaxed">
-      <CardHeader className="p-8 pb-4 border-b border-slate-50">
+    <Card className="shadow-sm rounded-[2rem] overflow-hidden border-border bg-background">
+      <CardHeader className="p-8 pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-3">
-            <div className="p-2 bg-teal-50 rounded-xl">
-              <Wallet className="w-5 h-5 text-teal-600" />
+          <CardTitle className="text-lg font-black flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Wallet className="w-5 h-5 text-primary" />
             </div>
-            Movimentos Recentes
+            Extrato Financeiro
           </CardTitle>
-          <Button variant="ghost" size="sm" className="bg-slate-100 text-slate-500 hover:text-slate-900 rounded-xl text-[10px] font-bold uppercase tracking-wider h-8">
+          <Button variant="ghost" size="sm" className="bg-muted text-muted-foreground hover:text-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider h-8 border border-border">
             Ver Todos
           </Button>
         </div>
@@ -127,24 +127,24 @@ export function MotoristaMovimentosCard({ motoristaId }: MotoristaMovimentosCard
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="text-[10px] uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50">
+              <tr className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground border-b border-border">
                 <th className="px-8 py-4 font-black">Data</th>
                 <th className="px-8 py-4 font-black">Descrição</th>
                 <th className="px-8 py-4 font-black text-right">Valor</th>
                 <th className="px-8 py-4 font-black text-right">Estado</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50 font-medium">
+            <tbody className="divide-y divide-border font-medium">
               {movimentos.map((movimento) => (
-                <tr key={movimento.id} className="group hover:bg-slate-50 transition-colors">
-                  <td className="px-8 py-5 text-xs text-slate-500 whitespace-nowrap">
+                <tr key={movimento.id} className="group hover:bg-muted/30 transition-colors">
+                  <td className="px-8 py-5 text-xs text-muted-foreground whitespace-nowrap">
                     {format(new Date(movimento.data_movimento), "dd MMM, yyyy", { locale: pt })}
                   </td>
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         "w-8 h-8 rounded-lg flex items-center justify-center",
-                        movimento.tipo === "credito" ? "bg-green-50" : "bg-red-50"
+                        movimento.tipo === "credito" ? "bg-green-500/10" : "bg-red-500/10"
                       )}>
                         {movimento.tipo === "credito" ? (
                           <ArrowUpCircle className="w-4 h-4 text-green-600" />
@@ -152,12 +152,12 @@ export function MotoristaMovimentosCard({ motoristaId }: MotoristaMovimentosCard
                           <ArrowDownCircle className="w-4 h-4 text-red-600" />
                         )}
                       </div>
-                      <span className="text-sm font-bold text-slate-900">{movimento.descricao}</span>
+                      <span className="text-sm font-bold text-foreground">{movimento.descricao}</span>
                     </div>
                   </td>
                   <td className={cn(
                     "px-8 py-5 text-right text-sm font-black",
-                    movimento.tipo === "credito" ? "text-green-600" : "text-red-700"
+                    movimento.tipo === "credito" ? "text-green-600" : "text-destructive"
                   )}>
                     {movimento.tipo === "credito" ? "+" : "-"}
                     {formatCurrency(Number(movimento.valor))}
@@ -165,7 +165,7 @@ export function MotoristaMovimentosCard({ motoristaId }: MotoristaMovimentosCard
                   <td className="px-8 py-5 text-right">
                     <div className={cn(
                       "inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                      movimento.status === "pago" ? "bg-green-50 text-green-600" : "bg-slate-100 text-slate-500"
+                      movimento.status === "pago" ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground"
                     )}>
                       {movimento.status}
                     </div>

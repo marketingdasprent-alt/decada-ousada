@@ -266,12 +266,12 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-card/50 backdrop-blur border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <Car className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -305,10 +305,10 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
       {/* Form */}
       <div className="max-w-4xl mx-auto px-4 pb-8 space-y-6">
         {/* Dados Pessoais */}
-        <Card className="bg-card/95 backdrop-blur border-border">
-          <CardHeader>
+        <Card className="border-border overflow-hidden">
+          <CardHeader className="bg-muted/30 pb-4">
             <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
+              <User className="h-5 w-5 text-muted-foreground" />
               <CardTitle className="text-lg">Dados Pessoais</CardTitle>
             </div>
             <CardDescription>Informações básicas para a sua candidatura</CardDescription>
@@ -379,7 +379,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label className="flex items-center gap-2">
+              <Label className="flex items-center gap-2 text-foreground">
                 <Home className="h-4 w-4 text-muted-foreground" />
                 Comprovativo de Morada *
               </Label>
@@ -397,10 +397,10 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
         </Card>
 
         {/* Documento de Identificação */}
-        <Card className="bg-card/95 backdrop-blur border-border">
-          <CardHeader>
+        <Card className="border-border overflow-hidden">
+          <CardHeader className="bg-blue-50/50 dark:bg-blue-900/20 pb-4">
             <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
+              <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <CardTitle className="text-lg">Documento de Identificação</CardTitle>
             </div>
             <CardDescription>CC, Título de Residência ou outro documento válido</CardDescription>
@@ -466,8 +466,8 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
         </Card>
 
         {/* Carta de Condução */}
-        <Card className="bg-card/95 backdrop-blur border-border">
-          <CardHeader>
+        <Card className="border-border overflow-hidden">
+          <CardHeader className="bg-primary/10 pb-4">
             <div className="flex items-center gap-2">
               <Car className="h-5 w-5 text-primary" />
               <CardTitle className="text-lg">Carta de Condução</CardTitle>
@@ -505,7 +505,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
                     />
                     <label
                       htmlFor={`cat-${cat}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground"
                     >
                       {cat}
                     </label>
@@ -540,10 +540,10 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
         </Card>
 
         {/* Licença TVDE */}
-        <Card className="bg-card/95 backdrop-blur border-border">
-          <CardHeader>
+        <Card className="border-border overflow-hidden">
+          <CardHeader className="bg-indigo-50/50 dark:bg-indigo-900/20 pb-4">
             <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
+              <FileCheck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               <CardTitle className="text-lg">Licença TVDE</CardTitle>
             </div>
             <CardDescription>Certificado de formação TVDE obrigatório</CardDescription>
@@ -580,18 +580,18 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
         </Card>
 
         {/* Documentos Adicionais */}
-        <Card className="bg-card/95 backdrop-blur border-border">
-          <CardHeader>
+        <Card className="border-border overflow-hidden">
+          <CardHeader className="bg-amber-50/50 dark:bg-amber-900/20 pb-4">
             <div className="flex items-center gap-2">
-              <FileCheck className="h-5 w-5 text-primary" />
+              <FileCheck className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               <CardTitle className="text-lg">Documentos Adicionais</CardTitle>
             </div>
             <CardDescription>Documentos obrigatórios para completar a candidatura</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
+              <Label className="flex items-center gap-2 text-foreground">
+                <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 Registo Criminal *
               </Label>
               <DocumentUploader
@@ -604,8 +604,8 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
+              <Label className="flex items-center gap-2 text-foreground">
+                <Building2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 Comprovativo de IBAN *
               </Label>
               <DocumentUploader

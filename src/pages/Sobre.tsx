@@ -18,7 +18,7 @@ const Sobre = () => {
             className="text-center max-w-3xl mx-auto"
           >
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Sobre a <span className="text-[#B20101]">Década Ousada</span>
+              Sobre a <span className="text-primary">Rota Líquida</span>
             </h1>
             <p className="text-xl text-gray-400">
               A empresa TVDE que mais cresce em Portugal, comprometida com o sucesso dos nossos motoristas parceiros.
@@ -39,7 +39,7 @@ const Sobre = () => {
             >
               <h2 className="text-3xl font-bold mb-6">A Nossa Missão</h2>
               <p className="text-gray-400 mb-4">
-                A Década Ousada nasceu com uma missão clara: proporcionar aos motoristas TVDE as melhores condições para desenvolverem a sua atividade de forma independente e lucrativa.
+                A Rota Líquida nasceu com uma missão clara: proporcionar aos motoristas TVDE as melhores condições para desenvolverem a sua atividade de forma independente e lucrativa.
               </p>
               <p className="text-gray-400 mb-4">
                 Acreditamos que cada motorista merece ter acesso a veículos de qualidade, suporte dedicado e condições transparentes que lhes permitam focar no que realmente importa - servir os seus clientes e construir o seu próprio negócio.
@@ -53,19 +53,19 @@ const Sobre = () => {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
-              className="bg-gradient-to-br from-[#B20101]/20 to-transparent rounded-2xl p-8 border border-[#B20101]/30"
+              className="bg-gradient-to-br from-primary/20 to-transparent rounded-2xl p-8 border border-primary/30"
             >
               <div className="grid grid-cols-2 gap-6">
                 <div className="text-center p-4">
-                  <div className="text-4xl font-bold text-[#B20101] mb-2">500+</div>
+                  <div className="text-4xl font-bold text-primary mb-2">500+</div>
                   <div className="text-gray-400">Motoristas Ativos</div>
                 </div>
                 <div className="text-center p-4">
-                  <div className="text-4xl font-bold text-[#B20101] mb-2">200+</div>
+                  <div className="text-4xl font-bold text-primary mb-2">200+</div>
                   <div className="text-gray-400">Veículos na Frota</div>
                 </div>
                 <div className="text-center p-4">
-                  <div className="text-4xl font-bold text-[#B20101] mb-2">5</div>
+                  <div className="text-4xl font-bold text-primary mb-2">5</div>
                   <div className="text-gray-400">Anos de Experiência</div>
                 </div>
                 <div className="text-center p-4">

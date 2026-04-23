@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Save, Loader2, Upload, FileText, Eye, Download, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { getCategoriaBadgeClass, getStatusBadgeClass, getStatusLabel, getStatusColorClass } from '@/lib/viaturas';
 
 const viaturaSchema = z.object({
   matricula: z.string()
@@ -363,14 +363,16 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                         <FormLabel>Status</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecionar" />
+                            <SelectTrigger className={`font-bold transition-all ${getStatusColorClass(field.value)}`}>
+                              <SelectValue placeholder="Selecionar Status" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {STATUS_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                            ))}
+                            <SelectItem value="disponivel">🟢 Disponível</SelectItem>
+                            <SelectItem value="em_uso">🔵 Em Uso</SelectItem>
+                            <SelectItem value="manutencao">🟠 Manutenção</SelectItem>
+                            <SelectItem value="inativo">⚪ Inativo</SelectItem>
+                            <SelectItem value="vendida">🔴 Vendida</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

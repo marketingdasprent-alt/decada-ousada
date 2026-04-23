@@ -116,9 +116,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
 
       // Try white logo first (for dark header), fallback to default
       const logoInfo =
-        await loadImageWithDimensions('/images/logo-decada-ousada-white.png') ||
-        await loadImageWithDimensions('/images/logo-decada-ousada-light.png') ||
-        await loadImageWithDimensions('/images/logo-decada-ousada.png');
+        await loadImageWithDimensions('/images/logo-rota-liquida.png.png');
 
       // ── HEADER ──────────────────────────────────────────────
       const headerH = 44;

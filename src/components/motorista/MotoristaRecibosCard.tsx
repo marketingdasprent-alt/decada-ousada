@@ -380,36 +380,36 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
   }
 
   return (
-    <Card className="bg-white border-slate-200 shadow-sm rounded-[2rem] overflow-hidden leading-relaxed">
+    <Card className="shadow-sm rounded-[2rem] overflow-hidden leading-relaxed border-border">
       <CardHeader className="p-8 pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-3">
-            <div className="p-2 bg-teal-50 rounded-xl">
-              <Receipt className="w-5 h-5 text-teal-600" />
+          <CardTitle className="text-lg font-black flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Receipt className="w-5 h-5 text-primary" />
             </div>
             Recibos Verdes
           </CardTitle>
           
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold transition-all shadow-sm">
+              <Button size="sm" className="rounded-xl font-bold transition-all shadow-sm">
                 <Plus className="w-4 h-4 mr-2" />
                 Submeter Recibo Verde
               </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-[2rem] border-slate-200 bg-white">
+            <DialogContent className="rounded-[2rem] border-border bg-background">
               <DialogHeader>
-                <DialogTitle className="text-xl font-black text-slate-900">Submeter Recibo Verde</DialogTitle>
+                <DialogTitle className="text-xl font-black">Submeter Recibo Verde</DialogTitle>
               </DialogHeader>
               
               <form onSubmit={handleSubmit} className="space-y-6 pt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="semana" className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Semana de Referência</Label>
+                  <Label htmlFor="semana" className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Semana de Referência</Label>
                   <Select value={semanaSeleccionada} onValueChange={setSemanaSeleccionada}>
-                    <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:ring-teal-600/20">
+                    <SelectTrigger className="h-12 rounded-xl border-border bg-muted/50 focus:ring-primary/20">
                       <SelectValue placeholder="Seleccione a semana..." />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[300px] rounded-xl border-slate-200 shadow-xl bg-white">
+                    <SelectContent className="max-h-[300px] rounded-xl border-border shadow-xl bg-background">
                       {semanasDisponiveis.map((semana) => (
                         <SelectItem 
                           key={semana.value} 
@@ -423,7 +423,7 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
                             )}
                             {semana.label}
                             {semana.jaTemRecibo && (
-                              <span className="text-[10px] text-slate-400 font-black uppercase">(já submetido)</span>
+                              <span className="text-[10px] text-muted-foreground font-black uppercase">(já submetido)</span>
                             )}
                           </span>
                         </SelectItem>
@@ -433,34 +433,34 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="valor" className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Valor Total (€)</Label>
+                  <Label htmlFor="valor" className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Valor Total (€)</Label>
                   <Input
                     id="valor"
                     type="text"
                     placeholder="0,00"
                     value={valor}
                     onChange={(e) => setValor(e.target.value)}
-                    className="h-12 rounded-xl border-slate-100 bg-slate-50 focus-visible:ring-teal-600/20 font-bold"
+                    className="h-12 rounded-xl border-border bg-muted/50 focus-visible:ring-primary/20 font-bold"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Ficheiro do Recibo Verde</Label>
-                  <div className="border-2 border-dashed border-slate-100 rounded-[2rem] p-8 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Ficheiro do Recibo Verde</Label>
+                  <div className="border-2 border-dashed border-border rounded-[2rem] p-8 bg-muted/30 hover:bg-muted/50 transition-colors">
                     {ficheiro ? (
-                      <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                      <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border shadow-sm">
                         <div className="flex items-center gap-3">
-                           <FileText className="w-5 h-5 text-teal-600" />
-                           <span className="text-sm font-bold text-slate-900 truncate max-w-[200px]">{ficheiro.name}</span>
+                           <FileText className="w-5 h-5 text-primary" />
+                           <span className="text-sm font-bold truncate max-w-[200px]">{ficheiro.name}</span>
                         </div>
-                        {uploading && <Loader2 className="w-4 h-4 animate-spin text-teal-600" />}
+                        {uploading && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
                       </div>
                     ) : (
                       <label className="cursor-pointer flex flex-col items-center gap-3 py-4">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-50">
-                          <Upload className="w-6 h-6 text-slate-400" />
+                        <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center shadow-sm border border-border">
+                          <Upload className="w-6 h-6 text-muted-foreground" />
                         </div>
-                        <span className="text-sm font-bold text-slate-500">
+                        <span className="text-sm font-bold text-muted-foreground">
                           Clique para carregar PDF ou imagem
                         </span>
                         <input
@@ -476,7 +476,7 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
 
                 <Button 
                   type="submit" 
-                  className="w-full h-14 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest flex items-center justify-center transition-all shadow-lg" 
+                  className="w-full h-14 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center transition-all shadow-lg" 
                   disabled={submitting || uploading || !ficheiroUrl}
                 >
                   {submitting ? (
@@ -495,18 +495,18 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
       </CardHeader>
       <CardContent className="p-0">
         {recibos.length === 0 ? (
-          <div className="text-center py-20 text-slate-400">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+          <div className="text-center py-20 text-muted-foreground">
+            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
               <Receipt className="w-10 h-10 opacity-20" />
             </div>
-            <p className="font-bold text-slate-900">Sem recibos submetidos</p>
+            <p className="font-bold text-foreground">Sem recibos submetidos</p>
             <p className="text-xs font-medium">Submeta os seus recibos verdes semanais</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="text-[10px] uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50">
+                <tr className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground border-b border-border">
                   <th className="px-8 py-4 font-black">Código</th>
                   <th className="px-8 py-4 font-black">Semana</th>
                   <th className="px-8 py-4 font-black text-right">Valor</th>
@@ -514,25 +514,25 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
                   <th className="px-8 py-4 font-black"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-border">
                 {recibos.map((recibo) => (
-                  <tr key={recibo.id} className="group hover:bg-slate-50 transition-colors">
+                  <tr key={recibo.id} className="group hover:bg-muted/30 transition-colors">
                     <td className="px-8 py-5">
-                      <span className="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-lg">
+                      <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-lg">
                         {formatCodigo(recibo.codigo)}
                       </span>
                     </td>
                     <td className="px-8 py-5">
-                       <p className="text-sm font-bold text-slate-900">{formatSemanaReferencia(recibo)}</p>
+                       <p className="text-sm font-bold">{formatSemanaReferencia(recibo)}</p>
                     </td>
-                    <td className="px-8 py-5 text-right font-black text-slate-900 text-sm">
+                    <td className="px-8 py-5 text-right font-black text-sm">
                       {formatCurrency(Number(recibo.valor_total || 0))}
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className={cn(
                         "inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                        recibo.status === "validado" ? "bg-green-50 text-green-600" : 
-                        recibo.status === "submetido" ? "bg-slate-100 text-slate-500" : "bg-red-50 text-red-600"
+                        recibo.status === "validado" ? "bg-green-500/10 text-green-600" : 
+                        recibo.status === "submetido" ? "bg-muted text-muted-foreground" : "bg-destructive/10 text-destructive"
                       )}>
                         {recibo.status}
                       </div>
@@ -542,7 +542,7 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-9 w-9 rounded-xl bg-slate-50 text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all border border-slate-100"
+                          className="h-9 w-9 rounded-xl bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all border border-border"
                           onClick={() => handleViewRecibo(recibo.ficheiro_url)}
                         >
                           <Eye className="w-4 h-4" />
@@ -551,7 +551,7 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-9 w-9 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
+                            className="h-9 w-9 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 transition-all border border-transparent hover:border-destructive/20"
                             onClick={() => {
                               setReciboToDelete(recibo);
                               setDeleteDialogOpen(true);
@@ -570,19 +570,19 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
         )}
 
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent className="rounded-[2rem] border-slate-200 bg-white">
+          <AlertDialogContent className="rounded-[2rem] border-border bg-background">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-xl font-black text-slate-900">Apagar Recibo Verde?</AlertDialogTitle>
-              <AlertDialogDescription className="text-slate-500 font-medium leading-relaxed">
+              <AlertDialogTitle className="text-xl font-black">Apagar Recibo Verde?</AlertDialogTitle>
+              <AlertDialogDescription className="text-muted-foreground font-medium leading-relaxed">
                 Tem a certeza que deseja apagar este recibo? Esta ação não pode ser desfeita e terá de submeter um novo para esta semana.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="pt-4">
-              <AlertDialogCancel disabled={deleting} className="rounded-xl font-bold border-slate-100">Cancelar</AlertDialogCancel>
+              <AlertDialogCancel disabled={deleting} className="rounded-xl font-bold">Cancelar</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteRecibo}
                 disabled={deleting}
-                className="bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-sm"
+                className="bg-destructive text-destructive-foreground rounded-xl font-bold hover:bg-destructive/90 shadow-sm"
               >
                 {deleting ? (
                   <>

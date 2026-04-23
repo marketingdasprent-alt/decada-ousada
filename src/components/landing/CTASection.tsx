@@ -30,7 +30,7 @@ export const CTASection = ({ onFormClick }: CTASectionProps) => {
           <Button
             onClick={onFormClick}
             size="lg"
-            className="bg-[#B20101] hover:bg-[#8E0101] text-white font-bold px-10 py-6 text-lg rounded-xl shadow-lg shadow-[#B20101]/25 hover:shadow-[#B20101]/40 transition-all duration-300 mb-12"
+            className="bg-primary hover:bg-primary/90 text-white font-bold px-10 py-6 text-lg rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 mb-12"
           >
             Candidatar-me Agora
           </Button>

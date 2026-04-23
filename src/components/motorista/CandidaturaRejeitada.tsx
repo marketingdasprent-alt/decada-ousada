@@ -56,7 +56,7 @@ export const CandidaturaRejeitada: React.FC<CandidaturaRejeitadaProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 rota-liquida">
+    <div className="min-h-screen bg-background rota-liquida">
       {/* Header */}
       <div className="bg-card/50 backdrop-blur border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -99,7 +99,7 @@ export const CandidaturaRejeitada: React.FC<CandidaturaRejeitadaProps> = ({
 
         {/* Motivo */}
         {candidatura.motivo_rejeicao && (
-          <Card className="bg-card/95 backdrop-blur border-border">
+          <Card className="border-border">
             <CardHeader>
               <CardTitle className="text-lg">Motivo</CardTitle>
             </CardHeader>

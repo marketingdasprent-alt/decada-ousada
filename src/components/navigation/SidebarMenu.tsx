@@ -137,15 +137,9 @@ export const SidebarMenu: React.FC = () => {
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-card/50 backdrop-blur-xl border-r border-border/50">
       {/* Header with Logo */}
-      <div className="p-6 mb-2">
-        <div className="flex items-center gap-3">
-          <img src={logoSrc} alt="Logo" className="h-10 w-auto" />
-          <div className="hidden lg:block">
-            <h2 className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-              DÉCADA OUSADA
-            </h2>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Operações CRM</p>
-          </div>
+      <div className="p-4 mb-0">
+        <div className="flex items-center justify-center w-full py-1">
+          <img src={logoSrc} alt="Logo" className="h-20 w-auto object-contain" />
         </div>
       </div>
 
@@ -186,6 +180,7 @@ export const SidebarMenu: React.FC = () => {
             </div>
             <div className="space-y-1">
               <NavItem item={{ label: 'Administração', url: '/admin/settings', icon: Settings }} />
+              <ThemeToggle variant="full" />
             </div>
           </div>
         )}
@@ -193,15 +188,12 @@ export const SidebarMenu: React.FC = () => {
 
       {/* User Footer */}
       <div className="p-4 border-t border-border/50 bg-muted/30">
-        <div className="flex items-center justify-between gap-2 bg-background/50 p-2 rounded-xl border border-border/50">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <UserMenu />
-            <div className="flex flex-col truncate hidden lg:block">
-              <span className="text-xs font-semibold truncate leading-none mb-1">Thiago Sousa</span>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-tight">Administrador</span>
-            </div>
+        <div className="flex items-center gap-2 bg-background/50 p-2 rounded-xl border border-border/50 overflow-hidden">
+          <UserMenu />
+          <div className="flex flex-col truncate hidden lg:block">
+            <span className="text-xs font-semibold truncate leading-none mb-1">Thiago Sousa</span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-tight">Administrador</span>
           </div>
-          <ThemeToggle />
         </div>
       </div>
     </div>

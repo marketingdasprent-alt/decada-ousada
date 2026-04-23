@@ -11,16 +11,11 @@ export const useThemedLogo = () => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return '/images/logo-decada-ousada.png';
+  if (!mounted) return '/images/logo-rota-liquida.png.png';
 
   const isLight = resolvedTheme === 'light' || theme === 'light';
-  const isMotoristaRoute = location.pathname === '/motorista' || location.pathname.startsWith('/motorista/');
-
-  if (isMotoristaRoute) {
-    return '/images/logo-rota-liquida.png.png';
-  }
 
   return isLight 
-    ? '/images/logo-decada-ousada.png' 
-    : '/images/logo-decada-ousada-white.png';
+    ? '/images/logo-rota-liquida.png.png' 
+    : '/images/logo-rota-liquida.png.png';
 };

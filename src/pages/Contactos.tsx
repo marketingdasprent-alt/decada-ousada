@@ -18,7 +18,7 @@ const Contactos = () => {
             className="text-center max-w-3xl mx-auto"
           >
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Fala <span className="text-[#B20101]">Connosco</span>
+              Fala <span className="text-primary">Connosco</span>
             </h1>
             <p className="text-xl text-gray-400">
               Estamos disponíveis para esclarecer todas as tuas dúvidas e ajudar-te a começar.
@@ -47,7 +47,7 @@ const Contactos = () => {
               </div>
               <h3 className="text-xl font-semibold mb-2">WhatsApp</h3>
               <p className="text-gray-400 mb-4">Resposta rápida</p>
-              <p className="text-[#B20101] font-semibold">+351 912 023 234</p>
+              <p className="text-primary font-semibold">+351 912 023 234</p>
             </motion.a>
 
             {/* Phone */}
@@ -59,12 +59,12 @@ const Contactos = () => {
               viewport={{ once: true }}
               className="bg-gray-800/50 rounded-xl p-8 text-center hover:bg-gray-800 transition-colors group"
             >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#B20101]/20 flex items-center justify-center group-hover:bg-[#B20101]/30 transition-colors">
-                <Phone className="w-8 h-8 text-[#B20101]" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                <Phone className="w-8 h-8 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Telefone</h3>
               <p className="text-gray-400 mb-4">Linha direta</p>
-              <p className="text-[#B20101] font-semibold">309 100 174</p>
+              <p className="text-primary font-semibold">309 100 174</p>
             </motion.a>
 
             {/* Email */}
@@ -81,7 +81,7 @@ const Contactos = () => {
               </div>
               <h3 className="text-xl font-semibold mb-2">Email</h3>
               <p className="text-gray-400 mb-4">Para questões detalhadas</p>
-              <p className="text-[#B20101] font-semibold text-sm">motoristas.tvde@distanciaarrojada.pt</p>
+              <p className="text-primary font-semibold text-sm">motoristas.tvde@rotaliquida.pt</p>
             </motion.a>
           </div>
         </div>
@@ -102,8 +102,8 @@ const Contactos = () => {
               
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-[#B20101]/20 flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-5 h-5 text-[#B20101]" />
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-5 h-5 text-primary" />
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Horário de Atendimento</h3>
@@ -114,8 +114,8 @@ const Contactos = () => {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-[#B20101]/20 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-5 h-5 text-[#B20101]" />
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-5 h-5 text-primary" />
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Áreas de Operação</h3>

@@ -190,22 +190,22 @@ export default function MyAccount() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 max-w-2xl">
-        <Card className="bg-gray-800/50 border-gray-700">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <User className="h-6 w-6" />
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-6 w-6 text-primary" />
               Minha Conta
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Informações Gerais */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white">Informações Pessoais</h3>
+              <h3 className="text-lg font-semibold">Informações Pessoais</h3>
               
               <div>
-                <Label htmlFor="nome" className="text-gray-300">
+                <Label htmlFor="nome">
                   Nome
                 </Label>
                 <Input
@@ -216,53 +216,52 @@ export default function MyAccount() {
                     nome: e.target.value
                   }))}
                   onKeyDown={(e) => handleKeyDown(e, handleUpdateProfile)}
-                  className="bg-gray-700 border-gray-600 text-white"
                   placeholder="Seu nome completo"
                 />
               </div>
 
               <div>
-                <Label className="text-gray-300">Email</Label>
+                <Label>Email</Label>
                 <Input
                   value={profile.email}
                   disabled
-                  className="bg-gray-600 border-gray-500 text-gray-300 cursor-not-allowed"
+                  className="bg-muted cursor-not-allowed opacity-80"
                 />
-                <p className="text-xs text-gray-400 mt-1">O email não pode ser alterado</p>
+                <p className="text-xs text-muted-foreground mt-1">O email não pode ser alterado</p>
               </div>
 
               <div>
-                <Label className="text-gray-300">Cargo</Label>
+                <Label>Cargo</Label>
                 <Input
                   value={profile.cargo || 'Não definido'}
                   disabled
-                  className="bg-gray-600 border-gray-500 text-gray-300 cursor-not-allowed"
+                  className="bg-muted cursor-not-allowed opacity-80"
                 />
-                <p className="text-xs text-gray-400 mt-1">O cargo só pode ser alterado por um administrador</p>
+                <p className="text-xs text-muted-foreground mt-1">O cargo só pode ser alterado por um administrador</p>
               </div>
 
               <div>
-                <Label className="text-gray-300">Data de Criação</Label>
+                <Label>Data de Criação</Label>
                 <Input
                   value={formatDate(profile.created_at)}
                   disabled
-                  className="bg-gray-600 border-gray-500 text-gray-300 cursor-not-allowed"
+                  className="bg-muted cursor-not-allowed opacity-80"
                 />
               </div>
 
               <div>
-                <Label className="text-gray-300">Tipo de Conta</Label>
+                <Label>Tipo de Conta</Label>
                 <Input
                   value={profile.is_admin ? 'Administrador' : 'Usuário'}
                   disabled
-                  className="bg-gray-600 border-gray-500 text-gray-300 cursor-not-allowed"
+                  className="bg-muted cursor-not-allowed opacity-80"
                 />
               </div>
 
               <Button
                 onClick={handleUpdateProfile}
                 disabled={saving}
-                className="bg-yellow-500 hover:bg-yellow-600 text-black"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Salvar Informações
@@ -270,11 +269,11 @@ export default function MyAccount() {
             </div>
 
             {/* Alteração de Senha */}
-            <div className="border-t border-gray-700 pt-6 space-y-4">
-              <h3 className="text-lg font-semibold text-white">Alterar Senha</h3>
+            <div className="border-t pt-6 space-y-4">
+              <h3 className="text-lg font-semibold">Alterar Senha</h3>
               
               <div>
-                <Label htmlFor="newPassword" className="text-gray-300">
+                <Label htmlFor="newPassword">
                   Nova Senha
                 </Label>
                 <div className="relative">
@@ -286,14 +285,13 @@ export default function MyAccount() {
                       ...prev,
                       newPassword: e.target.value
                     }))}
-                    className="bg-gray-700 border-gray-600 text-white pr-10"
                     placeholder="Nova senha (min. 6 caracteres)"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white"
+                    className="absolute right-0 top-0 h-full px-3"
                     onClick={() => setShowPasswords(prev => ({
                       ...prev,
                       new: !prev.new
@@ -305,7 +303,7 @@ export default function MyAccount() {
               </div>
 
               <div>
-                <Label htmlFor="confirmPassword" className="text-gray-300">
+                <Label htmlFor="confirmPassword">
                   Confirmar Nova Senha
                 </Label>
                 <div className="relative">
@@ -318,14 +316,13 @@ export default function MyAccount() {
                       confirmPassword: e.target.value
                     }))}
                     onKeyDown={(e) => handleKeyDown(e, handleChangePassword)}
-                    className="bg-gray-700 border-gray-600 text-white pr-10"
                     placeholder="Confirme a nova senha"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white"
+                    className="absolute right-0 top-0 h-full px-3"
                     onClick={() => setShowPasswords(prev => ({
                       ...prev,
                       confirm: !prev.confirm
@@ -339,7 +336,7 @@ export default function MyAccount() {
               <Button
                 onClick={handleChangePassword}
                 disabled={changingPassword || !formData.newPassword || !formData.confirmPassword}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {changingPassword ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Alterar Senha
