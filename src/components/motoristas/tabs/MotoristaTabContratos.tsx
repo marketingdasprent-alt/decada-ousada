@@ -63,7 +63,6 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [editingContratual, setEditingContratual] = useState(false);
   const [dataContratacao, setDataContratacao] = useState(motorista.data_contratacao || "");
-  const [cidadeAssinatura, setCidadeAssinatura] = useState(motorista.cidade_assinatura || "");
 
   useEffect(() => {
     loadContratos();
@@ -72,8 +71,8 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
   // Sincronizar estado local quando os dados do motorista mudarem (ex: após um save)
   useEffect(() => {
     setDataContratacao(sanitizeDate(motorista.data_contratacao));
-    setCidadeAssinatura(motorista.cidade_assinatura || "");
-  }, [motorista.data_contratacao, motorista.cidade_assinatura]);
+    setCidadeAssinatura("");
+  }, [motorista.data_contratacao]);
 
   const loadContratos = async () => {
     try {
@@ -211,7 +210,7 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
         .from("motoristas_ativos")
         .update({
           data_contratacao: formattedDate || null,
-          cidade_assinatura: cidadeAssinatura || null,
+          cidade_assinatura: null,
         })
         .eq("id", motorista.id);
 
@@ -272,20 +271,12 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
                   onChange={(e) => setDataContratacao(e.target.value)}
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label>Cidade de Assinatura</Label>
-                <Input
-                  value={cidadeAssinatura}
-                  onChange={(e) => setCidadeAssinatura(e.target.value)}
-                  placeholder="Ex: Lisboa"
-                />
-              </div>
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="ghost" size="sm" onClick={() => {
                 setEditingContratual(false);
                 setDataContratacao(motorista.data_contratacao || "");
-                setCidadeAssinatura(motorista.cidade_assinatura || "");
+                setCidadeAssinatura("");
               }}>
                 <X className="h-4 w-4 mr-1" /> Cancelar
               </Button>
@@ -300,10 +291,6 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
               <div>
                 <span className="text-muted-foreground">Data de Contratação</span>
                 <p className="font-medium">{formatDate(motorista.data_contratacao)}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Cidade de Assinatura</span>
-                <p className="font-medium">{motorista.cidade_assinatura || "-"}</p>
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setEditingContratual(true)}>

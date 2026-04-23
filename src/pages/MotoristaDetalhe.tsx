@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { format } from "date-fns";
 import { 
   FileSignature, 
@@ -60,6 +60,8 @@ interface ViaturaAtual {
 export default function MotoristaDetalhe() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnUrl = (location.state as any)?.listaUrl || "/motoristas";
   const { toast } = useToast();
   const [motorista, setMotorista] = useState<Motorista | null>(null);
   const [loading, setLoading] = useState(true);
@@ -281,7 +283,7 @@ export default function MotoristaDetalhe() {
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={() => navigate("/motoristas")}
+            onClick={() => navigate(returnUrl)}
             className="rounded-full"
           >
             <ArrowLeft className="h-5 w-5" />

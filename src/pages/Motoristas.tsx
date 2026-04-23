@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, ChevronUp, ChevronDown, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -78,18 +78,40 @@ type SortColumn = "codigo" | "nome" | "telefone" | "gestor_responsavel" | "cidad
 export default function Motoristas() {
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("todos");
-  const [cidadeFilter, setCidadeFilter] = useState<string>("todas");
-  const [gestorFilter, setGestorFilter] = useState<string>("todos");
+  
+  // 1. O URL é o ÚNICO dono da verdade
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const searchTerm = searchParams.get("search") || "";
+  const statusFilter = searchParams.get("status") || "todos";
+  const cidadeFilter = searchParams.get("cidade") || "todas";
+  const gestorFilter = searchParams.get("gestor") || "todos";
+  const sortColumn = (searchParams.get("sort") as SortColumn) || "codigo";
+  const sortDirection = (searchParams.get("dir") as "asc" | "desc") || "asc";
+
+  const updateFilters = (updates: Record<string, string>) => {
+    const newParams = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value && value !== "" && value !== "todos" && value !== "todas") {
+        newParams.set(key, value);
+      } else {
+        newParams.delete(key);
+      }
+    });
+    setSearchParams(newParams, { replace: true });
+  };
+
+  const handleSort = (column: SortColumn) => {
+    const newDir = sortColumn === column && sortDirection === "asc" ? "desc" : "asc";
+    updateFilters({ sort: column, dir: newDir });
+  };
+
   const [selectedMotorista, setSelectedMotorista] = useState<Motorista | null>(null);
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [motoristaToEdit, setMotoristaToEdit] = useState<Motorista | null>(null);
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
   const [newMotoristaForContract, setNewMotoristaForContract] = useState<Motorista | null>(null);
-  const [sortColumn, setSortColumn] = useState<SortColumn>("codigo");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -135,15 +157,6 @@ export default function Motoristas() {
     return [...new Set(gestores)].sort();
   }, [motoristas]);
 
-  // Handle column sort
-  const handleSort = (column: SortColumn) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortColumn(column);
-      setSortDirection("asc");
-    }
-  };
 
   // Sortable header component
   const SortableHeader = ({ 
@@ -238,7 +251,9 @@ export default function Motoristas() {
   }, [motoristas, searchTerm, statusFilter, cidadeFilter, gestorFilter, sortColumn, sortDirection]);
 
   const handleRowClick = (motorista: Motorista) => {
-    navigate(`/motoristas/${motorista.id}`);
+    navigate(`/motoristas/${motorista.id}`, {
+      state: { listaUrl: window.location.pathname + window.location.search },
+    });
   };
 
   const handleMotoristaUpdated = () => {
@@ -293,7 +308,7 @@ export default function Motoristas() {
               <Input
                 placeholder="Código, nome, NIF ou telefone..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => updateFilters({ search: e.target.value })}
                 className="pl-9 h-10 bg-background"
               />
             </div>
@@ -302,7 +317,7 @@ export default function Motoristas() {
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Estado</label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(v) => updateFilters({ status: v })}>
                 <SelectTrigger className="h-10 bg-background">
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
@@ -316,7 +331,7 @@ export default function Motoristas() {
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Cidade</label>
-              <Select value={cidadeFilter} onValueChange={setCidadeFilter}>
+              <Select value={cidadeFilter} onValueChange={(v) => updateFilters({ cidade: v })}>
                 <SelectTrigger className="h-10 bg-background">
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
@@ -333,7 +348,7 @@ export default function Motoristas() {
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Gestor</label>
-              <Select value={gestorFilter} onValueChange={setGestorFilter}>
+              <Select value={gestorFilter} onValueChange={(v) => updateFilters({ gestor: v })}>
                 <SelectTrigger className="h-10 bg-background">
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>

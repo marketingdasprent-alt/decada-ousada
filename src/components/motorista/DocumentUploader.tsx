@@ -15,6 +15,7 @@ interface DocumentUploaderProps {
 
 export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
   folder,
+  motoristaId,
   currentUrl,
   onUpload,
   accept = 'application/pdf,image/jpeg,image/png',

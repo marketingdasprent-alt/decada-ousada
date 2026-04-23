@@ -69,7 +69,6 @@ const formSchema = z.object({
   morada: z.string().optional(),
   codigo_postal: z.string().optional(),
   cidade: z.string().optional(),
-  cidade_assinatura: z.string().optional(),
   documento_tipo: z.string().optional(),
   documento_numero: z.string().optional(),
   documento_validade: z.string().optional().refine(validateDateYear, {
@@ -130,7 +129,6 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
       morada: "",
       codigo_postal: "",
       cidade: "",
-      cidade_assinatura: "",
       documento_tipo: "",
       documento_numero: "",
       documento_validade: "",
@@ -172,7 +170,6 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
         morada: motorista.morada || "",
         codigo_postal: motorista.codigo_postal || "",
         cidade: motorista.cidade || "",
-        cidade_assinatura: motorista.cidade_assinatura || "",
         documento_tipo: motorista.documento_tipo || "",
         documento_numero: motorista.documento_numero || "",
         documento_validade: motorista.documento_validade
@@ -225,7 +222,6 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
         morada: data.morada || null,
         codigo_postal: data.codigo_postal || null,
         cidade: data.cidade || null,
-        cidade_assinatura: data.cidade_assinatura || null,
         documento_tipo: data.documento_tipo || null,
         documento_numero: data.documento_numero || null,
         documento_validade: data.documento_validade || null,

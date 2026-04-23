@@ -34,6 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Motorista } from "@/pages/Motoristas";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { DocumentUploader } from "@/components/motorista/DocumentUploader";
+import { Loader2, X } from "lucide-react";
 
 // Validar que o ano da data está entre 1900 e 2100
 const validateDateYear = (dateString: string | undefined | null): boolean => {
@@ -69,7 +70,6 @@ const formSchema = z.object({
     message: "Ano inválido (use entre 1900 e 2100)"
   }),
   cidade: z.string().optional(),
-  cidade_assinatura: z.string().optional(),
   status_ativo: z.boolean().optional(),
   observacoes: z.string().optional(),
   iban: z.string().optional(),
@@ -152,7 +152,6 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         codigo_postal: motorista.codigo_postal || "",
         data_contratacao: motorista.data_contratacao || "",
         cidade: motorista.cidade || "",
-        cidade_assinatura: motorista.cidade_assinatura || "",
         status_ativo: motorista.status_ativo ?? true,
         observacoes: motorista.observacoes || "",
         iban: motorista.iban || "",
@@ -183,7 +182,6 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         codigo_postal: "",
         data_contratacao: "",
         cidade: "",
-        cidade_assinatura: "",
         status_ativo: true,
         observacoes: "",
         iban: "",
@@ -242,7 +240,6 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         codigo_postal: values.codigo_postal || null,
         data_contratacao: values.data_contratacao || null,
         cidade: values.cidade || null,
-        cidade_assinatura: values.cidade_assinatura || null,
         status_ativo: values.status_ativo ?? true,
         observacoes: values.observacoes || null,
         iban: values.iban || null,
@@ -309,555 +306,557 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
 
   return (
     <Dialog open={open} onOpenChange={() => onOpenChange(false)}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {motorista ? "Editar Motorista" : "Adicionar Motorista"}
-          </DialogTitle>
-          <DialogDescription>
-            {motorista
-              ? "Atualize as informações do motorista"
-              : "Preencha os dados do novo motorista"}
-          </DialogDescription>
+      <DialogContent className="max-w-none w-full h-full m-0 rounded-none p-0 flex flex-col bg-background border-none left-0 top-0 translate-x-0 translate-y-0 duration-300">
+        <DialogHeader className="px-6 py-4 border-b bg-card sticky top-0 z-[110] flex flex-row items-center justify-between shrink-0">
+          <div className="space-y-0.5">
+            <DialogTitle className="text-2xl font-bold">
+              {motorista ? "Editar Motorista" : "Adicionar Motorista"}
+            </DialogTitle>
+            <DialogDescription>
+              {motorista
+                ? "Atualize as informações do motorista"
+                : "Preencha os dados do novo motorista"}
+            </DialogDescription>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => onOpenChange(false)}
+            className="rounded-full"
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="nome"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome completo" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="nif"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>NIF *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="123456789" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="telefone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Telefone</FormLabel>
-                    <FormControl>
-                      <PhoneInput
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        defaultCountry="PT"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="email@exemplo.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="iban"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>IBAN</FormLabel>
-                  <FormControl>
-                    <Input placeholder="PT50 0000 0000 0000 0000 0000 0" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Documento de Identificação</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="documento_tipo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Cartão Cidadão">Cartão Cidadão</SelectItem>
-                          <SelectItem value="Passaporte">Passaporte</SelectItem>
-                          <SelectItem value="Autorização de Residência">Autorização de Residência (AR)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="documento_numero"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Número" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="documento_validade"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Validade</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <FormField
-                  control={form.control}
-                  name="documento_ficheiro_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Frente do Documento</FormLabel>
-                      <FormControl>
-                        <DocumentUploader
-                          folder="documentos"
-                          motoristaId={motorista?.id}
-                          currentUrl={field.value}
-                          onUpload={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="documento_identificacao_verso_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Verso do Documento</FormLabel>
-                      <FormControl>
-                        <DocumentUploader
-                          folder="documentos"
-                          motoristaId={motorista?.id}
-                          currentUrl={field.value}
-                          onUpload={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Carta de Condução</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="carta_conducao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Número da carta" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="carta_validade"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Validade</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <FormField
-                  control={form.control}
-                  name="carta_ficheiro_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Frente da Carta</FormLabel>
-                      <FormControl>
-                        <DocumentUploader
-                          folder="cartas"
-                          motoristaId={motorista?.id}
-                          currentUrl={field.value}
-                          onUpload={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="carta_conducao_verso_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Verso da Carta</FormLabel>
-                      <FormControl>
-                        <DocumentUploader
-                          folder="cartas"
-                          motoristaId={motorista?.id}
-                          currentUrl={field.value}
-                          onUpload={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="carta_categorias"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Categorias</FormLabel>
-                    <div className="grid grid-cols-5 gap-2">
-                      {CATEGORIAS_CARTA.map((categoria) => (
-                        <FormField
-                          key={categoria}
-                          control={form.control}
-                          name="carta_categorias"
-                          render={({ field }) => {
-                            return (
-                              <FormItem
-                                key={categoria}
-                                className="flex flex-row items-center space-x-2 space-y-0"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(categoria)}
-                                    onCheckedChange={(checked) => {
-                                      const current = field.value || [];
-                                      return checked
-                                        ? field.onChange([...current, categoria])
-                                        : field.onChange(
-                                            current.filter((value) => value !== categoria)
-                                          );
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="text-sm font-normal">
-                                  {categoria}
-                                </FormLabel>
-                              </FormItem>
-                            );
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Licença TVDE */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium">Licença TVDE</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="licenca_tvde_numero"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número da Licença</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Número da licença TVDE" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+        <div className="flex-1 overflow-y-auto">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-5xl mx-auto p-6 space-y-8 pb-32">
+              {/* Dados Pessoais */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <div className="h-8 w-1 bg-primary rounded-full" />
+                  <h3 className="text-lg font-semibold">Dados Pessoais</h3>
+                </div>
                 
                 <FormField
                   control={form.control}
-                  name="licenca_tvde_validade"
+                  name="nome"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Validade</FormLabel>
+                      <FormLabel>Nome Completo *</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input placeholder="Ex: João Silva" {...field} className="h-11" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <div className="pt-2">
-                <FormField
-                  control={form.control}
-                  name="licenca_tvde_ficheiro_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Ficheiro da Licença TVDE</FormLabel>
-                      <FormControl>
-                        <DocumentUploader
-                          folder="tvde"
-                          motoristaId={motorista?.id}
-                          currentUrl={field.value}
-                          onUpload={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="nif"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>NIF *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="123456789" {...field} className="h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            {/* Documentação Adicional */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium">Documentação Adicional</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="registo_criminal_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Registo Criminal</FormLabel>
-                      <FormControl>
-                        <DocumentUploader
-                          folder="documentos"
-                          motoristaId={motorista?.id}
-                          currentUrl={field.value}
-                          onUpload={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="comprovativo_morada_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Comprovativo Morada</FormLabel>
-                      <FormControl>
-                        <DocumentUploader
-                          folder="documentos"
-                          motoristaId={motorista?.id}
-                          currentUrl={field.value}
-                          onUpload={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="comprovativo_iban_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Comprovativo IBAN</FormLabel>
-                      <FormControl>
-                        <DocumentUploader
-                          folder="documentos"
-                          motoristaId={motorista?.id}
-                          currentUrl={field.value}
-                          onUpload={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
+                  <FormField
+                    control={form.control}
+                    name="telefone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telefone</FormLabel>
+                        <FormControl>
+                          <PhoneInput
+                            value={field.value || ""}
+                            onChange={field.onChange}
+                            defaultCountry="PT"
+                            className="h-11"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2">
-                <FormField
-                  control={form.control}
-                  name="morada"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Morada</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Rua, número, andar..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="codigo_postal"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código Postal</FormLabel>
-                    <FormControl>
-                      <Input placeholder="0000-000" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="email@exemplo.com" {...field} className="h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="data_contratacao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data de Contratação *</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="cidade"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cidade (Residência)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Ex: Lisboa" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="cidade_assinatura"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cidade de Assinatura do Contrato</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Ex: Leiria" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="status_ativo"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                  <div className="space-y-0.5">
-                    <FormLabel>Status</FormLabel>
-                    <div className="text-sm text-muted-foreground">
-                      {field.value ? "Motorista ativo" : "Motorista inativo"}
-                    </div>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="md:col-span-2">
+                    <FormField
+                      control={form.control}
+                      name="morada"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Morada</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Rua, número, andar..." {...field} className="h-11" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="codigo_postal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Código Postal</FormLabel>
+                        <FormControl>
+                          <Input placeholder="0000-000" {...field} className="h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <FormField
-              control={form.control}
-              name="observacoes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Observações</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Notas adicionais sobre o motorista..." rows={3} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="cidade"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cidade (Residência)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Lisboa" {...field} className="h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="data_contratacao"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data de Contratação *</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} className="h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "A guardar..." : motorista ? "Atualizar" : "Criar"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+                <FormField
+                  control={form.control}
+                  name="iban"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>IBAN</FormLabel>
+                      <FormControl>
+                        <Input placeholder="PT50 0000 0000 0000 0000 0000 0" {...field} className="h-11" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </section>
+
+              {/* Seções de Documentos com Cores */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Identificação - AZUL */}
+                <div className="bg-blue-100/40 dark:bg-blue-900/20 p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-800/50 space-y-4 shadow-sm">
+                  <div className="flex items-center gap-2 pb-2 border-b border-blue-300/50 dark:border-blue-800/50">
+                    <h3 className="font-bold text-blue-800 dark:text-blue-300">Identificação</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="documento_tipo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Cartão Cidadão">Cartão Cidadão</SelectItem>
+                              <SelectItem value="Passaporte">Passaporte</SelectItem>
+                              <SelectItem value="Autorização de Residência">AR</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="documento_numero"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Número *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Número" {...field} className="bg-background" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="documento_validade"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Validade</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} className="bg-background" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="documento_ficheiro_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Frente</FormLabel>
+                          <FormControl>
+                            <DocumentUploader
+                              folder="documentos"
+                              motoristaId={motorista?.id}
+                              currentUrl={field.value}
+                              onUpload={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="documento_identificacao_verso_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Verso</FormLabel>
+                          <FormControl>
+                            <DocumentUploader
+                              folder="documentos"
+                              motoristaId={motorista?.id}
+                              currentUrl={field.value}
+                              onUpload={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Carta de Condução - VERDE */}
+                <div className="bg-emerald-100/40 dark:bg-emerald-900/20 p-6 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800/50 space-y-4 shadow-sm">
+                  <div className="flex items-center gap-2 pb-2 border-b border-emerald-300/50 dark:border-emerald-800/50">
+                    <h3 className="font-bold text-emerald-800 dark:text-emerald-300">Carta de Condução</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="carta_conducao"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Número *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Número" {...field} className="bg-background" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="carta_validade"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Validade</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} className="bg-background" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="carta_ficheiro_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Frente</FormLabel>
+                          <FormControl>
+                            <DocumentUploader
+                              folder="cartas"
+                              motoristaId={motorista?.id}
+                              currentUrl={field.value}
+                              onUpload={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="carta_conducao_verso_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Verso</FormLabel>
+                          <FormControl>
+                            <DocumentUploader
+                              folder="cartas"
+                              motoristaId={motorista?.id}
+                              currentUrl={field.value}
+                              onUpload={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="carta_categorias"
+                    render={() => (
+                      <FormItem>
+                        <FormLabel>Categorias</FormLabel>
+                        <div className="grid grid-cols-5 gap-2">
+                          {CATEGORIAS_CARTA.map((categoria) => (
+                            <FormField
+                              key={categoria}
+                              control={form.control}
+                              name="carta_categorias"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(categoria)}
+                                      onCheckedChange={(checked) => {
+                                        const current = field.value || [];
+                                        return checked
+                                          ? field.onChange([...current, categoria])
+                                          : field.onChange(current.filter((value) => value !== categoria));
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="text-xs font-normal cursor-pointer">
+                                    {categoria}
+                                  </FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                          ))}
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* TVDE - ROXO */}
+                <div className="bg-indigo-100/40 dark:bg-indigo-900/20 p-6 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800/50 space-y-4 shadow-sm">
+                  <div className="flex items-center gap-2 pb-2 border-b border-indigo-300/50 dark:border-indigo-800/50">
+                    <h3 className="font-bold text-indigo-800 dark:text-indigo-300">Licença TVDE</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="licenca_tvde_numero"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Número</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Número" {...field} className="bg-background" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="licenca_tvde_validade"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Validade</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} className="bg-background" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="licenca_tvde_ficheiro_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Ficheiro TVDE</FormLabel>
+                        <FormControl>
+                          <DocumentUploader
+                            folder="tvde"
+                            motoristaId={motorista?.id}
+                            currentUrl={field.value}
+                            onUpload={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Adicional - LARANJA */}
+                <div className="bg-amber-100/40 dark:bg-amber-900/20 p-6 rounded-2xl border-2 border-amber-200 dark:border-amber-800/50 space-y-4 shadow-sm">
+                  <div className="flex items-center gap-2 pb-2 border-b border-amber-300/50 dark:border-amber-800/50">
+                    <h3 className="font-bold text-amber-800 dark:text-amber-300">Documentação Extra</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="registo_criminal_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Registo Criminal</FormLabel>
+                          <FormControl>
+                            <DocumentUploader
+                              folder="documentos"
+                              motoristaId={motorista?.id}
+                              currentUrl={field.value}
+                              onUpload={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="comprovativo_morada_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Comprovativo de Morada</FormLabel>
+                          <FormControl>
+                            <DocumentUploader
+                              folder="documentos"
+                              motoristaId={motorista?.id}
+                              currentUrl={field.value}
+                              onUpload={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="comprovativo_iban_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Comprovativo de IBAN</FormLabel>
+                          <FormControl>
+                            <DocumentUploader
+                              folder="documentos"
+                              motoristaId={motorista?.id}
+                              currentUrl={field.value}
+                              onUpload={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Observações */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <div className="h-8 w-1 bg-primary rounded-full" />
+                  <h3 className="text-lg font-semibold">Notas e Outros</h3>
+                </div>
+                
+
+                <FormField
+                  control={form.control}
+                  name="observacoes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Observações Internas</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Notas sobre o motorista, histórico ou observações relevantes..." 
+                          className="min-h-[120px] resize-none"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </section>
+            </form>
+          </Form>
+        </div>
+
+        <div className="px-6 py-4 border-t bg-card sticky bottom-0 z-10 flex items-center justify-end gap-3 shrink-0">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading} className="h-11 px-8">
+            Cancelar
+          </Button>
+          <Button 
+            onClick={form.handleSubmit(onSubmit)} 
+            disabled={loading || isSubmitting}
+            className="h-11 px-10 font-bold"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Gravando...
+              </>
+            ) : (
+              motorista ? "Guardar Alterações" : "Criar Motorista"
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
