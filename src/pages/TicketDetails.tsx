@@ -292,16 +292,19 @@ const TicketDetails = () => {
   }, [id]);
 
   useEffect(() => {
-    scrollToBottom();
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+    return () => clearTimeout(timer);
   }, [mensagens]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const fetchTicketData = async () => {
+  const fetchTicketData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
 
       // Fetch ticket
       const { data: ticketData, error: ticketError } = await supabase
@@ -372,29 +375,33 @@ const TicketDetails = () => {
           .order('created_at', { ascending: false }),
       ]);
 
+      if (mensagensRes.error) console.error('Erro mensagens:', mensagensRes.error);
+      if (anexosRes.error) console.error('Erro anexos:', anexosRes.error);
+
+      // 1. Processar Anexos Primeiro
+      const rawAnexos = anexosRes.data || [];
+      const formattedAnexos = rawAnexos.map(a => {
+        let url = a.ficheiro_url;
+        if (url && !url.startsWith('http')) {
+          const { data } = supabase.storage.from('assistencia-anexos').getPublicUrl(url);
+          url = data.publicUrl;
+        }
+        
+        let tipo = (a as any).tipo_inspecao;
+        if (!tipo) {
+          if (a.nome_ficheiro?.toLowerCase().includes('saida') || a.nome_ficheiro?.toLowerCase().includes('checkout')) {
+            tipo = 'checkout';
+          } else {
+            tipo = 'checkin';
+          }
+        }
+        return { ...a, ficheiro_url: url, tipo_inspecao: tipo };
+      });
+
+      setAnexos(formattedAnexos as Anexo[]);
+
+      // 2. Processar Mensagens
       if (mensagensRes.data) {
-        // Garantir que todos os URLs sejam URLs públicos válidos antes de agrupar
-        const formattedAnexos = (anexosRes.data || []).map(a => {
-          let url = a.ficheiro_url;
-          if (url && !url.startsWith('http')) {
-            const { data } = supabase.storage.from('assistencia-anexos').getPublicUrl(url);
-            url = data.publicUrl;
-          }
-          
-          // Heurística para detetar tipo se a coluna não existir ou for nula
-          let tipo = (a as any).tipo_inspecao;
-          if (!tipo) {
-            if (a.nome_ficheiro?.toLowerCase().includes('saida') || a.nome_ficheiro?.toLowerCase().includes('checkout')) {
-              tipo = 'checkout';
-            } else {
-              tipo = 'checkin';
-            }
-          }
-
-          return { ...a, ficheiro_url: url, tipo_inspecao: tipo };
-        });
-
-        // Buscar autores para as mensagens
         const autorIds = [...new Set(mensagensRes.data.map(m => m.autor_id).filter(Boolean))];
         const { data: autores } = await supabase
           .from('profiles')
@@ -411,10 +418,9 @@ const TicketDetails = () => {
         });
         
         setMensagens(msgsComAutor as any);
-        setAnexos(formattedAnexos as Anexo[]);
       }
     } catch (error) {
-      console.error('Erro ao atualizar mensagens:', error);
+      console.error('Erro ao atualizar mensagens e anexos:', error);
     }
   };
 
@@ -693,7 +699,7 @@ const TicketDetails = () => {
 
       setNovaMensagem('');
       setSelectedFiles([]);
-      fetchTicketData();
+      fetchTicketData(true);
 
       toast({
         title: "Sucesso",
@@ -1288,7 +1294,7 @@ const TicketDetails = () => {
                         {msg.anexos && msg.anexos.length > 0 && (
                           <div className="mt-2 grid grid-cols-1 gap-2">
                             {msg.anexos.map(anexo => {
-                              const isImage = anexo.tipo_ficheiro?.startsWith('image/') || anexo.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i);
+                              const isImage = anexo.tipo_ficheiro?.startsWith('image/') || anexo.tipo_ficheiro === 'foto' || anexo.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i);
                               return (
                                 <div 
                                   key={anexo.id} 
@@ -1774,7 +1780,7 @@ const TicketDetails = () => {
                   <ArrowRight className="h-3 w-3 text-blue-500" /> Check-in (Entrada)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {anexos.filter(a => (a.tipo_inspecao === 'checkin' || !a.tipo_inspecao) && (a.tipo_ficheiro?.startsWith('image/') || a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i))).slice(0, 6).map((anexo, idx) => (
+                  {anexos.filter(a => (a.tipo_inspecao === 'checkin' || !a.tipo_inspecao || a.tipo_inspecao === 'entrada') && (a.ficheiro_url)).slice(0, 12).map((anexo, idx) => (
                     <div 
                       key={anexo.id} 
                       className="aspect-square rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-muted relative group"
@@ -1813,7 +1819,7 @@ const TicketDetails = () => {
                       )}
                     </div>
                   ))}
-                  {anexos.filter(a => (a.tipo_inspecao === 'checkin' || !a.tipo_inspecao) && (a.tipo_ficheiro?.startsWith('image/') || a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i))).length === 0 && (
+                  {anexos.filter(a => (a.tipo_inspecao === 'checkin' || !a.tipo_inspecao || a.tipo_inspecao === 'entrada') && (a.ficheiro_url)).length === 0 && (
                     <p className="col-span-3 text-[10px] text-muted-foreground italic py-1">Nenhuma foto de entrada</p>
                   )}
                 </div>
@@ -1825,7 +1831,7 @@ const TicketDetails = () => {
                   <ArrowLeft className="h-3 w-3 text-green-500" /> Check-out (Saída)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {anexos.filter(a => a.tipo_inspecao === 'checkout' && (a.tipo_ficheiro?.startsWith('image/') || a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i))).slice(0, 6).map((anexo, idx) => (
+                  {anexos.filter(a => (a.tipo_inspecao === 'checkout' || a.tipo_inspecao === 'saida') && (a.ficheiro_url)).slice(0, 12).map((anexo, idx) => (
                     <div 
                       key={anexo.id} 
                       className="aspect-square rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-muted relative group"
