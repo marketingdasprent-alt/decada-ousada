@@ -342,8 +342,8 @@ const TicketDetails = () => {
       if (criadorRes.data) setCriador(criadorRes.data);
       
       // Separar a lógica de mensagens para poder atualizar em tempo real
-      await fetchMensagensAndAnexos();
-      await fetchAcessos();
+      await fetchMensagensAndAnexos(ticketData.id);
+      await fetchAcessos(ticketData.id);
 
     } catch (error: any) {
       console.error('Erro ao carregar ticket:', error);
@@ -358,20 +358,21 @@ const TicketDetails = () => {
     }
   };
 
-  const fetchMensagensAndAnexos = async () => {
-    if (!id) return;
+  const fetchMensagensAndAnexos = async (ticketIdOverride?: string) => {
+    const targetId = ticketIdOverride || id;
+    if (!targetId) return;
     
     try {
       const [mensagensRes, anexosRes] = await Promise.all([
         supabase
           .from('assistencia_mensagens')
           .select('id, mensagem, tipo, created_at, autor_id')
-          .eq('ticket_id', id)
+          .eq('ticket_id', targetId)
           .order('created_at', { ascending: true }),
         supabase
           .from('assistencia_anexos')
           .select('*')
-          .eq('ticket_id', id)
+          .eq('ticket_id', targetId)
           .order('created_at', { ascending: false }),
       ]);
 
@@ -380,11 +381,42 @@ const TicketDetails = () => {
 
       // 1. Processar Anexos Primeiro
       const rawAnexos = anexosRes.data || [];
-      const formattedAnexos = rawAnexos.map(a => {
+      const formattedAnexos = await Promise.all(rawAnexos.map(async (a) => {
         let url = a.ficheiro_url;
-        if (url && !url.startsWith('http')) {
-          const { data } = supabase.storage.from('assistencia-anexos').getPublicUrl(url);
-          url = data.publicUrl;
+        let path = url;
+
+        // Limpeza e extração robusta do path
+        if (url && url.startsWith('http')) {
+          // Tentar extrair o path de várias formas
+          if (url.includes('/assistencia-anexos/')) {
+            path = url.split('/assistencia-anexos/')[1].split('?')[0];
+          } else {
+            // Heurística: procurar por 'assistencia/' que é o prefixo usado no upload
+            const assistIndex = url.indexOf('assistencia/');
+            if (assistIndex !== -1) {
+              path = url.substring(assistIndex).split('?')[0];
+            }
+          }
+        }
+
+        // Se conseguimos um path que parece correto, tentar obter um URL assinado ou público
+        if (path && (path.startsWith('assistencia/') || !path.startsWith('http'))) {
+          try {
+            // Tentar URL assinado primeiro (mais garantido)
+            const { data: signedData } = await supabase.storage
+              .from('assistencia-anexos')
+              .createSignedUrl(path, 3600);
+            
+            if (signedData?.signedUrl) {
+              url = signedData.signedUrl;
+            } else {
+              // Fallback para Public URL
+              const { data: publicData } = supabase.storage.from('assistencia-anexos').getPublicUrl(path);
+              url = publicData.publicUrl;
+            }
+          } catch (e) {
+            console.error('Erro ao processar storage path:', e);
+          }
         }
         
         let tipo = (a as any).tipo_inspecao;
@@ -396,7 +428,7 @@ const TicketDetails = () => {
           }
         }
         return { ...a, ficheiro_url: url, tipo_inspecao: tipo };
-      });
+      }));
 
       setAnexos(formattedAnexos as Anexo[]);
 
@@ -424,8 +456,9 @@ const TicketDetails = () => {
     }
   };
 
-  const fetchAcessos = async () => {
-    if (!id) return;
+  const fetchAcessos = async (ticketIdOverride?: string) => {
+    const targetId = ticketIdOverride || id;
+    if (!targetId) return;
     try {
       const GESTOR_ASSISTENCIA_CARGO_IDS = ['d8680e20-5025-47c1-bcc0-ae432f8afb96'];
 
@@ -433,8 +466,8 @@ const TicketDetails = () => {
         supabase
           .from('assistencia_ticket_acessos')
           .select(`profile_id, profiles:profile_id (id, nome, cargo, is_admin, grupo:cargo_id (nome))`)
-          .eq('ticket_id', id),
-        supabase.from('assistencia_tickets').select('criado_por').eq('id', id).single(),
+          .eq('ticket_id', targetId),
+        supabase.from('assistencia_tickets').select('criado_por').eq('id', targetId).single(),
         supabase.from('profiles').select('id, nome, cargo, is_admin, grupo:cargo_id(nome)').eq('is_admin', true),
         supabase.from('profiles').select('id, nome, cargo, is_admin, grupo:cargo_id(nome)').in('cargo_id', GESTOR_ASSISTENCIA_CARGO_IDS),
         supabase.from('profiles').select('id, nome, cargo, is_admin, grupo:cargo_id(nome)').ilike('cargo', '%Gestor%Assist%'),
@@ -1761,8 +1794,13 @@ const TicketDetails = () => {
           {/* Gallery Card */}
           <Card>
             <CardHeader className="py-3 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Image className="h-4 w-4" /> Galeria
+              <CardTitle className="text-sm font-bold flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <Image className="h-5 w-5 text-red-500" /> Galeria - TOTAL: {anexos.length}
+                </div>
+                <div className="bg-yellow-100 p-1 rounded text-[9px] font-mono text-black break-all">
+                  TICKET_ID: {id}
+                </div>
               </CardTitle>
               <Button 
                 variant="ghost" 
@@ -1780,7 +1818,7 @@ const TicketDetails = () => {
                   <ArrowRight className="h-3 w-3 text-blue-500" /> Check-in (Entrada)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {anexos.filter(a => (a.tipo_inspecao === 'checkin' || !a.tipo_inspecao || a.tipo_inspecao === 'entrada') && (a.ficheiro_url)).slice(0, 12).map((anexo, idx) => (
+                  {anexos.slice(0, 20).map((anexo, idx) => (
                     <div 
                       key={anexo.id} 
                       className="aspect-square rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-muted relative group"
@@ -1819,7 +1857,7 @@ const TicketDetails = () => {
                       )}
                     </div>
                   ))}
-                  {anexos.filter(a => (a.tipo_inspecao === 'checkin' || !a.tipo_inspecao || a.tipo_inspecao === 'entrada') && (a.ficheiro_url)).length === 0 && (
+                  {anexos.length === 0 && (
                     <p className="col-span-3 text-[10px] text-muted-foreground italic py-1">Nenhuma foto de entrada</p>
                   )}
                 </div>
@@ -1831,7 +1869,7 @@ const TicketDetails = () => {
                   <ArrowLeft className="h-3 w-3 text-green-500" /> Check-out (Saída)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {anexos.filter(a => (a.tipo_inspecao === 'checkout' || a.tipo_inspecao === 'saida') && (a.ficheiro_url)).slice(0, 12).map((anexo, idx) => (
+                  {anexos.filter(a => (a.tipo_inspecao === 'checkout' || a.tipo_inspecao === 'saida') && (a.tipo_ficheiro?.startsWith('image/') || a.tipo_ficheiro === 'foto' || a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i))).slice(0, 15).map((anexo, idx) => (
                     <div 
                       key={anexo.id} 
                       className="aspect-square rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-muted relative group"

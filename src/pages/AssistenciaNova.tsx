@@ -242,7 +242,7 @@ export default function AssistenciaNova() {
         const anexos = mediaFiles.map(file => ({
           ticket_id: ticket.id,
           tipo_ficheiro: file.type === 'image' ? 'foto' : 'video',
-          ficheiro_url: file.url,
+          ficheiro_url: file.path,
           nome_ficheiro: file.path.split('/').pop() || 'anexo',
           uploaded_by: user?.id,
           tipo_inspecao: 'checkin'
@@ -287,7 +287,7 @@ export default function AssistenciaNova() {
             .filter(f => f.type === 'image')
             .map(file => ({
               dano_id: novoDano.id,
-              ficheiro_url: file.url,
+              ficheiro_url: file.path,
               nome_ficheiro: file.path.split('/').pop() || 'foto_checkin',
               uploaded_by: user?.id
             }));

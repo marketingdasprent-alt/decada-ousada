@@ -90,8 +90,16 @@ const MeusTickets = () => {
     try {
       setLoading(true);
       
-      // Fetch only tickets created by current user
-      const { data: ticketsData, error } = await supabase
+      // 1. Get IDs of tickets where user has explicit access
+      const { data: accessData } = await supabase
+        .from('assistencia_ticket_acessos')
+        .select('ticket_id')
+        .eq('profile_id', user.id);
+      
+      const sharedTicketIds = accessData?.map(a => a.ticket_id) || [];
+      
+      // 2. Fetch tickets created by me OR shared with me
+      let query = supabase
         .from('assistencia_tickets')
         .select(`
           id,
@@ -104,9 +112,16 @@ const MeusTickets = () => {
           data_estimada,
           viatura_id,
           categoria_id
-        `)
-        .eq('criado_por', user.id)
-        .order('created_at', { ascending: false });
+        `);
+
+      if (sharedTicketIds.length > 0) {
+        // Use .or to match criado_por, id in shared list, OR atribuido_a
+        query = query.or(`criado_por.eq.${user.id},id.in.(${sharedTicketIds.join(',')}),atribuido_a.eq.${user.id}`);
+      } else {
+        query = query.or(`criado_por.eq.${user.id},atribuido_a.eq.${user.id}`);
+      }
+
+      const { data: ticketsData, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       
