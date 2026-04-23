@@ -17,6 +17,17 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-registerSW({ onNeedRefresh() {}, onOfflineReady() {} });
+// Check for SW updates every 60 seconds so all open browsers get the new version
+registerSW({
+  onNeedRefresh() {},
+  onOfflineReady() {},
+  onRegisteredSW(_swUrl, registration) {
+    if (registration) {
+      setInterval(() => {
+        registration.update();
+      }, 60 * 1000);
+    }
+  },
+});
 
 createRoot(document.getElementById("root")!).render(<App />);
