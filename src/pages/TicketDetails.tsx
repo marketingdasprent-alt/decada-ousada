@@ -381,6 +381,7 @@ const TicketDetails = () => {
 
       // 1. Processar Anexos Primeiro
       const rawAnexos = anexosRes.data || [];
+      console.log('[DEBUG] anexos raw count:', rawAnexos.length, rawAnexos.map(a => ({ id: a.id, url: a.ficheiro_url, tipo: (a as any).tipo_inspecao })));
       const formattedAnexos = rawAnexos.map((a) => {
         let url = a.ficheiro_url;
 
@@ -396,6 +397,7 @@ const TicketDetails = () => {
           const { data: { publicUrl } } = supabase.storage.from('assistencia-anexos').getPublicUrl(url);
           url = publicUrl;
         }
+        console.log('[DEBUG] anexo final url:', url);
 
         let tipo = (a as any).tipo_inspecao;
         if (!tipo) {
