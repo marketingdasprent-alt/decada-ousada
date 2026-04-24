@@ -57,14 +57,28 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     try {
-      const { data: profile, error: profileError } = await supabase
+      let { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('is_admin, cargo_id, cargo, tipo_utilizador')
         .eq('id', user.id)
         .single();
 
+      // Fallback se tipo_utilizador não existir na tabela
+      if (profileError && profileError.message?.includes('tipo_utilizador')) {
+        console.warn('[PermissionsContext] Coluna tipo_utilizador não encontrada, tentando fallback...');
+        const { data: fallbackProfile, error: fallbackError } = await supabase
+          .from('profiles')
+          .select('is_admin, cargo_id, cargo')
+          .eq('id', user.id)
+          .single();
+        
+        profile = fallbackProfile;
+        profileError = fallbackError;
+      }
+
       if (profileError || currentFetchId !== fetchIdRef.current) {
-        if (currentFetchId === fetchIdRef.current) {
+        if (profileError && currentFetchId === fetchIdRef.current) {
+          console.error('[PermissionsContext] Erro ao carregar perfil:', profileError);
           setState({ ...DEFAULT_STATE, loading: false, initialized: true });
         }
         return;

@@ -86,7 +86,7 @@ const prioridadeConfig: Record<string, { label: string; color: string }> = {
   baixa: { label: 'Baixa', color: 'bg-gray-400' },
   media: { label: 'Média', color: 'bg-blue-400' },
   alta: { label: 'Alta', color: 'bg-orange-500' },
-  prioridade: { label: 'Urgente', color: 'bg-red-500' },
+  urgente: { label: 'Urgente', color: 'bg-red-500' },
 };
 
 const Assistencia = () => {

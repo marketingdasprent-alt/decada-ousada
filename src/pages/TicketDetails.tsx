@@ -466,12 +466,12 @@ const TicketDetails = () => {
       const [accessRes, ticketRes, adminsRes, gestoresByIdRes, gestoresByNomeRes] = await Promise.all([
         supabase
           .from('assistencia_ticket_acessos')
-          .select(`profile_id, profiles:profile_id (id, nome, cargo, is_admin, grupo:cargo_id (nome))`)
+          .select(`profile_id, profiles!profile_id (id, nome, cargo, is_admin, cargo_id)`)
           .eq('ticket_id', targetId),
         supabase.from('assistencia_tickets').select('criado_por').eq('id', targetId).single(),
-        supabase.from('profiles').select('id, nome, cargo, is_admin, grupo:cargo_id(nome)').eq('is_admin', true),
-        supabase.from('profiles').select('id, nome, cargo, is_admin, grupo:cargo_id(nome)').in('cargo_id', GESTOR_ASSISTENCIA_CARGO_IDS),
-        supabase.from('profiles').select('id, nome, cargo, is_admin, grupo:cargo_id(nome)').ilike('cargo', '%Gestor%Assist%'),
+        supabase.from('profiles').select('id, nome, cargo, is_admin, cargo_id').eq('is_admin', true),
+        supabase.from('profiles').select('id, nome, cargo, is_admin, cargo_id').in('cargo_id', GESTOR_ASSISTENCIA_CARGO_IDS),
+        supabase.from('profiles').select('id, nome, cargo, is_admin, cargo_id').ilike('cargo', '%Gestor%Assist%'),
       ]);
 
       const peopleMap = new Map<string, any>();
