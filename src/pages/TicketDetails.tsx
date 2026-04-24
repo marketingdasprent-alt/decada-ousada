@@ -381,45 +381,22 @@ const TicketDetails = () => {
 
       // 1. Processar Anexos Primeiro
       const rawAnexos = anexosRes.data || [];
-      const formattedAnexos = await Promise.all(rawAnexos.map(async (a) => {
+      const formattedAnexos = rawAnexos.map((a) => {
         let url = a.ficheiro_url;
-        let path = url;
 
-        // Limpeza e extração robusta do path via Regex
+        // Bucket é público — extrair o path e reconstruir a URL pública limpa
         if (url && url.startsWith('http')) {
-          // Regex para capturar tudo após o nome do bucket no formato padrão do Supabase
           const storageMatch = url.match(/\/storage\/v1\/object\/(?:public|authenticated|sign)\/assistencia-anexos\/(.+)$/);
           if (storageMatch && storageMatch[1]) {
-            path = storageMatch[1].split('?')[0];
-          } else {
-            // Fallback: procurar por 'assistencia/' que é o prefixo usado no upload
-            const assistIndex = url.indexOf('assistencia/');
-            if (assistIndex !== -1) {
-              path = url.substring(assistIndex).split('?')[0];
-            }
+            const path = storageMatch[1].split('?')[0];
+            const { data: { publicUrl } } = supabase.storage.from('assistencia-anexos').getPublicUrl(path);
+            url = publicUrl;
           }
+        } else if (url && !url.startsWith('http')) {
+          const { data: { publicUrl } } = supabase.storage.from('assistencia-anexos').getPublicUrl(url);
+          url = publicUrl;
         }
 
-        // Se conseguimos um path que parece correto, tentar obter um URL assinado ou público
-        if (path && (path.startsWith('assistencia/') || !path.startsWith('http'))) {
-          try {
-            // Tentar URL assinado primeiro (mais garantido)
-            const { data: signedData } = await supabase.storage
-              .from('assistencia-anexos')
-              .createSignedUrl(path, 3600);
-            
-            if (signedData?.signedUrl) {
-              url = signedData.signedUrl;
-            } else {
-              // Fallback para Public URL
-              const { data: publicData } = supabase.storage.from('assistencia-anexos').getPublicUrl(path);
-              url = publicData.publicUrl;
-            }
-          } catch (e) {
-            console.error('Erro ao processar storage path:', e);
-          }
-        }
-        
         let tipo = (a as any).tipo_inspecao;
         if (!tipo) {
           if (a.nome_ficheiro?.toLowerCase().includes('saida') || a.nome_ficheiro?.toLowerCase().includes('checkout')) {
@@ -429,7 +406,7 @@ const TicketDetails = () => {
           }
         }
         return { ...a, ficheiro_url: url, tipo_inspecao: tipo };
-      }));
+      });
 
       setAnexos(formattedAnexos as Anexo[]);
 
