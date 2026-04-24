@@ -71,8 +71,7 @@ async function runRetroactiveFix() {
       // Preparar entradas de acesso
       const accessEntries = Array.from(userIdsForThisTicket).map(uid => ({
         ticket_id: ticket.id,
-        user_id: uid,
-        tipo_acesso: 'visualizacao'
+        profile_id: uid
       }));
 
       if (accessEntries.length > 0) {
@@ -81,9 +80,8 @@ async function runRetroactiveFix() {
             .from('assistencia_ticket_acessos')
             .upsert({
               ticket_id: entry.ticket_id,
-              user_id: entry.user_id,
-              tipo_acesso: 'visualizacao'
-            }, { onConflict: 'ticket_id,user_id' });
+              profile_id: entry.profile_id
+            }, { onConflict: 'ticket_id,profile_id' });
         }
       }
       process.stdout.write('.');

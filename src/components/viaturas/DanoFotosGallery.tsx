@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -244,6 +245,7 @@ export function DanoFotosGallery({
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>{selectedFoto?.nome_ficheiro || 'Foto do Dano'}</DialogTitle>
+            <DialogDescription className="sr-only">Visualização ampliada da foto selecionada.</DialogDescription>
           </DialogHeader>
             {selectedFoto && (
               <div className="flex flex-col items-center gap-4">
@@ -267,6 +269,7 @@ export function DanoFotosGallery({
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Editar Legenda da Foto</DialogTitle>
+              <DialogDescription className="sr-only">Edite a legenda ou descrição da foto do dano.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">

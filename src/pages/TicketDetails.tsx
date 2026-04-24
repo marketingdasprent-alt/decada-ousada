@@ -47,6 +47,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -381,23 +382,43 @@ const TicketDetails = () => {
 
       // 1. Processar Anexos Primeiro
       const rawAnexos = anexosRes.data || [];
-      console.log('[DEBUG] anexos raw count:', rawAnexos.length, rawAnexos.map(a => ({ id: a.id, url: a.ficheiro_url, tipo: (a as any).tipo_inspecao })));
       const formattedAnexos = rawAnexos.map((a) => {
         let url = a.ficheiro_url;
+        let bucket = 'assistencia-anexos';
 
-        // Bucket é público — extrair o path e reconstruir a URL pública limpa
-        if (url && url.startsWith('http')) {
-          const storageMatch = url.match(/\/storage\/v1\/object\/(?:public|authenticated|sign)\/assistencia-anexos\/(.+)$/);
-          if (storageMatch && storageMatch[1]) {
-            const path = storageMatch[1].split('?')[0];
-            const { data: { publicUrl } } = supabase.storage.from('assistencia-anexos').getPublicUrl(path);
+        if (!url) {
+          console.warn(`Anexo ${a.id} sem URL.`);
+        } else if (url.startsWith('blob:')) {
+          // Se for um blob URL, tentamos reconstruir com base nos padrões conhecidos
+          if (a.nome_ficheiro) {
+            // Padrão AssistenciaNova: assistencia/USER_ID/FILENAME
+            const pathCheckin = `assistencia/${a.uploaded_by || 'unknown'}/${a.nome_ficheiro}`;
+            const { data: { publicUrl } } = supabase.storage.from('assistencia-anexos').getPublicUrl(pathCheckin);
             url = publicUrl;
           }
-        } else if (url && !url.startsWith('http')) {
-          const { data: { publicUrl } } = supabase.storage.from('assistencia-anexos').getPublicUrl(url);
+        } else if (url.startsWith('http')) {
+          // Detetar bucket a partir do URL completo
+          const bucketMatch = url.match(/\/storage\/v1\/object\/(?:public|authenticated|sign)\/([^\/]+)\/(.+)$/);
+          if (bucketMatch) {
+            bucket = bucketMatch[1];
+            const path = bucketMatch[2].split('?')[0];
+            const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path);
+            url = publicUrl;
+          }
+        } else {
+          // Caminho relativo - se não começa com 'assistencia/', provavelmente é do bucket 'viaturas' (danos)
+          if (!url.startsWith('assistencia/') && !url.includes('/')) {
+            // Se for apenas um nome de arquivo sem pasta, pode ser o padrão antigo do ticket
+            url = `${targetId}/${url}`;
+          }
+          
+          if (!url.startsWith('assistencia/')) {
+            bucket = 'viaturas';
+          }
+          
+          const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(url);
           url = publicUrl;
         }
-        console.log('[DEBUG] anexo final url:', url);
 
         let tipo = (a as any).tipo_inspecao;
         if (!tipo) {
@@ -647,7 +668,7 @@ const TicketDetails = () => {
             ticket_id: id,
             mensagem_id: mensagemInserida.id,
             nome_ficheiro: file.name,
-            ficheiro_url: publicUrl,
+            ficheiro_url: fileName,
             tipo_ficheiro: file.type,
             tamanho: file.size,
             uploaded_by: user?.id,
@@ -908,7 +929,7 @@ const TicketDetails = () => {
         const anexosSaida = exitMediaFiles.map(file => ({
           ticket_id: id,
           tipo_ficheiro: file.type === 'image' ? 'foto' : 'video',
-          ficheiro_url: file.url,
+          ficheiro_url: file.path, // Salvar o PATH é mais robusto
           nome_ficheiro: file.path.split('/').pop() || 'anexo_saida',
           uploaded_by: user?.id,
           tipo_inspecao: 'checkout'
@@ -942,7 +963,7 @@ const TicketDetails = () => {
             .filter(f => f.type === 'image')
             .map(file => ({
               dano_id: checkoutDano.id,
-              ficheiro_url: file.url,
+              ficheiro_url: file.path, // Salvar o PATH
               nome_ficheiro: file.path.split('/').pop() || 'foto_checkout',
               uploaded_by: user?.id
             }));
@@ -1798,26 +1819,43 @@ const TicketDetails = () => {
                   <ArrowRight className="h-3 w-3 text-blue-500" /> Check-in (Entrada)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {anexos.slice(0, 20).map((anexo, idx) => (
-                    <div 
-                      key={anexo.id} 
-                      className="aspect-square rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-muted relative group"
-                    >
-                      <img 
-                        src={anexo.ficheiro_url} 
-                        className="w-full h-full object-cover" 
-                        onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=Indispon%C3%ADvel';
-                        }}
-                      />
-                      {anexo.tipo_ficheiro === 'video' && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20" onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}>
-                          <PlayCircle className="h-6 w-6 text-white" />
-                        </div>
-                      )}
-                      
-                      {/* Legend Indicator/Button */}
+                  {anexos.slice(0, 20).map((anexo, idx) => {
+                    const isVideo = anexo.tipo_ficheiro === 'video' || anexo.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i);
+                    const isImage = !isVideo && (anexo.tipo_ficheiro?.startsWith('image/') || anexo.tipo_ficheiro === 'foto' || anexo.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i));
+                    
+                    return (
+                      <div 
+                        key={anexo.id} 
+                        className="aspect-square rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-muted relative group"
+                      >
+                        {isImage ? (
+                          <img 
+                            src={anexo.ficheiro_url} 
+                            className="w-full h-full object-cover" 
+                            onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}
+                            onError={(e) => {
+                              console.error("Erro ao carregar imagem:", anexo.ficheiro_url);
+                              (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=Erro+Carga';
+                            }}
+                          />
+                        ) : isVideo ? (
+                          <div 
+                            className="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-white gap-1"
+                            onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}
+                          >
+                            <PlayCircle className="h-8 w-8 text-white/80" />
+                            <span className="text-[8px] font-bold uppercase opacity-50">Vídeo</span>
+                          </div>
+                        ) : (
+                          <div 
+                            className="w-full h-full flex items-center justify-center bg-muted"
+                            onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}
+                          >
+                            <FileText className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        
+                        {/* Legend Indicator/Button */}
                       {(isAdmin || hasAccessToResource('assistencia_tickets')) && (
                         <button
                           onClick={(e) => {
@@ -1836,7 +1874,8 @@ const TicketDetails = () => {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                   {anexos.length === 0 && (
                     <p className="col-span-3 text-[10px] text-muted-foreground italic py-1">Nenhuma foto de entrada</p>
                   )}
@@ -1849,46 +1888,66 @@ const TicketDetails = () => {
                   <ArrowLeft className="h-3 w-3 text-green-500" /> Check-out (Saída)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {anexos.filter(a => (a.tipo_inspecao === 'checkout' || a.tipo_inspecao === 'saida') && (a.tipo_ficheiro?.startsWith('image/') || a.tipo_ficheiro === 'foto' || a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i))).slice(0, 15).map((anexo, idx) => (
-                    <div 
-                      key={anexo.id} 
-                      className="aspect-square rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-muted relative group"
-                    >
-                      <img 
-                        src={anexo.ficheiro_url} 
-                        className="w-full h-full object-cover" 
-                        onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=Indispon%C3%ADvel';
-                        }}
-                      />
-                      {anexo.tipo_ficheiro === 'video' && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20" onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}>
-                          <PlayCircle className="h-6 w-6 text-white" />
-                        </div>
-                      )}
+                  {anexos
+                    .filter(a => a.tipo_inspecao === 'checkout' || a.tipo_inspecao === 'saida')
+                    .slice(0, 15)
+                    .map((anexo, idx) => {
+                      const isVideo = anexo.tipo_ficheiro === 'video' || anexo.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i);
+                      const isImage = !isVideo && (anexo.tipo_ficheiro?.startsWith('image/') || anexo.tipo_ficheiro === 'foto' || anexo.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i));
 
-                      {/* Legend Indicator/Button */}
-                      {(isAdmin || hasAccessToResource('assistencia_tickets')) && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingLegenda({ id: anexo.id, legenda: anexo.legenda || '' });
-                          }}
-                          className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] py-0.5 px-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between"
+                      return (
+                        <div 
+                          key={anexo.id} 
+                          className="aspect-square rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-muted relative group"
                         >
-                          <span className="truncate flex-1">{anexo.legenda || 'Sem legenda'}</span>
-                          <Wrench className="h-2 w-2 ml-1" />
-                        </button>
-                      )}
-                      {anexo.legenda && (
-                        <div className="absolute top-0 left-0 right-0 bg-green-600/90 text-white text-[9px] px-1.5 py-0.5 font-bold truncate group-hover:hidden shadow-sm">
-                          {anexo.legenda}
+                          {isImage ? (
+                            <img 
+                              src={anexo.ficheiro_url} 
+                              className="w-full h-full object-cover" 
+                              onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=Erro+Carga';
+                              }}
+                            />
+                          ) : isVideo ? (
+                            <div 
+                              className="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-white gap-1"
+                              onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}
+                            >
+                              <PlayCircle className="h-8 w-8 text-white/80" />
+                              <span className="text-[8px] font-bold uppercase opacity-50">Vídeo</span>
+                            </div>
+                          ) : (
+                            <div 
+                              className="w-full h-full flex items-center justify-center bg-muted"
+                              onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}
+                            >
+                              <FileText className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                          
+                          {/* Legend Indicator/Button */}
+                          {(isAdmin || hasAccessToResource('assistencia_tickets')) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingLegenda({ id: anexo.id, legenda: anexo.legenda || '' });
+                              }}
+                              className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] py-0.5 px-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between"
+                            >
+                              <span className="truncate flex-1">{anexo.legenda || 'Sem legenda'}</span>
+                              <Wrench className="h-2 w-2 ml-1" />
+                            </button>
+                          )}
+                          {anexo.legenda && (
+                            <div className="absolute top-0 left-0 right-0 bg-green-600/90 text-white text-[9px] px-1.5 py-0.5 font-bold truncate group-hover:hidden shadow-sm">
+                              {anexo.legenda}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))}
-                  {anexos.filter(a => a.tipo_inspecao === 'checkout' && (a.tipo_ficheiro?.startsWith('image/') || a.ficheiro_url?.match(/\.(jpg|jpeg|png|webp)$/i))).length === 0 && (
+                      );
+                    })}
+                  {anexos.filter(a => a.tipo_inspecao === 'checkout' || a.tipo_inspecao === 'saida').length === 0 && (
                     <p className="col-span-3 text-[10px] text-muted-foreground italic py-1">Nenhuma foto de saída</p>
                   )}
                 </div>
@@ -1916,6 +1975,7 @@ const TicketDetails = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Conceder Acesso ao Ticket</DialogTitle>
+            <DialogDescription className="sr-only">Pesquise e selecione utilizadores para dar acesso a este ticket.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="relative">
@@ -1966,6 +2026,7 @@ const TicketDetails = () => {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Pessoas com Acesso</DialogTitle>
+            <DialogDescription className="sr-only">Lista de todos os utilizadores que têm acesso a este ticket.</DialogDescription>
           </DialogHeader>
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-4">
@@ -2002,6 +2063,7 @@ const TicketDetails = () => {
             <DialogTitle className="flex items-center gap-2">
               <Car className="h-5 w-5" /> Atribuir Viatura Substituta
             </DialogTitle>
+            <DialogDescription className="sr-only">Selecione uma viatura disponível para atribuir como substituta.</DialogDescription>
           </DialogHeader>
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -2045,6 +2107,10 @@ const TicketDetails = () => {
       {/* Lightbox Galeria */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 bg-black/95 border-none flex flex-col items-center justify-center overflow-hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Visualização de Multimédia</DialogTitle>
+            <DialogDescription>Visualização em ecrã inteiro de fotos e vídeos do ticket.</DialogDescription>
+          </DialogHeader>
           <div className="absolute top-4 right-4 z-50 flex gap-2">
             <Button 
               variant="ghost" 
@@ -2133,6 +2199,7 @@ const TicketDetails = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Legenda da Imagem</DialogTitle>
+            <DialogDescription className="sr-only">Edite a legenda da imagem selecionada.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">

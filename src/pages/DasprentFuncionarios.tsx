@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Users, Plus, Edit, Trash2 } from 'lucide-react';
 import DasprentNavigation from '@/components/DasprentNavigation';
@@ -181,6 +181,9 @@ const DasprentFuncionarios = () => {
                   <DialogTitle>
                     {editingFuncionario ? 'Editar Funcionário' : 'Novo Funcionário'}
                   </DialogTitle>
+                  <DialogDescription className="sr-only">
+                    {editingFuncionario ? 'Edite os dados do funcionário selecionado.' : 'Preencha os dados para criar um novo funcionário.'}
+                  </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">

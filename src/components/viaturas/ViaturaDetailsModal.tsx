@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -184,6 +185,9 @@ export function ViaturaDetailsModal({ viatura, open, onOpenChange }: ViaturaDeta
               <DialogTitle className="text-xl">
                 {viatura.marca} {viatura.modelo}
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                Detalhes completos da viatura {viatura.matricula}.
+              </DialogDescription>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-lg font-mono font-bold text-muted-foreground">
                   {viatura.matricula}

@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -209,6 +210,9 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
           <DialogTitle>
             {isEditing ? 'Editar Viatura' : 'Nova Viatura'}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {isEditing ? 'Edite os dados da viatura selecionada.' : 'Preencha os dados para registar uma nova viatura.'}
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

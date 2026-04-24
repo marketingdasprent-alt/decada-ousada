@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
-  Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -441,6 +441,7 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Registar Novo Dano</DialogTitle>
+              <DialogDescription className="sr-only">Preencha os detalhes para registar um novo dano na viatura.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-4 max-h-[70vh] overflow-y-auto">
               <div>
