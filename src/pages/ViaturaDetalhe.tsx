@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Car, FileText, AlertTriangle, Wrench, History, Calendar, Receipt, Radio, Paperclip, Loader2, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -16,6 +17,7 @@ import { ViaturaTabOBE } from '@/components/viaturas/tabs/ViaturaTabOBE';
 import { ViaturaTabAnexos } from '@/components/viaturas/tabs/ViaturaTabAnexos';
 import { ViaturaTabFinanceira } from '@/components/viaturas/tabs/ViaturaTabFinanceira';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePermissions } from '@/hooks/usePermissions';
 import { getCategoriaBadgeClass, getStatusBadgeClass, getStatusLabel } from '@/lib/viaturas';
 
 interface Viatura {
@@ -86,6 +88,14 @@ export default function ViaturaDetalhe() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const isNew = id === 'nova';
+
+  const { isAdmin, cargo } = usePermissions();
+  const canSeeFinanceiro = isAdmin || cargo?.toLowerCase().includes('financeiro');
+
+  const filteredTabs = TABS.filter(tab => {
+    if (tab.id === 'financeiro') return canSeeFinanceiro;
+    return true;
+  });
 
   const [viatura, setViatura] = useState<Viatura | null>(null);
   const [loading, setLoading] = useState(!isNew);
@@ -237,8 +247,8 @@ export default function ViaturaDetalhe() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         {/* Tab Navigation */}
         <div className="overflow-x-auto -mx-4 px-4">
-          <TabsList className={`${isMobile ? 'w-max' : 'w-full grid grid-cols-9'} h-auto p-1`}>
-            {TABS.map((tab) => {
+          <TabsList className={`${isMobile ? 'w-max' : 'w-full grid'} grid-cols-${filteredTabs.length} h-auto p-1`}>
+            {filteredTabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <TabsTrigger

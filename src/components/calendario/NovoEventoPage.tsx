@@ -383,9 +383,18 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
   }, [tipo]);
 
   // ── Vehicle lists by tipo ───────────────────────────────────────────────────
-  const viaturasDisponiveis = viaturas.filter(v => v.status === 'disponivel');
-  const viaturasEmUso = viaturas.filter(v => v.status === 'em_uso');
-  const viaturasRecuperaveis = viaturas.filter(v => v.status === 'em_uso' || v.status === 'em_recolha');
+  const viaturasDisponiveis = viaturas.filter(v => {
+    const s = (v.status || '').toLowerCase();
+    return s === 'disponivel' || s === 'disponível';
+  });
+  const viaturasEmUso = viaturas.filter(v => {
+    const s = (v.status || '').toLowerCase();
+    return s === 'em_uso' || s === 'em uso';
+  });
+  const viaturasRecuperaveis = viaturas.filter(v => {
+    const s = (v.status || '').toLowerCase();
+    return s === 'em_uso' || s === 'em uso' || s === 'em_recolha' || s === 'em recolha';
+  });
 
   const viaturaOptions: Viatura[] = (() => {
     if (tipo === 'entrega') return viaturasDisponiveis;
@@ -399,11 +408,13 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
     id: v.id,
     primary: `${formatMatricula(v.matricula)} — ${v.marca} ${v.modelo}`,
     secondary: v.categoria || undefined,
-    badge:
-      v.status === 'em_uso' ? 'em uso' :
-      v.status === 'disponivel' ? 'disponível' :
-      v.status === 'em_recolha' ? 'em recolha' :
-      v.status,
+    badge: (() => {
+      const s = (v.status || '').toLowerCase();
+      if (s === 'em_uso' || s === 'em uso') return 'em uso';
+      if (s === 'disponivel' || s === 'disponível') return 'disponível';
+      if (s === 'em_recolha' || s === 'em recolha') return 'em recolha';
+      return v.status;
+    })(),
   });
 
   const toDropdownMotorista = (m: Motorista): DropdownItem => ({

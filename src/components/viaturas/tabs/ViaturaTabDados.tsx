@@ -380,9 +380,13 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                           <SelectContent>
                             <SelectItem value="disponivel">🟢 Disponível</SelectItem>
                             <SelectItem value="em_uso">🔵 Em Uso</SelectItem>
-                            <SelectItem value="manutencao">🟠 Manutenção</SelectItem>
+                            <SelectItem value="manutencao" disabled={field.value !== 'manutencao'}>
+                              🟠 Manutenção {field.value !== 'manutencao' && '(Apenas via Ticket)'}
+                            </SelectItem>
                             <SelectItem value="inativo">⚪ Inativo</SelectItem>
-                            <SelectItem value="vendida">🔴 Vendida</SelectItem>
+                            <SelectItem value="vendida" disabled={field.value !== 'vendida'}>
+                              🔴 Vendida {field.value !== 'vendida' && '(Apenas via Financeiro)'}
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

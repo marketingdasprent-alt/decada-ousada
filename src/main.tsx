@@ -17,15 +17,19 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Check for SW updates every 60 seconds so all open browsers get the new version
+// Check for SW updates every 30 seconds so all open browsers get the new version
 registerSW({
-  onNeedRefresh() {},
+  onNeedRefresh() {
+    // Force reload if autoUpdate doesn't catch it
+    window.location.reload();
+  },
   onOfflineReady() {},
   onRegisteredSW(_swUrl, registration) {
     if (registration) {
       setInterval(() => {
+        console.log('Checking for SW updates...');
         registration.update();
-      }, 60 * 1000);
+      }, 30 * 1000);
     }
   },
 });

@@ -113,9 +113,18 @@ export default function Viaturas() {
   const stats = useMemo(() => {
     return {
       total: viaturas.length,
-      disponiveis: viaturas.filter((v) => v.status === 'disponivel' && !v.is_vendida).length,
-      emUso: viaturas.filter((v) => v.status === 'em_uso' && !v.is_vendida).length,
-      manutencao: viaturas.filter((v) => v.status === 'manutencao' && !v.is_vendida).length,
+      disponiveis: viaturas.filter((v) => {
+        const s = (v.status || '').toLowerCase().replace('í', 'i');
+        return s === 'disponivel' && !v.is_vendida;
+      }).length,
+      emUso: viaturas.filter((v) => {
+        const s = (v.status || '').toLowerCase();
+        return (s === 'em_uso' || s === 'em uso') && !v.is_vendida;
+      }).length,
+      manutencao: viaturas.filter((v) => {
+        const s = (v.status || '').toLowerCase().replace('ç', 'c').replace('ã', 'a');
+        return (s === 'manutencao' || s === 'manutencao') && !v.is_vendida;
+      }).length,
       vendidas: viaturas.filter((v) => v.is_vendida).length,
     };
   }, [viaturas]);

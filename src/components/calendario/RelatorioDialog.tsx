@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import { FileDown, Loader2 } from 'lucide-react';
+import { FileDown, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { formatMatricula } from './EventoCard';
 import type { CalendarioEvento } from '@/pages/Calendario';
 import jsPDF from 'jspdf';
@@ -62,6 +62,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
   const [dataInicio, setDataInicio] = useState(format(startOfMonth(currentMonth), 'yyyy-MM-dd'));
   const [dataFim, setDataFim] = useState(format(endOfMonth(currentMonth), 'yyyy-MM-dd'));
   const [exportLoading, setExportLoading] = useState(false);
+  const [exportExcelLoading, setExportExcelLoading] = useState(false);
 
   React.useEffect(() => {
     if (open) {
@@ -330,9 +331,58 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
     }
   };
 
+  // ── EXCEL (CSV) EXPORT ──────────────────────────────────────────
+  const exportarExcel = () => {
+    setExportExcelLoading(true);
+    try {
+      const escape = (v: string | null | undefined) => {
+        const s = v ?? '';
+        // In European locales (PT), semicolon is the standard CSV separator
+        if (s.includes(';') || s.includes('"') || s.includes('\n') || s.includes(',')) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      };
+
+      const headers = [
+        'ID', 'Data', 'Hora', 'Tipo', 'Matrícula',
+        'Matrícula Devolver', 'Cidade', 'Responsável', 'Observações',
+      ];
+
+      const rows = eventos.map(ev => {
+        const dt = new Date(ev.data_inicio);
+        return [
+          escape(ev.id),
+          escape(format(dt, 'dd/MM/yyyy', { locale: pt })),
+          escape(ev.dia_todo ? 'Dia inteiro' : format(dt, 'HH:mm', { locale: pt })),
+          escape(TIPO_LABELS[ev.tipo] || ev.tipo),
+          escape(formatMatricula(ev.titulo)),
+          escape(ev.matricula_devolver ? formatMatricula(ev.matricula_devolver) : ''),
+          escape(ev.cidade || ''),
+          escape(ev.profiles?.nome || ''),
+          escape(ev.descricao || ''),
+        ].join(';');
+      });
+
+      // UTF-8 BOM so Excel reads accents correctly
+      const csvContent = '\uFEFF' + [headers.map(escape).join(';'), ...rows].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const periodoNome = `${format(new Date(dataInicio + 'T00:00:00'), 'dd-MM-yyyy')}_${format(new Date(dataFim + 'T00:00:00'), 'dd-MM-yyyy')}`;
+      link.download = `calendario_${periodoNome}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportExcelLoading(false);
+    }
+  };
+
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col gap-4">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileDown className="h-5 w-5" />
@@ -371,7 +421,21 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
               : <FileDown className="h-4 w-4" />
             }
             <span className="hidden sm:inline">
-              {exportLoading ? 'A gerar...' : 'Exportar PDF'}
+              {exportLoading ? 'A gerar...' : 'PDF'}
+            </span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={exportarExcel}
+            disabled={isLoading || exportExcelLoading || eventos.length === 0}
+            className="gap-2 shrink-0 border-green-600/40 text-green-700 hover:bg-green-600 hover:text-white dark:text-green-400 dark:hover:text-white"
+          >
+            {exportExcelLoading
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <FileSpreadsheet className="h-4 w-4" />
+            }
+            <span className="hidden sm:inline">
+              {exportExcelLoading ? 'A gerar...' : 'Excel'}
             </span>
           </Button>
         </div>

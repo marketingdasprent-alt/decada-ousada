@@ -82,6 +82,7 @@ interface Intervencao {
   parcelas?: Parcela[];
   isClosedTicket?: boolean;
   statusFinanceiro?: 'motorista' | 'empresa' | 'aberto';
+  faturaUrl?: string | null;
 }
 
 export function ViaturaTabReparacoes({ viaturaId, onUpdate }: ViaturaTabReparacoesProps) {
@@ -192,7 +193,8 @@ export function ViaturaTabReparacoes({ viaturaId, onUpdate }: ViaturaTabReparaco
             reparacaoId: repair.id,
             parcelas: pMap[repair.id],
             isClosedTicket: ['resolvido', 'fechado'].includes(ticket.status),
-            statusFinanceiro: repair.status_financeiro
+            statusFinanceiro: repair.status_financeiro,
+            faturaUrl: (ticket as any).fatura_url
           });
         } else {
           merged.push({
@@ -204,7 +206,8 @@ export function ViaturaTabReparacoes({ viaturaId, onUpdate }: ViaturaTabReparaco
             status: ticket.status,
             ticketId: ticket.id,
             ticketNumero: ticket.numero,
-            isClosedTicket: ['resolvido', 'fechado'].includes(ticket.status)
+            isClosedTicket: ['resolvido', 'fechado'].includes(ticket.status),
+            faturaUrl: (ticket as any).fatura_url
           });
         }
       });
@@ -476,6 +479,16 @@ export function ViaturaTabReparacoes({ viaturaId, onUpdate }: ViaturaTabReparaco
                               >
                                 <ImageIcon className="h-3 w-3 mr-1" /> Fotos
                               </Button>
+                              {intervencao.faturaUrl && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-8 text-xs border-primary/50 text-primary hover:bg-primary/5"
+                                  onClick={() => window.open(intervencao.faturaUrl!, '_blank')}
+                                >
+                                  <FileText className="h-3 w-3 mr-1" /> Fatura
+                                </Button>
+                              )}
                             </>
                           )}
                           

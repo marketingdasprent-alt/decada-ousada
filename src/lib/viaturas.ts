@@ -46,12 +46,15 @@ export const getCategoriaBadgeClass = (categoria?: string | null) => {
 };
 
 export const getStatusBadgeClass = (status?: string | null) => {
-  switch (status) {
+  const s = (status || '').toLowerCase().replace('í', 'i');
+  switch (s) {
     case 'disponivel':
       return 'bg-green-500/10 text-green-600 border-green-500/20';
     case 'em_uso':
+    case 'em uso':
       return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
     case 'manutencao':
+    case 'manutenção':
       return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
     case 'vendida':
       return 'bg-destructive/10 text-destructive border-destructive/20';
@@ -63,12 +66,15 @@ export const getStatusBadgeClass = (status?: string | null) => {
 };
 
 export const getStatusColorClass = (status?: string | null) => {
-  switch (status) {
+  const s = (status || '').toLowerCase().replace('í', 'i');
+  switch (s) {
     case 'disponivel':
       return 'bg-green-500 text-white hover:bg-green-600';
     case 'em_uso':
+    case 'em uso':
       return 'bg-blue-500 text-white hover:bg-blue-600';
     case 'manutencao':
+    case 'manutenção':
       return 'bg-amber-500 text-white hover:bg-amber-600';
     case 'vendida':
       return 'bg-destructive text-white hover:bg-destructive/90';
@@ -80,12 +86,15 @@ export const getStatusColorClass = (status?: string | null) => {
 };
 
 export const getStatusLabel = (status?: string | null) => {
-  switch (status) {
+  const s = (status || '').toLowerCase().replace('í', 'i');
+  switch (s) {
     case 'disponivel':
       return 'Disponível';
     case 'em_uso':
+    case 'em uso':
       return 'Em Uso';
     case 'manutencao':
+    case 'manutenção':
       return 'Manutenção';
     case 'vendida':
       return 'Vendida';

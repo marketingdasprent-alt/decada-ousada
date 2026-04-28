@@ -345,7 +345,10 @@ export default function AssistenciaNova() {
         const userIdsSet = new Set<string>();
         if (user?.id) userIdsSet.add(user.id);
 
-        const GESTOR_ASSISTENCIA_CARGO_IDS = ['d8680e20-5025-47c1-bcc0-ae432f8afb96'];
+        const GESTOR_ASSISTENCIA_CARGO_IDS = [
+          'd8680e20-5025-47c1-bcc0-ae432f8afb96', // Gestor de Assistência
+          '0cf27801-80ff-4480-857e-e90bfb75d5a6'  // Supervisor Gestor TVDE
+        ];
 
         const [adminsRes, gestoresByIdRes, gestoresByNomeRes] = await Promise.all([
           supabase.from('profiles').select('id').eq('is_admin', true),

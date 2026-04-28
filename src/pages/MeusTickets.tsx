@@ -75,8 +75,14 @@ const MeusTickets = () => {
   const [novoTicketOpen, setNovoTicketOpen] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('todos');
+  const [searchTerm, setSearchTerm] = useState(sessionStorage.getItem('meustickets_searchTerm') || '');
+  const [statusFilter, setStatusFilter] = useState<string>(sessionStorage.getItem('meustickets_statusFilter') || 'todos');
+
+  // Persist filters to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('meustickets_searchTerm', searchTerm);
+    sessionStorage.setItem('meustickets_statusFilter', statusFilter);
+  }, [searchTerm, statusFilter]);
 
   useEffect(() => {
     if (user) {

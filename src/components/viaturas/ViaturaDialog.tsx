@@ -90,8 +90,9 @@ const COMBUSTIVEIS = [
 const STATUS_OPTIONS = [
   { value: 'disponivel', label: 'Disponível' },
   { value: 'em_uso', label: 'Em Uso' },
-  { value: 'manutencao', label: 'Manutenção' },
+  { value: 'manutencao', label: 'Manutenção', restricted: true, hint: '(Apenas via Ticket)' },
   { value: 'inativo', label: 'Inativo' },
+  { value: 'vendida', label: 'Vendida', restricted: true, hint: '(Apenas via Financeiro)' },
 ];
 
 export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: ViaturaDialogProps) {
@@ -250,8 +251,12 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
                       </FormControl>
                       <SelectContent>
                         {STATUS_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                          <SelectItem 
+                            key={option.value} 
+                            value={option.value}
+                            disabled={option.restricted && field.value !== option.value}
+                          >
+                            {option.label} {option.restricted && field.value !== option.value && option.hint}
                           </SelectItem>
                         ))}
                       </SelectContent>

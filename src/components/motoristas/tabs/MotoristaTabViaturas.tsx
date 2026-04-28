@@ -74,8 +74,6 @@ interface MotoristaViatura {
   data_fim: string | null;
   status: string;
   observacoes: string | null;
-  extintor_numero: string | null;
-  extintor_validade: string | null;
   contrato_prestacao_assinatura: string | null;
   viatura: Viatura;
 }
@@ -124,8 +122,6 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
           data_fim,
           status,
           observacoes,
-          extintor_numero,
-          extintor_validade,
           contrato_prestacao_assinatura,
           viatura:viaturas (
             id,
@@ -154,12 +150,19 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
 
       const { data: viaturasData, error: viaturasError } = await supabase
         .from("viaturas")
-        .select("*")
-        .eq("status", "disponivel")
+        .select("id, matricula, marca, modelo, ano, cor, categoria, status, extintor_numero, extintor_validade")
+        .neq("status", "vendida")
+        .neq("status", "inativo")
         .order("matricula");
 
       if (viaturasError) throw viaturasError;
-      setViaturasDisponiveis(viaturasData || []);
+
+      // Filter client-side to be accent/case insensitive
+      const disponiveis = (viaturasData || []).filter((v) => {
+        const s = (v.status || "").toLowerCase().replace(/[\u0300-\u036f]/g, "");
+        return s === "disponivel";
+      });
+      setViaturasDisponiveis(disponiveis);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados de viaturas");
@@ -356,7 +359,7 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
         title="Viatura Atual"
         headerClassName="bg-green-50 dark:bg-green-950/30"
       >
-        {!viaturaAtual && viaturasDisponiveis.length > 0 && (
+        {!viaturaAtual && (
           <div className="flex justify-end mb-4">
             <Button size="sm" onClick={() => setDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -524,17 +527,24 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Viatura *</Label>
-              <Select value={formData.viatura_id} onValueChange={(value) => setFormData({ ...formData, viatura_id: value })}>
-                <SelectTrigger><SelectValue placeholder="Selecione uma viatura..." /></SelectTrigger>
-                <SelectContent>
-                  {viaturasDisponiveis.map((viatura) => (
-                    <SelectItem key={viatura.id} value={viatura.id}>
-                      {viatura.matricula} - {viatura.marca} {viatura.modelo}
-                      {viatura.categoria && ` (${viatura.categoria})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {viaturasDisponiveis.length === 0 ? (
+                <div className="flex items-center gap-2 p-3 rounded-md border border-dashed border-amber-400 bg-amber-50 dark:bg-amber-950/20 text-sm text-amber-700 dark:text-amber-400">
+                  <Car className="h-4 w-4 shrink-0" />
+                  Não existem viaturas com estado <strong className="mx-1">Disponível</strong> para associar. Verifique o estado das viaturas.
+                </div>
+              ) : (
+                <Select value={formData.viatura_id} onValueChange={(value) => setFormData({ ...formData, viatura_id: value })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione uma viatura..." /></SelectTrigger>
+                  <SelectContent>
+                    {viaturasDisponiveis.map((viatura) => (
+                      <SelectItem key={viatura.id} value={viatura.id}>
+                        {viatura.matricula} - {viatura.marca} {viatura.modelo}
+                        {viatura.categoria && ` (${viatura.categoria})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Data de Início</Label>
@@ -588,7 +598,10 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleAssociar} disabled={isSubmitting}>
+            <Button
+              onClick={handleAssociar}
+              disabled={isSubmitting || viaturasDisponiveis.length === 0 || !formData.viatura_id}
+            >
               {isSubmitting ? "A associar..." : "Associar"}
             </Button>
           </DialogFooter>

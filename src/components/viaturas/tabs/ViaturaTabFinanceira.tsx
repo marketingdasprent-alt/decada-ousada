@@ -233,6 +233,7 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
           metodo_depreciacao: data.metodo_depreciacao,
           vida_util_anos: data.vida_util_anos ? parseInt(data.vida_util_anos) : 5,
           is_vendida: data.is_vendida,
+          status: data.is_vendida ? 'vendida' : (viatura.status === 'vendida' ? 'disponivel' : viatura.status),
           data_venda: data.data_venda || null,
           valor_venda: data.valor_venda ? parseFloat(data.valor_venda) : null,
           venda_observacoes: data.venda_observacoes || null,

@@ -99,12 +99,22 @@ const Assistencia = () => {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [criadores, setCriadores] = useState<Criador[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('pendentes');
-  const [prioridadeFilter, setPrioridadeFilter] = useState<string>('todos');
-  const [categoriaFilter, setCategoriaFilter] = useState<string>('todos');
-  const [criadorFilter, setCriadorFilter] = useState<string>('todos');
-  const [atribuidoFilter, setAtribuidoFilter] = useState<string>('todos');
+  const [searchTerm, setSearchTerm] = useState(sessionStorage.getItem('assistencia_searchTerm') || '');
+  const [statusFilter, setStatusFilter] = useState<string>(sessionStorage.getItem('assistencia_statusFilter') || 'pendentes');
+  const [prioridadeFilter, setPrioridadeFilter] = useState<string>(sessionStorage.getItem('assistencia_prioridadeFilter') || 'todos');
+  const [categoriaFilter, setCategoriaFilter] = useState<string>(sessionStorage.getItem('assistencia_categoriaFilter') || 'todos');
+  const [criadorFilter, setCriadorFilter] = useState<string>(sessionStorage.getItem('assistencia_criadorFilter') || 'todos');
+  const [atribuidoFilter, setAtribuidoFilter] = useState<string>(sessionStorage.getItem('assistencia_atribuidoFilter') || 'todos');
+
+  // Persist filters to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('assistencia_searchTerm', searchTerm);
+    sessionStorage.setItem('assistencia_statusFilter', statusFilter);
+    sessionStorage.setItem('assistencia_prioridadeFilter', prioridadeFilter);
+    sessionStorage.setItem('assistencia_categoriaFilter', categoriaFilter);
+    sessionStorage.setItem('assistencia_criadorFilter', criadorFilter);
+    sessionStorage.setItem('assistencia_atribuidoFilter', atribuidoFilter);
+  }, [searchTerm, statusFilter, prioridadeFilter, categoriaFilter, criadorFilter, atribuidoFilter]);
 
   useEffect(() => {
     fetchTickets();
