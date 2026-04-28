@@ -17,19 +17,25 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Check for SW updates every 30 seconds so all open browsers get the new version
 registerSW({
   onNeedRefresh() {
-    // Force reload if autoUpdate doesn't catch it
+    console.log('New version found! Reloading...');
     window.location.reload();
   },
   onOfflineReady() {},
   onRegisteredSW(_swUrl, registration) {
     if (registration) {
+      // Check every 20 seconds
       setInterval(() => {
-        console.log('Checking for SW updates...');
         registration.update();
-      }, 30 * 1000);
+      }, 20 * 1000);
+
+      // Check when user returns to tab
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          registration.update();
+        }
+      });
     }
   },
 });
