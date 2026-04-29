@@ -911,6 +911,10 @@ const TicketDetails = () => {
       toast({ title: "Erro", description: "Informe a quilometragem final.", variant: "destructive" });
       return;
     }
+    if (ticket.km_inicio != null && parseInt(closureData.km_fim) < ticket.km_inicio) {
+      toast({ title: "Erro", description: `A KM final (${closureData.km_fim}) não pode ser inferior à KM inicial (${ticket.km_inicio}).`, variant: "destructive" });
+      return;
+    }
     if (!closureDecisao) {
       toast({ title: "Erro", description: "Indique a responsabilidade financeira da reparação.", variant: "destructive" });
       return;
