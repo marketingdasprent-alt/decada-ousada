@@ -32,6 +32,7 @@ import { SectionCard } from "@/components/ui/section-card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEmpresas } from "@/hooks/useEmpresas";
+import { usePermissions } from "@/hooks/usePermissions";
 import { generateDocumentFromTemplate } from "@/utils/generateDocumentFromTemplate";
 import { GenerateDocumentsDialog } from "../GenerateDocumentsDialog";
 import type { Motorista } from "@/pages/Motoristas";
@@ -56,6 +57,7 @@ interface MotoristaTabContratosProps {
 }
 
 export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: MotoristaTabContratosProps) {
+  const { hasPermission } = usePermissions();
   const { getById: getEmpresaById } = useEmpresas();
   const [contratos, setContratos] = useState<Contrato[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +73,6 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
   // Sincronizar estado local quando os dados do motorista mudarem (ex: após um save)
   useEffect(() => {
     setDataContratacao(sanitizeDate(motorista.data_contratacao));
-    setCidadeAssinatura("");
   }, [motorista.data_contratacao]);
 
   const loadContratos = async () => {
@@ -276,7 +277,6 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
               <Button variant="ghost" size="sm" onClick={() => {
                 setEditingContratual(false);
                 setDataContratacao(motorista.data_contratacao || "");
-                setCidadeAssinatura("");
               }}>
                 <X className="h-4 w-4 mr-1" /> Cancelar
               </Button>
@@ -334,10 +334,12 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
               <RefreshCw className="h-4 w-4 mr-2" />
               Atualizar
             </Button>
-            <Button size="sm" onClick={() => setGenerateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Gerar Documentos
-            </Button>
+            {hasPermission('contratos_criar') && (
+              <Button size="sm" onClick={() => setGenerateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Gerar Documentos
+              </Button>
+            )}
           </div>
         </div>
 
