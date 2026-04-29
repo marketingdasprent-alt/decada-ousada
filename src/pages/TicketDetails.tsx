@@ -48,6 +48,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1699,238 +1700,9 @@ const TicketDetails = () => {
               </ScrollArea>
 
               <Separator />
-              
-              {/* Closure Form - NEW */}
-              {showClosureForm && (
-                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-4 animate-in fade-in slide-in-from-top-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold flex items-center gap-2">
-                      {isEditMode ? <Wrench className="h-5 w-5 text-primary" /> : <CheckCircle2 className="h-5 w-5 text-primary" />}
-                      {isEditMode ? 'Editar Detalhes da Reparação' : 'Concluir Reparação (Viatura Reparada)'}
-                    </h3>
-                    <Button variant="ghost" size="icon" onClick={() => { setShowClosureForm(false); setIsEditMode(false); }}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>KM Final *</Label>
-                      <Input 
-                        type="number" 
-                        placeholder="Quilometragem atual"
-                        value={closureData.km_fim}
-                        onChange={(e) => setClosureData(prev => ({ ...prev, km_fim: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Combustível Final</Label>
-                      <Select 
-                        value={closureData.combustivel_fim}
-                        onValueChange={(val) => setClosureData(prev => ({ ...prev, combustivel_fim: val }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="vazio">Vazio</SelectItem>
-                          <SelectItem value="reserva">Reserva</SelectItem>
-                          <SelectItem value="1/4">1/4</SelectItem>
-                          <SelectItem value="meio">1/2 (Meio)</SelectItem>
-                          <SelectItem value="3/4">3/4</SelectItem>
-                          <SelectItem value="cheio">Cheio</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Valor Total (€)</Label>
-                      <Input 
-                        type="number" 
-                        step="0.01"
-                        placeholder="0.00"
-                        value={closureData.valor_reparacao}
-                        onChange={(e) => setClosureData(prev => ({ ...prev, valor_reparacao: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>AdBlue Final</Label>
-                      <Select 
-                        value={closureData.adblue_fim}
-                        onValueChange={(val) => setClosureData(prev => ({ ...prev, adblue_fim: val }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Cheio">Cheio</SelectItem>
-                          <SelectItem value="Meio">Meio</SelectItem>
-                          <SelectItem value="Reserva">Reserva</SelectItem>
-                          <SelectItem value="Vazio">Vazio</SelectItem>
-                          <SelectItem value="Não aplicável">Não aplicável</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Limpeza Final</Label>
-                      <Select 
-                        value={closureData.limpeza_fim}
-                        onValueChange={(val) => setClosureData(prev => ({ ...prev, limpeza_fim: val }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Limpa">Limpa</SelectItem>
-                          <SelectItem value="Razoável">Razoável</SelectItem>
-                          <SelectItem value="Suja">Suja</SelectItem>
-                          <SelectItem value="Muito Suja">Muito Suja</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Resumo da Reparação</Label>
-                    <Textarea 
-                      placeholder="O que foi reparado..."
-                      value={closureData.descricao_reparacao}
-                      onChange={(e) => setClosureData(prev => ({ ...prev, descricao_reparacao: e.target.value }))}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Nº Fatura</Label>
-                      <Input
-                        placeholder="Ex: FT 2026/123"
-                        value={closureData.numero_fatura}
-                        onChange={(e) => setClosureData(prev => ({ ...prev, numero_fatura: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Anexar Fatura</Label>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => faturaInputRef.current?.click()}
-                          className="flex-1"
-                        >
-                          <Paperclip className="h-4 w-4 mr-2" />
-                          {faturaFile ? faturaFile.name : 'Selecionar ficheiro'}
-                        </Button>
-                        {faturaFile && (
-                          <Button type="button" variant="ghost" size="icon" onClick={() => setFaturaFile(null)}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <input
-                          ref={faturaInputRef}
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          className="hidden"
-                          onChange={(e) => setFaturaFile(e.target.files?.[0] || null)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Multimédia de Saída */}
-                  <div className="space-y-4 border-t pt-4">
-                    <Label className="text-base font-bold flex items-center gap-2">
-                      <Image className="h-5 w-5 text-blue-500" />
-                      Multimédia de Saída
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Registe o estado da viatura no momento da entrega.
-                    </p>
-                    <AssistenciaMultimediaUpload 
-                      onFilesChange={setExitMediaFiles}
-                      requiredPhotos={0}
-                      requiredVideos={0}
-                    />
-                  </div>
-                  
-                  {/* Decisão Financeira */}
-                  <div className="space-y-2">
-                    <Label className="font-semibold">Responsabilidade Financeira ({viatura?.matricula})</Label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setClosureDecisao('motorista')}
-                        className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'motorista' ? 'border-orange-500 bg-orange-500/10' : 'border-border hover:border-primary/40'}`}
-                      >
-                        <div className="flex items-center gap-2 font-medium text-sm">
-                          <Coins className="h-4 w-4 text-orange-500" /> Cobrar do Motorista
-                        </div>
-                        <p className="text-[10px] text-muted-foreground mt-1">Gera débito na conta do motorista</p>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setClosureDecisao('empresa')}
-                        className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'empresa' ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-primary/40'}`}
-                      >
-                        <div className="flex items-center gap-2 font-medium text-sm">
-                          <Building2 className="h-4 w-4 text-blue-500" /> Cobrar da Empresa
-                        </div>
-                        <p className="text-[10px] text-muted-foreground mt-1">Registado como despesa da viatura</p>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setClosureDecisao('aberto')}
-                        className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'aberto' ? 'border-yellow-500 bg-yellow-500/10' : 'border-border hover:border-primary/40'}`}
-                      >
-                        <div className="flex items-center gap-2 font-medium text-sm">
-                          <Clock className="h-4 w-4 text-yellow-600" /> Deixar Em Aberto
-                        </div>
-                        <p className="text-[10px] text-muted-foreground mt-1">Gera aviso na ficha até ser definido</p>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Decisão: viatura substituta (só se existia) */}
-                  {ticket?.viatura_substituta_id && viaturaSubstituta && (
-                    <div className="space-y-2">
-                      <Label className="font-semibold">O que fazer com a viatura substituta ({viaturaSubstituta.matricula})?</Label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setClosureSubstDecisao('devolver')}
-                          className={`rounded-lg border-2 p-3 text-left transition-all ${closureSubstDecisao === 'devolver' ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-primary/40'}`}
-                        >
-                          <div className="flex items-center gap-2 font-medium text-sm">
-                            <ParkingSquare className="h-4 w-4" /> Devolver ao parque
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">Encerra associação temporária, fica disponível</p>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setClosureSubstDecisao('definitivo')}
-                          className={`rounded-lg border-2 p-3 text-left transition-all ${closureSubstDecisao === 'definitivo' ? 'border-green-500 bg-green-500/10' : 'border-border hover:border-primary/40'}`}
-                        >
-                          <div className="flex items-center gap-2 font-medium text-sm">
-                            <RefreshCw className="h-4 w-4" /> Manter com o motorista
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">Passa a associação definitiva, continua em uso</p>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end gap-2 pt-2">
-                    <Button variant="outline" onClick={() => { setShowClosureForm(false); setIsEditMode(false); setClosureDecisao('empresa'); setClosureSubstDecisao(null); }}>Cancelar</Button>
-                    <Button onClick={handleViaturaReparada} disabled={closureLoading}>
-                      {closureLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {isEditMode ? 'Guardar Alterações' : 'Concluir Reparação'}
-                    </Button>
-                  </div>
-                </div>
-              )}
 
               {/* Message input area */}
-              {!showClosureForm && (
-                <div className="bg-muted/30 border-t p-4 space-y-3">
+              <div className="bg-muted/30 border-t p-4 space-y-3">
                   {/* Selected files preview */}
                   {selectedFiles.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2">
@@ -2010,8 +1782,7 @@ const TicketDetails = () => {
                   <p className="text-[10px] text-muted-foreground text-center">
                     Prime <kbd className="pointer-events-none inline-flex h-4 select-none items-center gap-1 rounded border bg-muted px-1 font-mono text-[9px] font-medium opacity-100">Enter</kbd> para enviar, <kbd className="pointer-events-none inline-flex h-4 select-none items-center gap-1 rounded border bg-muted px-1 font-mono text-[9px] font-medium opacity-100">Shift + Enter</kbd> para nova linha.
                   </p>
-                </div>
-              )}
+              </div>
         </CardContent>
       </Card>
         </div>
@@ -2373,6 +2144,238 @@ const TicketDetails = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Concluir / Editar Reparação */}
+      <Dialog
+        open={showClosureForm}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowClosureForm(false);
+            setIsEditMode(false);
+            setClosureDecisao('empresa');
+            setClosureSubstDecisao(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl flex flex-col h-[90vh] p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              {isEditMode ? <Wrench className="h-5 w-5 text-primary" /> : <CheckCircle2 className="h-5 w-5 text-primary" />}
+              {isEditMode ? 'Editar Detalhes da Reparação' : 'Concluir Reparação (Viatura Reparada)'}
+            </DialogTitle>
+            <DialogDescription className="sr-only">Preencha os dados de fecho desta assistência.</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>KM Final *</Label>
+                <Input
+                  type="number"
+                  placeholder="Quilometragem atual"
+                  value={closureData.km_fim}
+                  onChange={(e) => setClosureData(prev => ({ ...prev, km_fim: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Combustível Final</Label>
+                <Select
+                  value={closureData.combustivel_fim}
+                  onValueChange={(val) => setClosureData(prev => ({ ...prev, combustivel_fim: val }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="vazio">Vazio</SelectItem>
+                    <SelectItem value="reserva">Reserva</SelectItem>
+                    <SelectItem value="1/4">1/4</SelectItem>
+                    <SelectItem value="meio">1/2 (Meio)</SelectItem>
+                    <SelectItem value="3/4">3/4</SelectItem>
+                    <SelectItem value="cheio">Cheio</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Valor Total (€)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={closureData.valor_reparacao}
+                  onChange={(e) => setClosureData(prev => ({ ...prev, valor_reparacao: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>AdBlue Final</Label>
+                <Select
+                  value={closureData.adblue_fim}
+                  onValueChange={(val) => setClosureData(prev => ({ ...prev, adblue_fim: val }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cheio">Cheio</SelectItem>
+                    <SelectItem value="Meio">Meio</SelectItem>
+                    <SelectItem value="Reserva">Reserva</SelectItem>
+                    <SelectItem value="Vazio">Vazio</SelectItem>
+                    <SelectItem value="Não aplicável">Não aplicável</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Limpeza Final</Label>
+                <Select
+                  value={closureData.limpeza_fim}
+                  onValueChange={(val) => setClosureData(prev => ({ ...prev, limpeza_fim: val }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Limpa">Limpa</SelectItem>
+                    <SelectItem value="Razoável">Razoável</SelectItem>
+                    <SelectItem value="Suja">Suja</SelectItem>
+                    <SelectItem value="Muito Suja">Muito Suja</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Resumo da Reparação</Label>
+              <Textarea
+                placeholder="O que foi reparado..."
+                value={closureData.descricao_reparacao}
+                onChange={(e) => setClosureData(prev => ({ ...prev, descricao_reparacao: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Nº Fatura</Label>
+                <Input
+                  placeholder="Ex: FT 2026/123"
+                  value={closureData.numero_fatura}
+                  onChange={(e) => setClosureData(prev => ({ ...prev, numero_fatura: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Anexar Fatura</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => faturaInputRef.current?.click()}
+                    className="flex-1"
+                  >
+                    <Paperclip className="h-4 w-4 mr-2" />
+                    {faturaFile ? faturaFile.name : 'Selecionar ficheiro'}
+                  </Button>
+                  {faturaFile && (
+                    <Button type="button" variant="ghost" size="icon" onClick={() => setFaturaFile(null)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <input
+                    ref={faturaInputRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => setFaturaFile(e.target.files?.[0] || null)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 border-t pt-4">
+              <Label className="text-base font-bold flex items-center gap-2">
+                <Image className="h-5 w-5 text-blue-500" />
+                Multimédia de Saída
+              </Label>
+              <p className="text-sm text-muted-foreground">Registe o estado da viatura no momento da entrega.</p>
+              <AssistenciaMultimediaUpload
+                onFilesChange={setExitMediaFiles}
+                requiredPhotos={0}
+                requiredVideos={0}
+              />
+            </div>
+
+            <div className="space-y-2 border-t pt-4">
+              <Label className="font-semibold">Responsabilidade Financeira ({viatura?.matricula})</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setClosureDecisao('motorista')}
+                  className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'motorista' ? 'border-orange-500 bg-orange-500/10' : 'border-border hover:border-primary/40'}`}
+                >
+                  <div className="flex items-center gap-2 font-medium text-sm">
+                    <Coins className="h-4 w-4 text-orange-500" /> Cobrar do Motorista
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">Gera débito na conta do motorista</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClosureDecisao('empresa')}
+                  className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'empresa' ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-primary/40'}`}
+                >
+                  <div className="flex items-center gap-2 font-medium text-sm">
+                    <Building2 className="h-4 w-4 text-blue-500" /> Cobrar da Empresa
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">Registado como despesa da viatura</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClosureDecisao('aberto')}
+                  className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'aberto' ? 'border-yellow-500 bg-yellow-500/10' : 'border-border hover:border-primary/40'}`}
+                >
+                  <div className="flex items-center gap-2 font-medium text-sm">
+                    <Clock className="h-4 w-4 text-yellow-600" /> Deixar Em Aberto
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">Gera aviso na ficha até ser definido</p>
+                </button>
+              </div>
+            </div>
+
+            {ticket?.viatura_substituta_id && viaturaSubstituta && (
+              <div className="space-y-2 border-t pt-4">
+                <Label className="font-semibold">O que fazer com a viatura substituta ({viaturaSubstituta.matricula})?</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setClosureSubstDecisao('devolver')}
+                    className={`rounded-lg border-2 p-3 text-left transition-all ${closureSubstDecisao === 'devolver' ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-primary/40'}`}
+                  >
+                    <div className="flex items-center gap-2 font-medium text-sm">
+                      <ParkingSquare className="h-4 w-4" /> Devolver ao parque
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Encerra associação temporária, fica disponível</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setClosureSubstDecisao('definitivo')}
+                    className={`rounded-lg border-2 p-3 text-left transition-all ${closureSubstDecisao === 'definitivo' ? 'border-green-500 bg-green-500/10' : 'border-border hover:border-primary/40'}`}
+                  >
+                    <div className="flex items-center gap-2 font-medium text-sm">
+                      <RefreshCw className="h-4 w-4" /> Manter com o motorista
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Passa a associação definitiva, continua em uso</p>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="px-6 py-4 border-t shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => { setShowClosureForm(false); setIsEditMode(false); setClosureDecisao('empresa'); setClosureSubstDecisao(null); }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleViaturaReparada} disabled={closureLoading}>
+              {closureLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isEditMode ? 'Guardar Alterações' : 'Concluir Reparação'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
