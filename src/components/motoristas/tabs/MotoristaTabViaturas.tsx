@@ -148,19 +148,30 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
       
       setAssociacoes(typedAssocData);
 
-      const { data: viaturasData, error: viaturasError } = await supabase
-        .from("viaturas")
-        .select("id, matricula, marca, modelo, ano, cor, categoria, status, extintor_numero, extintor_validade")
-        .neq("status", "vendida")
-        .neq("status", "inativo")
-        .order("matricula");
+      const [viaturasRes, activeMvRes] = await Promise.all([
+        supabase
+          .from("viaturas")
+          .select("id, matricula, marca, modelo, ano, cor, categoria, status, extintor_numero, extintor_validade")
+          .neq("status", "vendida")
+          .neq("status", "inativo")
+          .neq("status", "em_reparacao")
+          .order("matricula"),
+        supabase
+          .from("motorista_viaturas")
+          .select("viatura_id")
+          .eq("status", "ativo"),
+      ]);
 
-      if (viaturasError) throw viaturasError;
+      if (viaturasRes.error) throw viaturasRes.error;
 
-      // Filter client-side to be accent/case insensitive
-      const disponiveis = (viaturasData || []).filter((v) => {
+      const activeViaturaIds = new Set((activeMvRes.data || []).map((mv) => mv.viatura_id));
+
+      // Incluir viaturas disponivel OU em_uso sem associa\u00e7\u00e3o ativa (inconsist\u00eancia de dados)
+      const disponiveis = (viaturasRes.data || []).filter((v) => {
         const s = (v.status || "").toLowerCase().replace(/[\u0300-\u036f]/g, "");
-        return s === "disponivel";
+        if (s === "disponivel") return true;
+        if (s === "em_uso" && !activeViaturaIds.has(v.id)) return true;
+        return false;
       });
       setViaturasDisponiveis(disponiveis);
     } catch (error) {
