@@ -29,12 +29,22 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Motorista } from "@/pages/Motoristas";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { DocumentUploader } from "@/components/motorista/DocumentUploader";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, Check, ChevronsUpDown } from "lucide-react";
 
 // Validar que o ano da data está entre 1900 e 2100
 const validateDateYear = (dateString: string | undefined | null): boolean => {
@@ -73,6 +83,7 @@ const formSchema = z.object({
   status_ativo: z.boolean().optional(),
   observacoes: z.string().optional(),
   iban: z.string().optional(),
+  gestor_responsavel: z.string().optional().nullable(),
   documento_ficheiro_url: z.string().optional(),
   documento_identificacao_verso_url: z.string().optional(),
   carta_ficheiro_url: z.string().optional(),
@@ -97,7 +108,37 @@ interface MotoristaDialogProps {
 export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCreated }: MotoristaDialogProps) {
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [gestores, setGestores] = useState<{ nome: string }[]>([]);
+  const [gestorPopoverOpen, setGestorPopoverOpen] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchGestores = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('nome, cargo')
+          .not('nome', 'is', null)
+          .ilike('cargo', '%Gestor%TVDE%')
+          .order('nome');
+          
+        if (error) throw error;
+        
+        // Remover duplicados por nome
+        const uniqueGestores = (data || []).reduce((acc: { nome: string }[], current) => {
+          if (!acc.find(item => item.nome === current.nome)) {
+            acc.push({ nome: current.nome });
+          }
+          return acc;
+        }, []);
+        
+        setGestores(uniqueGestores);
+      } catch (error) {
+        console.error('Erro ao buscar gestores:', error);
+      }
+    };
+    fetchGestores();
+  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -122,6 +163,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
       status_ativo: true,
       observacoes: "",
       iban: "",
+      gestor_responsavel: "",
       documento_ficheiro_url: "",
       documento_identificacao_verso_url: "",
       carta_ficheiro_url: "",
@@ -155,6 +197,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         status_ativo: motorista.status_ativo ?? true,
         observacoes: motorista.observacoes || "",
         iban: motorista.iban || "",
+        gestor_responsavel: motorista.gestor_responsavel || "",
         documento_ficheiro_url: motorista.documento_ficheiro_url || "",
         documento_identificacao_verso_url: motorista.documento_identificacao_verso_url || "",
         carta_ficheiro_url: motorista.carta_ficheiro_url || "",
@@ -185,6 +228,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         status_ativo: true,
         observacoes: "",
         iban: "",
+        gestor_responsavel: "",
         documento_ficheiro_url: "",
         documento_identificacao_verso_url: "",
         carta_ficheiro_url: "",
@@ -243,6 +287,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         status_ativo: values.status_ativo ?? true,
         observacoes: values.observacoes || null,
         iban: values.iban || null,
+        gestor_responsavel: values.gestor_responsavel === "none" ? null : (values.gestor_responsavel || null),
         documento_ficheiro_url: values.documento_ficheiro_url || null,
         documento_identificacao_verso_url: values.documento_identificacao_verso_url || null,
         carta_ficheiro_url: values.carta_ficheiro_url || null,
@@ -337,6 +382,81 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
                   <div className="h-8 w-1 bg-primary rounded-full" />
                   <h3 className="text-lg font-semibold">Dados Pessoais</h3>
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="gestor_responsavel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        Gestor Responsável
+                      </FormLabel>
+                      <Popover open={gestorPopoverOpen} onOpenChange={setGestorPopoverOpen} modal={true}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full h-11 justify-between bg-yellow-50/50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900/30",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value && field.value !== "none"
+                                ? gestores.find((gestor) => gestor.nome === field.value)?.nome || field.value
+                                : "Selecione o gestor responsável..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[200]" align="start">
+                          <Command>
+                            <CommandInput placeholder="Pesquisar gestor..." className="h-9" />
+                            <CommandList>
+                              <CommandEmpty>Nenhum gestor encontrado.</CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="none"
+                                  onSelect={() => {
+                                    form.setValue("gestor_responsavel", "none");
+                                    setGestorPopoverOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      field.value === "none" ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  Nenhum
+                                </CommandItem>
+                                {gestores.map((gestor) => (
+                                  <CommandItem
+                                    key={gestor.nome}
+                                    value={gestor.nome}
+                                    onSelect={() => {
+                                      form.setValue("gestor_responsavel", gestor.nome);
+                                      setGestorPopoverOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        field.value === gestor.nome ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {gestor.nome}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
                 <FormField
                   control={form.control}

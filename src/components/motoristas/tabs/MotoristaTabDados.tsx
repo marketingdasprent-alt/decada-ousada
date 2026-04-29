@@ -18,6 +18,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -27,6 +36,27 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
+import { 
+  Search, 
+  Plus, 
+  X, 
+  User, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  Briefcase, 
+  Settings, 
+  Check, 
+  ChevronsUpDown,
+  CreditCard,
+  Car,
+  FileText,
+  MessageSquare,
+  Fuel,
+  PlusCircle,
+  Smartphone,
+  Zap
+} from "lucide-react";
 import { Motorista } from "@/pages/Motoristas";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { DocumentUploader } from "@/components/motorista/DocumentUploader";
@@ -36,22 +66,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  User,
-  MapPin,
-  CreditCard,
-  Car,
-  FileText,
-  Briefcase,
-  MessageSquare,
-  Fuel,
-  Settings,
-  Plus,
-  PlusCircle,
-  X,
-  Smartphone,
-  Zap,
-} from "lucide-react";
 
 const CARTA_CATEGORIAS = ["AM", "A1", "A2", "A", "B1", "B", "BE", "C1", "C", "CE", "D1", "D", "DE"];
 
@@ -96,6 +110,7 @@ const formSchema = z.object({
   status_ativo: z.boolean().default(true),
   observacoes: z.string().optional(),
   iban: z.string().optional(),
+  gestor_responsavel: z.string().optional().nullable(),
   bolt_id: z.string().optional().nullable(),
   uber_uuid: z.string().optional().nullable(),
   documento_ficheiro_url: z.string().optional().nullable(),
@@ -119,6 +134,36 @@ interface MotoristaTabDadosProps {
 
 export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [gestores, setGestores] = useState<{ nome: string }[]>([]);
+  const [gestorPopoverOpen, setGestorPopoverOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchGestores = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('nome, cargo')
+          .not('nome', 'is', null)
+          .ilike('cargo', '%Gestor%TVDE%')
+          .order('nome');
+          
+        if (error) throw error;
+        
+        // Remover duplicados por nome
+        const uniqueGestores = (data || []).reduce((acc: { nome: string }[], current) => {
+          if (!acc.find(item => item.nome === current.nome)) {
+            acc.push({ nome: current.nome });
+          }
+          return acc;
+        }, []);
+        
+        setGestores(uniqueGestores);
+      } catch (error) {
+        console.error('Erro ao buscar gestores:', error);
+      }
+    };
+    fetchGestores();
+  }, []);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -149,6 +194,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
       status_ativo: true,
       observacoes: "",
       iban: "",
+      gestor_responsavel: "",
       bolt_id: "",
       uber_uuid: "",
       documento_ficheiro_url: "",
@@ -199,6 +245,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
         status_ativo: motorista.status_ativo ?? true,
         observacoes: motorista.observacoes || "",
         iban: motorista.iban || "",
+        gestor_responsavel: motorista.gestor_responsavel || "",
         uber_uuid: motorista.uber_uuid || "",
         bolt_id: motorista.bolt_id || "",
         documento_ficheiro_url: motorista.documento_ficheiro_url || "",
@@ -243,6 +290,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
         status_ativo: data.status_ativo,
         observacoes: data.observacoes || null,
         iban: data.iban || null,
+        gestor_responsavel: data.gestor_responsavel === "none" ? null : (data.gestor_responsavel || null),
         uber_uuid: data.uber_uuid || null,
         bolt_id: data.bolt_id || null,
         documento_ficheiro_url: data.documento_ficheiro_url || null,
@@ -284,6 +332,81 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
             headerClassName="bg-blue-50 dark:bg-blue-950/30 border-b"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="gestor_responsavel"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-primary" />
+                      Gestor Responsável
+                    </FormLabel>
+                    <Popover open={gestorPopoverOpen} onOpenChange={setGestorPopoverOpen} modal={true}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "w-full justify-between bg-yellow-50/50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900/30",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value && field.value !== "none"
+                              ? gestores.find((gestor) => gestor.nome === field.value)?.nome || field.value
+                              : "Selecione um gestor..."}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[200]" align="start">
+                        <Command>
+                          <CommandInput placeholder="Pesquisar gestor..." className="h-9" />
+                          <CommandList>
+                            <CommandEmpty>Nenhum gestor encontrado.</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                value="none"
+                                onSelect={() => {
+                                  form.setValue("gestor_responsavel", "none");
+                                  setGestorPopoverOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    field.value === "none" ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                Nenhum
+                              </CommandItem>
+                              {gestores.map((gestor) => (
+                                <CommandItem
+                                  key={gestor.nome}
+                                  value={gestor.nome}
+                                  onSelect={() => {
+                                    form.setValue("gestor_responsavel", gestor.nome);
+                                    setGestorPopoverOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      field.value === gestor.nome ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {gestor.nome}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="nome"

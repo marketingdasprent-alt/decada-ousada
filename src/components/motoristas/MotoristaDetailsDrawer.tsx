@@ -136,6 +136,7 @@ export function MotoristaDetailsDrawer({
               <InfoItem label="Código Postal" value={motorista.codigo_postal || "-"} />
               <InfoItem label="Cidade (Residência)" value={motorista.cidade || "-"} />
               <InfoItem label="IBAN" value={motorista.iban || "-"} />
+              <InfoItem label="Gestor Responsável" value={motorista.gestor_responsavel || "-"} />
             </div>
           </SectionCard>
 

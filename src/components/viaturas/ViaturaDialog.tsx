@@ -45,6 +45,8 @@ const viaturaSchema = z.object({
   seguro_validade: z.string().optional(),
   inspecao_validade: z.string().optional(),
   observacoes: z.string().optional(),
+  extintor_numero: z.string().optional().nullable(),
+  extintor_validade: z.string().optional().nullable(),
 });
 
 type ViaturaFormData = z.infer<typeof viaturaSchema>;
@@ -64,6 +66,8 @@ interface Viatura {
   seguro_validade?: string | null;
   inspecao_validade?: string | null;
   observacoes?: string | null;
+  extintor_numero?: string | null;
+  extintor_validade?: string | null;
 }
 
 interface ViaturaDialogProps {
@@ -115,6 +119,8 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
       seguro_validade: '',
       inspecao_validade: '',
       observacoes: '',
+      extintor_numero: '',
+      extintor_validade: '',
     },
   });
 
@@ -134,6 +140,8 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
         seguro_validade: viatura.seguro_validade || '',
         inspecao_validade: viatura.inspecao_validade || '',
         observacoes: viatura.observacoes || '',
+        extintor_numero: viatura.extintor_numero || '',
+        extintor_validade: viatura.extintor_validade || '',
       });
     } else {
       form.reset({
@@ -150,6 +158,8 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
         seguro_validade: '',
         inspecao_validade: '',
         observacoes: '',
+        extintor_numero: '',
+        extintor_validade: '',
       });
     }
   }, [viatura, form]);
@@ -171,6 +181,8 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
         seguro_validade: data.seguro_validade || null,
         inspecao_validade: data.inspecao_validade || null,
         observacoes: data.observacoes || null,
+        extintor_numero: data.extintor_numero || null,
+        extintor_validade: data.extintor_validade || null,
       };
 
       if (isEditing && viatura) {
@@ -430,6 +442,34 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
                     <FormLabel>Validade da Inspeção</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="extintor_numero"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nº Extintor</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Número do extintor" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="extintor_validade"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Validade Extintor</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

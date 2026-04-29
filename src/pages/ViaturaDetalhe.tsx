@@ -247,7 +247,10 @@ export default function ViaturaDetalhe() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         {/* Tab Navigation */}
         <div className="overflow-x-auto -mx-4 px-4">
-          <TabsList className={`${isMobile ? 'w-max' : 'w-full grid'} grid-cols-${filteredTabs.length} h-auto p-1`}>
+          <TabsList 
+            className={`${isMobile ? 'w-max' : 'w-full grid'} h-auto p-1`}
+            style={!isMobile ? { gridTemplateColumns: `repeat(${filteredTabs.length}, minmax(0, 1fr))` } : undefined}
+          >
             {filteredTabs.map((tab) => {
               const Icon = tab.icon;
               return (

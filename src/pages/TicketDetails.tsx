@@ -269,7 +269,7 @@ const TicketDetails = () => {
   const [assigningSubstitute, setAssigningSubstitute] = useState(false);
 
   // Decisões de fecho
-  const [closureDecisao, setClosureDecisao] = useState<'parque' | 'reassociar' | null>(null);
+  const [closureDecisao, setClosureDecisao] = useState<'motorista' | 'empresa' | 'aberto' | null>('empresa');
   const [closureSubstDecisao, setClosureSubstDecisao] = useState<'devolver' | 'definitivo' | null>(null);
 
   // Permission logic is calculated after ticket loads in the return section
@@ -1174,7 +1174,7 @@ const TicketDetails = () => {
 
       setShowClosureForm(false);
       setFaturaFile(null);
-      setClosureDecisao(null);
+      setClosureDecisao('empresa');
       setClosureSubstDecisao(null);
       fetchTicketData();
     } catch (error: any) {
@@ -1919,7 +1919,7 @@ const TicketDetails = () => {
                   )}
 
                   <div className="flex justify-end gap-2 pt-2">
-                    <Button variant="outline" onClick={() => { setShowClosureForm(false); setIsEditMode(false); setClosureDecisao(null); setClosureSubstDecisao(null); }}>Cancelar</Button>
+                    <Button variant="outline" onClick={() => { setShowClosureForm(false); setIsEditMode(false); setClosureDecisao('empresa'); setClosureSubstDecisao(null); }}>Cancelar</Button>
                     <Button onClick={handleViaturaReparada} disabled={closureLoading}>
                       {closureLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {isEditMode ? 'Guardar Alterações' : 'Concluir Reparação'}

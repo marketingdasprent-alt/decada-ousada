@@ -10,10 +10,11 @@ import {
   ClipboardList,
   AlertTriangle,
   Pencil,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -29,13 +30,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,6 +93,7 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [desassociarDialogOpen, setDesassociarDialogOpen] = useState(false);
   const [editExtintorOpen, setEditExtintorOpen] = useState(false);
+  const [viaturaPopoverOpen, setViaturaPopoverOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editExtintorData, setEditExtintorData] = useState({
     extintor_numero: "",
@@ -100,8 +105,6 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
     viatura_id: "",
     data_inicio: format(new Date(), "yyyy-MM-dd"),
     observacoes: "",
-    extintor_numero: "",
-    extintor_validade: "",
     contrato_prestacao_assinatura: format(new Date(), "yyyy-MM-dd"),
   });
 
@@ -231,8 +234,6 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
         .from("viaturas")
         .update({ 
           status: "em_uso",
-          extintor_numero: formData.extintor_numero || null,
-          extintor_validade: formData.extintor_validade || null,
         })
         .eq("id", formData.viatura_id);
 
@@ -244,8 +245,6 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
         viatura_id: "",
         data_inicio: format(new Date(), "yyyy-MM-dd"),
         observacoes: "",
-        extintor_numero: "",
-        extintor_validade: "",
         contrato_prestacao_assinatura: format(new Date(), "yyyy-MM-dd"),
       });
       loadData();
@@ -257,7 +256,7 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
     }
   };
 
-  const openEditExtintor = () => {
+  const openEditContrato = () => {
     if (!viaturaAtual) return;
     setEditExtintorData({
       extintor_numero: viaturaAtual.viatura.extintor_numero || "",
@@ -267,21 +266,10 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
     setEditExtintorOpen(true);
   };
 
-  const handleSaveExtintor = async () => {
+  const handleSaveContrato = async () => {
     if (!viaturaAtual) return;
     setIsSubmitting(true);
     try {
-      // Update Viatura table for extinguisher
-      const { error: viaturaError } = await supabase
-        .from("viaturas")
-        .update({
-          extintor_numero: editExtintorData.extintor_numero || null,
-          extintor_validade: editExtintorData.extintor_validade || null,
-        })
-        .eq("id", viaturaAtual.viatura_id);
-
-      if (viaturaError) throw viaturaError;
-
       // Update motorista_viaturas only for contract
       const { error } = await supabase
         .from("motorista_viaturas")
@@ -413,7 +401,7 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
                       variant="ghost"
                       size="sm"
                       className="h-6 px-2 text-xs text-muted-foreground gap-1"
-                      onClick={openEditExtintor}
+                      onClick={openEditContrato}
                     >
                       <Pencil className="h-3 w-3" /> Editar
                     </Button>
@@ -540,45 +528,61 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
                   Não existem viaturas com estado <strong className="mx-1">Disponível</strong> para associar. Verifique o estado das viaturas.
                 </div>
               ) : (
-                <Select value={formData.viatura_id} onValueChange={(value) => setFormData({ ...formData, viatura_id: value })}>
-                  <SelectTrigger><SelectValue placeholder="Selecione uma viatura..." /></SelectTrigger>
-                  <SelectContent>
-                    {viaturasDisponiveis.map((viatura) => (
-                      <SelectItem key={viatura.id} value={viatura.id}>
-                        {viatura.matricula} - {viatura.marca} {viatura.modelo}
-                        {viatura.categoria && ` (${viatura.categoria})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={viaturaPopoverOpen} onOpenChange={setViaturaPopoverOpen} modal={true}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={viaturaPopoverOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {formData.viatura_id
+                        ? (() => {
+                            const v = viaturasDisponiveis.find((v) => v.id === formData.viatura_id);
+                            return v
+                              ? `${v.matricula} - ${v.marca} ${v.modelo}${v.categoria ? ` (${v.categoria})` : ""}`
+                              : "Selecione uma viatura...";
+                          })()
+                        : "Selecione uma viatura..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[200]" align="start">
+                    <Command>
+                      <CommandInput placeholder="Pesquisar viatura..." className="h-9" />
+                      <CommandList>
+                        <CommandEmpty>Nenhuma viatura encontrada.</CommandEmpty>
+                        <CommandGroup>
+                          {viaturasDisponiveis.map((viatura) => (
+                            <CommandItem
+                              key={viatura.id}
+                              value={`${viatura.matricula} ${viatura.marca} ${viatura.modelo} ${viatura.categoria || ""}`}
+                              onSelect={() => {
+                                setFormData({ ...formData, viatura_id: viatura.id });
+                                setViaturaPopoverOpen(false);
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.viatura_id === viatura.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {viatura.matricula} - {viatura.marca} {viatura.modelo}
+                              {viatura.categoria && ` (${viatura.categoria})`}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               )}
             </div>
             <div className="space-y-2">
               <Label>Data de Início</Label>
               <Input type="date" value={formData.data_inicio} onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })} />
-            </div>
-            <div className="border-t pt-3 space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <Flame className="h-3.5 w-3.5 text-orange-500" /> Extintor
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Nº de Registo</Label>
-                  <Input
-                    placeholder="Ex: EXT-2024-001"
-                    value={formData.extintor_numero}
-                    onChange={(e) => setFormData({ ...formData, extintor_numero: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Validade</Label>
-                  <Input
-                    type="date"
-                    value={formData.extintor_validade}
-                    onChange={(e) => setFormData({ ...formData, extintor_validade: e.target.value })}
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="border-t pt-3 space-y-3">
@@ -619,33 +623,10 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
       <Dialog open={editExtintorOpen} onOpenChange={setEditExtintorOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Extintor e Contrato</DialogTitle>
+            <DialogTitle>Editar Contrato</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <Flame className="h-3.5 w-3.5 text-orange-500" /> Extintor
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Nº de Registo</Label>
-                  <Input
-                    placeholder="Ex: EXT-2024-001"
-                    value={editExtintorData.extintor_numero}
-                    onChange={(e) => setEditExtintorData({ ...editExtintorData, extintor_numero: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Validade</Label>
-                  <Input
-                    type="date"
-                    value={editExtintorData.extintor_validade}
-                    onChange={(e) => setEditExtintorData({ ...editExtintorData, extintor_validade: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="border-t pt-3 space-y-3">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
                 <ClipboardList className="h-3.5 w-3.5 text-blue-500" /> Contrato de Prestação de Serviços
               </p>
@@ -664,7 +645,7 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditExtintorOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSaveExtintor} disabled={isSubmitting}>
+            <Button onClick={handleSaveContrato} disabled={isSubmitting}>
               {isSubmitting ? "A guardar..." : "Guardar"}
             </Button>
           </DialogFooter>
