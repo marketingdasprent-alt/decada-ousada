@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Download, Smartphone, Share, MoreVertical, Plus, ArrowDown, CheckCircle2, Zap, Wifi, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,7 +83,7 @@ export default function Instalar() {
             </div>
             <CardTitle className="text-2xl">App Instalada!</CardTitle>
             <CardDescription>
-              A aplicação Década Ousada já está instalada no seu dispositivo.
+              A aplicação WeGest já está instalada no seu dispositivo.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -103,13 +103,13 @@ export default function Instalar() {
         <div className="mx-auto mb-6 w-20 h-20 rounded-2xl bg-card border shadow-lg flex items-center justify-center">
           <img 
             src={logoSrc} 
-            alt="Década Ousada" 
+            alt="WeGest" 
             className="w-14 h-14 object-contain"
           />
         </div>
         <h1 className="text-3xl font-bold mb-2">Instalar App</h1>
         <p className="text-muted-foreground max-w-sm mx-auto">
-          Adicione a Década Ousada ao seu ecrã inicial para acesso rápido
+          Adicione a WeGest ao seu ecrã inicial para acesso rápido
         </p>
       </div>
 

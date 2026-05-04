@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Car, KeyRound, LogIn, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ const EntradaMotoristaNativa = () => {
     <AuthMobileShell
       title="Área do Motorista"
       description="Escolha como pretende continuar para aceder ao seu painel de motorista."
-      logoAlt="Década Ousada"
+      logoAlt="WeGest"
       headerIcon={<Car className="auth-icon-accent" />}
     >
       <div className="space-y-3">

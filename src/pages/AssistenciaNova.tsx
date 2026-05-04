@@ -220,7 +220,7 @@ export default function AssistenciaNova() {
           titulo: formData.titulo.trim(),
           descricao: formData.descricao.trim(),
           prioridade: formData.prioridade,
-          status: 'em_andamento',
+          status: 'pendente',
           km_inicio: parseInt(formData.km_inicio) || null,
           combustivel_inicio: formData.combustivel_inicio,
           adblue_nivel: formData.adblue_nivel,

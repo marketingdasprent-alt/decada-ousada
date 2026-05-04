@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
@@ -22,7 +22,7 @@ const DasprentNavigation = () => {
           <Link to="/" className="flex items-center gap-3">
             <img 
               src={logoSrc}
-              alt="Década Ousada" 
+              alt="WeGest" 
               className="h-10 w-auto object-contain"
             />
           </Link>

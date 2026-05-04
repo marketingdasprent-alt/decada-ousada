@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, ChevronUp, ChevronDown, Plus } from "lucide-react";
+import { Search, ChevronUp, ChevronDown, Plus, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -73,7 +79,7 @@ export type Motorista = {
   updated_at: string;
 };
 
-type SortColumn = "codigo" | "nome" | "telefone" | "gestor_responsavel" | "cidade" | "status_ativo";
+type SortColumn = "codigo" | "nome" | "telefone" | "gestor_responsavel" | "cidade" | "status_ativo" | "bolt_id" | "uber_uuid";
 
 export default function Motoristas() {
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
@@ -114,6 +120,10 @@ export default function Motoristas() {
   const [newMotoristaForContract, setNewMotoristaForContract] = useState<Motorista | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const [isMappingDialogOpen, setIsMappingDialogOpen] = useState(false);
+  const [mappingTarget, setMappingTarget] = useState<Motorista | null>(null);
+  const [unmappedBoltDrivers, setUnmappedBoltDrivers] = useState<{name: string, id: string}[]>([]);
+  const [isMappingLoading, setIsMappingLoading] = useState(false);
 
   useEffect(() => {
     loadMotoristas();
@@ -198,6 +208,8 @@ export default function Motoristas() {
         m.codigo.toString().includes(searchTerm) ||
         normalizeString(m.nome).includes(searchNormalized) ||
         (m.nif && m.nif.includes(searchTerm)) ||
+        (m.bolt_id && m.bolt_id.includes(searchTerm)) ||
+        (m.uber_uuid && m.uber_uuid.includes(searchTerm)) ||
         (m.telefone && m.telefone.includes(searchTerm));
 
       // Status filter
@@ -273,6 +285,223 @@ export default function Motoristas() {
     }
   };
 
+  const normalizeStr = (str: string): string => {
+    if (!str) return '';
+    return str
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]/g, " ") // Remove pontuação
+      .trim()
+      .replace(/\s+/g, " "); // Normaliza espaços
+  };
+
+  const handleOpenMapping = async (motorista: Motorista) => {
+    setMappingTarget(motorista);
+    setIsMappingDialogOpen(true);
+    setIsMappingLoading(true);
+    try {
+      // Buscar todos os nomes únicos da Bolt que não estão mapeados
+      const { data, error } = await supabase
+        .from("bolt_resumos_semanais")
+        .select("motorista_nome, identificador_motorista")
+        .is("motorista_id", null)
+        .not("identificador_motorista", "is", null);
+
+      if (error) throw error;
+
+      // Deduplicar por identificador
+      const unique = data.reduce((acc: any[], current) => {
+        if (!acc.find(i => i.id === current.identificador_motorista)) {
+          acc.push({ name: current.motorista_nome, id: current.identificador_motorista });
+        }
+        return acc;
+      }, []);
+
+      setUnmappedBoltDrivers(unique);
+    } catch (error) {
+      console.error("Erro ao carregar motoristas Bolt:", error);
+    } finally {
+      setIsMappingLoading(false);
+    }
+  };
+
+  const handleConfirmMapping = async (boltId: string) => {
+    if (!mappingTarget) return;
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from("motoristas_ativos")
+        .update({ bolt_id: boltId })
+        .eq("id", mappingTarget.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Motorista mapeado com sucesso!",
+      });
+      setIsMappingDialogOpen(false);
+      loadMotoristas();
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSyncIDs = async () => {
+    try {
+      setLoading(true);
+      toast({
+        title: "A iniciar sincronização v2.0",
+        description: "A aplicar lógica de comparação avançada...",
+      });
+
+      // 1. Buscar todos os motoristas
+      const { data: currentMotoristas, error: motError } = await supabase
+        .from("motoristas_ativos")
+        .select("id, nome, email, telefone, bolt_id, uber_uuid");
+
+      if (motError) throw motError;
+
+      // 2. Buscar resumos Bolt com IDs
+      const { data: resumos, error: resError } = await supabase
+        .from("bolt_resumos_semanais")
+        .select("motorista_nome, identificador_motorista, telefone, email, motorista_id")
+        .not("identificador_motorista", "is", null);
+
+      if (resError) throw resError;
+
+      // 3. Buscar Uber Drivers mapeados
+      const { data: uberDrivers, error: uberError } = await supabase
+        .from("uber_drivers")
+        .select("full_name, uber_driver_id, motorista_id")
+        .not("uber_driver_id", "is", null);
+
+      if (uberError) throw uberError;
+
+      let totalMapped = 0;
+      const updates = [];
+      const particles = ["de", "da", "do", "das", "dos", "e"];
+
+      for (const m of currentMotoristas) {
+        if (m.bolt_id && m.uber_uuid) continue;
+
+        const mClean = normalizeStr(m.nome);
+        const mWords = mClean.split(' ').filter(w => w.length > 2 && !particles.includes(w));
+        const mPhone = m.telefone ? m.telefone.replace(/\D/g, '').slice(-9) : null;
+        const mEmail = m.email?.toLowerCase().trim();
+
+        let updatedData: any = {};
+        let needsUpdate = false;
+
+        // Tentar encontrar na Bolt
+        if (!m.bolt_id || !m.email || !m.telefone) {
+          const match = resumos.find(r => {
+            const rClean = normalizeStr(r.motorista_nome || '');
+            const rWords = rClean.split(' ').filter(w => w.length > 2 && !particles.includes(w));
+            const rPhone = r.telefone ? r.telefone.replace(/\D/g, '').slice(-9) : null;
+            const rEmail = r.email?.toLowerCase().trim();
+
+            // Prioridade 1: Match por Telefone ou Email (Confiança Total)
+            if (mEmail && rEmail && mEmail === rEmail) return true;
+            if (mPhone && rPhone && mPhone === rPhone) return true;
+
+            // Prioridade 2: Match por Nome
+            if (rClean === mClean) return true;
+            if (mWords.length >= 2 && rWords.length >= 2) {
+              const mFirstLast = `${mWords[0]} ${mWords[mWords.length - 1]}`;
+              const rFirstLast = `${rWords[0]} ${rWords[rWords.length - 1]}`;
+              if (mFirstLast === rFirstLast) return true;
+              
+              const intersection = mWords.filter(w => rWords.includes(w));
+              const score = intersection.length / Math.min(mWords.length, rWords.length);
+              if (score >= 0.8) return true; // Confiança alta para enriquecer dados
+            }
+
+            return false;
+          });
+
+          if (match) {
+            if (!m.bolt_id) {
+              updatedData.bolt_id = match.identificador_motorista;
+              needsUpdate = true;
+            }
+            // Enriquecer email se estiver vazio
+            if (!m.email && match.email) {
+              updatedData.email = match.email.toLowerCase().trim();
+              needsUpdate = true;
+            }
+            // Enriquecer telefone se estiver vazio
+            if (!m.telefone && match.telefone) {
+              updatedData.telefone = match.telefone.trim();
+              needsUpdate = true;
+            }
+          }
+        }
+
+        // Tentar encontrar na Uber
+        if (!m.uber_uuid) {
+          const matchUber = uberDrivers.find(u => {
+            const uClean = normalizeStr(u.full_name || '');
+            const uWords = uClean.split(' ').filter(w => w.length > 2 && !particles.includes(w));
+            
+            if (uClean === mClean) return true;
+            
+            if (mWords.length >= 2 && uWords.length >= 2) {
+              const intersection = mWords.filter(w => uWords.includes(w));
+              const score = intersection.length / Math.min(mWords.length, uWords.length);
+              if (score >= 0.8) return true;
+            }
+            return false;
+          });
+
+          if (matchUber) {
+            updatedData.uber_uuid = matchUber.uber_driver_id;
+            needsUpdate = true;
+          }
+        }
+
+        if (needsUpdate) {
+          updates.push(
+            supabase
+              .from("motoristas_ativos")
+              .update(updatedData)
+              .eq("id", m.id)
+          );
+          totalMapped++;
+        }
+      }
+
+      if (updates.length > 0) {
+        // Executar em grupos de 10 para evitar timeouts
+        for (let i = 0; i < updates.length; i += 10) {
+          await Promise.all(updates.slice(i, i + 10));
+        }
+      }
+      
+      toast({
+        title: "Sincronização concluída",
+        description: `${totalMapped} motoristas mapeados com sucesso!`,
+      });
+      loadMotoristas();
+    } catch (error: any) {
+      console.error("Erro ao sincronizar IDs:", error);
+      toast({
+        title: "Erro na sincronização",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleMotoristaCreated = (motorista: Motorista) => {
     setNewMotoristaForContract(motorista);
     setContractDialogOpen(true);
@@ -289,10 +518,12 @@ export default function Motoristas() {
             {filteredMotoristas.length} motorista{filteredMotoristas.length !== 1 ? "s" : ""} encontrado{filteredMotoristas.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Button onClick={handleAddMotorista} className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Adicionar Motorista
-        </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+          <Button onClick={handleAddMotorista} className="w-full sm:w-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Motorista
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -398,6 +629,7 @@ export default function Motoristas() {
                 <SortableHeader column="nome" label="Nome" />
                 <SortableHeader column="telefone" label="Telefone" className="w-[130px]" />
                 <SortableHeader column="gestor_responsavel" label="Gestor" className="w-[140px] hidden md:table-cell" />
+                <SortableHeader column="bolt_id" label="ID Bolt" className="w-[120px] hidden xl:table-cell" />
                 <SortableHeader column="cidade" label="Cidade" className="w-[120px] hidden lg:table-cell" />
                 <SortableHeader column="status_ativo" label="Status" className="w-[80px]" />
               </TableRow>
@@ -414,6 +646,25 @@ export default function Motoristas() {
                   <TableCell className="py-2 text-muted-foreground">{motorista.telefone || "-"}</TableCell>
                   <TableCell className="py-2 text-muted-foreground hidden md:table-cell">
                     {motorista.gestor_responsavel || "-"}
+                  </TableCell>
+                  <TableCell className="py-2 text-xs font-mono hidden xl:table-cell">
+                    {motorista.bolt_id ? (
+                      <span className="text-green-600 flex items-center gap-1">
+                        <Check className="h-3 w-3" /> {motorista.bolt_id}
+                      </span>
+                    ) : (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2 text-muted-foreground opacity-50 hover:opacity-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenMapping(motorista);
+                        }}
+                      >
+                        Não Mapeado
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell className="py-2 text-muted-foreground hidden lg:table-cell">
                     {motorista.cidade || "-"}
@@ -449,6 +700,58 @@ export default function Motoristas() {
         onOpenChange={setContractDialogOpen}
         motorista={newMotoristaForContract}
       />
+
+      {/* Dialog para Mapeamento Manual */}
+      <Dialog open={isMappingDialogOpen} onOpenChange={setIsMappingDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mapear Motorista Bolt</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Selecione o nome correspondente que aparece nos relatórios da Bolt para <strong>{mappingTarget?.nome}</strong>.
+            </p>
+            
+            <div className="max-h-[300px] overflow-y-auto border rounded-md">
+              {isMappingLoading ? (
+                <div className="p-8 text-center text-sm text-muted-foreground">
+                  <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
+                  A carregar motoristas Bolt...
+                </div>
+              ) : unmappedBoltDrivers.length === 0 ? (
+                <div className="p-8 text-center text-sm text-muted-foreground">
+                  Nenhum motorista Bolt não mapeado encontrado.
+                </div>
+              ) : (
+                <div className="grid divide-y">
+                  {unmappedBoltDrivers
+                    .filter(d => {
+                      const mNorm = normalizeStr(mappingTarget?.nome || '');
+                      const dNorm = normalizeStr(d.name || '');
+                      return dNorm.includes(mNorm.split(' ')[0]) || mNorm.includes(dNorm.split(' ')[0]);
+                    })
+                    .map((driver) => (
+                      <button
+                        key={driver.id}
+                        className="p-3 text-left hover:bg-muted transition-colors flex justify-between items-center"
+                        onClick={() => handleConfirmMapping(driver.id)}
+                      >
+                        <span className="text-sm font-medium">{driver.name}</span>
+                        <span className="text-[10px] font-mono text-muted-foreground bg-muted-foreground/10 px-1 rounded">{driver.id}</span>
+                      </button>
+                    ))}
+                  {/* Option to show all if no results */}
+                  {unmappedBoltDrivers.length > 0 && (
+                    <div className="p-2 bg-muted/30 text-[10px] text-center text-muted-foreground">
+                      A mostrar apenas sugestões semelhantes.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

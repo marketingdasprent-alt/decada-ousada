@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -266,7 +266,7 @@ export const EmpresasTab: React.FC = () => {
                 <Input
                   value={form.nome}
                   onChange={(e) => handleNomeChange(e.target.value)}
-                  placeholder="Ex: Década Ousada"
+                  placeholder="Ex: WeGest"
                 />
               </div>
               <div className="space-y-1.5">
@@ -294,7 +294,7 @@ export const EmpresasTab: React.FC = () => {
               </div>
             </div>
 
-            {field('Nome Completo (para contratos)', 'nome_completo', { placeholder: 'Ex: Década Ousada, Lda.' })}
+            {field('Nome Completo (para contratos)', 'nome_completo', { placeholder: 'Ex: WeGest, Lda.' })}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {field('NIF', 'nif', { placeholder: '515127850' })}

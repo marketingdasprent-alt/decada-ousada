@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -380,7 +380,7 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
               <Label htmlFor="nome">Nome da Integração *</Label>
               <Input
                 id="nome"
-                placeholder={`Ex: ${selectedPlatform.name} Década Ousada`}
+                placeholder={`Ex: ${selectedPlatform.name} WeGest`}
                 value={formData.nome}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, nome: e.target.value }))

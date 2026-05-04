@@ -173,7 +173,7 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
           descricao: formData.descricao.trim() || null,
           prioridade: formData.prioridade,
           criado_por: user?.id,
-          status: 'aberto',
+          status: 'pendente',
         })
         .select('id')
         .single();

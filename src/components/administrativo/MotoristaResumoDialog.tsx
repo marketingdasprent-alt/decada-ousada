@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -192,6 +192,8 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
             const val = Number(curr.valor) || 0;
             
             if (curr.tipo === "credito") {
+              // Não incluir caução como receita/crédito no recibo semanal
+              if (curr.categoria === "caucao") return acc;
               recExtras += val;
               return acc;
             }
@@ -257,14 +259,14 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
       `Receitas: ${formatCurrency(totalReceitas)}\n` +
       `Despesas: ${formatCurrency(totalDespesas)}\n` +
       `Líquido a Receber: ${formatCurrency(liquido)}\n\n` +
-      `Cumprimentos,\nEquipa Década Ousada`;
+      `Cumprimentos,\nEquipa WeGest`;
     
     const mailto = `mailto:${motoristaEmail || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
   };
 
   const handleSendWhatsApp = () => {
-    const message = `*RESUMO FINANCEIRO - DÉCADA OUSADA*\n\n` +
+    const message = `*RESUMO FINANCEIRO - WeGest*\n\n` +
       `Olá *${motorista.driver_name}*,\n` +
       `Período: ${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}\n\n` +
       `💰 *Receitas:* ${formatCurrency(totalReceitas)}\n` +
@@ -551,7 +553,7 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
           {/* Rodapé para Impressão */}
           <div className="hidden print:block text-center text-xs text-gray-500 pt-2 border-t mt-2">
             <p>Documento gerado em {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: pt })}</p>
-            <p className="mt-0.5">Década Ousada, Lda. • NIF: 515127850</p>
+            <p className="mt-0.5">WeGest, Lda. • NIF: 515127850</p>
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -343,7 +343,7 @@ export const DocumentTemplateEditor = ({ template, onSave, onCancel }: DocumentT
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="decada_ousada">Década Ousada</SelectItem>
+                        <SelectItem value="decada_ousada">WeGest</SelectItem>
                         <SelectItem value="distancia_arrojada">Distância Arrojada</SelectItem>
                       </SelectContent>
                     </Select>

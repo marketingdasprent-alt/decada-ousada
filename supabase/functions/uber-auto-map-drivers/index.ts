@@ -155,6 +155,20 @@ Deno.serve(async (req) => {
             action: "mapped",
             motorista_id: existingMotorista.id,
           });
+          
+          // Auto-save uber_uuid to motoristas_ativos if not present
+          const { error: updateMotError } = await supabase
+            .from("motoristas_ativos")
+            .update({ uber_uuid: driver.uber_driver_id })
+            .eq("id", existingMotorista.id)
+            .is("uber_uuid", null);
+
+          if (updateMotError) {
+            console.warn(`[uber-auto-map-drivers] Falha ao auto-gravar uber_uuid para ${driverName}:`, updateMotError.message);
+          } else {
+            console.log(`[uber-auto-map-drivers] Uber UUID auto-gravado para ${driverName}`);
+          }
+
           console.log(`[uber-auto-map-drivers] Match encontrado: ${driverName} → ${existingMotorista.nome}`);
         } else {
           result.skipped++;

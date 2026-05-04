@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDefaultRoute } from '@/hooks/useDefaultRoute';
@@ -40,7 +40,7 @@ const Index = () => {
       <div className="auth-screen__pattern" aria-hidden="true" />
       <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-6 px-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">Década Ousada</h1>
+          <h1 className="text-2xl font-bold text-foreground">WeGest</h1>
           <p className="mt-2 text-sm text-muted-foreground">Selecione a sua área de acesso</p>
         </div>
 

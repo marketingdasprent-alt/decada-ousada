@@ -137,6 +137,8 @@ export function MotoristaDetailsDrawer({
               <InfoItem label="Cidade (Residência)" value={motorista.cidade || "-"} />
               <InfoItem label="IBAN" value={motorista.iban || "-"} />
               <InfoItem label="Gestor Responsável" value={motorista.gestor_responsavel || "-"} />
+              <InfoItem label="Uber UUID" value={motorista.uber_uuid || "-"} />
+              <InfoItem label="Bolt ID" value={motorista.bolt_id || "-"} />
             </div>
           </SectionCard>
 

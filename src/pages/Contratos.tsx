@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -342,7 +342,7 @@ export default function Contratos() {
   };
 
   const getEmpresaNome = (empresaId: string) => {
-    return empresaId === 'decada_ousada' ? 'Década Ousada' : 'Distância Arrojada';
+    return empresaId === 'decada_ousada' ? 'WeGest' : 'Distância Arrojada';
   };
 
   return (
@@ -379,7 +379,7 @@ export default function Contratos() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas Empresas</SelectItem>
-                <SelectItem value="decada_ousada">Década Ousada</SelectItem>
+                <SelectItem value="decada_ousada">WeGest</SelectItem>
                 <SelectItem value="distancia_arrojada">Distância Arrojada</SelectItem>
               </SelectContent>
             </Select>

@@ -1,4 +1,4 @@
-import { SimpleNavbar } from "@/components/landing/SimpleNavbar";
+﻿import { SimpleNavbar } from "@/components/landing/SimpleNavbar";
 import { Footer } from "@/components/landing/Footer";
 import { motion } from "framer-motion";
 
@@ -40,7 +40,7 @@ const Privacidade = () => {
               <div className="bg-gray-800/30 rounded-xl p-6">
                 <h2 className="text-2xl font-bold mb-4 text-white">1. Responsável pelo Tratamento</h2>
                 <p className="text-gray-400">
-                  A Década Ousada, com sede em Portugal, é a entidade responsável pelo tratamento dos dados 
+                  A WeGest, com sede em Portugal, é a entidade responsável pelo tratamento dos dados 
                   pessoais recolhidos através deste website e dos serviços prestados. Para questões relacionadas 
                   com privacidade, contacte-nos através do email{" "}
                   <a href="mailto:motoristas.tvde@distanciaarrojada.pt" className="text-[#E53333] hover:underline">

@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { 
   Wallet, 
   CalendarCheck, 
@@ -58,7 +58,7 @@ export const BenefitsSection = () => {
             Benefícios de trabalhar connosco
           </h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Na Década Ousada, oferecemos as melhores condições do mercado para motoristas TVDE.
+            Na WeGest, oferecemos as melhores condições do mercado para motoristas TVDE.
           </p>
         </motion.div>
 

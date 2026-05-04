@@ -203,8 +203,13 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
       
       (finData || []).forEach((mov: any) => {
         const val = Number(mov.valor) || 0;
-        if (mov.tipo === "credito") extraCredits += val;
-        else extraDebits += val;
+        if (mov.tipo === "credito") {
+          // Não incluir caução como receita/crédito no recibo semanal
+          if (mov.categoria === "caucao") return;
+          extraCredits += val;
+        } else {
+          extraDebits += val;
+        }
       });
 
       // 6. FINAL AGGREGATION (MIRROR OF ContasResumoTab.tsx:resumosCalculados)

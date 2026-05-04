@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -264,5 +264,5 @@ export const ContratosGroupedView = ({
 };
 
 function getEmpresaNome(empresaId: string): string {
-  return empresaId === 'decada_ousada' ? 'Década Ousada' : 'Distância Arrojada';
+  return empresaId === 'decada_ousada' ? 'WeGest' : 'Distância Arrojada';
 }

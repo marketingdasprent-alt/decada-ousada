@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+﻿import jsPDF from 'jspdf';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
@@ -201,7 +201,7 @@ export const generateFinanceiroPDF = async (data: FinanceiroPDFData, existingPdf
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(156, 163, 175); // Gray-400
   pdf.text(`Documento gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: pt })}`, pageWidth / 2, yPos, { align: 'center' });
-  pdf.text('Década Ousada, Lda. • NIF: 515127850', pageWidth / 2, yPos + 4, { align: 'center' });
+  pdf.text('WeGest, Lda. • NIF: 515127850', pageWidth / 2, yPos + 4, { align: 'center' });
 
   return pdf;
 };

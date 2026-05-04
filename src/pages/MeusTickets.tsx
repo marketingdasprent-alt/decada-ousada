@@ -50,6 +50,7 @@ interface Ticket {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  pendente: { label: 'Pendente de Aprovação', color: 'bg-purple-600', icon: <Clock className="h-4 w-4" /> },
   aberto: { label: 'Aberto', color: 'bg-blue-500', icon: <AlertCircle className="h-4 w-4" /> },
   em_andamento: { label: 'Em Andamento', color: 'bg-yellow-500', icon: <Clock className="h-4 w-4" /> },
   aguardando: { label: 'Aguardando', color: 'bg-orange-500', icon: <Clock className="h-4 w-4" /> },
@@ -179,7 +180,7 @@ const MeusTickets = () => {
 
   const stats = {
     total: tickets.length,
-    abertos: tickets.filter(t => t.status === 'aberto').length,
+    abertos: tickets.filter(t => t.status === 'aberto' || t.status === 'pendente').length,
     emAndamento: tickets.filter(t => t.status === 'em_andamento' || t.status === 'aguardando').length,
     resolvidos: tickets.filter(t => t.status === 'resolvido' || t.status === 'fechado').length,
   };
@@ -258,6 +259,7 @@ const MeusTickets = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os estados</SelectItem>
+            <SelectItem value="pendente">Pendente de Aprovação</SelectItem>
             <SelectItem value="aberto">Aberto</SelectItem>
             <SelectItem value="em_andamento">Em Andamento</SelectItem>
             <SelectItem value="aguardando">Aguardando</SelectItem>

@@ -1,4 +1,4 @@
-import { SimpleNavbar } from "@/components/landing/SimpleNavbar";
+﻿import { SimpleNavbar } from "@/components/landing/SimpleNavbar";
 import { Footer } from "@/components/landing/Footer";
 import { motion } from "framer-motion";
 
@@ -40,7 +40,7 @@ const Termos = () => {
               <div className="bg-gray-800/30 rounded-xl p-6">
                 <h2 className="text-2xl font-bold mb-4 text-white">1. Objeto</h2>
                 <p className="text-gray-400">
-                  Os presentes Termos e Condições regulam a utilização dos serviços prestados pela Década Ousada, 
+                  Os presentes Termos e Condições regulam a utilização dos serviços prestados pela WeGest, 
                   incluindo o aluguer de veículos para atividade TVDE e serviços associados. Ao utilizar os nossos 
                   serviços, o utilizador aceita integralmente estes termos.
                 </p>
@@ -49,7 +49,7 @@ const Termos = () => {
               <div className="bg-gray-800/30 rounded-xl p-6">
                 <h2 className="text-2xl font-bold mb-4 text-white">2. Definições</h2>
                 <ul className="text-gray-400 space-y-2 list-disc list-inside">
-                  <li><strong className="text-white">Empresa:</strong> Década Ousada, operador TVDE certificado</li>
+                  <li><strong className="text-white">Empresa:</strong> WeGest, operador TVDE certificado</li>
                   <li><strong className="text-white">Motorista:</strong> Pessoa singular que celebra contrato de aluguer de veículo</li>
                   <li><strong className="text-white">Veículo:</strong> Automóvel disponibilizado para atividade TVDE</li>
                   <li><strong className="text-white">Serviços:</strong> Conjunto de prestações incluídas no contrato</li>
@@ -59,7 +59,7 @@ const Termos = () => {
               <div className="bg-gray-800/30 rounded-xl p-6">
                 <h2 className="text-2xl font-bold mb-4 text-white">3. Condições de Acesso</h2>
                 <p className="text-gray-400 mb-4">
-                  Para aceder aos serviços da Década Ousada, o motorista deve:
+                  Para aceder aos serviços da WeGest, o motorista deve:
                 </p>
                 <ul className="text-gray-400 space-y-2 list-disc list-inside">
                   <li>Possuir carta de condução válida categoria B</li>
@@ -104,7 +104,7 @@ const Termos = () => {
               <div className="bg-gray-800/30 rounded-xl p-6">
                 <h2 className="text-2xl font-bold mb-4 text-white">7. Responsabilidade</h2>
                 <p className="text-gray-400">
-                  A Década Ousada não se responsabiliza por danos resultantes de utilização indevida do veículo, 
+                  A WeGest não se responsabiliza por danos resultantes de utilização indevida do veículo, 
                   incumprimento das regras de trânsito pelo motorista, ou situações de força maior. O motorista 
                   é responsável por todos os danos causados ao veículo durante o período de utilização.
                 </p>

@@ -75,6 +75,7 @@ interface Criador {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  pendente:     { label: 'Pendente de Aprovação', color: 'bg-purple-600', icon: <Clock className="h-4 w-4" /> },
   aberto:       { label: 'Aberto',           color: 'bg-blue-500',   icon: <AlertCircle className="h-4 w-4" /> },
   em_andamento: { label: 'Em Manutenção',    color: 'bg-yellow-500', icon: <Clock className="h-4 w-4" /> },
   aguardando:   { label: 'Aguardando Peças', color: 'bg-orange-500', icon: <Clock className="h-4 w-4" /> },
@@ -91,7 +92,8 @@ const prioridadeConfig: Record<string, { label: string; color: string }> = {
 
 const Assistencia = () => {
   const { user } = useAuth();
-  const { isAdmin } = usePermissions();
+  const { isAdmin, hasAccessToResource } = usePermissions();
+  const isAssistanceManager = hasAccessToResource('assistencia_tickets');
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -250,7 +252,7 @@ const Assistencia = () => {
     // Status filter - "pendentes" shows open, in progress, and waiting
     let matchesStatus = true;
     if (statusFilter === 'pendentes') {
-      matchesStatus = ['aberto', 'em_andamento', 'aguardando'].includes(ticket.status);
+      matchesStatus = ['pendente', 'aberto', 'em_andamento', 'aguardando'].includes(ticket.status);
     } else if (statusFilter !== 'todos') {
       matchesStatus = ticket.status === statusFilter;
     }
@@ -266,11 +268,15 @@ const Assistencia = () => {
       matchesAtribuido = !ticket.atribuido_a;
     }
     
+    // Visibility rule: Only managers, admins or the creator can see pending tickets
+    const canSeePendente = isAdmin || isAssistanceManager || ticket.criado_por === user?.id;
+    if (ticket.status === 'pendente' && !canSeePendente) return false;
+    
     return matchesSearch && matchesStatus && matchesPrioridade && matchesCategoria && matchesCriador && matchesAtribuido;
   });
 
   const stats = {
-    porResolver: tickets.filter(t => ['aberto', 'em_andamento', 'aguardando'].includes(t.status)).length,
+    porResolver: tickets.filter(t => ['pendente', 'aberto', 'em_andamento', 'aguardando'].includes(t.status)).length,
     meus: tickets.filter(t => t.atribuido_a === user?.id && !['resolvido', 'fechado'].includes(t.status)).length,
     naoAtribuidos: tickets.filter(t => !t.atribuido_a && !['resolvido', 'fechado'].includes(t.status)).length,
     resolvidosHoje: tickets.filter(t => {
@@ -361,6 +367,7 @@ const Assistencia = () => {
             <SelectContent>
               <SelectItem value="todos">Todos os estados</SelectItem>
               <SelectItem value="pendentes">Pendentes</SelectItem>
+              <SelectItem value="pendente">Pendente de Aprovação</SelectItem>
               <SelectItem value="aberto">Aberto</SelectItem>
               <SelectItem value="em_andamento">Em Manutenção</SelectItem>
               <SelectItem value="aguardando">Aguardando Peças</SelectItem>

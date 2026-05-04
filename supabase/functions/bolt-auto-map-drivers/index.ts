@@ -231,6 +231,19 @@ Deno.serve(async (req) => {
           console.log(`[bolt-auto-map-drivers] Novo motorista criado: ${nome} (${email})`);
         }
 
+        // Auto-save bolt_id to motoristas_ativos if not present
+        const { error: updateMotError } = await supabase
+          .from("motoristas_ativos")
+          .update({ bolt_id: driver.driver_uuid })
+          .eq("id", motoristaId)
+          .is("bolt_id", null);
+
+        if (updateMotError) {
+          console.warn(`[bolt-auto-map-drivers] Falha ao auto-gravar bolt_id para ${driverName}:`, updateMotError.message);
+        } else {
+          console.log(`[bolt-auto-map-drivers] Bolt ID auto-gravado para ${driverName}`);
+        }
+
         // 5. Actualizar bolt_drivers com o motorista_id
         const { error: updateDriverError } = await supabase
           .from("bolt_drivers")

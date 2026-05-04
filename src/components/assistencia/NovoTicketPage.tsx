@@ -109,7 +109,7 @@ export const NovoTicketPage: React.FC<Props> = ({ onClose, onSuccess }) => {
         titulo: titulo.trim(),
         descricao: descricao.trim() || null,
         prioridade,
-        status: 'aberto',
+        status: 'pendente',
         criado_por: user?.id,
       });
 

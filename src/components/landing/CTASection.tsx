@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { Phone, Mail, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -23,7 +23,7 @@ export const CTASection = ({ onFormClick }: CTASectionProps) => {
             Pronto para Começar a Sua Jornada?
           </h2>
           <p className="text-gray-400 text-lg mb-10">
-            Junte-se à Década Ousada e faça parte de uma equipa que valoriza o seu trabalho. 
+            Junte-se à WeGest e faça parte de uma equipa que valoriza o seu trabalho. 
             Estamos aqui para apoiá-lo em cada passo.
           </p>
 

@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Década Ousada',
-        short_name: 'Década Ousada',
+        name: 'WeGest',
+        short_name: 'WeGest',
         description: 'Gestão de motoristas TVDE e viaturas',
         theme_color: '#000000',
         background_color: '#000000',

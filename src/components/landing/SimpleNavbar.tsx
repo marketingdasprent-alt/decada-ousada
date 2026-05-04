@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useThemedLogo } from "@/hooks/useThemedLogo";
 
@@ -15,7 +15,7 @@ export const SimpleNavbar = () => {
         <Link to="/">
           <img
             src={logoSrc}
-            alt="Década Ousada"
+            alt="WeGest"
             className="h-10"
           />
         </Link>

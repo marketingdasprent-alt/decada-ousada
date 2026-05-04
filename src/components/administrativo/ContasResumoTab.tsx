@@ -539,6 +539,8 @@ export function ContasResumoTab() {
         const val = Number(m.valor) || 0;
 
         if (m.tipo === "credito") {
+          // Não incluir caução como receita/crédito no recibo semanal
+          if (m.categoria === "caucao") return;
           extrasByMotorista[m.motorista_id] = (extrasByMotorista[m.motorista_id] || 0) + val;
           return;
         }

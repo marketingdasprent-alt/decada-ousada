@@ -288,13 +288,25 @@ Deno.serve(async (req) => {
         if (match) return match.id;
       }
 
-      // 4. Fuzzy Name Match (Starts with / Ends with / Includes)
+      // 4. Advanced Fuzzy Name Match (Splitting names)
       if (normNome) {
-        const match = allMotoristas.find((m: any) => {
-          const mNorm = normalizeStr(m.nome);
-          return mNorm.includes(normNome) || normNome.includes(mNorm);
+        const parts = normNome.split(' ').filter(p => p.length > 2);
+        if (parts.length >= 2) {
+          const match = allMotoristas.find((m: any) => {
+            const mNorm = normalizeStr(m.nome);
+            // Check if ALL parts of the Bolt name exist in the System name
+            return parts.every(p => mNorm.includes(p));
+          });
+          if (match) return match.id;
+        }
+
+        // Try reverse: check if all parts of System name exist in Bolt name
+        const matchReverse = allMotoristas.find((m: any) => {
+          const mParts = normalizeStr(m.nome).split(' ').filter(p => p.length > 2);
+          if (mParts.length < 2) return false;
+          return mParts.every(p => normNome.includes(p));
         });
-        if (match) return match.id;
+        if (matchReverse) return matchReverse.id;
       }
 
       return null;
@@ -332,6 +344,21 @@ Deno.serve(async (req) => {
         
         if (record.motorista_id) {
           console.log(`bolt-import-csv: Match found for ${record.motorista_nome} -> ID: ${record.motorista_id}`);
+          
+          // Auto-save bolt_id to motoristas_ativos if not present
+          if (record.identificador_motorista) {
+            const { error: updateError } = await supabase
+              .from('motoristas_ativos')
+              .update({ bolt_id: record.identificador_motorista })
+              .eq('id', record.motorista_id)
+              .is('bolt_id', null); // Only update if empty
+
+            if (updateError) {
+              console.warn(`bolt-import-csv: Failed to auto-save bolt_id for ${record.motorista_nome}:`, updateError.message);
+            } else {
+              console.log(`bolt-import-csv: Auto-saved bolt_id for ${record.motorista_nome}`);
+            }
+          }
         } else {
           console.warn(`bolt-import-csv: NO match found for ${record.motorista_nome} (${record.telefone || 'no phone'})`);
         }

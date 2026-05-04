@@ -138,6 +138,7 @@ interface Categoria {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  pendente:     { label: 'Pendente de Aprovação', color: 'bg-purple-600', icon: <Clock className="h-4 w-4" /> },
   aberto:       { label: 'Aberto',            color: 'bg-blue-500',   icon: <AlertCircle className="h-4 w-4" /> },
   em_andamento: { label: 'Em Manutenção',     color: 'bg-yellow-500', icon: <Clock className="h-4 w-4" /> },
   aguardando:   { label: 'Aguardando Peças',  color: 'bg-orange-500', icon: <Clock className="h-4 w-4" /> },
@@ -1181,6 +1182,14 @@ const TicketDetails = () => {
       setFaturaFile(null);
       setClosureDecisao('empresa');
       setClosureSubstDecisao(null);
+      // 9. Notificar gestores se não houver fatura
+      if (!isEditMode && !faturaUrl && !faturaFile) {
+        console.log('Ticket concluído sem fatura. Notificando gestores...');
+        supabase.functions.invoke('send-assistance-notification', {
+          body: { ticket_id: id, tipo: 'falta_fatura' }
+        }).catch(err => console.error('Erro ao enviar notificação de falta de fatura:', err));
+      }
+
       fetchTicketData();
     } catch (error: any) {
       console.error('Erro ao concluir reparação:', error);
@@ -1531,7 +1540,7 @@ const TicketDetails = () => {
         <Select 
           value={ticket.status} 
           onValueChange={handleStatusChange}
-          disabled={!canChangeStatus || ['resolvido', 'fechado'].includes(ticket.status)}
+          disabled={!canChangeStatus || ['resolvido', 'fechado', 'pendente'].includes(ticket.status)}
         >
           <SelectTrigger className={`w-[140px] md:w-[160px] font-bold text-white transition-all shrink-0 ${statusConfig[ticket.status]?.color}`}>
             <div className="flex items-center gap-2">
@@ -1540,6 +1549,7 @@ const TicketDetails = () => {
             </div>
           </SelectTrigger>
           <SelectContent>
+            {ticket.status === 'pendente' && <SelectItem value="pendente">Pendente</SelectItem>}
             <SelectItem value="aberto">Aberto</SelectItem>
             <SelectItem value="em_andamento">Em Manutenção</SelectItem>
             <SelectItem value="aguardando">Peças/Aguardar</SelectItem>
@@ -1547,6 +1557,27 @@ const TicketDetails = () => {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Banner de Aprovação */}
+      {ticket.status === 'pendente' && (canChangeStatus) && (
+        <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-3 text-purple-800 dark:text-purple-300">
+            <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center shrink-0">
+              <Clock className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-bold">Aguardando Aprovação do Gestor</p>
+              <p className="text-sm opacity-90">Este ticket foi criado e aguarda que um Gestor de Assistência o aceite para iniciar a manutenção.</p>
+            </div>
+          </div>
+          <Button 
+            onClick={() => handleStatusChange('aberto')}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-8 shadow-lg shadow-purple-500/20"
+          >
+            Aprovar e Abrir Ticket
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1 min-h-0">
         {/* Main Content (Chat) */}

@@ -84,6 +84,8 @@ const formSchema = z.object({
   observacoes: z.string().optional(),
   iban: z.string().optional(),
   gestor_responsavel: z.string().optional().nullable(),
+  bolt_id: z.string().optional().nullable(),
+  uber_uuid: z.string().optional().nullable(),
   documento_ficheiro_url: z.string().optional(),
   documento_identificacao_verso_url: z.string().optional(),
   carta_ficheiro_url: z.string().optional(),
@@ -164,6 +166,8 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
       observacoes: "",
       iban: "",
       gestor_responsavel: "",
+      bolt_id: "",
+      uber_uuid: "",
       documento_ficheiro_url: "",
       documento_identificacao_verso_url: "",
       carta_ficheiro_url: "",
@@ -198,6 +202,8 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         observacoes: motorista.observacoes || "",
         iban: motorista.iban || "",
         gestor_responsavel: motorista.gestor_responsavel || "",
+        bolt_id: motorista.bolt_id || "",
+        uber_uuid: motorista.uber_uuid || "",
         documento_ficheiro_url: motorista.documento_ficheiro_url || "",
         documento_identificacao_verso_url: motorista.documento_identificacao_verso_url || "",
         carta_ficheiro_url: motorista.carta_ficheiro_url || "",
@@ -229,6 +235,8 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         observacoes: "",
         iban: "",
         gestor_responsavel: "",
+        bolt_id: "",
+        uber_uuid: "",
         documento_ficheiro_url: "",
         documento_identificacao_verso_url: "",
         carta_ficheiro_url: "",
@@ -288,6 +296,8 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
         observacoes: values.observacoes || null,
         iban: values.iban || null,
         gestor_responsavel: values.gestor_responsavel === "none" ? null : (values.gestor_responsavel || null),
+        bolt_id: values.bolt_id || null,
+        uber_uuid: values.uber_uuid || null,
         documento_ficheiro_url: values.documento_ficheiro_url || null,
         documento_identificacao_verso_url: values.documento_identificacao_verso_url || null,
         carta_ficheiro_url: values.carta_ficheiro_url || null,
@@ -594,6 +604,35 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
                     </FormItem>
                   )}
                 />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-purple-50/30 dark:bg-purple-950/10 p-4 rounded-xl border border-purple-100 dark:border-purple-900/30">
+                  <FormField
+                    control={form.control}
+                    name="uber_uuid"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Uber UUID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ID da Uber" {...field} className="h-11 bg-background" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bolt_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bolt ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ID da Bolt" {...field} className="h-11 bg-background" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </section>
 
               {/* Seções de Documentos com Cores */}

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Calendar, User, Target, TrendingUp, Users, Award, AlertTriangle } from 'lucide-react';
 
@@ -272,7 +272,7 @@ export const UserReport: React.FC<UserReportProps> = ({ data }) => {
 
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm border-t border-gray-700/50 pt-6">
-          <p>Relatório gerado automaticamente pelo sistema CRM Década Ousada</p>
+          <p>Relatório gerado automaticamente pelo sistema CRM WeGest</p>
           <p>Data de geração: {new Date().toLocaleString('pt-BR')}</p>
         </div>
       </div>

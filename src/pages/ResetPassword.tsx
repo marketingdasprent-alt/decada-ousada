@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -86,7 +86,7 @@ const ResetPassword = () => {
     <AuthMobileShell
       title="Redefinir palavra-passe"
       description="Defina uma nova palavra-passe para voltar a aceder à sua conta."
-      logoAlt="Década Ousada"
+      logoAlt="WeGest"
       headerIcon={<KeyRound className="auth-icon-accent" />}
     >
       {hasSession ? (
