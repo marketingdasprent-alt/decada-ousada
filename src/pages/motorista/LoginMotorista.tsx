@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +10,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, Car } from 'lucide-react';
 import { getResetPasswordRedirectUrl } from '@/lib/native';
 import { AuthMobileShell } from '@/components/auth/AuthMobileShell';
+
 const LoginMotorista: React.FC = () => {
   const { user } = useAuth();
+  const { tipoUtilizador, loading: permLoading } = usePermissions();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -24,10 +27,10 @@ const LoginMotorista: React.FC = () => {
   );
 
   useEffect(() => {
-    if (user) {
+    if (user && !permLoading && tipoUtilizador === 'motorista') {
       navigate('/motorista/painel', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, permLoading, tipoUtilizador, navigate]);
 
   useEffect(() => {
     setIsResetMode(new URLSearchParams(location.search).get('modo') === 'recuperar');
