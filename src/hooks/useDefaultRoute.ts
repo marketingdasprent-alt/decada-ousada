@@ -26,7 +26,7 @@ const ROUTE_PRIORITY = [
 const CARGO_DEFAULT_ROUTES: Record<string, string> = {
   [CARGO_IDS.GESTOR_TVDE]: '/crm',
   [CARGO_IDS.GESTOR_DOCUMENTAL]: '/motoristas',
-  [CARGO_IDS.ADMINISTRADOR]: '/crm',
+  [CARGO_IDS.ADMINISTRADOR]: '/dashboard',
 };
 
 export const computeDefaultRoute = (
@@ -41,7 +41,7 @@ export const computeDefaultRoute = (
     return '/motorista/painel';
   }
 
-  if (isAdmin) return '/crm';
+  if (isAdmin) return '/dashboard';
 
   if (cargo_id && CARGO_DEFAULT_ROUTES[cargo_id]) {
     return CARGO_DEFAULT_ROUTES[cargo_id];
