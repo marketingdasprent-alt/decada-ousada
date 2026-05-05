@@ -39,6 +39,11 @@ const PermissionsContext = createContext<PermissionsContextType | undefined>(und
 export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
   const fetchIdRef = useRef(0);
+  // Tracks which user's permissions are currently in state.
+  // When user.id !== lastFetchedUserIdRef.current, we treat loading=true
+  // synchronously (before the async fetchPermissions sets state.loading=true),
+  // preventing ProtectedRoute from seeing loading=false with stale isAdmin=false.
+  const lastFetchedUserIdRef = useRef<string | null | undefined>(undefined);
 
   const [state, setState] = useState<PermissionsState>(DEFAULT_STATE);
 
@@ -48,6 +53,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (authLoading) return;
 
     if (!user) {
+      lastFetchedUserIdRef.current = null;
       setState({ ...DEFAULT_STATE, loading: false, initialized: true });
       return;
     }
@@ -69,7 +75,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
           .select('is_admin, cargo_id, cargo')
           .eq('id', user.id)
           .single();
-        
+
         profile = fallbackProfile;
         profileError = fallbackError;
       }
@@ -77,6 +83,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (profileError || currentFetchId !== fetchIdRef.current) {
         if (profileError && currentFetchId === fetchIdRef.current) {
           console.error('[PermissionsContext] Erro ao carregar perfil:', profileError);
+          lastFetchedUserIdRef.current = user.id;
           setState({ ...DEFAULT_STATE, loading: false, initialized: true });
         }
         return;
@@ -88,6 +95,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       // Admins têm tudo
       if (profile?.is_admin) {
+        lastFetchedUserIdRef.current = user.id;
         setState({
           isAdmin: true,
           cargo: profile.cargo || null,
@@ -102,6 +110,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
 
       if (!profile?.cargo_id) {
+        lastFetchedUserIdRef.current = user.id;
         setState({
           ...DEFAULT_STATE,
           cargo: profile?.cargo || null,
@@ -120,6 +129,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       if (permissoesError || currentFetchId !== fetchIdRef.current) {
         if (currentFetchId === fetchIdRef.current) {
+          lastFetchedUserIdRef.current = user.id;
           setState({
             ...DEFAULT_STATE,
             cargo: profile.cargo || null,
@@ -133,6 +143,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
 
       if (!permissoesList || permissoesList.length === 0) {
+        lastFetchedUserIdRef.current = user.id;
         setState({
           ...DEFAULT_STATE,
           cargo: profile.cargo || null,
@@ -174,6 +185,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         // pode_editar ainda não existe na DB
       }
 
+      lastFetchedUserIdRef.current = user.id;
       setState({
         isAdmin: false,
         cargo: profile.cargo || null,
@@ -187,6 +199,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } catch (error) {
       console.error('[PermissionsContext] Erro:', error);
       if (currentFetchId === fetchIdRef.current) {
+        lastFetchedUserIdRef.current = user?.id ?? null;
         setState({ ...DEFAULT_STATE, loading: false, initialized: true });
       }
     }
@@ -207,8 +220,14 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return state.recursosEditaveis.includes(recurso);
   }, [state.isAdmin, state.recursos, state.recursosEditaveis]);
 
+  // Derived loading: true whenever user is present but their permissions haven't
+  // been fetched yet. This is computed synchronously during render, eliminating
+  // the race window between "user changes" and "fetchPermissions sets state.loading=true".
+  const effectiveLoading = state.loading ||
+    (!authLoading && user != null && user.id !== lastFetchedUserIdRef.current);
+
   return (
-    <PermissionsContext.Provider value={{ ...state, hasAccessToResource, canEdit, refreshPermissions: fetchPermissions }}>
+    <PermissionsContext.Provider value={{ ...state, loading: effectiveLoading, hasAccessToResource, canEdit, refreshPermissions: fetchPermissions }}>
       {children}
     </PermissionsContext.Provider>
   );

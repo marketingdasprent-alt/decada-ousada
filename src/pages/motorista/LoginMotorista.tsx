@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +12,6 @@ import { AuthMobileShell } from '@/components/auth/AuthMobileShell';
 
 const LoginMotorista: React.FC = () => {
   const { user } = useAuth();
-  const { tipoUtilizador, loading: permLoading } = usePermissions();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -26,11 +24,12 @@ const LoginMotorista: React.FC = () => {
     new URLSearchParams(location.search).get('modo') === 'recuperar'
   );
 
+  // /login sempre direciona para /motorista/painel
   useEffect(() => {
-    if (user && !permLoading && tipoUtilizador === 'motorista') {
+    if (user) {
       navigate('/motorista/painel', { replace: true });
     }
-  }, [user, permLoading, tipoUtilizador, navigate]);
+  }, [user, navigate]);
 
   useEffect(() => {
     setIsResetMode(new URLSearchParams(location.search).get('modo') === 'recuperar');
