@@ -140,12 +140,12 @@ export function AssistenciaMultimediaUpload({
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
 
-        // Validação simples de tamanho (20MB para vídeos, 5MB para fotos)
-        const maxSize = type === 'video' ? 20 * 1024 * 1024 : 5 * 1024 * 1024;
+        // Validação simples de tamanho (100MB para vídeos, 5MB para fotos)
+        const maxSize = type === 'video' ? 100 * 1024 * 1024 : 5 * 1024 * 1024;
         if (file.size > maxSize) {
           toast({
             title: "Ficheiro muito grande",
-            description: `O ficheiro ${file.name} excede o limite de ${type === 'video' ? '20MB' : '5MB'}.`,
+            description: `O ficheiro ${file.name} excede o limite de ${type === 'video' ? '100MB' : '5MB'}.`,
             variant: "destructive",
           });
           continue;
@@ -321,7 +321,7 @@ export function AssistenciaMultimediaUpload({
         <div className="space-y-4">
           <h3 className="text-lg font-bold flex items-center gap-2">
             <Video className="h-5 w-5 text-purple-500" />
-            Vídeo (~15s)
+            Vídeo (~1 minuto)
           </h3>
 
           <div className="space-y-3">
@@ -350,7 +350,7 @@ export function AssistenciaMultimediaUpload({
                 className="w-full h-20 sm:h-24 flex flex-col items-center justify-center border-2 border-dashed border-purple-500/50 bg-purple-500/5 rounded-xl hover:bg-purple-500/10 transition-all active:scale-95 px-2"
               >
                 <Video className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 mb-1" />
-                <span className="text-xs sm:text-sm font-black text-purple-700 uppercase text-center">Gravar Vídeo (~15s)</span>
+                <span className="text-xs sm:text-sm font-black text-purple-700 uppercase text-center">Gravar Vídeo (~1 minuto)</span>
               </button>
             )}
           </div>
