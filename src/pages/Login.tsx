@@ -157,7 +157,7 @@ const Login = () => {
         !resetMode ? (
           <p>
             É motorista?{' '}
-            <Link to="/motorista/login" className="auth-link">
+            <Link to="/login" className="auth-link">
               Aceda à sua área
             </Link>
           </p>

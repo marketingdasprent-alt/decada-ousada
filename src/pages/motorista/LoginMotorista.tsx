@@ -36,7 +36,7 @@ const LoginMotorista: React.FC = () => {
 
   const updateResetMode = (enabled: boolean) => {
     const search = enabled ? '?modo=recuperar' : '';
-    navigate(`/motorista/login${search}`, { replace: true });
+    navigate(`/login${search}`, { replace: true });
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -124,9 +124,9 @@ const LoginMotorista: React.FC = () => {
       footer={
         !isResetMode ? (
           <p>
-            Não tem conta?{' '}
-            <Link to="/motorista/registo" className="auth-link">
-              Registe-se aqui
+            É da equipa WeGest?{' '}
+            <Link to="/equipa" className="auth-link">
+              Aceda à sua área
             </Link>
           </p>
         ) : null

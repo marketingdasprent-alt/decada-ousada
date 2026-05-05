@@ -58,12 +58,13 @@ const WebAppRoutes = () => {
         <Route path="/termos" element={<Termos />} />
         <Route path="/privacidade" element={<Privacidade />} />
         <Route path="/formulario/:id" element={<FormularioPublico />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<LoginMotorista />} />
+        <Route path="/equipa" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/obrigado" element={<Obrigado />} />
-        <Route path="/motorista" element={<Navigate to="/motorista/login" replace />} />
-        <Route path="/motorista/login" element={<LoginMotorista />} />
+        <Route path="/motorista" element={<Navigate to="/login" replace />} />
+        <Route path="/motorista/login" element={<Navigate to="/login" replace />} />
         <Route path="/motorista/registo" element={<RegistoMotorista />} />
         <Route
           path="/motorista/painel"

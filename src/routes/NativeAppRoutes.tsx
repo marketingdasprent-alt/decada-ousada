@@ -56,7 +56,8 @@ const NativeAppRoutes = () => {
       />
 
       {/* Rotas de Colaborador */}
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<LoginMotorista />} />
+      <Route path="/equipa" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/crm"

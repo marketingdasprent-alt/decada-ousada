@@ -16,7 +16,7 @@ const EntradaNativa = () => {
     if (user) {
       const mode = localStorage.getItem('wegest_native_mode');
       if (mode === 'colaborador') {
-        navigate('/login', { replace: true });
+        navigate('/equipa', { replace: true });
       } else {
         navigate('/motorista/painel', { replace: true });
       }
@@ -30,7 +30,7 @@ const EntradaNativa = () => {
 
   const handleColaborador = () => {
     localStorage.setItem('wegest_native_mode', 'colaborador');
-    navigate('/login');
+    navigate('/equipa');
   };
 
   return (
