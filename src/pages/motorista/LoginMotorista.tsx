@@ -9,14 +9,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, Car } from 'lucide-react';
 import { getResetPasswordRedirectUrl } from '@/lib/native';
 import { AuthMobileShell } from '@/components/auth/AuthMobileShell';
-import { useDefaultRoute } from '@/hooks/useDefaultRoute';
-
 const LoginMotorista: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { defaultRoute } = useDefaultRoute();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,10 +24,10 @@ const LoginMotorista: React.FC = () => {
   );
 
   useEffect(() => {
-    if (user && defaultRoute) {
-      navigate(defaultRoute, { replace: true });
+    if (user) {
+      navigate('/motorista/painel', { replace: true });
     }
-  }, [user, defaultRoute, navigate]);
+  }, [user, navigate]);
 
   useEffect(() => {
     setIsResetMode(new URLSearchParams(location.search).get('modo') === 'recuperar');
@@ -58,6 +55,7 @@ const LoginMotorista: React.FC = () => {
           title: 'Bem-vindo!',
           description: 'Sessão iniciada com sucesso.',
         });
+        navigate('/motorista/painel', { replace: true });
       }
     } catch (error: any) {
       console.error('Erro no login:', error);
