@@ -11,11 +11,11 @@ export const useThemedLogo = () => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return '/images/logo-rota-liquida.png.png';
+  if (!mounted) return '/Logo.png';
 
   const isLight = resolvedTheme === 'light' || theme === 'light';
 
   return isLight 
-    ? '/images/logo-rota-liquida.png.png' 
-    : '/images/logo-rota-liquida.png.png';
+    ? '/Logo.png' 
+    : '/Logo.png';
 };

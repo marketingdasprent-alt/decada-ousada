@@ -417,7 +417,7 @@ export default function AssistenciaNova() {
                 selectedViatura?.combustivel?.toLowerCase().includes('gás');
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
+    <div className="native-bottom container mx-auto px-3 md:px-4 py-4 md:py-8 max-w-4xl space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button 
@@ -431,11 +431,11 @@ export default function AssistenciaNova() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Wrench className="h-6 w-6 text-primary" />
-            Nova Entrada em Assistência
+          <h1 className="text-lg md:text-2xl font-bold flex items-center gap-2">
+            <Wrench className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+            <span className="truncate">Nova Entrada em Assistência</span>
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Passo {step} de 4: {
               step === 1 ? 'Selecione a viatura' : 
               step === 2 ? 'Documentação Multimédia' : 

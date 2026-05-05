@@ -9,8 +9,8 @@ export const Footer = () => {
           {/* Logo and description */}
           <div className="md:col-span-2">
             <img
-              src="/images/logo-rota-liquida.png.png"
-              alt="Rota Líquida"
+              src="/Logo.png"
+              alt="WeGest"
               width={150}
               height={48}
               loading="lazy"
@@ -28,7 +28,7 @@ export const Footer = () => {
                 href="https://www.facebook.com/decada.ousada"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Facebook da Rota Líquida"
+                aria-label="Facebook da WeGest"
                 className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-primary hover:text-white transition-all"
               >
                 <Facebook className="w-5 h-5" />
@@ -37,7 +37,7 @@ export const Footer = () => {
                 href="https://www.instagram.com/rota_liquida/"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Instagram da Rota Líquida"
+                aria-label="Instagram da WeGest"
                 className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-primary hover:text-white transition-all"
               >
                 <Instagram className="w-5 h-5" />
@@ -98,7 +98,7 @@ export const Footer = () => {
         {/* Bottom bar */}
         <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} Rota Líquida. Todos os direitos reservados.
+            © {new Date().getFullYear()} WeGest. Todos os direitos reservados.
           </p>
           <p className="text-gray-500 text-sm">
             Operador TVDE Certificado

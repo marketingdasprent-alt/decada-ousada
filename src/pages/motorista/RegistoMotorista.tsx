@@ -109,7 +109,7 @@ const RegistoMotorista: React.FC = () => {
     <AuthMobileShell
       title="Registo de Motorista"
       description="Crie a sua conta para se candidatar à frota."
-      logoAlt="Rota Líquida"
+      logoAlt="WeGest"
       headerIcon={<Car className="auth-icon-accent" />}
       footer={
         <p>

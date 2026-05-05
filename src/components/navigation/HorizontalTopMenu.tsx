@@ -90,7 +90,7 @@ export const HorizontalTopMenu: React.FC = () => {
                   <div className="p-6 border-b">
                     <img 
                       src={logoSrc}
-                      alt="Rota Líquida" 
+                      alt="WeGest" 
                       className="h-10 w-auto object-contain"
                     />
                   </div>
@@ -202,7 +202,7 @@ export const HorizontalTopMenu: React.FC = () => {
           <div className="col-span-3 flex flex-col items-center justify-center gap-0.5">
             <img 
               src={logoSrc}
-              alt="Rota Líquida" 
+              alt="WeGest" 
               className="h-8 w-auto object-contain"
             />
             {!loading && (
@@ -229,7 +229,7 @@ export const HorizontalTopMenu: React.FC = () => {
         <div className="flex-shrink-0">
           <img 
             src={logoSrc}
-            alt="Rota Líquida" 
+            alt="WeGest" 
             className="h-14 w-auto object-contain"
           />
         </div>

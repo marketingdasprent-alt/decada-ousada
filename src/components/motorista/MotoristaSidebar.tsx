@@ -39,8 +39,8 @@ export function MotoristaSidebar() {
       <SidebarHeader className="px-6 py-8">
         <div className="flex items-center justify-center">
           <img 
-            src="/images/logo-rota-liquida.png.png" 
-            alt="Rota Líquida" 
+            src="/Logo.png"
+            alt="WeGest"
             className="h-16 w-auto object-contain transition-all hover:scale-105" 
           />
         </div>

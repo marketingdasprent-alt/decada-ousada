@@ -3,6 +3,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Só na app nativa: compensar status bar e barra de navegação Android */
+html[data-native-app="true"] .native-header {
+  padding-top: env(safe-area-inset-top);
+}
+html[data-native-app="true"] .native-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 @layer base {
   :root {
     /* Tema Rota Líquida (Teal) como padrão */
@@ -343,6 +351,12 @@
     margin-top: 0.25rem !important;
     margin-bottom: 0.25rem !important;
   }
+}
+
+/* Native app: push dialogs below the status bar (viewport-fit=cover) */
+html[data-native-app="true"] [role="dialog"] {
+  margin-top: env(safe-area-inset-top);
+  max-height: calc(90vh - env(safe-area-inset-top)) !important;
 }
 
 /* Custom Scrollbar Utilities */

@@ -87,11 +87,11 @@ export function MotoristaDocumentosCard({ motorista }: MotoristaDocumentosCardPr
   }
 
   return (
-    <Card className="bg-white border-slate-200 shadow-sm rounded-[2rem] overflow-hidden leading-relaxed">
-      <CardHeader className="p-8 pb-4 border-b border-slate-50">
-        <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-3">
+    <Card className="bg-white border-slate-200 shadow-sm rounded-[1.5rem] md:rounded-[2rem] overflow-hidden leading-relaxed">
+      <CardHeader className="p-5 md:p-8 pb-3 md:pb-4 border-b border-slate-50">
+        <CardTitle className="text-base md:text-lg font-black text-slate-900 flex items-center gap-2 md:gap-3">
           <div className="p-2 bg-teal-50 rounded-xl">
-            <FileText className="w-5 h-5 text-teal-600" />
+            <FileText className="w-4 h-4 md:w-5 md:h-5 text-teal-600" />
           </div>
           Documentos Legais
         </CardTitle>
@@ -101,29 +101,29 @@ export function MotoristaDocumentosCard({ motorista }: MotoristaDocumentosCardPr
           {documentos.map((doc, index) => (
             <div 
               key={index} 
-              className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-8 hover:bg-slate-50 transition-colors"
+              className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4 p-5 md:p-8 hover:bg-slate-50 transition-colors"
             >
               <div className="space-y-1">
-                <p className="font-black text-slate-900 tracking-tight">{doc.nome}</p>
-                <div className="flex flex-wrap items-center gap-3">
+                <p className="font-black text-slate-900 tracking-tight text-sm md:text-base">{doc.nome}</p>
+                <div className="flex flex-wrap items-center gap-2 md:gap-3">
                   {doc.numero && (
-                    <span className="font-mono text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
+                    <span className="font-mono text-[10px] md:text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
                       {doc.numero}
                     </span>
                   )}
                   {doc.categorias && doc.categorias.length > 0 && (
-                    <span className="text-[10px] font-black uppercase tracking-wider text-teal-600/70 bg-teal-50 px-2 py-1 rounded-md">
+                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-wider text-teal-600/70 bg-teal-50 px-2 py-1 rounded-md">
                       Cat: {doc.categorias.join(", ")}
                     </span>
                   )}
                 </div>
               </div>
               
-              <div className="flex items-center gap-6">
+              <div className="flex items-center justify-between sm:justify-end gap-4 md:gap-6">
                 {doc.validade && (
-                  <div className="text-right hidden md:block">
-                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Validade</p>
-                    <p className="text-xs font-bold text-slate-500">
+                  <div className="text-left sm:text-right">
+                    <p className="text-[9px] md:text-[10px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Validade</p>
+                    <p className="text-[10px] md:text-xs font-bold text-slate-500">
                       {format(new Date(doc.validade), "dd MMM yyyy", { locale: pt })}
                     </p>
                   </div>

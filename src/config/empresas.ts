@@ -14,8 +14,8 @@ export interface EmpresaConfig {
 export const EMPRESAS: Record<string, EmpresaConfig> = {
   decada_ousada: {
     id: 'decada_ousada',
-    nome: 'Rota Líquida',
-    nomeCompleto: 'Rota Líquida, Lda.',
+    nome: 'WeGest',
+    nomeCompleto: 'WeGest, Lda.',
     nif: '515127850',
     sede: 'Rua do Mourato Nº 70 A correio 70, 9600-224 Ribeira Grande',
     licencaTVDE: '(informação a confirmar)',

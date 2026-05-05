@@ -205,37 +205,37 @@ export function MotoristaViaturaCard({ motoristaId }: MotoristaViaturaCardProps)
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
-        <Card className="shadow-sm rounded-[2rem] overflow-hidden leading-relaxed border-border hover:border-primary/40 transition-all cursor-pointer group active:scale-[0.98]">
-          <CardHeader className="p-8 pb-4">
-            <CardTitle className="text-lg font-black flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
+        <Card className="shadow-sm rounded-[1.5rem] md:rounded-[2rem] overflow-hidden leading-relaxed border-border hover:border-primary/40 transition-all cursor-pointer group active:scale-[0.98]">
+          <CardHeader className="p-5 md:p-8 pb-3 md:pb-4">
+            <CardTitle className="text-base md:text-lg font-black flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 md:gap-3">
                 <div className="p-2 bg-primary/10 rounded-xl group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <Car className="w-5 h-5 text-primary group-hover:text-primary-foreground" />
+                  <Car className="w-4 h-4 md:w-5 md:h-5 text-primary group-hover:text-primary-foreground" />
                 </div>
                 Viatura Atual
               </div>
-              <Badge variant="outline" className="text-[10px] uppercase tracking-widest font-black opacity-0 group-hover:opacity-100 transition-opacity">Ver Documentos</Badge>
+              <Badge variant="outline" className="text-[9px] md:text-[10px] uppercase tracking-widest font-black opacity-0 group-hover:opacity-100 transition-opacity">Ver Docs</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8 pt-0">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-              <div className="space-y-4">
+          <CardContent className="p-5 md:p-8 pt-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 md:gap-6">
+              <div className="space-y-3 md:space-y-4">
                 <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-2xl font-black tracking-tight">
+                  <div className="flex items-center gap-2 md:gap-3 mb-1">
+                    <h3 className="text-xl md:text-2xl font-black tracking-tight">
                       {viatura.marca} {viatura.modelo}
                     </h3>
                     {viatura.ano && (
-                      <span className="text-muted-foreground font-bold">({viatura.ano})</span>
+                      <span className="text-sm md:text-base text-muted-foreground font-bold">({viatura.ano})</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="px-3 py-1 bg-foreground text-background rounded-lg font-mono font-black text-xs tracking-widest shadow-sm">
+                    <div className="px-2 md:px-3 py-1 bg-foreground text-background rounded-lg font-mono font-black text-[10px] md:text-xs tracking-widest shadow-sm">
                       {viatura.matricula}
                     </div>
                     {viatura.categoria && (
                       <div className={cn(
-                        "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider",
+                        "px-2 md:px-3 py-1 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-wider",
                         getCategoriaColor(viatura.categoria).split(' ').filter(c => !c.startsWith('dark:')).join(' ')
                       )}>
                         {viatura.categoria}
@@ -244,24 +244,24 @@ export function MotoristaViaturaCard({ motoristaId }: MotoristaViaturaCardProps)
                   </div>
                 </div>
                 
-                <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-2 md:gap-4 text-[10px] md:text-xs font-bold text-muted-foreground">
                   {viatura.combustivel && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-xl">
-                      <Fuel className="w-3.5 h-3.5 text-primary" />
+                    <div className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 bg-muted rounded-xl">
+                      <Fuel className="w-3 md:w-3.5 h-3 md:h-3.5 text-primary" />
                       <span>{viatura.combustivel}</span>
                     </div>
                   )}
                   
                   {viatura.cor && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-xl">
-                      <div className="w-3 h-3 rounded-full border border-border" style={{ backgroundColor: viatura.cor.toLowerCase() === 'preto' ? 'black' : viatura.cor.toLowerCase() === 'branco' ? 'white' : viatura.cor }} />
+                    <div className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 bg-muted rounded-xl">
+                      <div className="w-2.5 md:w-3 h-2.5 md:h-3 rounded-full border border-border" style={{ backgroundColor: viatura.cor.toLowerCase() === 'preto' ? 'black' : viatura.cor.toLowerCase() === 'branco' ? 'white' : viatura.cor }} />
                       <span>{viatura.cor}</span>
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-xl">
-                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-[10px]">Atribuída em {format(new Date(viaturaAtual.data_inicio), "dd MMM yyyy", { locale: pt })}</span>
+                  <div className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 bg-muted rounded-xl">
+                    <Calendar className="w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground" />
+                    <span className="text-[9px] md:text-[10px]">Atribuída em {format(new Date(viaturaAtual.data_inicio), "dd MMM yyyy", { locale: pt })}</span>
                   </div>
                 </div>
               </div>
@@ -276,59 +276,59 @@ export function MotoristaViaturaCard({ motoristaId }: MotoristaViaturaCardProps)
         </Card>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2rem] border-border bg-background p-0">
-        <div className="p-12">
-          <div className="flex items-start justify-between mb-12">
+      <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-[1.5rem] md:rounded-[2rem] border-border bg-background p-0">
+        <div className="p-6 md:p-12">
+          <div className="flex items-start justify-between mb-8 md:mb-12">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-3 bg-primary/10 rounded-2xl">
-                  <Car className="h-6 w-6 text-primary" />
+                <div className="p-2 md:p-3 bg-primary/10 rounded-2xl">
+                  <Car className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-black tracking-tight">{viatura.marca} {viatura.modelo}</h2>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xs font-mono font-black uppercase tracking-widest bg-foreground text-background px-3 py-1 rounded-lg">{viatura.matricula}</span>
-                    <span className="text-sm text-muted-foreground font-bold">Documentação da Viatura</span>
+                  <h2 className="text-2xl md:text-3xl font-black tracking-tight">{viatura.marca} {viatura.modelo}</h2>
+                  <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1">
+                    <span className="text-[10px] md:text-xs font-mono font-black uppercase tracking-widest bg-foreground text-background px-2 md:px-3 py-1 rounded-lg">{viatura.matricula}</span>
+                    <span className="text-xs md:text-sm text-muted-foreground font-bold">Documentação da Viatura</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             {/* DUA */}
             {(() => {
               const doc = documentos.find(d => d.tipo_documento === 'dua');
               return (
                 <Card className={cn(
-                  "border-2 transition-all overflow-hidden rounded-[2rem]",
+                  "border-2 transition-all overflow-hidden rounded-[1.5rem] md:rounded-[2rem]",
                   doc ? "border-blue-100 dark:border-blue-900/20 bg-blue-50/30 dark:bg-blue-900/10" : "border-dashed border-border bg-muted/20"
                 )}>
-                  <div className="p-8 flex flex-col h-full">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className={cn("p-3 rounded-2xl", doc ? "bg-blue-500/20 text-blue-600" : "bg-muted text-muted-foreground")}>
-                        <FileCheck className="h-6 w-6" />
+                  <div className="p-6 md:p-8 flex flex-col h-full">
+                    <div className="flex items-center gap-3 mb-4 md:mb-6">
+                      <div className={cn("p-2 md:p-3 rounded-2xl", doc ? "bg-blue-500/20 text-blue-600" : "bg-muted text-muted-foreground")}>
+                        <FileCheck className="h-5 w-5 md:h-6 md:w-6" />
                       </div>
                       <div>
-                        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Documento</p>
-                        <h4 className="font-bold text-lg">DUA</h4>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Documento</p>
+                        <h4 className="font-bold text-base md:text-lg">DUA</h4>
                       </div>
                     </div>
                     
-                    <p className="text-sm text-muted-foreground mb-8 flex-1">
+                    <p className="text-xs md:text-sm text-muted-foreground mb-6 md:mb-8 flex-1">
                       Documento Único Automóvel oficial da viatura.
                     </p>
 
                     {doc ? (
                       <Button 
                         onClick={() => handleViewDocument(doc.ficheiro_url)}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold py-6"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold py-5 md:py-6"
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         Visualizar DUA
                       </Button>
                     ) : (
-                      <div className="flex items-center gap-2 text-muted-foreground text-sm font-bold bg-muted/50 p-4 rounded-xl">
+                      <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold bg-muted/50 p-4 rounded-xl">
                         <AlertCircle className="h-4 w-4" />
                         Não disponível
                       </div>
@@ -343,34 +343,34 @@ export function MotoristaViaturaCard({ motoristaId }: MotoristaViaturaCardProps)
               const doc = documentos.find(d => d.tipo_documento === 'ipo');
               return (
                 <Card className={cn(
-                  "border-2 transition-all overflow-hidden rounded-[2rem]",
+                  "border-2 transition-all overflow-hidden rounded-[1.5rem] md:rounded-[2rem]",
                   doc ? "border-teal-100 dark:border-teal-900/20 bg-teal-50/30 dark:bg-teal-900/10" : "border-dashed border-border bg-muted/20"
                 )}>
-                  <div className="p-8 flex flex-col h-full">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className={cn("p-3 rounded-2xl", doc ? "bg-teal-500/20 text-teal-600" : "bg-muted text-muted-foreground")}>
-                        <ClipboardCheck className="h-6 w-6" />
+                  <div className="p-6 md:p-8 flex flex-col h-full">
+                    <div className="flex items-center gap-3 mb-4 md:mb-6">
+                      <div className={cn("p-2 md:p-3 rounded-2xl", doc ? "bg-teal-500/20 text-teal-600" : "bg-muted text-muted-foreground")}>
+                        <ClipboardCheck className="h-5 w-5 md:h-6 md:w-6" />
                       </div>
                       <div>
-                        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Inspeção</p>
-                        <h4 className="font-bold text-lg">IPO</h4>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Inspeção</p>
+                        <h4 className="font-bold text-base md:text-lg">IPO</h4>
                       </div>
                     </div>
                     
-                    <p className="text-sm text-muted-foreground mb-8 flex-1">
+                    <p className="text-xs md:text-sm text-muted-foreground mb-6 md:mb-8 flex-1">
                       {doc?.data_validade ? `Válido até ${format(new Date(doc.data_validade), "dd/MM/yyyy")}` : "Inspeção Periódica Obrigatória."}
                     </p>
 
                     {doc ? (
                       <Button 
                         onClick={() => handleViewDocument(doc.ficheiro_url)}
-                        className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold py-6"
+                        className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold py-5 md:py-6"
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         Visualizar IPO
                       </Button>
                     ) : (
-                      <div className="flex items-center gap-2 text-muted-foreground text-sm font-bold bg-muted/50 p-4 rounded-xl">
+                      <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold bg-muted/50 p-4 rounded-xl">
                         <AlertCircle className="h-4 w-4" />
                         Não disponível
                       </div>
@@ -385,34 +385,34 @@ export function MotoristaViaturaCard({ motoristaId }: MotoristaViaturaCardProps)
               const doc = documentos.find(d => d.tipo_documento === 'carta_verde');
               return (
                 <Card className={cn(
-                  "border-2 transition-all overflow-hidden rounded-[2rem]",
+                  "border-2 transition-all overflow-hidden rounded-[1.5rem] md:rounded-[2rem]",
                   doc ? "border-indigo-100 dark:border-indigo-900/20 bg-indigo-50/30 dark:bg-indigo-900/10" : "border-dashed border-border bg-muted/20"
                 )}>
-                  <div className="p-8 flex flex-col h-full">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className={cn("p-3 rounded-2xl", doc ? "bg-indigo-500/20 text-indigo-600" : "bg-muted text-muted-foreground")}>
-                        <ShieldCheck className="h-6 w-6" />
+                  <div className="p-6 md:p-8 flex flex-col h-full">
+                    <div className="flex items-center gap-3 mb-4 md:mb-6">
+                      <div className={cn("p-2 md:p-3 rounded-2xl", doc ? "bg-indigo-500/20 text-indigo-600" : "bg-muted text-muted-foreground")}>
+                        <ShieldCheck className="h-5 w-5 md:h-6 md:w-6" />
                       </div>
                       <div>
-                        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Seguro</p>
-                        <h4 className="font-bold text-lg">Carta Verde</h4>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Seguro</p>
+                        <h4 className="font-bold text-base md:text-lg">Carta Verde</h4>
                       </div>
                     </div>
                     
-                    <p className="text-sm text-muted-foreground mb-8 flex-1">
+                    <p className="text-xs md:text-sm text-muted-foreground mb-6 md:mb-8 flex-1">
                       {doc?.data_validade ? `Válido até ${format(new Date(doc.data_validade), "dd/MM/yyyy")}` : "Certificado Internacional de Seguro."}
                     </p>
 
                     {doc ? (
                       <Button 
                         onClick={() => handleViewDocument(doc.ficheiro_url)}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold py-6"
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold py-5 md:py-6"
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         Visualizar Seguro
                       </Button>
                     ) : (
-                      <div className="flex items-center gap-2 text-muted-foreground text-sm font-bold bg-muted/50 p-4 rounded-xl">
+                      <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold bg-muted/50 p-4 rounded-xl">
                         <AlertCircle className="h-4 w-4" />
                         Não disponível
                       </div>

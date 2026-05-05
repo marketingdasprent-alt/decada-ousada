@@ -381,20 +381,20 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
 
   return (
     <Card className="shadow-sm rounded-[2rem] overflow-hidden leading-relaxed border-border">
-      <CardHeader className="p-8 pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-black flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-xl">
+      <CardHeader className="p-4 md:p-8 pb-4">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-lg font-black flex items-center gap-3 min-w-0">
+            <div className="p-2 bg-primary/10 rounded-xl shrink-0">
               <Receipt className="w-5 h-5 text-primary" />
             </div>
-            Recibos Verdes
+            <span className="truncate">Recibos Verdes</span>
           </CardTitle>
-          
+
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="rounded-xl font-bold transition-all shadow-sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Submeter Recibo Verde
+              <Button size="sm" className="rounded-xl font-bold transition-all shadow-sm shrink-0">
+                <Plus className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Submeter Recibo Verde</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="rounded-[2rem] border-border bg-background">
@@ -503,69 +503,50 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
             <p className="text-xs font-medium">Submeta os seus recibos verdes semanais</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground border-b border-border">
-                  <th className="px-8 py-4 font-black">Código</th>
-                  <th className="px-8 py-4 font-black">Semana</th>
-                  <th className="px-8 py-4 font-black text-right">Valor</th>
-                  <th className="px-8 py-4 font-black text-right">Estado</th>
-                  <th className="px-8 py-4 font-black"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {recibos.map((recibo) => (
-                  <tr key={recibo.id} className="group hover:bg-muted/30 transition-colors">
-                    <td className="px-8 py-5">
-                      <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-lg">
-                        {formatCodigo(recibo.codigo)}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5">
-                       <p className="text-sm font-bold">{formatSemanaReferencia(recibo)}</p>
-                    </td>
-                    <td className="px-8 py-5 text-right font-black text-sm">
-                      {formatCurrency(Number(recibo.valor_total || 0))}
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <div className={cn(
-                        "inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                        recibo.status === "validado" ? "bg-green-500/10 text-green-600" : 
-                        recibo.status === "submetido" ? "bg-muted text-muted-foreground" : "bg-destructive/10 text-destructive"
-                      )}>
-                        {recibo.status}
-                      </div>
-                    </td>
-                    <td className="px-8 py-5 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 rounded-xl bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all border border-border"
-                          onClick={() => handleViewRecibo(recibo.ficheiro_url)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        {recibo.status === "submetido" && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 transition-all border border-transparent hover:border-destructive/20"
-                            onClick={() => {
-                              setReciboToDelete(recibo);
-                              setDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y divide-border">
+            {recibos.map((recibo) => (
+              <div key={recibo.id} className="flex items-center justify-between px-4 md:px-8 py-4 gap-3 hover:bg-muted/30 transition-colors">
+                <div className="flex flex-col gap-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg shrink-0">
+                      {formatCodigo(recibo.codigo)}
+                    </span>
+                    <div className={cn(
+                      "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0",
+                      recibo.status === "validado" ? "bg-green-500/10 text-green-600" :
+                      recibo.status === "submetido" ? "bg-muted text-muted-foreground" : "bg-destructive/10 text-destructive"
+                    )}>
+                      {recibo.status}
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold truncate">{formatSemanaReferencia(recibo)}</p>
+                  <p className="text-xs font-black text-muted-foreground">{formatCurrency(Number(recibo.valor_total || 0))}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-xl bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all border border-border"
+                    onClick={() => handleViewRecibo(recibo.ficheiro_url)}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  {recibo.status === "submetido" && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 transition-all border border-transparent hover:border-destructive/20"
+                      onClick={() => {
+                        setReciboToDelete(recibo);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

@@ -255,7 +255,7 @@ const Register = () => {
               </div>
             </div>
             <CardTitle className="text-2xl font-bold">
-              {isFirstUser ? 'Primeiro Admin - Rota Líquida' : 'Registro Rota Líquida'}
+              {isFirstUser ? 'Primeiro Admin - WeGest' : 'Registro WeGest'}
             </CardTitle>
             <p className="text-muted-foreground mt-2">
               {isFirstUser 

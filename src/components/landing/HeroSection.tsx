@@ -39,8 +39,8 @@ export const HeroSection = ({ onRentClick, onSlotClick }: HeroSectionProps) => {
             transition={{ delay: 0.2 }}
           >
             <img
-              src="/images/logo-rota-liquida.png.png"
-              alt="Rota Líquida - Motoristas TVDE Portugal"
+              src="/Logo.png"
+              alt="WeGest - Motoristas TVDE Portugal"
               className="h-16 md:h-20 w-auto mx-auto mb-8"
               fetchPriority="high"
             />
@@ -79,7 +79,7 @@ export const HeroSection = ({ onRentClick, onSlotClick }: HeroSectionProps) => {
             transition={{ delay: 0.5 }}
             className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto"
           >
-            Junte-se a centenas de motoristas que já faturam com a Rota Líquida. 
+            Junte-se a centenas de motoristas que já faturam com a WeGest.
             Custos claros e fixos, suporte 7 dias por semana.
           </motion.p>
           

@@ -117,7 +117,7 @@ export const SidebarMenu: React.FC = () => {
   const MobileMenu = () => (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <header className="h-16 bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-[60] lg:hidden flex items-center px-4 w-full">
+        <header className="native-header h-16 bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-[60] lg:hidden flex items-center px-4 w-full">
           <Button variant="ghost" size="icon" className="mr-4">
             <Menu className="h-6 w-6" />
           </Button>

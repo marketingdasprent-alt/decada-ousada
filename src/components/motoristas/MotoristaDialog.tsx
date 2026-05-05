@@ -361,8 +361,8 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
 
   return (
     <Dialog open={open} onOpenChange={() => onOpenChange(false)}>
-      <DialogContent className="max-w-none w-full h-full m-0 rounded-none p-0 flex flex-col bg-background border-none left-0 top-0 translate-x-0 translate-y-0 duration-300">
-        <DialogHeader className="px-6 py-4 border-b bg-card sticky top-0 z-[110] flex flex-row items-center justify-between shrink-0">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 py-4 border-b bg-card flex flex-row items-center justify-between shrink-0">
           <div className="space-y-0.5">
             <DialogTitle className="text-2xl font-bold">
               {motorista ? "Editar Motorista" : "Adicionar Motorista"}
@@ -385,7 +385,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
 
         <div className="flex-1 overflow-y-auto">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-5xl mx-auto p-6 space-y-8 pb-32">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-8">
               {/* Dados Pessoais */}
               <section className="space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b">
@@ -997,7 +997,7 @@ export function MotoristaDialog({ open, onOpenChange, motorista, onMotoristaCrea
           </Form>
         </div>
 
-        <div className="px-6 py-4 border-t bg-card sticky bottom-0 z-10 flex items-center justify-end gap-3 shrink-0">
+        <div className="px-6 py-4 border-t bg-card flex items-center justify-end gap-3 shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading} className="h-11 px-8">
             Cancelar
           </Button>

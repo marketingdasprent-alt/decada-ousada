@@ -46,7 +46,7 @@ export const CandidaturaAprovada: React.FC<CandidaturaAprovadaProps> = ({
             </div>
             <CardTitle className="text-xl text-green-500">Candidatura Aprovada!</CardTitle>
             <CardDescription>
-              Parabéns! A sua candidatura foi aprovada e já faz parte da frota Rota Líquida.
+              Parabéns! A sua candidatura foi aprovada e já faz parte da frota WeGest.
             </CardDescription>
           </CardHeader>
           <CardContent>

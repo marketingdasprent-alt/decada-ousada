@@ -23,8 +23,8 @@ export function AuthMobileShell({
   const isMotoristaRoute = location.pathname === '/motorista' || location.pathname.startsWith('/motorista/');
   
   const logoSrc = isMotoristaRoute 
-    ? '/images/logo-rota-liquida.png.png'
-    : '/images/logo-rota-liquida.png.png';
+    ? '/Logo.png'
+    : '/Logo.png';
 
   return (
     <div className={`auth-screen auth-screen-safe ${isMotoristaRoute ? 'rota-liquida' : ''}`}>
@@ -42,7 +42,7 @@ export function AuthMobileShell({
                 onError={(e) => {
                   const img = e.currentTarget;
                   if (!isMotoristaRoute && img.src.includes('-white')) {
-                    img.src = "/images/logo-rota-liquida.png.png";
+                    img.src = "/Logo.png";
                   } else {
                     img.style.display = 'none';
                   }

@@ -307,24 +307,24 @@ export function MotoristaDashboard() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-12">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 pb-12">
       <div className="flex flex-col gap-1 px-1">
-        <h1 className="text-3xl font-black tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm font-medium">
+        <h1 className="text-2xl md:text-3xl font-black tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground text-xs md:text-sm font-medium">
           Bem-vindo de volta, {motorista?.nome?.split(' ')[0] || 'Motorista'}!
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="rounded-[2rem] overflow-hidden group hover:shadow-md transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <Card className="rounded-[1.5rem] md:rounded-[2rem] overflow-hidden group hover:shadow-md transition-all duration-300">
+          <CardContent className="p-5 md:p-6">
+            <div className="flex justify-between items-start mb-3 md:mb-4">
               <span className="text-muted-foreground text-[10px] font-black tracking-widest uppercase">Saldo Atual</span>
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Wallet className="w-4 h-4 text-primary" />
               </div>
             </div>
-            <p className="text-3xl font-black mb-2">{formatCurrency(stats.saldoPendente)}</p>
+            <p className="text-2xl md:text-3xl font-black mb-1 md:mb-2">{formatCurrency(stats.saldoPendente)}</p>
             <div className="flex items-center text-primary text-[10px] font-bold">
               <TrendingUp className="w-3 h-3 mr-1" />
               Disponível para levantamento
@@ -334,15 +334,15 @@ export function MotoristaDashboard() {
 
         <Dialog open={pendentesModalOpen} onOpenChange={setPendentesModalOpen}>
           <DialogTrigger asChild>
-            <Card className="rounded-[2rem] overflow-hidden group hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98]">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
+            <Card className="rounded-[1.5rem] md:rounded-[2rem] overflow-hidden group hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98]">
+              <CardContent className="p-5 md:p-6">
+                <div className="flex justify-between items-start mb-3 md:mb-4">
                   <span className="text-muted-foreground text-[10px] font-black tracking-widest uppercase">Recibos Pendentes</span>
                   <div className="p-2 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors">
                     <Receipt className="w-4 h-4 text-blue-500" />
                   </div>
                 </div>
-                <p className="text-3xl font-black mb-2">{stats.recibosPendentesAceitacao}</p>
+                <p className="text-2xl md:text-3xl font-black mb-1 md:mb-2">{stats.recibosPendentesAceitacao}</p>
                 <div className="flex items-center justify-between">
                   <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tight">Em validação</p>
                   <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
@@ -350,57 +350,57 @@ export function MotoristaDashboard() {
               </CardContent>
             </Card>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-xl rounded-[2rem] border-border bg-background p-0 overflow-hidden">
-            <div className="p-8">
-              <DialogHeader className="mb-8">
+          <DialogContent className="w-[95vw] sm:max-w-xl rounded-[1.5rem] md:rounded-[2rem] border-border bg-background p-0 overflow-hidden">
+            <div className="p-5 md:p-8">
+              <DialogHeader className="mb-6 md:mb-8">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 bg-blue-500/10 rounded-2xl">
-                    <Receipt className="h-6 w-6 text-blue-500" />
+                  <div className="p-2 md:p-3 bg-blue-500/10 rounded-2xl">
+                    <Receipt className="h-5 w-5 md:h-6 md:w-6 text-blue-500" />
                   </div>
                   <div>
-                    <DialogTitle className="text-2xl font-black tracking-tight">Recibos em Validação</DialogTitle>
-                    <p className="text-sm text-muted-foreground font-medium">Recibos submetidos aguardando aprovação</p>
+                    <DialogTitle className="text-xl md:text-2xl font-black tracking-tight">Recibos em Validação</DialogTitle>
+                    <p className="text-xs md:text-sm text-muted-foreground font-medium">Recibos submetidos aguardando aprovação</p>
                   </div>
                 </div>
               </DialogHeader>
 
-              <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 scrollbar-hide">
+              <div className="space-y-3 md:space-y-4 max-h-[50vh] overflow-y-auto pr-2 scrollbar-hide">
                 {stats.recibosPendentesList.length === 0 ? (
-                  <div className="text-center py-12 bg-muted/20 rounded-[2rem] border border-dashed">
-                    <Check className="h-12 w-12 text-green-500 mx-auto mb-3 opacity-20" />
-                    <p className="font-bold">Sem recibos pendentes</p>
-                    <p className="text-xs text-muted-foreground">Todos os seus recibos foram processados.</p>
+                  <div className="text-center py-8 md:py-12 bg-muted/20 rounded-[1.5rem] md:rounded-[2rem] border border-dashed">
+                    <Check className="h-10 w-10 md:h-12 md:w-12 text-green-500 mx-auto mb-3 opacity-20" />
+                    <p className="font-bold text-sm md:text-base">Sem recibos pendentes</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Todos os seus recibos foram processados.</p>
                   </div>
                 ) : (
                   stats.recibosPendentesList.map((recibo) => (
-                    <div key={recibo.id} className="flex items-center justify-between p-5 bg-muted/30 hover:bg-muted/50 rounded-2xl border border-border transition-all group">
-                      <div className="flex items-center gap-4">
+                    <div key={recibo.id} className="flex items-center justify-between p-4 md:p-5 bg-muted/30 hover:bg-muted/50 rounded-2xl border border-border transition-all group">
+                      <div className="flex items-center gap-3 md:gap-4">
                         <div className="p-2 bg-background rounded-xl border border-border shadow-sm">
-                          <FileText className="h-5 w-5 text-blue-500" />
+                          <FileText className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-foreground">{recibo.descricao}</p>
-                          <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mt-0.5">
+                          <p className="text-xs md:text-sm font-bold text-foreground line-clamp-1">{recibo.descricao}</p>
+                          <p className="text-[9px] md:text-[10px] font-black uppercase tracking-wider text-muted-foreground mt-0.5">
                             {format(new Date(recibo.criado_em), "dd MMM yyyy", { locale: pt })} • {formatCurrency(recibo.valor)}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 md:gap-2">
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-9 w-9 rounded-xl bg-background border border-border hover:border-primary/20 hover:text-primary transition-all"
+                          className="h-8 w-8 md:h-9 md:w-9 rounded-xl bg-background border border-border hover:border-primary/20 hover:text-primary transition-all"
                           onClick={() => handleView(recibo.url)}
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5 md:w-4 md:h-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-9 w-9 rounded-xl bg-background border border-border hover:border-primary/20 hover:text-primary transition-all"
+                          className="h-8 w-8 md:h-9 md:w-9 rounded-xl bg-background border border-border hover:border-primary/20 hover:text-primary transition-all"
                           onClick={() => handleDownload(recibo.url, recibo.nome)}
                         >
-                          <Download className="w-4 h-4" />
+                          <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
                         </Button>
                       </div>
                     </div>
@@ -408,10 +408,10 @@ export function MotoristaDashboard() {
                 )}
               </div>
 
-              <div className="mt-8">
+              <div className="mt-6 md:mt-8">
                 <Button 
                   variant="outline" 
-                  className="w-full rounded-xl font-bold py-6 border-border"
+                  className="w-full rounded-xl font-bold py-5 md:py-6 border-border"
                   onClick={() => setPendentesModalOpen(false)}
                 >
                   Fechar
@@ -424,17 +424,17 @@ export function MotoristaDashboard() {
         <Dialog open={recibosModalOpen} onOpenChange={setRecibosModalOpen}>
           <DialogTrigger asChild>
             <Card className={cn(
-              "rounded-[2rem] overflow-hidden group hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98]",
+              "rounded-[1.5rem] md:rounded-[2rem] overflow-hidden group hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98]",
               stats.recibosEmFalta > 0 ? "border-destructive/20 bg-destructive/5 hover:border-destructive/40" : "hover:border-primary/40"
             )}>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
+              <CardContent className="p-5 md:p-6">
+                <div className="flex justify-between items-start mb-3 md:mb-4">
                   <span className="text-muted-foreground text-[10px] font-black tracking-widest uppercase">Recibos em falta</span>
                   <div className={cn("p-2 rounded-lg", stats.recibosEmFalta > 0 ? "bg-destructive/20" : "bg-muted")}>
                     <AlertCircle className={cn("w-4 h-4", stats.recibosEmFalta > 0 ? "text-destructive" : "text-muted-foreground/30")} />
                   </div>
                 </div>
-                <p className={cn("text-3xl font-black mb-2", stats.recibosEmFalta > 0 ? "text-destructive" : "text-foreground")}>
+                <p className={cn("text-2xl md:text-3xl font-black mb-1 md:mb-2", stats.recibosEmFalta > 0 ? "text-destructive" : "text-foreground")}>
                   {stats.recibosEmFalta}
                 </p>
                 <div className="flex items-center justify-between">
@@ -444,46 +444,46 @@ export function MotoristaDashboard() {
               </CardContent>
             </Card>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-xl rounded-[2rem] border-border bg-background p-0 overflow-hidden">
-            <div className="p-8">
-              <DialogHeader className="mb-8">
+          <DialogContent className="w-[95vw] sm:max-w-xl rounded-[1.5rem] md:rounded-[2rem] border-border bg-background p-0 overflow-hidden">
+            <div className="p-5 md:p-8">
+              <DialogHeader className="mb-6 md:mb-8">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 bg-destructive/10 rounded-2xl">
-                    <AlertCircle className="h-6 w-6 text-destructive" />
+                  <div className="p-2 md:p-3 bg-destructive/10 rounded-2xl">
+                    <AlertCircle className="h-5 w-5 md:h-6 md:w-6 text-destructive" />
                   </div>
                   <div>
-                    <DialogTitle className="text-2xl font-black tracking-tight">Recibos em Falta</DialogTitle>
-                    <p className="text-sm text-muted-foreground font-medium">Lista de semanas pendentes de submissão</p>
+                    <DialogTitle className="text-xl md:text-2xl font-black tracking-tight">Recibos em Falta</DialogTitle>
+                    <p className="text-xs md:text-sm text-muted-foreground font-medium">Lista de semanas pendentes de submissão</p>
                   </div>
                 </div>
               </DialogHeader>
 
-              <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 scrollbar-hide">
+              <div className="space-y-3 md:space-y-4 max-h-[50vh] overflow-y-auto pr-2 scrollbar-hide">
                 {stats.semanasEmFalta.length === 0 ? (
-                  <div className="text-center py-12 bg-muted/20 rounded-[2rem] border border-dashed">
-                    <Check className="h-12 w-12 text-green-500 mx-auto mb-3 opacity-20" />
-                    <p className="font-bold">Tudo em dia!</p>
-                    <p className="text-xs text-muted-foreground">Não existem recibos pendentes.</p>
+                  <div className="text-center py-8 md:py-12 bg-muted/20 rounded-[1.5rem] md:rounded-[2rem] border border-dashed">
+                    <Check className="h-10 w-10 md:h-12 md:w-12 text-green-500 mx-auto mb-3 opacity-20" />
+                    <p className="font-bold text-sm md:text-base">Tudo em dia!</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Não existem recibos pendentes.</p>
                   </div>
                 ) : (
                   stats.semanasEmFalta.map((semana) => (
-                    <div key={semana.value} className="flex items-center justify-between p-5 bg-muted/30 hover:bg-muted/50 rounded-2xl border border-border transition-all group">
-                      <div className="flex items-center gap-4">
+                    <div key={semana.value} className="flex items-center justify-between p-4 md:p-5 bg-muted/30 hover:bg-muted/50 rounded-2xl border border-border transition-all group">
+                      <div className="flex items-center gap-3 md:gap-4">
                         <div className="p-2 bg-background rounded-xl border border-border shadow-sm group-hover:border-primary/20 transition-all">
-                          <CalendarDays className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+                          <CalendarDays className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground group-hover:text-primary" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-foreground">{semana.label}</p>
+                          <p className="text-xs md:text-sm font-bold text-foreground">{semana.label}</p>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <Clock className="h-3 w-3 text-destructive" />
-                            <span className="text-[10px] text-destructive font-black uppercase tracking-wider">Pendente</span>
+                            <span className="text-[9px] md:text-[10px] text-destructive font-black uppercase tracking-wider">Pendente</span>
                           </div>
                         </div>
                       </div>
                       <Button 
                         size="sm" 
                         variant="outline"
-                        className="rounded-xl font-bold text-xs hover:bg-primary hover:text-primary-foreground border-border"
+                        className="h-8 md:h-9 rounded-xl font-bold text-[10px] md:text-xs hover:bg-primary hover:text-primary-foreground border-border px-2 md:px-3"
                         onClick={() => {
                           setRecibosModalOpen(false);
                           // Scroll to the receipts card and open its dialog if we could, 
@@ -523,17 +523,17 @@ export function MotoristaDashboard() {
         <Dialog open={docsModalOpen} onOpenChange={setDocsModalOpen}>
           <DialogTrigger asChild>
             <Card className={cn(
-              "rounded-[2rem] overflow-hidden group hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98]",
+              "rounded-[1.5rem] md:rounded-[2rem] overflow-hidden group hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98]",
               stats.documentosAExpirar > 0 ? "border-orange-500/20 bg-orange-500/5 hover:border-orange-500/40" : "hover:border-primary/40"
             )}>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
+              <CardContent className="p-5 md:p-6">
+                <div className="flex justify-between items-start mb-3 md:mb-4">
                   <span className="text-muted-foreground text-[10px] font-black tracking-widest uppercase">DOCs a Expirar</span>
                   <div className={cn("p-2 rounded-lg", stats.documentosAExpirar > 0 ? "bg-orange-500/20" : "bg-muted")}>
                     <FileWarning className={cn("w-4 h-4", stats.documentosAExpirar > 0 ? "text-orange-500" : "text-muted-foreground/30")} />
                   </div>
                 </div>
-                <p className={cn("text-3xl font-black mb-2", stats.documentosAExpirar > 0 ? "text-orange-500" : "text-foreground")}>
+                <p className={cn("text-2xl md:text-3xl font-black mb-1 md:mb-2", stats.documentosAExpirar > 0 ? "text-orange-500" : "text-foreground")}>
                   {stats.documentosAExpirar}
                 </p>
                 <div className="flex items-center justify-between">
@@ -543,46 +543,46 @@ export function MotoristaDashboard() {
               </CardContent>
             </Card>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-xl rounded-[2rem] border-border bg-background p-0 overflow-hidden">
-            <div className="p-8">
-              <DialogHeader className="mb-8">
+          <DialogContent className="w-[95vw] sm:max-w-xl rounded-[1.5rem] md:rounded-[2rem] border-border bg-background p-0 overflow-hidden">
+            <div className="p-5 md:p-8">
+              <DialogHeader className="mb-6 md:mb-8">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 bg-orange-500/10 rounded-2xl">
-                    <FileWarning className="h-6 w-6 text-orange-500" />
+                  <div className="p-2 md:p-3 bg-orange-500/10 rounded-2xl">
+                    <FileWarning className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />
                   </div>
                   <div>
-                    <DialogTitle className="text-2xl font-black tracking-tight">Documentos a Expirar</DialogTitle>
-                    <p className="text-sm text-muted-foreground font-medium">Documentos que requerem a sua atenção brevemente</p>
+                    <DialogTitle className="text-xl md:text-2xl font-black tracking-tight">Documentos a Expirar</DialogTitle>
+                    <p className="text-xs md:text-sm text-muted-foreground font-medium">Documentos que requerem a sua atenção brevemente</p>
                   </div>
                 </div>
               </DialogHeader>
 
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {stats.docsExpirando.length === 0 ? (
-                  <div className="text-center py-12 bg-muted/20 rounded-[2rem] border border-dashed">
-                    <Check className="h-12 w-12 text-green-500 mx-auto mb-3 opacity-20" />
-                    <p className="font-bold">Documentos em dia!</p>
-                    <p className="text-xs text-muted-foreground">Não existem documentos a expirar nos próximos 30 dias.</p>
+                  <div className="text-center py-8 md:py-12 bg-muted/20 rounded-[1.5rem] md:rounded-[2rem] border border-dashed">
+                    <Check className="h-10 w-10 md:h-12 md:w-12 text-green-500 mx-auto mb-3 opacity-20" />
+                    <p className="font-bold text-sm md:text-base">Documentos em dia!</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Não existem documentos a expirar nos próximos 30 dias.</p>
                   </div>
                 ) : (
                   stats.docsExpirando.map((doc, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-5 bg-orange-500/5 hover:bg-orange-500/10 rounded-2xl border border-orange-500/10 transition-all group">
-                      <div className="flex items-center gap-4">
+                    <div key={idx} className="flex items-center justify-between p-4 md:p-5 bg-orange-500/5 hover:bg-orange-500/10 rounded-2xl border border-orange-500/10 transition-all group">
+                      <div className="flex items-center gap-3 md:gap-4">
                         <div className="p-2 bg-background rounded-xl border border-border shadow-sm group-hover:border-orange-500/20 transition-all">
-                          <FileText className="h-5 w-5 text-orange-500" />
+                          <FileText className="h-4 w-4 md:h-5 md:w-5 text-orange-500" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-foreground">{doc.label}</p>
+                          <p className="text-xs md:text-sm font-bold text-foreground">{doc.label}</p>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <Clock className="h-3 w-3 text-orange-500" />
-                            <span className="text-[10px] text-orange-500 font-black uppercase tracking-wider">Expira em {doc.data}</span>
+                            <span className="text-[9px] md:text-[10px] text-orange-500 font-black uppercase tracking-wider">Expira em {doc.data}</span>
                           </div>
                         </div>
                       </div>
                       <Button 
                         size="sm" 
                         variant="outline"
-                        className="rounded-xl font-bold text-xs hover:bg-orange-500 hover:text-white border-orange-500/20"
+                        className="h-8 md:h-9 rounded-xl font-bold text-[10px] md:text-xs hover:bg-orange-500 hover:text-white border-orange-500/20 px-2 md:px-3"
                         onClick={() => {
                           setDocsModalOpen(false);
                           const element = document.getElementById('motorista-documentos-card');

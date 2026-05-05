@@ -18,7 +18,7 @@ const Sobre = () => {
             className="text-center max-w-3xl mx-auto"
           >
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Sobre a <span className="text-primary">Rota Líquida</span>
+              Sobre a <span className="text-primary">WeGest</span>
             </h1>
             <p className="text-xl text-gray-400">
               A empresa TVDE que mais cresce em Portugal, comprometida com o sucesso dos nossos motoristas parceiros.
@@ -39,7 +39,7 @@ const Sobre = () => {
             >
               <h2 className="text-3xl font-bold mb-6">A Nossa Missão</h2>
               <p className="text-gray-400 mb-4">
-                A Rota Líquida nasceu com uma missão clara: proporcionar aos motoristas TVDE as melhores condições para desenvolverem a sua atividade de forma independente e lucrativa.
+                A WeGest nasceu com uma missão clara: proporcionar aos motoristas TVDE as melhores condições para desenvolverem a sua atividade de forma independente e lucrativa.
               </p>
               <p className="text-gray-400 mb-4">
                 Acreditamos que cada motorista merece ter acesso a veículos de qualidade, suporte dedicado e condições transparentes que lhes permitam focar no que realmente importa - servir os seus clientes e construir o seu próprio negócio.
