@@ -43,6 +43,7 @@ import Calendario from '@/pages/Calendario';
 import Marketing from '@/pages/Marketing';
 import MotoristaDetalhe from '@/pages/MotoristaDetalhe';
 import Index from '@/pages/Index';
+import EliminarConta from '@/pages/EliminarConta';
 
 const WebAppRoutes = () => {
   usePageTracking();
@@ -57,6 +58,7 @@ const WebAppRoutes = () => {
         <Route path="/faq" element={<FAQ />} />
         <Route path="/termos" element={<Termos />} />
         <Route path="/privacidade" element={<Privacidade />} />
+        <Route path="/eliminar-conta" element={<EliminarConta />} />
         <Route path="/formulario/:id" element={<FormularioPublico />} />
         <Route path="/login" element={<LoginMotorista />} />
         <Route path="/equipa" element={<Login />} />

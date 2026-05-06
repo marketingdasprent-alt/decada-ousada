@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useDefaultRoute } from '@/hooks/useDefaultRoute';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Loader2, Eye, EyeOff } from 'lucide-react';
+import { User, Loader2, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Profile {
@@ -340,6 +340,24 @@ export default function MyAccount() {
               >
                 {changingPassword ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Alterar Senha
+              </Button>
+            </div>
+
+            {/* Eliminar Conta */}
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold mb-1">Eliminar Conta</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Pode solicitar a eliminação permanente da sua conta e de todos os dados pessoais associados.
+              </p>
+              <Button
+                variant="outline"
+                className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                asChild
+              >
+                <Link to="/eliminar-conta">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Solicitar eliminação de conta
+                </Link>
               </Button>
             </div>
           </CardContent>
