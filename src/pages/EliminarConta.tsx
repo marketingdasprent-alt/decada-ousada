@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Trash2, CheckCircle, AlertTriangle } from "lucide-react";
 
 export default function EliminarConta() {
@@ -13,6 +14,7 @@ export default function EliminarConta() {
   const [nome, setNome] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,6 +146,18 @@ export default function EliminarConta() {
                       </p>
                     </div>
 
+                    <div className="flex items-start gap-3 bg-red-950/20 border border-red-800/40 rounded-lg p-4">
+                      <Checkbox
+                        id="confirm"
+                        checked={confirmed}
+                        onCheckedChange={(v) => setConfirmed(!!v)}
+                        className="mt-0.5 border-red-500 data-[state=checked]:bg-[#E53333] data-[state=checked]:border-[#E53333]"
+                      />
+                      <Label htmlFor="confirm" className="text-sm text-gray-300 leading-relaxed cursor-pointer">
+                        Compreendo que esta ação é <strong className="text-white">irreversível</strong> e que todos os meus dados pessoais serão eliminados permanentemente. Não será possível recuperar a conta após a eliminação.
+                      </Label>
+                    </div>
+
                     {error && (
                       <p className="text-[#E53333] text-sm bg-red-950/30 border border-red-800/50 rounded-lg px-3 py-2">
                         {error}
@@ -152,8 +166,8 @@ export default function EliminarConta() {
 
                     <Button
                       type="submit"
-                      disabled={loading}
-                      className="w-full bg-[#E53333] hover:bg-[#c02a2a] text-white font-semibold"
+                      disabled={loading || !confirmed}
+                      className="w-full bg-[#E53333] hover:bg-[#c02a2a] text-white font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {loading ? (
                         <><Loader2 className="h-4 w-4 animate-spin mr-2" /> A enviar pedido...</>
