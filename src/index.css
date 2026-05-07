@@ -6,6 +6,7 @@
 /* Só na app nativa: compensar status bar e barra de navegação Android */
 html[data-native-app="true"] .native-header {
   padding-top: env(safe-area-inset-top);
+  height: calc(4rem + env(safe-area-inset-top)) !important;
 }
 html[data-native-app="true"] .native-bottom {
   padding-bottom: env(safe-area-inset-bottom);
@@ -105,7 +106,7 @@ html[data-native-app="true"] .native-bottom {
   }
 
   html {
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    /* safe-area insets handled per-component via .native-header, .auth-screen-safe, etc. */
   }
 
   body {
@@ -353,10 +354,15 @@ html[data-native-app="true"] .native-bottom {
   }
 }
 
-/* Native app: push dialogs below the status bar (viewport-fit=cover) */
-html[data-native-app="true"] [role="dialog"] {
+/* Native app: push center dialogs below the status bar (viewport-fit=cover) */
+html[data-native-app="true"] [role="dialog"]:not(.inset-y-0) {
   margin-top: env(safe-area-inset-top);
   max-height: calc(90vh - env(safe-area-inset-top)) !important;
+}
+/* Native app: side sheets get internal safe area padding instead */
+html[data-native-app="true"] [role="dialog"].inset-y-0 {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Custom Scrollbar Utilities */
