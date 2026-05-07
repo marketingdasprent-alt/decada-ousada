@@ -48,6 +48,9 @@ jobs:
       - name: Sincronizar Capacitor Android
         run: npx cap sync android
 
+      - name: Garantir applicationId correto
+        run: sed -i 's/applicationId ".*"/applicationId "com.wegest.myapp"/' android/app/build.gradle
+
       - name: Desencriptar keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/wegest-release.jks
 
