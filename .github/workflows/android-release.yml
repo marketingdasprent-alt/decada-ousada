@@ -56,7 +56,7 @@ jobs:
 
       - name: Atualizar versionCode
         run: |
-          NEW_CODE=$((GITHUB_RUN_NUMBER + 2))
+          NEW_CODE=$((GITHUB_RUN_NUMBER + 50))
           sed -i "s/versionCode [0-9]*/versionCode $NEW_CODE/" android/app/build.gradle
           echo "versionCode → $NEW_CODE"
 
