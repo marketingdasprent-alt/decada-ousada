@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">WeGest</string>
     <string name="title_activity_main">WeGest</string>
-    <string name="package_name">app.lovable.dcede7f4c9ad4be0b601049f64aa866a</string>
-    <string name="custom_url_scheme">app.lovable.dcede7f4c9ad4be0b601049f64aa866a</string>
+    <string name="package_name">com.wegest.myapp</string>
+    <string name="custom_url_scheme">com.wegest.myapp</string>
 </resources>
