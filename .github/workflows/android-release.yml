@@ -64,7 +64,7 @@ jobs:
         working-directory: android
         run: |
           ./gradlew -Dorg.gradle.java.home="$JAVA_HOME" bundleRelease \
-            -Pandroid.injected.signing.store.file=app/wegest-release.jks \
+            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/android/app/wegest-release.jks" \
             -Pandroid.injected.signing.store.password=WeGest@2025 \
             -Pandroid.injected.signing.key.alias=wegest \
             -Pandroid.injected.signing.key.password=WeGest@2025
