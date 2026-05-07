@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "app.lovable.dcede7f4c9ad4be0b601049f64aa866a"
+    namespace = "com.wegest.myapp"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.wegest.myapp"

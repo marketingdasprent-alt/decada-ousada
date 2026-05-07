@@ -4,7 +4,7 @@ const liveReloadUrl = 'https://dcede7f4-c9ad-4be0-b601-049f64aa866a.lovableproje
 const useLiveReload = process.env.CAPACITOR_LIVE_RELOAD === 'true';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.dcede7f4c9ad4be0b601049f64aa866a',
+  appId: 'com.wegest.myapp',
   appName: 'WeGest',
   webDir: 'dist',
   ...(useLiveReload

@@ -1,4 +1,4 @@
-package app.lovable.dcede7f4c9ad4be0b601049f64aa866a;
+package com.wegest.myapp;
 
 import com.getcapacitor.BridgeActivity;
 
