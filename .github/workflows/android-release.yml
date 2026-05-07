@@ -28,7 +28,13 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: '21'
+
+      - name: Verificar Java
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
+          javac -version
 
       - name: Instalar dependências
         run: npm ci
@@ -54,12 +60,9 @@ jobs:
       - name: Dar permissão ao gradlew
         run: chmod +x android/gradlew
 
-      - name: Forçar Gradle a usar Java 21
-        run: echo "org.gradle.java.home=$JAVA_HOME" >> android/gradle.properties
-
       - name: Build AAB assinado
         working-directory: android
-        run: ./gradlew bundleRelease
+        run: ./gradlew -Dorg.gradle.java.home="$JAVA_HOME" bundleRelease
 
       - name: Guardar AAB (descarregar em Actions → este workflow → Artifacts)
         uses: actions/upload-artifact@v4
