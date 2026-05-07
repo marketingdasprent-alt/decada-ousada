@@ -24,7 +24,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Configurar Java 17
+      - name: Configurar Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -53,6 +53,9 @@ jobs:
 
       - name: Dar permissão ao gradlew
         run: chmod +x android/gradlew
+
+      - name: Forçar Gradle a usar Java 21
+        run: echo "org.gradle.java.home=$JAVA_HOME" >> android/gradle.properties
 
       - name: Build AAB assinado
         working-directory: android
