@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import {
@@ -19,22 +21,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Eye, 
-  Download, 
-  Check, 
-  X, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Eye,
+  Download,
+  Check,
+  X,
   Loader2,
   Receipt,
   FileText,
   TrendingUp,
   TrendingDown,
   Wallet,
-  Printer
+  Printer,
+  Plus,
+  Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { usePermissions } from '@/hooks/usePermissions';
+import { RECURSOS } from '@/utils/permissions';
 
 interface Recibo {
   id: string;
@@ -65,9 +77,18 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
   selectedWeek,
   motorista,
 }) => {
+  const { hasAccessToResource, isAdmin } = usePermissions();
+  const podeAdicionarRecibo = isAdmin || hasAccessToResource(RECURSOS.RECIBOS_VERDES_ADICIONAR);
+
   const [recibos, setRecibos] = useState<Recibo[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
+
+  const [dialogAberto, setDialogAberto] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [novoRecibo, setNovoRecibo] = useState({ descricao: '', valor: '' });
+  const [ficheiroSelecionado, setFicheiroSelecionado] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Resumo Financeiro Real-time
   const [resumoSemanal, setResumoSemanal] = useState({
@@ -312,6 +333,57 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
     }
   };
 
+  const handleSubmeterRecibo = async () => {
+    if (!ficheiroSelecionado) { toast.error('Seleciona um ficheiro'); return; }
+    if (!novoRecibo.descricao.trim()) { toast.error('Preenche a descrição'); return; }
+
+    setUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const timestamp = Date.now();
+      const filePath = `${motoristaId}/${timestamp}_${ficheiroSelecionado.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('motorista-recibos')
+        .upload(filePath, ficheiroSelecionado);
+      if (uploadError) throw uploadError;
+
+      const { data: maxCodigo } = await supabase
+        .from('motorista_recibos')
+        .select('codigo')
+        .eq('motorista_id', motoristaId)
+        .order('codigo', { ascending: false })
+        .limit(1)
+        .single();
+
+      const { error: insertError } = await supabase
+        .from('motorista_recibos')
+        .insert({
+          motorista_id: motoristaId,
+          user_id: user?.id,
+          descricao: novoRecibo.descricao.trim(),
+          valor_total: novoRecibo.valor ? parseFloat(novoRecibo.valor) : null,
+          ficheiro_url: filePath,
+          nome_ficheiro: ficheiroSelecionado.name,
+          status: 'submetido',
+          codigo: (maxCodigo?.codigo ?? 0) + 1,
+          semana_referencia_inicio: format(weekStart, 'yyyy-MM-dd'),
+          periodo_referencia: `Semana ${format(weekStart, 'dd/MM')} - ${format(weekEnd, 'dd/MM/yyyy')}`,
+        });
+      if (insertError) throw insertError;
+
+      toast.success('Recibo adicionado com sucesso');
+      setDialogAberto(false);
+      setNovoRecibo({ descricao: '', valor: '' });
+      setFicheiroSelecionado(null);
+      loadRecibos();
+    } catch (error: any) {
+      toast.error('Erro ao adicionar recibo: ' + (error.message ?? ''));
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'submetido':
@@ -418,6 +490,12 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
             Recibos Verdes da Semana
           </h3>
           <div className="flex items-center gap-2">
+            {podeAdicionarRecibo && (
+              <Button size="sm" className="gap-1.5 h-8" onClick={() => setDialogAberto(true)}>
+                <Plus className="h-3.5 w-3.5" />
+                Adicionar Recibo
+              </Button>
+            )}
             <span className="text-sm text-muted-foreground">Status:</span>
             <Select value={filtroStatus} onValueChange={setFiltroStatus}>
               <SelectTrigger className="w-32 h-8">
@@ -497,6 +575,76 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
           </div>
         )}
       </div>
+
+      {/* Dialog — adicionar recibo manualmente */}
+      <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5" />
+              Adicionar Recibo Verde
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label>Ficheiro (PDF ou imagem) *</Label>
+              <div
+                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/40 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {ficheiroSelecionado ? (
+                  <p className="text-sm font-medium text-primary truncate">{ficheiroSelecionado.name}</p>
+                ) : (
+                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                    <Upload className="h-8 w-8 opacity-40" />
+                    <p className="text-sm">Clica para selecionar</p>
+                  </div>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,image/*"
+                className="hidden"
+                onChange={(e) => setFicheiroSelecionado(e.target.files?.[0] ?? null)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="descricao">Descrição *</Label>
+              <Input
+                id="descricao"
+                placeholder="Ex: Recibo semana 19-25 maio"
+                value={novoRecibo.descricao}
+                onChange={(e) => setNovoRecibo(prev => ({ ...prev, descricao: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="valor">Valor (€) — opcional</Label>
+              <Input
+                id="valor"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={novoRecibo.valor}
+                onChange={(e) => setNovoRecibo(prev => ({ ...prev, valor: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setDialogAberto(false)} disabled={uploading}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmeterRecibo} disabled={uploading}>
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Submeter
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

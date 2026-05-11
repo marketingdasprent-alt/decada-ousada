@@ -48,6 +48,7 @@ export const RECURSOS = {
   
   // Financeiro
   FINANCEIRO_RECIBOS: 'financeiro_recibos',
+  RECIBOS_VERDES_ADICIONAR: 'recibos_verdes_adicionar',
   
   // Marketing
   MARKETING_VER: 'marketing_ver',

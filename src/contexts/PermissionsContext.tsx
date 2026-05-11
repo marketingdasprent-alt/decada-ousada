@@ -203,11 +203,11 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setState({ ...DEFAULT_STATE, loading: false, initialized: true });
       }
     }
-  }, [user, authLoading, state.initialized]);
+  }, [user?.id, authLoading, state.initialized]);
 
   useEffect(() => {
     fetchPermissions();
-  }, [user, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasAccessToResource = useCallback((recurso: string): boolean => {
     if (state.isAdmin) return true;

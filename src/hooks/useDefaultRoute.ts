@@ -16,7 +16,6 @@ const ROUTE_PRIORITY = [
   { path: '/contratos', recurso: RECURSOS.MOTORISTAS_CONTRATOS },
   { path: '/viaturas', recurso: RECURSOS.VIATURAS_VER },
   { path: '/assistencia', recurso: RECURSOS.ASSISTENCIA_TICKETS },
-  { path: '/motorista/painel', recurso: RECURSOS.MOTORISTA_PAINEL },
   { path: '/admin/documentos', recurso: RECURSOS.ADMIN_DOCUMENTOS },
   { path: '/formularios', recurso: RECURSOS.ADMIN_FORMULARIOS },
   { path: '/admin/invites', recurso: RECURSOS.ADMIN_UTILIZADORES },

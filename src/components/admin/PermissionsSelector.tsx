@@ -84,6 +84,7 @@ const RECURSO_LABELS: Record<string, string> = {
   'motoristas_contratos': 'Gestão completa de contratos',
   // Financeiro
   'financeiro_recibos': 'Gestão de recibos verdes',
+  'recibos_verdes_adicionar': 'Adicionar recibos verdes manualmente',
   // Marketing
   'marketing_ver': 'Aceder ao módulo de Marketing',
   // Calendário
