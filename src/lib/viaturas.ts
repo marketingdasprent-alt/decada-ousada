@@ -4,6 +4,8 @@ export interface ViaturaStatsSummary {
   emUso: number;
   manutencao: number;
   vendidas: number;
+  slot: number;
+  slotDisponiveis: number;
 }
 
 export const CATEGORIAS = [

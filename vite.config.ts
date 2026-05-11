@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'Icon_Favicon.png', 'Logo.png'],
       manifest: {
         name: 'WeGest',
@@ -52,7 +52,7 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
-        skipWaiting: true,
+        skipWaiting: false,
         clientsClaim: true,
         globPatterns: ['**/*.{js,css,ico,svg,woff2}'],
         globIgnores: ['**/images/**'],

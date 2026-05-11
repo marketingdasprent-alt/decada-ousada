@@ -1,0 +1,391 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'sonner';
+import { ArrowLeft, Camera, CheckCircle, Film, Loader2, Upload, X, FileText, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { formatMatricula } from './NovoEventoPage';
+import type { PendingEventoData } from './NovoEventoPage';
+import { useEmpresas } from '@/hooks/useEmpresas';
+import { uploadDocumentToStorage, generateDocumentFromTemplate } from '@/utils/generateDocumentFromTemplate';
+
+export interface ContratoEntregaStepProps {
+  eventoData: PendingEventoData;
+  onConcluir: () => void;
+  onVoltar: () => void;
+}
+
+interface SelectedFile {
+  id: string;
+  file: File;
+  preview: string | null;
+}
+
+export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
+  eventoData, onConcluir, onVoltar,
+}) => {
+  const { motoristaId, motoristaNome, viaturaId, viatura, userId,
+          data, hora, diaTodo, observacoes, estacaoId, estacaoNome } = eventoData;
+
+  const queryClient = useQueryClient();
+  const { empresas } = useEmpresas();
+  const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set());
+  const [dataInicio, setDataInicio] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [cidadeAssinatura, setCidadeAssinatura] = useState('Leiria');
+  const [files, setFiles] = useState<SelectedFile[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+  const [contratoNumero, setContratoNumero] = useState<number | null>(null);
+  const [showFilesError, setShowFilesError] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ['doc-templates-entrega'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('document_templates')
+        .select('id, nome, tipo, empresa_id')
+        .eq('ativo', true)
+        .order('nome');
+      if (error) throw error;
+      return data as { id: string; nome: string; tipo: string; empresa_id: string }[];
+    },
+  });
+
+  const { data: motoristaFull } = useQuery({
+    queryKey: ['motorista-full-contrato', motoristaId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('motoristas_ativos')
+        .select('id, nome, nif, email, telefone, morada, documento_tipo, documento_numero, data_contratacao, cidade')
+        .eq('id', motoristaId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!motoristaId,
+  });
+
+  const toggleTemplate = (id: string) => {
+    setSelectedTemplates(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files || []);
+    setFiles(prev => [
+      ...prev,
+      ...selected.map(f => ({
+        id: Math.random().toString(36).slice(2),
+        file: f,
+        preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
+      })),
+    ]);
+    setShowFilesError(false);
+    e.target.value = '';
+  };
+
+  const removeFile = (id: string) => {
+    setFiles(prev => {
+      const f = prev.find(x => x.id === id);
+      if (f?.preview) URL.revokeObjectURL(f.preview);
+      return prev.filter(x => x.id !== id);
+    });
+  };
+
+  const handleConfirm = async () => {
+    if (files.length === 0) {
+      setShowFilesError(true);
+      toast.error('Adicione pelo menos uma foto ou vídeo de checkout');
+      return;
+    }
+
+    const empresaId = empresas[0]?.id;
+    if (!empresaId) { toast.error('Nenhuma empresa configurada'); return; }
+
+    setSaving(true);
+    try {
+      // 1. Create the calendar event
+      const dataISO = diaTodo
+        ? new Date(`${data}T00:00:00`).toISOString()
+        : new Date(`${data}T${hora}:00`).toISOString();
+
+      const eventoPayload: Record<string, any> = {
+        titulo: viatura.matricula.replace(/[-\s]/g, '').toUpperCase(),
+        tipo: 'entrega',
+        data_inicio: dataISO,
+        data_fim: null,
+        dia_todo: diaTodo,
+        cidade: estacaoNome || null,
+        descricao: observacoes.trim() || null,
+        criado_por: userId,
+      };
+      if (motoristaId) eventoPayload.motorista_id = motoristaId;
+
+      let evResult = await supabase.from('calendario_eventos').insert(eventoPayload).select('id').single();
+      if (evResult.error) {
+        const { motorista_id: _, ...fallback } = eventoPayload;
+        evResult = await supabase.from('calendario_eventos').insert(fallback).select('id').single();
+        if (evResult.error) throw evResult.error;
+      }
+      const eventoId = evResult.data.id;
+
+      // 2. Associar viatura ao motorista
+      await supabase.from('motorista_viaturas').insert({
+        motorista_id: motoristaId,
+        viatura_id: viaturaId,
+        data_inicio: data,
+        status: 'ativo',
+        observacoes: observacoes.trim() || null,
+      });
+
+      // 3. Viatura → em_uso + estação
+      await supabase.from('viaturas')
+        .update({ status: 'em_uso', estacao_id: estacaoId || null })
+        .eq('id', viaturaId);
+
+      // 4. Notificação (fire & forget)
+      try {
+        await supabase.functions.invoke('send-calendar-notification', {
+          body: { matricula: eventoPayload.titulo, cidade: estacaoNome, tipo: 'entrega', data_inicio: dataISO, dia_todo: diaTodo },
+        });
+      } catch { /* non-critical */ }
+
+      // 5. Insert contrato
+      const { data: ct, error: ctErr } = await supabase
+        .from('contratos')
+        .insert({
+          motorista_id: motoristaId,
+          empresa_id: empresaId,
+          motorista_nome: motoristaNome,
+          data_assinatura: dataInicio,
+          data_inicio: dataInicio,
+          cidade_assinatura: cidadeAssinatura,
+          status: 'ativo',
+          versao: 1,
+          duracao_meses: 12,
+          viatura_id: viaturaId,
+          calendario_evento_id: eventoId,
+        })
+        .select('id, numero_contrato')
+        .single();
+      if (ctErr) throw ctErr;
+
+      const contratoId = ct.id;
+      setContratoNumero(ct.numero_contrato);
+
+      // 6. Upload checkout media (obrigatório)
+      const mediaRecords: any[] = [];
+      for (const { file } of files) {
+        const ext = file.name.split('.').pop() || 'bin';
+        const path = `${contratoId}/checkout/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from('contrato-media')
+          .upload(path, file, { contentType: file.type });
+        if (upErr) throw upErr;
+        mediaRecords.push({
+          contrato_id: contratoId,
+          tipo: 'checkout',
+          url: path,
+          nome_ficheiro: file.name,
+          tipo_ficheiro: file.type,
+          tamanho_bytes: file.size,
+          criado_por: userId,
+        });
+      }
+      const { error: mediaErr } = await supabase.from('contrato_media').insert(mediaRecords);
+      if (mediaErr) throw mediaErr;
+
+      // 7. Generate selected documents
+      if (selectedTemplates.size > 0 && motoristaFull) {
+        const docData = {
+          data_assinatura: dataInicio,
+          data_inicio: dataInicio,
+          cidade_assinatura: cidadeAssinatura,
+          duracao_meses: '12',
+        };
+        let firstDocUrl: string | null = null;
+        for (const templateId of Array.from(selectedTemplates)) {
+          try {
+            if (!firstDocUrl) {
+              firstDocUrl = await uploadDocumentToStorage({ templateId, motoristaData: motoristaFull, documentData: docData, contratoId }) || null;
+            } else {
+              await generateDocumentFromTemplate({ templateId, motoristaData: motoristaFull, documentData: docData, action: 'print' });
+            }
+          } catch { /* PDF non-critical */ }
+        }
+        if (firstDocUrl) {
+          await supabase.from('contratos').update({ documento_url: firstDocUrl }).eq('id', contratoId);
+        }
+      }
+
+      // 8. Invalidate caches
+      queryClient.invalidateQueries({ queryKey: ['calendario-eventos'] });
+      queryClient.invalidateQueries({ queryKey: ['viaturas-calendario'] });
+      queryClient.invalidateQueries({ queryKey: ['viaturas-pendentes-recolha'] });
+      queryClient.invalidateQueries({ queryKey: ['motorista-viaturas'] });
+
+      toast.success(`Contrato CT-${String(ct.numero_contrato ?? 0).padStart(4, '0')} criado`);
+      setDone(true);
+      setTimeout(() => onConcluir(), 1500);
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao criar contrato');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-4">
+        <CheckCircle className="h-16 w-16 text-green-500" />
+        <p className="text-xl font-semibold">Contrato criado!</p>
+        {contratoNumero != null && (
+          <Badge variant="outline" className="font-mono text-base px-3 py-1">
+            CT-{String(contratoNumero).padStart(4, '0')}
+          </Badge>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
+      <div className="flex items-center gap-3 border-b border-border px-4 py-3 bg-card shrink-0">
+        <Button variant="ghost" size="icon" onClick={onVoltar} className="shrink-0" disabled={saving}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base font-semibold leading-tight">Criar Contrato de Prestação</h1>
+          <p className="text-xs text-muted-foreground truncate">
+            {motoristaNome} — {formatMatricula(viatura.matricula)}
+          </p>
+        </div>
+        <Button onClick={handleConfirm} disabled={saving} className="shrink-0">
+          {saving
+            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A criar...</>
+            : 'Confirmar'}
+        </Button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+
+          <div className="rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-4 text-sm text-green-700 dark:text-green-300">
+            <p className="font-medium">Entrega pronta para registar.</p>
+            <p className="mt-0.5 opacity-80">
+              Preencha os dados e adicione fotos de checkout para confirmar.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Data de Início do Contrato</Label>
+              <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Cidade de Assinatura</Label>
+              <Input value={cidadeAssinatura} onChange={e => setCidadeAssinatura(e.target.value)} placeholder="Ex: Leiria" />
+            </div>
+          </div>
+
+          {templates.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                Documentos{' '}
+                <span className="text-muted-foreground font-normal text-xs">(serão impressos ao confirmar)</span>
+              </Label>
+              <div className="rounded-lg border border-border divide-y divide-border">
+                {templates.map(t => (
+                  <label key={t.id} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors">
+                    <Checkbox
+                      checked={selectedTemplates.has(t.id)}
+                      onCheckedChange={() => toggleTemplate(t.id)}
+                    />
+                    <span className="text-sm">{t.nome}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
+              <Camera className="h-4 w-4 text-muted-foreground" />
+              Fotos / Vídeos de Checkout
+              <span className="text-destructive text-xs font-normal ml-1">*obrigatório</span>
+            </Label>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              className="hidden"
+              onChange={handleFileChange}
+            />
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                'w-full rounded-lg border-2 border-dashed transition-colors py-8 flex flex-col items-center gap-2 text-sm text-muted-foreground',
+                showFilesError && files.length === 0
+                  ? 'border-destructive bg-destructive/5'
+                  : 'border-border hover:border-primary/50 hover:bg-muted/30'
+              )}
+            >
+              <Upload className={cn('h-8 w-8 opacity-40', showFilesError && files.length === 0 && 'text-destructive')} />
+              <span>Clique para adicionar fotos ou vídeos</span>
+              <span className="text-xs opacity-60">JPG, PNG, HEIC, MP4, MOV — máx. 100 MB</span>
+            </button>
+
+            {showFilesError && files.length === 0 && (
+              <div className="flex items-center gap-2 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                Adicione pelo menos uma foto ou vídeo antes de confirmar.
+              </div>
+            )}
+
+            {files.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {files.map(f => (
+                  <div key={f.id} className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted">
+                    {f.preview
+                      ? <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
+                      : (
+                        <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
+                          <Film className="h-6 w-6 text-muted-foreground" />
+                          <span className="text-[10px] text-muted-foreground text-center leading-tight truncate w-full">{f.file.name}</span>
+                        </div>
+                      )}
+                    <button type="button" onClick={() => removeFile(f.id)} className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex items-start gap-2">
+            <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            Contrato de prestação de serviços com duração de <strong className="text-foreground mx-1">12 meses</strong>.
+            O dashboard irá alertar quando estiver próximo de renovar.
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+};

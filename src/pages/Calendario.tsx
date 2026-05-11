@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Settings, CalendarDays, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+import { format } from 'date-fns';
 
 export interface CalendarioEvento {
   id: string;
@@ -101,11 +102,74 @@ const Calendario: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Fetch event type + motorista_id before deleting
+      const { data: evento } = await supabase
+        .from('calendario_eventos')
+        .select('tipo, motorista_id')
+        .eq('id', id)
+        .single();
+
+      if (evento?.tipo === 'entrega') {
+        const today = format(new Date(), 'yyyy-MM-dd');
+
+        // Try to find a contrato linked to this event
+        const { data: contrato } = await supabase
+          .from('contratos')
+          .select('id, motorista_id, viatura_id, status')
+          .eq('calendario_evento_id', id)
+          .maybeSingle();
+
+        if (contrato) {
+          await supabase
+            .from('motorista_viaturas')
+            .update({ status: 'encerrado', data_fim: today })
+            .eq('motorista_id', contrato.motorista_id)
+            .eq('viatura_id', contrato.viatura_id)
+            .eq('status', 'ativo');
+
+          await supabase
+            .from('viaturas')
+            .update({ status: 'disponivel' })
+            .eq('id', contrato.viatura_id);
+
+          if (contrato.status === 'ativo') {
+            await supabase
+              .from('contratos')
+              .update({ status: 'encerrado' })
+              .eq('id', contrato.id);
+          }
+        } else if (evento.motorista_id) {
+          // Orphan case: old flow created motorista_viaturas without a contrato
+          const { data: mv } = await supabase
+            .from('motorista_viaturas')
+            .select('id, viatura_id')
+            .eq('motorista_id', evento.motorista_id)
+            .eq('status', 'ativo')
+            .order('data_inicio', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (mv) {
+            await supabase
+              .from('motorista_viaturas')
+              .update({ status: 'encerrado', data_fim: today })
+              .eq('id', mv.id);
+
+            await supabase
+              .from('viaturas')
+              .update({ status: 'disponivel' })
+              .eq('id', mv.viatura_id);
+          }
+        }
+      }
+
       const { error } = await supabase.from('calendario_eventos').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendario-eventos'] });
+      queryClient.invalidateQueries({ queryKey: ['viaturas-calendario'] });
+      queryClient.invalidateQueries({ queryKey: ['motorista-viaturas'] });
       toast.success('Evento eliminado');
     },
     onError: () => toast.error('Erro ao eliminar evento'),

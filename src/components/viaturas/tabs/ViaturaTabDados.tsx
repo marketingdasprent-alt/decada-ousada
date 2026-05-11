@@ -49,6 +49,7 @@ const viaturaSchema = z.object({
   estacao_id: z.string().optional(),
   extintor_numero: z.string().optional(),
   extintor_validade: z.string().optional(),
+  tipo_id: z.string().optional(),
 });
 
 type ViaturaFormData = z.infer<typeof viaturaSchema>;
@@ -73,6 +74,7 @@ interface Viatura {
   estacao_id?: string | null;
   extintor_numero?: string | null;
   extintor_validade?: string | null;
+  tipo_id?: string | null;
 }
 
 interface ViaturaDocument {
@@ -124,15 +126,23 @@ interface Estacao {
   cidade: string | null;
 }
 
+interface ViaturasTipo {
+  id: string;
+  nome: string;
+}
+
 export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDadosProps) {
   const [documents, setDocuments] = useState<ViaturaDocument[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [estacoes, setEstacoes] = useState<Estacao[]>([]);
+  const [viaturasTipos, setViaturasTipos] = useState<ViaturasTipo[]>([]);
 
   useEffect(() => {
     supabase.from('estacoes').select('id, nome, cidade').eq('ativa', true).order('nome')
       .then(({ data }) => setEstacoes(data || []));
+    supabase.from('viatura_tipos').select('id, nome').eq('ativo', true).order('nome')
+      .then(({ data }) => setViaturasTipos(data || []));
   }, []);
 
   const form = useForm<ViaturaFormData>({
@@ -156,6 +166,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       estacao_id: '',
       extintor_numero: '',
       extintor_validade: '',
+      tipo_id: '',
     },
   });
 
@@ -180,6 +191,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
         estacao_id: viatura.estacao_id || '',
         extintor_numero: viatura.extintor_numero || '',
         extintor_validade: viatura.extintor_validade || '',
+        tipo_id: viatura.tipo_id || '',
       });
       loadDocuments();
     }
@@ -225,6 +237,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       estacao_id: data.estacao_id || null,
       extintor_numero: data.extintor_numero || null,
       extintor_validade: data.extintor_validade || null,
+      tipo_id: data.tipo_id || null,
     };
 
     await onSave(payload);
@@ -526,6 +539,32 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                             {...field} 
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="tipo_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo</FormLabel>
+                        <Select
+                          value={field.value || ''}
+                          onValueChange={(v) => field.onChange(v === 'none' ? '' : v)}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecionar tipo..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">— Sem tipo —</SelectItem>
+                            {viaturasTipos.map((t) => (
+                              <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}

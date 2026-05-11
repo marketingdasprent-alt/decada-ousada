@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { History, User, Calendar, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { History, User, Calendar, Loader2, Unlink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -27,6 +28,7 @@ interface ViaturaTabHistoricoProps {
 export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [desvinculando, setDesvinculando] = useState<string | null>(null);
 
   useEffect(() => {
     if (viaturaId) {
@@ -58,10 +60,48 @@ export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
     }
   };
 
+  const handleDesvincular = async (item: HistoricoItem) => {
+    if (!window.confirm(`Desvincular ${item.motorista?.nome ?? 'motorista'} desta viatura? A viatura ficará disponível.`)) return;
+
+    setDesvinculando(item.id);
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+
+      // Close the motorista_viaturas association
+      const { error: mvErr } = await supabase
+        .from('motorista_viaturas')
+        .update({ status: 'encerrado', data_fim: today })
+        .eq('id', item.id);
+      if (mvErr) throw mvErr;
+
+      // Set viatura to disponivel
+      const { error: vErr } = await supabase
+        .from('viaturas')
+        .update({ status: 'disponivel' })
+        .eq('id', viaturaId);
+      if (vErr) throw vErr;
+
+      // Close any active contract for this motorista
+      await supabase
+        .from('contratos')
+        .update({ status: 'encerrado' })
+        .eq('motorista_id', item.motorista_id)
+        .eq('status', 'ativo');
+
+      toast.success('Viatura desvinculada com sucesso');
+      await loadHistorico();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao desvincular');
+    } finally {
+      setDesvinculando(null);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ativo': return 'bg-green-500/10 text-green-500 border-green-500/20';
       case 'finalizado': return 'bg-muted text-muted-foreground border-border';
+      case 'encerrado': return 'bg-muted text-muted-foreground border-border';
       case 'suspenso': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
       default: return 'bg-muted text-muted-foreground border-border';
     }
@@ -71,6 +111,7 @@ export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
     switch (status) {
       case 'ativo': return 'Ativo';
       case 'finalizado': return 'Finalizado';
+      case 'encerrado': return 'Encerrado';
       case 'suspenso': return 'Suspenso';
       default: return status;
     }
@@ -107,14 +148,14 @@ export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
         ) : (
           <div className="space-y-4">
             {historico.map((item, index) => (
-              <div 
-                key={item.id} 
+              <div
+                key={item.id}
                 className={`relative pl-6 pb-4 ${index !== historico.length - 1 ? 'border-l-2 border-muted ml-2' : 'ml-2'}`}
               >
                 {/* Timeline dot */}
                 <div className={`absolute left-0 top-0 w-4 h-4 rounded-full border-2 -translate-x-1/2 ${
-                  item.status === 'ativo' 
-                    ? 'bg-green-500 border-green-500' 
+                  item.status === 'ativo'
+                    ? 'bg-green-500 border-green-500'
                     : 'bg-background border-muted-foreground'
                 }`} />
 
@@ -131,16 +172,32 @@ export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
                         )}
                       </div>
                     </div>
-                    <Badge variant="outline" className={getStatusColor(item.status)}>
-                      {getStatusLabel(item.status)}
-                    </Badge>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant="outline" className={getStatusColor(item.status)}>
+                        {getStatusLabel(item.status)}
+                      </Badge>
+                      {item.status === 'ativo' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 px-2 text-xs"
+                          disabled={desvinculando === item.id}
+                          onClick={() => handleDesvincular(item)}
+                        >
+                          {desvinculando === item.id
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <><Unlink className="h-3 w-3 mr-1" />Desvincular</>
+                          }
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     <span>
                       {item.data_inicio ? format(new Date(item.data_inicio), "d 'de' MMMM 'de' yyyy", { locale: pt }) : 'Data N/D'}
-                      {item.data_fim 
+                      {item.data_fim
                         ? ` — ${format(new Date(item.data_fim), "d 'de' MMMM 'de' yyyy", { locale: pt })}`
                         : ' — Presente'
                       }

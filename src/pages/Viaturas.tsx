@@ -11,6 +11,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Layers,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,7 +43,13 @@ import { DeleteViaturaDialog } from '@/components/viaturas/DeleteViaturaDialog';
 import { ImportViaturasDialog } from '@/components/viaturas/ImportViaturasDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getCategoriaBadgeClass, getStatusBadgeClass, getStatusLabel } from '@/lib/viaturas';
+import { cn } from '@/lib/utils';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+
+interface ViaturasTipo {
+  id: string;
+  nome: string;
+}
 
 interface Viatura {
   id: string;
@@ -63,6 +70,9 @@ interface Viatura {
   data_venda?: string | null;
   proprietario_id?: string | null;
   is_vendida?: boolean | null;
+  is_slot?: boolean | null;
+  tipo_id?: string | null;
+  viatura_tipos?: ViaturasTipo | null;
 }
 
 type SortColumn = 'matricula' | 'marca' | 'ano' | 'km_atual' | 'status';
@@ -78,6 +88,8 @@ export default function Viaturas() {
   const [mostrarVendidas, setMostrarVendidas] = useState(false);
   const [categoriaFilter, setCategoriaFilter] = useState<string>('all');
   const [combustivelFilter, setCombustivelFilter] = useState<string>('all');
+  const [tipoFilter, setTipoFilter] = useState<string>('all');
+  const [tipos, setTipos] = useState<ViaturasTipo[]>([]);
   const [sortColumn, setSortColumn] = useState<SortColumn>('matricula');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   
@@ -90,6 +102,8 @@ export default function Viaturas() {
 
   useEffect(() => {
     loadViaturas();
+    supabase.from('viatura_tipos').select('id, nome').eq('ativo', true).order('nome')
+      .then(({ data }) => setTipos(data || []));
   }, []);
 
   const loadViaturas = async () => {
@@ -97,7 +111,7 @@ export default function Viaturas() {
     try {
       const { data, error } = await supabase
         .from('viaturas')
-        .select('*')
+        .select('*, viatura_tipos(id, nome)')
         .order('matricula');
 
       if (error) throw error;
@@ -126,6 +140,8 @@ export default function Viaturas() {
         return (s === 'manutencao' || s === 'manutencao') && !v.is_vendida;
       }).length,
       vendidas: viaturas.filter((v) => v.is_vendida).length,
+      slot: viaturas.filter((v) => v.is_slot && !v.is_vendida).length,
+      slotDisponiveis: viaturas.filter((v) => v.is_slot && !v.is_vendida && v.status === 'disponivel').length,
     };
   }, [viaturas]);
 
@@ -146,6 +162,18 @@ export default function Viaturas() {
       ? <ArrowUp className="h-4 w-4" /> 
       : <ArrowDown className="h-4 w-4" />;
   };
+
+  const tiposCounts = useMemo(() => {
+    const total: Record<string, number> = {};
+    const disponiveis: Record<string, number> = {};
+    viaturas.filter(v => !v.is_vendida || mostrarVendidas).forEach(v => {
+      if (v.tipo_id) {
+        total[v.tipo_id] = (total[v.tipo_id] || 0) + 1;
+        if (v.status === 'disponivel') disponiveis[v.tipo_id] = (disponiveis[v.tipo_id] || 0) + 1;
+      }
+    });
+    return { total, disponiveis };
+  }, [viaturas, mostrarVendidas]);
 
   const filteredViaturas = useMemo(() => {
     let result = [...viaturas];
@@ -181,6 +209,13 @@ export default function Viaturas() {
       result = result.filter(v => v.combustivel === combustivelFilter);
     }
 
+    // Filtro de tipo / SLOT
+    if (tipoFilter === 'slot') {
+      result = result.filter(v => v.is_slot);
+    } else if (tipoFilter !== 'all') {
+      result = result.filter(v => v.tipo_id === tipoFilter);
+    }
+
     // Ordenação
     result.sort((a, b) => {
       let aVal: any = a[sortColumn];
@@ -198,7 +233,7 @@ export default function Viaturas() {
     });
 
     return result;
-  }, [viaturas, searchTerm, statusFilter, categoriaFilter, combustivelFilter, sortColumn, sortDirection, mostrarVendidas]);
+  }, [viaturas, searchTerm, statusFilter, categoriaFilter, combustivelFilter, tipoFilter, sortColumn, sortDirection, mostrarVendidas]);
 
   const getCategoriaColor = (categoria: string | null | undefined) => getCategoriaBadgeClass(categoria);
 
@@ -283,6 +318,50 @@ export default function Viaturas() {
           }
         }}
       />
+
+      {/* Tipo + SLOT filter cards */}
+      {tipos.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
+          {(() => {
+            const todosTotal = viaturas.filter(v => !v.is_vendida || mostrarVendidas).length;
+            const todosDisponiveis = viaturas.filter(v => (!v.is_vendida || mostrarVendidas) && v.status === 'disponivel').length;
+            const items = [
+              { id: 'all',  nome: 'Todos os Tipos', total: todosTotal,                       disponiveis: todosDisponiveis,                        icon: Car,    color: 'text-primary',    bgColor: 'bg-primary/10'    },
+              ...tipos.map(t => ({ id: t.id, nome: t.nome,               total: tiposCounts.total[t.id] || 0,       disponiveis: tiposCounts.disponiveis[t.id] || 0,      icon: Car,    color: 'text-primary',    bgColor: 'bg-primary/10'    })),
+              { id: 'slot', nome: 'SLOT',            total: stats.slot,                       disponiveis: stats.slotDisponiveis,                   icon: Layers, color: 'text-purple-600', bgColor: 'bg-purple-500/10' },
+            ];
+            return items.map(item => {
+              const isActive = tipoFilter === item.id;
+              const Icon = item.icon;
+              return (
+                <Card
+                  key={item.id}
+                  onClick={() => setTipoFilter(isActive && item.id !== 'all' ? 'all' : item.id)}
+                  className={cn(
+                    'border-border/50 cursor-pointer transition-all hover:border-primary/50 hover:shadow-sm',
+                    isActive && 'border-primary ring-1 ring-primary shadow-sm',
+                  )}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className={cn('rounded-lg p-2', item.bgColor, isActive && 'ring-1 ring-current')}>
+                        <Icon className={`h-5 w-5 ${item.color}`} />
+                      </div>
+                      <div>
+                        <div className="flex items-baseline gap-2">
+                          <p className="text-2xl font-bold text-green-600">{item.disponiveis}</p>
+                          <p className="text-sm font-medium text-muted-foreground">/ {item.total}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{item.nome}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            });
+          })()}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">

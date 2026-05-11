@@ -1,7 +1,5 @@
-import { useEffect } from 'react';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
-import { toast } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
@@ -11,6 +9,7 @@ import { ThemeProvider } from 'next-themes';
 import { isNativeDriverOnlyMode } from '@/lib/native';
 import NativeAppRoutes from '@/routes/NativeAppRoutes';
 import WebAppRoutes from '@/routes/WebAppRoutes';
+import { UpdateNotification } from '@/components/UpdateNotification';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,25 +20,6 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  useEffect(() => {
-    const handleUpdate = () => {
-      toast('Nova versão disponível', {
-        description: 'Podes continuar a trabalhar e atualizar quando quiseres.',
-        action: {
-          label: 'Atualizar agora',
-          onClick: () => {
-            const fn = (window as any).__swUpdate;
-            if (fn) fn();
-            else window.location.reload();
-          },
-        },
-        duration: Infinity,
-      });
-    };
-    window.addEventListener('sw-update-available', handleUpdate);
-    return () => window.removeEventListener('sw-update-available', handleUpdate);
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -48,6 +28,7 @@ const App = () => {
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <UpdateNotification />
               <BrowserRouter>
                 {isNativeDriverOnlyMode() ? <NativeAppRoutes /> : <WebAppRoutes />}
               </BrowserRouter>

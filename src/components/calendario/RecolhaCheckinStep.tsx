@@ -1,0 +1,297 @@
+import React, { useState, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import { ArrowLeft, CheckCircle, FileSignature, Film, Loader2, Upload, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { formatMatricula } from './NovoEventoPage';
+import type { PendingEventoData } from './NovoEventoPage';
+
+export interface RecolhaCheckinStepProps {
+  eventoData: PendingEventoData;
+  onConcluir: () => void;
+  onVoltar: () => void;
+}
+
+interface SelectedFile {
+  id: string;
+  file: File;
+  preview: string | null;
+}
+
+export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
+  eventoData, onConcluir, onVoltar,
+}) => {
+  const { motoristaId, motoristaNome, viaturaId, viatura, userId,
+          data, hora, diaTodo, observacoes, estacaoId, estacaoNome } = eventoData;
+
+  const queryClient = useQueryClient();
+  const [files, setFiles] = useState<SelectedFile[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: contrato, isLoading: loadingContrato } = useQuery({
+    queryKey: ['contrato-ativo-recolha', motoristaId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contratos')
+        .select('id, numero_contrato, status')
+        .eq('motorista_id', motoristaId!)
+        .eq('status', 'ativo')
+        .order('criado_em', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { id: string; numero_contrato: number | null; status: string } | null;
+    },
+    enabled: !!motoristaId,
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files || []);
+    setFiles(prev => [
+      ...prev,
+      ...selected.map(f => ({
+        id: Math.random().toString(36).slice(2),
+        file: f,
+        preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
+      })),
+    ]);
+    e.target.value = '';
+  };
+
+  const removeFile = (id: string) => {
+    setFiles(prev => {
+      const f = prev.find(x => x.id === id);
+      if (f?.preview) URL.revokeObjectURL(f.preview);
+      return prev.filter(x => x.id !== id);
+    });
+  };
+
+  const handleConfirm = async () => {
+    setSaving(true);
+    try {
+      // 1. Create the recolha calendar event
+      const dataISO = diaTodo
+        ? new Date(`${data}T00:00:00`).toISOString()
+        : new Date(`${data}T${hora}:00`).toISOString();
+
+      const eventoPayload: Record<string, any> = {
+        titulo: viatura.matricula.replace(/[-\s]/g, '').toUpperCase(),
+        tipo: 'recolha',
+        data_inicio: dataISO,
+        data_fim: null,
+        dia_todo: diaTodo,
+        cidade: estacaoNome || null,
+        descricao: observacoes.trim() || null,
+        criado_por: userId,
+      };
+      if (motoristaId) eventoPayload.motorista_id = motoristaId;
+
+      let evResult = await supabase.from('calendario_eventos').insert(eventoPayload).select('id').single();
+      if (evResult.error) {
+        const { motorista_id: _, ...fallback } = eventoPayload;
+        evResult = await supabase.from('calendario_eventos').insert(fallback).select('id').single();
+        if (evResult.error) throw evResult.error;
+      }
+      const eventoId = evResult.data.id;
+
+      // 2. Close motorista_viaturas association
+      if (motoristaId) {
+        await supabase
+          .from('motorista_viaturas')
+          .update({ status: 'encerrado', data_fim: data })
+          .eq('motorista_id', motoristaId)
+          .eq('viatura_id', viaturaId)
+          .eq('status', 'ativo');
+      }
+
+      // 3. Viatura → disponivel + estação
+      await supabase.from('viaturas')
+        .update({ status: 'disponivel', estacao_id: estacaoId || null })
+        .eq('id', viaturaId);
+
+      // 4. Notification (fire & forget)
+      try {
+        await supabase.functions.invoke('send-calendar-notification', {
+          body: { matricula: eventoPayload.titulo, cidade: estacaoNome, tipo: 'recolha', data_inicio: dataISO, dia_todo: diaTodo },
+        });
+      } catch { /* non-critical */ }
+
+      // 5. Close active contract
+      if (contrato) {
+        await supabase
+          .from('contratos')
+          .update({ status: 'encerrado', calendario_evento_id: eventoId })
+          .eq('id', contrato.id);
+      }
+
+      // 6. Upload checkin media (optional)
+      if (files.length > 0 && contrato) {
+        const mediaRecords: any[] = [];
+        for (const { file } of files) {
+          const ext = file.name.split('.').pop() || 'bin';
+          const path = `${contrato.id}/checkin/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+          const { error: upErr } = await supabase.storage
+            .from('contrato-media')
+            .upload(path, file, { contentType: file.type });
+          if (upErr) throw upErr;
+          mediaRecords.push({
+            contrato_id: contrato.id,
+            tipo: 'checkin',
+            url: path,
+            nome_ficheiro: file.name,
+            tipo_ficheiro: file.type,
+            tamanho_bytes: file.size,
+            criado_por: userId,
+          });
+        }
+        const { error: mediaErr } = await supabase.from('contrato_media').insert(mediaRecords);
+        if (mediaErr) throw mediaErr;
+      }
+
+      // 7. Invalidate caches
+      queryClient.invalidateQueries({ queryKey: ['calendario-eventos'] });
+      queryClient.invalidateQueries({ queryKey: ['viaturas-calendario'] });
+      queryClient.invalidateQueries({ queryKey: ['viaturas-pendentes-recolha'] });
+      queryClient.invalidateQueries({ queryKey: ['motorista-viaturas'] });
+
+      toast.success('Recolha confirmada');
+      setDone(true);
+      setTimeout(() => onConcluir(), 1500);
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao registar recolha');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-4">
+        <CheckCircle className="h-16 w-16 text-blue-500" />
+        <p className="text-xl font-semibold">Recolha confirmada!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
+      <div className="flex items-center gap-3 border-b border-border px-4 py-3 bg-card shrink-0">
+        <Button variant="ghost" size="icon" onClick={onVoltar} className="shrink-0" disabled={saving}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base font-semibold leading-tight">Checkin de Recolha</h1>
+          <p className="text-xs text-muted-foreground truncate">
+            {motoristaNome ? `${motoristaNome} — ` : ''}{formatMatricula(viatura.matricula)}
+          </p>
+        </div>
+        <Button onClick={handleConfirm} disabled={saving} className="shrink-0">
+          {saving
+            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...</>
+            : 'Confirmar'}
+        </Button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+
+          <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4 text-sm text-blue-700 dark:text-blue-300">
+            <p className="font-medium">Recolha pronta para registar.</p>
+            <p className="mt-0.5 opacity-80">Adicione fotos de checkin ou confirme sem fotos.</p>
+          </div>
+
+          {loadingContrato ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              A verificar contrato ativo...
+            </div>
+          ) : contrato ? (
+            <div className="rounded-lg border border-border p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <FileSignature className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Contrato Ativo Encontrado</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="font-mono">
+                  CT-{String(contrato.numero_contrato ?? 0).padStart(4, '0')}
+                </Badge>
+                <Badge variant="default">Ativo</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Será marcado como encerrado após confirmar.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+              {motoristaId
+                ? 'Nenhum contrato ativo encontrado para este motorista.'
+                : 'Motorista não identificado — não é possível associar fotos a um contrato.'}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <Label>
+              Fotos / Vídeos de Checkin{' '}
+              <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
+            </Label>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              className="hidden"
+              onChange={handleFileChange}
+            />
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                'w-full rounded-lg border-2 border-dashed transition-colors py-8 flex flex-col items-center gap-2 text-sm text-muted-foreground',
+                'border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer'
+              )}
+            >
+              <Upload className="h-8 w-8 opacity-40" />
+              <span>Clique para adicionar fotos ou vídeos</span>
+              <span className="text-xs opacity-60">JPG, PNG, HEIC, MP4, MOV — máx. 100 MB</span>
+            </button>
+
+            {files.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {files.map(f => (
+                  <div key={f.id} className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted">
+                    {f.preview ? (
+                      <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
+                        <Film className="h-6 w-6 text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground text-center leading-tight truncate w-full">
+                          {f.file.name}
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeFile(f.id)}
+                      className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+};

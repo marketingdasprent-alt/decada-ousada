@@ -58,6 +58,8 @@ const TIPOS_DOCUMENTO = [
   { value: "carta_conducao", label: "Carta Condução (Frente)", field: "carta_ficheiro_url", validityField: "carta_validade", storageFolder: "cartas" },
   { value: "carta_conducao_verso", label: "Carta Condução (Verso)", field: "carta_conducao_verso_url", validityField: "carta_validade", storageFolder: "cartas" },
   { value: "licenca_tvde", label: "Licença TVDE", field: "licenca_tvde_ficheiro_url", validityField: "licenca_tvde_validade", storageFolder: "tvde" },
+  { value: "dua_frente", label: "DUA (Frente)", storageFolder: "documentos" },
+  { value: "dua_verso", label: "DUA (Verso)", storageFolder: "documentos" },
   { value: "registo_criminal", label: "Registo Criminal", field: "registo_criminal_url", storageFolder: "documentos" },
   { value: "comprovativo_morada", label: "Comprovativo Morada", field: "comprovativo_morada_url", storageFolder: "documentos" },
   { value: "comprovativo_iban", label: "Comprovativo IBAN", field: "comprovativo_iban_url", storageFolder: "documentos" },
