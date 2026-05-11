@@ -80,6 +80,10 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
   };
 
   const handleConfirm = async () => {
+    if (files.length === 0 && checkinDados.novosDanos.length === 0) {
+      toast.error('Adicione pelo menos uma foto/vídeo ou registe um dano com foto');
+      return;
+    }
     const checkinErr = validateCheckinDados(checkinDados, viatura.km_atual ?? 0, viatura.combustivel ?? '');
     if (checkinErr) { toast.error(checkinErr); return; }
     setSaving(true);
@@ -280,7 +284,7 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
           <div className="space-y-3">
             <Label>
               Fotos / Vídeos{' '}
-              <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
+              <span className="text-muted-foreground font-normal text-xs">(obrigatório se sem danos)</span>
             </Label>
 
             <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />

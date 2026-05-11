@@ -106,6 +106,10 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
   };
 
   const handleConfirm = async () => {
+    if (files.length === 0 && checkinDados.novosDanos.length === 0) {
+      toast.error('Adicione pelo menos uma foto/vídeo ou registe um dano com foto');
+      return;
+    }
     const checkinErr = validateCheckinDados(checkinDados, viatura.km_atual ?? 0, viatura.combustivel ?? '');
     if (checkinErr) { toast.error(checkinErr); return; }
 
@@ -340,7 +344,7 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
             <Label className="flex items-center gap-2">
               <Camera className="h-4 w-4 text-muted-foreground" />
               Fotos / Vídeos de Checkout
-              <span className="text-muted-foreground text-xs font-normal ml-1">(opcional)</span>
+              <span className="text-muted-foreground text-xs font-normal ml-1">(obrigatório se sem danos)</span>
             </Label>
 
             <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
