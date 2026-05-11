@@ -10,10 +10,12 @@ import { toast } from 'sonner';
 import { ArrowLeft, Camera, CheckCircle, Film, Loader2, Upload, X, FileText, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { formatMatricula } from './NovoEventoPage';
+import { formatMatricula } from './calendarioUtils';
 import type { PendingEventoData } from './NovoEventoPage';
 import { useEmpresas } from '@/hooks/useEmpresas';
 import { uploadDocumentToStorage, generateDocumentFromTemplate } from '@/utils/generateDocumentFromTemplate';
+import { CheckinDadosSection, emptyCheckinDados, validateCheckinDados, saveCheckinDados } from './CheckinDadosSection';
+import type { CheckinDadosState } from './CheckinDadosSection';
 
 export interface ContratoEntregaStepProps {
   eventoData: PendingEventoData;
@@ -39,11 +41,12 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
   const [dataInicio, setDataInicio] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [cidadeAssinatura, setCidadeAssinatura] = useState('Leiria');
   const [files, setFiles] = useState<SelectedFile[]>([]);
+  const [checkinDados, setCheckinDados] = useState<CheckinDadosState>(emptyCheckinDados);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [contratoNumero, setContratoNumero] = useState<number | null>(null);
-  const [showFilesError, setShowFilesError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['doc-templates-entrega'],
@@ -103,11 +106,8 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
   };
 
   const handleConfirm = async () => {
-    if (files.length === 0) {
-      setShowFilesError(true);
-      toast.error('Adicione pelo menos uma foto ou vídeo de checkout');
-      return;
-    }
+    const checkinErr = validateCheckinDados(checkinDados, viatura.km_atual ?? 0, viatura.combustivel ?? '');
+    if (checkinErr) { toast.error(checkinErr); return; }
 
     const empresaId = empresas[0]?.id;
     if (!empresaId) { toast.error('Nenhuma empresa configurada'); return; }
@@ -183,7 +183,10 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
       const contratoId = ct.id;
       setContratoNumero(ct.numero_contrato);
 
-      // 6. Upload checkout media (obrigatório)
+      // 6. KM, combustivel, danos
+      await saveCheckinDados({ dados: checkinDados, contratoId, viaturaId, userId, tipo: 'checkout' });
+
+      // 7. Upload checkout media (obrigatório)
       const mediaRecords: any[] = [];
       for (const { file } of files) {
         const ext = file.name.split('.').pop() || 'bin';
@@ -319,43 +322,48 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
             </div>
           )}
 
+          <CheckinDadosSection
+            viaturaId={viaturaId}
+            kmMinimo={viatura.km_atual ?? 0}
+            dados={checkinDados}
+            onChange={setCheckinDados}
+            tipo="checkout"
+            tipoCombustivel={viatura.combustivel ?? ''}
+            motoristaNome={motoristaNome}
+            matricula={formatMatricula(viatura.matricula)}
+            dataEvento={dataInicio}
+            contratoNumero={contratoNumero}
+            accentClass="border-green-200 dark:border-green-800"
+          />
+
           <div className="space-y-3">
             <Label className="flex items-center gap-2">
               <Camera className="h-4 w-4 text-muted-foreground" />
               Fotos / Vídeos de Checkout
-              <span className="text-destructive text-xs font-normal ml-1">*obrigatório</span>
+              <span className="text-muted-foreground text-xs font-normal ml-1">(opcional)</span>
             </Label>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              className="hidden"
-              onChange={handleFileChange}
-            />
+            <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
+            <input ref={cameraInputRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileChange} />
 
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                'w-full rounded-lg border-2 border-dashed transition-colors py-8 flex flex-col items-center gap-2 text-sm text-muted-foreground',
-                showFilesError && files.length === 0
-                  ? 'border-destructive bg-destructive/5'
-                  : 'border-border hover:border-primary/50 hover:bg-muted/30'
-              )}
-            >
-              <Upload className={cn('h-8 w-8 opacity-40', showFilesError && files.length === 0 && 'text-destructive')} />
-              <span>Clique para adicionar fotos ou vídeos</span>
-              <span className="text-xs opacity-60">JPG, PNG, HEIC, MP4, MOV — máx. 100 MB</span>
-            </button>
-
-            {showFilesError && files.length === 0 && (
-              <div className="flex items-center gap-2 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                Adicione pelo menos uma foto ou vídeo antes de confirmar.
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-colors py-6 flex flex-col items-center gap-2 text-sm text-muted-foreground"
+              >
+                <Camera className="h-6 w-6 opacity-40" />
+                <span>Câmara</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-colors py-6 flex flex-col items-center gap-2 text-sm text-muted-foreground"
+              >
+                <Upload className="h-6 w-6 opacity-40" />
+                <span>Galeria / Ficheiros</span>
+              </button>
+            </div>
 
             {files.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">

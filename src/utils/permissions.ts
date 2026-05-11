@@ -26,6 +26,7 @@ export const RECURSOS = {
   VIATURAS_CRIAR: 'viaturas_criar',
   VIATURAS_EDITAR: 'viaturas_editar',
   VIATURAS_ELIMINAR: 'viaturas_eliminar',
+  VIATURAS_FINANCEIRO: 'viaturas_financeiro',
   
   // Contratos
   CONTRATOS_VER: 'contratos_ver',
@@ -59,6 +60,7 @@ export const RECURSOS = {
   CALENDARIO_EDITAR: 'calendario_editar',
   CALENDARIO_EDITAR_TODOS: 'calendario_editar_todos',
   CALENDARIO_ELIMINAR: 'calendario_eliminar',
+  CALENDARIO_RECOLHAS: 'calendario_recolhas',
 } as const;
 
 export type RecursoKey = typeof RECURSOS[keyof typeof RECURSOS];

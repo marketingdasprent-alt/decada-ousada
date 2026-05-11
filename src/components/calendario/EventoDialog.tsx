@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Car, CalendarDays, MapPin, ArrowLeftRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatMatricula } from './NovoEventoPage';
+import { formatMatricula } from './calendarioUtils';
 import type { CalendarioEvento } from '@/pages/Calendario';
 
 interface Props {

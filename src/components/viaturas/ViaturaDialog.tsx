@@ -89,6 +89,9 @@ const COMBUSTIVEIS = [
   { value: 'hibrido', label: 'Híbrido' },
   { value: 'gasolina', label: 'Gasolina' },
   { value: 'diesel', label: 'Diesel' },
+  { value: 'gpl', label: 'GPL' },
+  { value: 'gasolina_gpl', label: 'Gasolina + GPL' },
+  { value: 'diesel_gpl', label: 'Diesel + GPL' },
 ];
 
 const STATUS_OPTIONS = [

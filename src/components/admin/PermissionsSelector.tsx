@@ -77,6 +77,7 @@ const RECURSO_LABELS: Record<string, string> = {
   'viaturas_criar': 'Criar novas viaturas',
   'viaturas_editar': 'Editar dados de viaturas',
   'viaturas_eliminar': 'Eliminar viaturas',
+  'viaturas_financeiro': 'Ver dados financeiros das viaturas',
   // Contratos
   'contratos_ver': 'Ver contratos',
   'contratos_criar': 'Criar novos contratos',
@@ -93,6 +94,7 @@ const RECURSO_LABELS: Record<string, string> = {
   'calendario_editar': 'Editar eventos existentes',
   'calendario_gerir_todos': 'Gerir eventos de todos os gestores',
   'calendario_eliminar': 'Eliminar eventos',
+  'calendario_recolhas': 'Aceder ao painel de recolhas pendentes',
   // Assistência
   'assistencia_ver': 'Ver tickets de assistência',
   'assistencia_criar': 'Criar tickets de assistência',

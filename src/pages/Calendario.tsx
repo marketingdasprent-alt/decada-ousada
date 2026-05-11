@@ -10,8 +10,10 @@ import { EventoHistoricoDialog } from '@/components/calendario/EventoHistoricoDi
 import { CalendarioConfig } from '@/components/calendario/CalendarioConfig';
 import { RelatorioDialog } from '@/components/calendario/RelatorioDialog';
 import { NovoEventoPage } from '@/components/calendario/NovoEventoPage';
+import { RecolhasPendentesDrawer } from '@/components/calendario/RecolhasPendentesDrawer';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, CalendarDays, FileDown } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Settings, CalendarDays, FileDown, PackageCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import { format } from 'date-fns';
@@ -40,6 +42,7 @@ const Calendario: React.FC = () => {
   const [configOpen, setConfigOpen] = useState(false);
   const [historicoOpen, setHistoricoOpen] = useState(false);
   const [relatorioOpen, setRelatorioOpen] = useState(false);
+  const [recolhasPendentesOpen, setRecolhasPendentesOpen] = useState(false);
   const [editingEvento, setEditingEvento] = useState<CalendarioEvento | null>(null);
   const [detailsEvento, setDetailsEvento] = useState<CalendarioEvento | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -60,6 +63,19 @@ const Calendario: React.FC = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
+
+  const { data: recolhasPendentes = [] } = useQuery({
+    queryKey: ['viaturas-pendentes-recolha'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('viaturas')
+        .select('id, matricula, marca, modelo, categoria')
+        .eq('status', 'em_recolha')
+        .order('matricula');
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const { data: eventos = [], isLoading } = useQuery({
     queryKey: ['calendario-eventos', currentMonth.getFullYear(), currentMonth.getMonth()],
@@ -190,6 +206,11 @@ const Calendario: React.FC = () => {
 
   return (
     <>
+    <RecolhasPendentesDrawer
+      open={recolhasPendentesOpen}
+      onOpenChange={setRecolhasPendentesOpen}
+      userId={user?.id || ''}
+    />
     {novoEventoOpen && (
       <NovoEventoPage
         userId={user?.id || ''}
@@ -219,6 +240,21 @@ const Calendario: React.FC = () => {
           <Button variant="outline" size="icon" onClick={() => setConfigOpen(true)}>
             <Settings className="h-4 w-4" />
           </Button>
+          {hasPermission('calendario_recolhas') && (
+            <Button
+              variant="outline"
+              onClick={() => setRecolhasPendentesOpen(true)}
+              className="relative gap-2"
+            >
+              <PackageCheck className="h-4 w-4" />
+              <span className="hidden sm:inline">Recolhas</span>
+              {recolhasPendentes.length > 0 && (
+                <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-orange-500 text-white border-0">
+                  {recolhasPendentes.length}
+                </Badge>
+              )}
+            </Button>
+          )}
           {hasPermission('calendario_criar') && (
             <Button onClick={handleNew} className="gap-2">
               <Plus className="h-4 w-4" />

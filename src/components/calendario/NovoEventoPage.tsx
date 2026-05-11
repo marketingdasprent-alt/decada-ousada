@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { ContratoEntregaStep } from './ContratoEntregaStep';
+import { RecolhaCheckinStep } from './RecolhaCheckinStep';
+import { TrocaCheckinStep } from './TrocaCheckinStep';
+import { SearchableDropdown, formatMatricula } from './calendarioUtils';
+import type { DropdownItem } from './calendarioUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,9 +15,6 @@ import {
   ArrowLeft,
   Car,
   User,
-  Search,
-  Check,
-  ChevronDown,
   Loader2,
   CalendarDays,
   MapPin,
@@ -21,6 +23,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+export { SearchableDropdown, formatMatricula } from './calendarioUtils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,6 +34,8 @@ export interface Viatura {
   modelo: string;
   status: string;
   categoria: string | null;
+  km_atual?: number | null;
+  combustivel?: string | null;
 }
 
 export interface Motorista {
@@ -38,6 +43,45 @@ export interface Motorista {
   nome: string;
   nif: string | null;
   telefone: string | null;
+}
+
+export interface Estacao {
+  id: string;
+  nome: string;
+  morada: string | null;
+  cidade: string | null;
+  ativa: boolean;
+}
+
+export interface PendingTrocaData {
+  tipo: 'troca' | 'upgrade';
+  motoristaId: string;
+  motoristaNome: string;
+  viaturaAtual: Viatura;
+  novaViatura: Viatura;
+  data: string;
+  hora: string;
+  diaTodo: boolean;
+  observacoes: string;
+  estacaoId: string;
+  estacaoNome: string | null;
+  userId: string;
+}
+
+// Data passed to step components so THEY create the event (atomic with contract/media)
+export interface PendingEventoData {
+  tipo: 'entrega' | 'recolha' | 'devolucao';
+  motoristaId: string;
+  viaturaId: string;
+  data: string;
+  hora: string;
+  diaTodo: boolean;
+  observacoes: string;
+  estacaoId: string;
+  estacaoNome: string | null;
+  userId: string;
+  motoristaNome: string;
+  viatura: Viatura;
 }
 
 interface Props {
@@ -117,129 +161,10 @@ export function matchViatura(v: Viatura, q: string): boolean {
 export function matchMotorista(m: Motorista, q: string): boolean {
   const n = norm(q);
   return (
-    norm(m.nome).split(/\s+/).some(w => w.includes(n)) ||
+    norm(m.nome).includes(n) ||
     norm(m.nif || '').includes(n) ||
     norm(m.telefone || '').includes(n)
   );
-}
-
-// ── Searchable dropdown ────────────────────────────────────────────────────────
-
-interface DropdownItem {
-  id: string;
-  primary: string;
-  secondary?: string;
-  badge?: string;
-}
-
-interface SearchableDropdownProps {
-  items: DropdownItem[];
-  value: string;
-  onChange: (id: string) => void;
-  placeholder: string;
-  icon?: React.ReactNode;
-  disabled?: boolean;
-  matchFn: (item: DropdownItem, query: string) => boolean;
-}
-
-export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
-  items, value, onChange, placeholder, icon, disabled, matchFn,
-}) => {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const selected = items.find(i => i.id === value);
-  const filtered = query.trim() ? items.filter(i => matchFn(i, query)) : items;
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery('');
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const handleOpen = () => {
-    if (disabled) return;
-    setOpen(true);
-    setTimeout(() => inputRef.current?.focus(), 50);
-  };
-
-  return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={handleOpen}
-        disabled={disabled}
-        className={cn(
-          'flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors',
-          'hover:bg-accent hover:text-accent-foreground',
-          'disabled:cursor-not-allowed disabled:opacity-50',
-          open && 'ring-2 ring-ring ring-offset-1'
-        )}
-      >
-        {icon && <span className="text-muted-foreground shrink-0">{icon}</span>}
-        <span className={cn('flex-1 text-left truncate', !selected && 'text-muted-foreground')}>
-          {selected ? selected.primary : placeholder}
-        </span>
-        {selected?.secondary && (
-          <span className="text-xs text-muted-foreground shrink-0">{selected.secondary}</span>
-        )}
-        <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} />
-      </button>
-
-      {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg">
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Pesquisar..."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-          <div className="max-h-56 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <p className="px-3 py-4 text-center text-sm text-muted-foreground">Nenhum resultado</p>
-            ) : (
-              filtered.map(item => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => { onChange(item.id); setOpen(false); setQuery(''); }}
-                  className={cn(
-                    'flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent text-left',
-                    item.id === value && 'bg-primary/10 text-primary font-medium'
-                  )}
-                >
-                  <Check className={cn('h-4 w-4 shrink-0', item.id === value ? 'opacity-100' : 'opacity-0')} />
-                  <span className="flex-1 truncate">{item.primary}</span>
-                  {item.secondary && <span className="text-xs text-muted-foreground">{item.secondary}</span>}
-                  {item.badge && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{item.badge}</span>
-                  )}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ── Format helpers ─────────────────────────────────────────────────────────────
-
-export function formatMatricula(v: string): string {
-  const c = v.replace(/[-\s]/g, '').toUpperCase();
-  return c.match(/.{1,2}/g)?.join('-') || c;
 }
 
 function todayLocalStr(): string {
@@ -311,9 +236,13 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
       : todayLocalStr()
   );
   const [hora, setHora] = useState(nowTimeStr());
-  const [cidade, setCidade] = useState('');
+  const [estacaoId, setEstacaoId] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [diaTodo, setDiaTodo] = useState(false);
+
+  // For entrega/recolha/devolucao: collect form data and show step BEFORE creating anything
+  const [pendingEventoData, setPendingEventoData] = useState<PendingEventoData | null>(null);
+  const [pendingTrocaData, setPendingTrocaData] = useState<PendingTrocaData | null>(null);
 
   // ── Load all vehicles (non-sold) ────────────────────────────────────────────
   const { data: viaturas = [], isLoading: loadingViaturas } = useQuery({
@@ -321,7 +250,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
     queryFn: async () => {
       const { data, error } = await supabase
         .from('viaturas')
-        .select('id, matricula, marca, modelo, status, categoria')
+        .select('id, matricula, marca, modelo, status, categoria, km_atual, combustivel')
         .not('status', 'eq', 'vendida')
         .order('matricula');
       if (error) throw error;
@@ -342,6 +271,22 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
       return data as Motorista[];
     },
   });
+
+  // ── Load estacoes ────────────────────────────────────────────────────────────
+  const { data: estacoes = [] } = useQuery({
+    queryKey: ['estacoes-calendario'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('estacoes')
+        .select('id, nome, morada, cidade, ativa')
+        .eq('ativa', true)
+        .order('nome');
+      if (error) throw error;
+      return data as Estacao[];
+    },
+  });
+
+  const selectedEstacao = estacoes.find(e => e.id === estacaoId) || null;
 
   // ── Auto-detect current vehicle when motorista changes ──────────────────────
   // Used for: recolha, troca, upgrade
@@ -380,6 +325,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
     setMotoristaId('');
     setViaturaId('');
     setAutoViatura(null);
+    setEstacaoId('');
   }, [tipo]);
 
   // ── Vehicle lists by tipo ───────────────────────────────────────────────────
@@ -436,12 +382,13 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
   })();
 
   // ── Save ────────────────────────────────────────────────────────────────────
+  // ── Mutation handles only devolucao / troca / upgrade ─────────────────────
   const mutation = useMutation({
     mutationFn: async () => {
       // Determine the "main" vehicle (the one being delivered or involved)
       const mainViaturaId =
         tipo === 'troca' || tipo === 'upgrade'
-          ? viaturaId                          // nova viatura
+          ? viaturaId
           : viaturaId;
 
       const mainViatura = viaturas.find(v => v.id === mainViaturaId);
@@ -461,7 +408,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
         data_inicio: dataISO,
         data_fim: null,
         dia_todo: diaTodo,
-        cidade: cidade.trim() || null,
+        cidade: selectedEstacao?.nome || null,
         descricao: observacoes.trim() || null,
         matricula_devolver: oldViatura
           ? oldViatura.matricula.replace(/[-\s]/g, '').toUpperCase()
@@ -479,66 +426,25 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
         if (result.error) throw result.error;
       }
 
-      // ── Side effects ───────────────────────────────────────────────────────
-
-      if (tipo === 'entrega') {
-        // Associar ao motorista
-        await supabase.from('motorista_viaturas').insert({
-          motorista_id: motoristaId,
-          viatura_id: mainViatura.id,
-          data_inicio: data,
-          status: 'ativo',
-          observacoes: observacoes.trim() || null,
-        });
-        // Viatura → em_uso
-        await supabase.from('viaturas').update({ status: 'em_uso' }).eq('id', mainViatura.id);
-      }
-
+      // ── Side effects para recolha ────────────────────────────────────────────
       if (tipo === 'recolha') {
-        // Fechar associação viatura-motorista na data do evento
-        await supabase
-          .from('motorista_viaturas')
-          .update({ data_fim: data, status: 'encerrado' })
-          .eq('viatura_id', mainViatura.id)
-          .eq('status', 'ativo')
-          .is('data_fim', null);
-        // Viatura → em_recolha (aguarda confirmação de chegada ao parque)
-        await supabase.from('viaturas').update({ status: 'em_recolha' }).eq('id', mainViatura.id);
-      }
-
-      if (tipo === 'devolucao') {
-        // Fechar associação
-        await supabase
-          .from('motorista_viaturas')
-          .update({ data_fim: data, status: 'encerrado' })
-          .eq('viatura_id', mainViatura.id)
-          .eq('status', 'ativo')
-          .is('data_fim', null);
-        // Viatura → disponivel imediatamente
-        await supabase.from('viaturas').update({ status: 'disponivel' }).eq('id', mainViatura.id);
-      }
-
-      if ((tipo === 'troca' || tipo === 'upgrade') && oldViatura) {
-        // Fechar associação da viatura antiga
-        await supabase
-          .from('motorista_viaturas')
-          .update({ data_fim: data, status: 'encerrado' })
-          .eq('viatura_id', oldViatura.id)
-          .eq('status', 'ativo')
-          .is('data_fim', null);
-
-        // Criar nova associação com a nova viatura
-        await supabase.from('motorista_viaturas').insert({
-          motorista_id: motoristaId,
-          viatura_id: mainViatura.id,
-          data_inicio: data,
-          status: 'ativo',
-          observacoes: observacoes.trim() || null,
-        });
-
-        // Atualizar status das viaturas
-        await supabase.from('viaturas').update({ status: 'disponivel' }).eq('id', oldViatura.id);
-        await supabase.from('viaturas').update({ status: 'em_uso' }).eq('id', mainViatura.id);
+        // Fechar associação motorista_viaturas
+        if (motoristaId) {
+          await supabase.from('motorista_viaturas')
+            .update({ status: 'encerrado', data_fim: data })
+            .eq('motorista_id', motoristaId)
+            .eq('viatura_id', mainViatura.id)
+            .eq('status', 'ativo');
+        } else {
+          await supabase.from('motorista_viaturas')
+            .update({ status: 'encerrado', data_fim: data })
+            .eq('viatura_id', mainViatura.id)
+            .eq('status', 'ativo');
+        }
+        // Viatura → em_recolha (aguarda check-in na estação)
+        await supabase.from('viaturas')
+          .update({ status: 'em_recolha', estacao_id: estacaoId || null })
+          .eq('id', mainViatura.id);
       }
 
       // Notificação (fire & forget)
@@ -553,6 +459,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
           },
         });
       } catch { /* non-critical */ }
+
     },
 
     onSuccess: () => {
@@ -567,6 +474,53 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
   });
 
   const tipoInfo = TIPOS.find(t => t.value === tipo);
+
+  // ── For entrega/devolucao: show step; recolha: mutation (em_recolha) ───────
+  const handleGuardar = () => {
+    if (!estacaoId) {
+      toast.error('Estação é obrigatória');
+      return;
+    }
+    if (tipo === 'entrega' || tipo === 'devolucao') {
+      const viatura = viaturas.find(v => v.id === viaturaId) || null;
+      if (!viatura) return;
+      const motorista = motoristas.find(m => m.id === motoristaId);
+      setPendingEventoData({
+        tipo,
+        motoristaId,
+        viaturaId,
+        data,
+        hora,
+        diaTodo,
+        observacoes,
+        estacaoId,
+        estacaoNome: selectedEstacao?.nome || null,
+        userId,
+        motoristaNome: motorista?.nome || '',
+        viatura,
+      });
+    } else if ((tipo === 'troca' || tipo === 'upgrade') && autoViatura) {
+      const novaViatura = viaturas.find(v => v.id === viaturaId);
+      if (!novaViatura) return;
+      const motorista = motoristas.find(m => m.id === motoristaId);
+      setPendingTrocaData({
+        tipo: tipo as 'troca' | 'upgrade',
+        motoristaId,
+        motoristaNome: motorista?.nome || '',
+        viaturaAtual: autoViatura,
+        novaViatura,
+        data,
+        hora,
+        diaTodo,
+        observacoes,
+        estacaoId,
+        estacaoNome: selectedEstacao?.nome || null,
+        userId,
+      });
+    } else {
+      mutation.mutate();
+    }
+  };
 
   // ── Helpers para mostrar/esconder campos por tipo ──────────────────────────
   const showMotorista = tipo === 'entrega' || tipo === 'recolha' || tipo === 'troca' || tipo === 'upgrade';
@@ -583,6 +537,36 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
+  // Step components: shown BEFORE creating the event (event is created on confirm)
+  if (pendingTrocaData) {
+    return (
+      <TrocaCheckinStep
+        trocaData={pendingTrocaData}
+        onConcluir={onClose}
+        onVoltar={() => setPendingTrocaData(null)}
+      />
+    );
+  }
+
+  if (pendingEventoData) {
+    if (pendingEventoData.tipo === 'entrega') {
+      return (
+        <ContratoEntregaStep
+          eventoData={pendingEventoData}
+          onConcluir={onClose}
+          onVoltar={() => setPendingEventoData(null)}
+        />
+      );
+    }
+    return (
+      <RecolhaCheckinStep
+        eventoData={pendingEventoData}
+        onConcluir={onClose}
+        onVoltar={() => setPendingEventoData(null)}
+      />
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
       {/* Header */}
@@ -597,7 +581,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
           )}
         </div>
         <Button
-          onClick={() => mutation.mutate()}
+          onClick={handleGuardar}
           disabled={!canSave || mutation.isPending}
           className="shrink-0"
         >
@@ -799,15 +783,26 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="cidade" className="flex items-center gap-1.5">
+              <Label className="flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                Cidade
+                Estação <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="cidade"
-                value={cidade}
-                onChange={e => setCidade(e.target.value)}
-                placeholder="Ex: Lisboa, Porto, Faro..."
+              <SearchableDropdown
+                items={estacoes.map(e => ({
+                  id: e.id,
+                  primary: e.nome,
+                  secondary: [e.morada, e.cidade].filter(Boolean).join(', ') || undefined,
+                }))}
+                value={estacaoId}
+                onChange={setEstacaoId}
+                placeholder="Selecionar estação..."
+                icon={<MapPin className="h-4 w-4" />}
+                matchFn={(item, q) => {
+                  const e = estacoes.find(x => x.id === item.id);
+                  if (!e) return false;
+                  const n = norm(q);
+                  return norm(e.nome).includes(n) || norm(e.cidade || '').includes(n) || norm(e.morada || '').includes(n);
+                }}
               />
             </div>
           </div>

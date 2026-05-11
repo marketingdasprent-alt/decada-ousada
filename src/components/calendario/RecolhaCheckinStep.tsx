@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, CheckCircle, FileSignature, Film, Loader2, Upload, X } from 'lucide-react';
+import { ArrowLeft, Camera, CheckCircle, FileSignature, Film, Loader2, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatMatricula } from './NovoEventoPage';
+import { formatMatricula } from './calendarioUtils';
 import type { PendingEventoData } from './NovoEventoPage';
+import { CheckinDadosSection, emptyCheckinDados, validateCheckinDados, saveCheckinDados } from './CheckinDadosSection';
+import type { CheckinDadosState } from './CheckinDadosSection';
 
 export interface RecolhaCheckinStepProps {
   eventoData: PendingEventoData;
@@ -30,25 +32,30 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
 
   const queryClient = useQueryClient();
   const [files, setFiles] = useState<SelectedFile[]>([]);
+  const [checkinDados, setCheckinDados] = useState<CheckinDadosState>(emptyCheckinDados);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const isDevolucao = eventoData.tipo === 'devolucao';
 
   const { data: contrato, isLoading: loadingContrato } = useQuery({
-    queryKey: ['contrato-ativo-recolha', motoristaId],
+    queryKey: ['contrato-ativo-recolha', motoristaId, viaturaId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const query = supabase
         .from('contratos')
         .select('id, numero_contrato, status')
-        .eq('motorista_id', motoristaId!)
         .eq('status', 'ativo')
         .order('criado_em', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
+      const { data, error } = motoristaId
+        ? await query.eq('motorista_id', motoristaId).maybeSingle()
+        : await query.eq('viatura_id', viaturaId).maybeSingle();
       if (error) throw error;
       return data as { id: string; numero_contrato: number | null; status: string } | null;
     },
-    enabled: !!motoristaId,
+    enabled: !!motoristaId || !!viaturaId,
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,6 +80,8 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
   };
 
   const handleConfirm = async () => {
+    const checkinErr = validateCheckinDados(checkinDados, viatura.km_atual ?? 0, viatura.combustivel ?? '');
+    if (checkinErr) { toast.error(checkinErr); return; }
     setSaving(true);
     try {
       // 1. Create the recolha calendar event
@@ -82,7 +91,7 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
 
       const eventoPayload: Record<string, any> = {
         titulo: viatura.matricula.replace(/[-\s]/g, '').toUpperCase(),
-        tipo: 'recolha',
+        tipo: eventoData.tipo,
         data_inicio: dataISO,
         data_fim: null,
         dia_todo: diaTodo,
@@ -108,6 +117,13 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
           .eq('motorista_id', motoristaId)
           .eq('viatura_id', viaturaId)
           .eq('status', 'ativo');
+      } else {
+        // devolucao sem motorista identificado — fechar por viatura_id
+        await supabase
+          .from('motorista_viaturas')
+          .update({ status: 'encerrado', data_fim: data })
+          .eq('viatura_id', viaturaId)
+          .eq('status', 'ativo');
       }
 
       // 3. Viatura → disponivel + estação
@@ -130,7 +146,12 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
           .eq('id', contrato.id);
       }
 
-      // 6. Upload checkin media (optional)
+      // 6. KM, combustivel, danos
+      if (contrato) {
+        await saveCheckinDados({ dados: checkinDados, contratoId: contrato.id, viaturaId, userId, tipo: 'checkin' });
+      }
+
+      // 7. Upload checkin media
       if (files.length > 0 && contrato) {
         const mediaRecords: any[] = [];
         for (const { file } of files) {
@@ -154,13 +175,13 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
         if (mediaErr) throw mediaErr;
       }
 
-      // 7. Invalidate caches
+      // 8. Invalidate caches
       queryClient.invalidateQueries({ queryKey: ['calendario-eventos'] });
       queryClient.invalidateQueries({ queryKey: ['viaturas-calendario'] });
       queryClient.invalidateQueries({ queryKey: ['viaturas-pendentes-recolha'] });
       queryClient.invalidateQueries({ queryKey: ['motorista-viaturas'] });
 
-      toast.success('Recolha confirmada');
+      toast.success(isDevolucao ? 'Devolução confirmada' : 'Recolha confirmada');
       setDone(true);
       setTimeout(() => onConcluir(), 1500);
     } catch (err: any) {
@@ -173,8 +194,8 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
   if (done) {
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-4">
-        <CheckCircle className="h-16 w-16 text-blue-500" />
-        <p className="text-xl font-semibold">Recolha confirmada!</p>
+        <CheckCircle className={cn('h-16 w-16', isDevolucao ? 'text-orange-500' : 'text-blue-500')} />
+        <p className="text-xl font-semibold">{isDevolucao ? 'Devolução confirmada!' : 'Recolha confirmada!'}</p>
       </div>
     );
   }
@@ -186,7 +207,9 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-base font-semibold leading-tight">Checkin de Recolha</h1>
+          <h1 className="text-base font-semibold leading-tight">
+            {isDevolucao ? 'Checkin de Devolução' : 'Checkin de Recolha'}
+          </h1>
           <p className="text-xs text-muted-foreground truncate">
             {motoristaNome ? `${motoristaNome} — ` : ''}{formatMatricula(viatura.matricula)}
           </p>
@@ -201,8 +224,13 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
 
-          <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4 text-sm text-blue-700 dark:text-blue-300">
-            <p className="font-medium">Recolha pronta para registar.</p>
+          <div className={cn(
+            'rounded-lg border p-4 text-sm',
+            isDevolucao
+              ? 'border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300'
+              : 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
+          )}>
+            <p className="font-medium">{isDevolucao ? 'Devolução pronta para registar.' : 'Recolha pronta para registar.'}</p>
             <p className="mt-0.5 opacity-80">Adicione fotos de checkin ou confirme sem fotos.</p>
           </div>
 
@@ -235,33 +263,47 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
             </div>
           )}
 
+          <CheckinDadosSection
+            viaturaId={viaturaId}
+            kmMinimo={viatura.km_atual ?? 0}
+            dados={checkinDados}
+            onChange={setCheckinDados}
+            tipo="checkin"
+            tipoCombustivel={viatura.combustivel ?? ''}
+            motoristaNome={motoristaNome}
+            matricula={formatMatricula(viatura.matricula)}
+            dataEvento={data}
+            contratoNumero={contrato?.numero_contrato}
+            accentClass={isDevolucao ? 'border-orange-200 dark:border-orange-800' : 'border-blue-200 dark:border-blue-800'}
+          />
+
           <div className="space-y-3">
             <Label>
-              Fotos / Vídeos de Checkin{' '}
+              Fotos / Vídeos{' '}
               <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
             </Label>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              className="hidden"
-              onChange={handleFileChange}
-            />
+            <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
+            <input ref={cameraInputRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileChange} />
 
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                'w-full rounded-lg border-2 border-dashed transition-colors py-8 flex flex-col items-center gap-2 text-sm text-muted-foreground',
-                'border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer'
-              )}
-            >
-              <Upload className="h-8 w-8 opacity-40" />
-              <span>Clique para adicionar fotos ou vídeos</span>
-              <span className="text-xs opacity-60">JPG, PNG, HEIC, MP4, MOV — máx. 100 MB</span>
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-colors py-6 flex flex-col items-center gap-2 text-sm text-muted-foreground"
+              >
+                <Camera className="h-6 w-6 opacity-40" />
+                <span>Câmara</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-colors py-6 flex flex-col items-center gap-2 text-sm text-muted-foreground"
+              >
+                <Upload className="h-6 w-6 opacity-40" />
+                <span>Galeria / Ficheiros</span>
+              </button>
+            </div>
 
             {files.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
