@@ -197,12 +197,10 @@ const ImportarTab = () => {
       const batchSize = 100;
       for (let i = 0; i < contacts.length; i += batchSize) {
         const batch = contacts.slice(i, i + batchSize);
-        const { error } = await supabase
-          .from('marketing_contactos')
-          .upsert(batch, {
-            onConflict: 'lista_id,email',
-            ignoreDuplicates: ignoreDuplicates && !updateExisting,
-          });
+        const { error } = await supabase.from('marketing_contactos').upsert(batch, {
+          onConflict: 'lista_id,email',
+          ignoreDuplicates: ignoreDuplicates && !updateExisting,
+        });
         if (error) throw error;
       }
 
