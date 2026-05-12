@@ -61,6 +61,9 @@ const viaturaSchema = z.object({
   data_matricula: z.string().optional(),
   observacoes: z.string().optional(),
   valor_aluguer: z.string().optional(),
+  valor_mensal: z.string().optional(),
+  valor_diario: z.string().optional(),
+  limite_km_mensal: z.string().optional(),
   is_slot: z.boolean().default(false),
   estacao_id: z.string().optional(),
   extintor_numero: z.string().optional(),
@@ -86,6 +89,9 @@ interface Viatura {
   data_matricula?: string | null;
   observacoes?: string | null;
   valor_aluguer?: number | null;
+  valor_mensal?: number | null;
+  valor_diario?: number | null;
+  limite_km_mensal?: number | null;
   is_slot?: boolean | null;
   estacao_id?: string | null;
   extintor_numero?: string | null;
@@ -187,6 +193,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       data_matricula: '',
       observacoes: '',
       valor_aluguer: '',
+      valor_mensal: '',
+      valor_diario: '',
+      limite_km_mensal: '',
       is_slot: false,
       estacao_id: '',
       extintor_numero: '',
@@ -212,6 +221,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
         data_matricula: viatura.data_matricula || '',
         observacoes: viatura.observacoes || '',
         valor_aluguer: viatura.valor_aluguer?.toString() || '',
+        valor_mensal: viatura.valor_mensal?.toString() || '',
+        valor_diario: viatura.valor_diario?.toString() || '',
+        limite_km_mensal: viatura.limite_km_mensal?.toString() || '',
         is_slot: viatura.is_slot || false,
         estacao_id: viatura.estacao_id || '',
         extintor_numero: viatura.extintor_numero || '',
@@ -261,6 +273,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       data_matricula: data.data_matricula || null,
       observacoes: data.observacoes || null,
       valor_aluguer: data.valor_aluguer ? parseFloat(data.valor_aluguer) : null,
+      valor_mensal: data.valor_mensal ? parseFloat(data.valor_mensal) : null,
+      valor_diario: data.valor_diario ? parseFloat(data.valor_diario) : null,
+      limite_km_mensal: data.limite_km_mensal ? parseInt(data.limite_km_mensal) : null,
       is_slot: data.is_slot,
       estacao_id: data.estacao_id || null,
       extintor_numero: data.extintor_numero || null,
@@ -554,25 +569,55 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="valor_aluguer"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Valor Aluguer (€)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="Ex: 250.00"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {(() => {
+                    const tipoIdAtual = form.watch('tipo_id');
+                    const tipoAtual = viaturasTipos.find(t => t.id === tipoIdAtual);
+                    const isComercial = tipoAtual?.nome?.toLowerCase() === 'comercial';
+                    return isComercial ? (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="valor_mensal"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Valor Mensal (€)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" min="0" placeholder="Ex: 800.00" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="valor_diario"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Valor Diário (€)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" min="0" placeholder="Ex: 35.00" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    ) : (
+                      <FormField
+                        control={form.control}
+                        name="valor_aluguer"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Valor Aluguer (€)</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" min="0" placeholder="Ex: 250.00" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    );
+                  })()}
                   <FormField
                     control={form.control}
                     name="tipo_id"
@@ -597,6 +642,24 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                             ))}
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="limite_km_mensal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Limite KM Mensal</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="Ex: 3000"
+                            {...field}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

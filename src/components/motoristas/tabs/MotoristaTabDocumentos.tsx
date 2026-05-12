@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format, differenceInDays } from "date-fns";
 import { pt } from "date-fns/locale";
 import {
@@ -16,7 +16,7 @@ import {
   Clock,
   PackageOpen,
   ArrowRight,
-  Sparkles,
+  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -113,6 +113,12 @@ function detectTipoFromFilename(filename: string): string {
   return "outros";
 }
 
+// Verifica se um tipo de documento tem campo de validade
+function tipoTemValidade(tipoValue: string): boolean {
+  const tipoDef = TIPOS_DOCUMENTO.find(t => t.value === tipoValue);
+  return !!(tipoDef as any)?.validityField || tipoValue === 'registo_criminal';
+}
+
 interface BatchFileEntry {
   file: File;
   tipoDetectado: string;
@@ -120,6 +126,7 @@ interface BatchFileEntry {
   reconhecido: boolean;
   isFinanceiro: boolean;
   valor: string; // apenas para tipos financeiros
+  validade: string; // data de validade (YYYY-MM-DD) para tipos com validade
 }
 
 interface MotoristaTabDocumentosProps {
@@ -136,14 +143,15 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
   const [documentoToDelete, setDocumentoToDelete] = useState<MotoristDocumento | null>(null);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
+  // Dialog de validade no upload individual
+  const [pendingUpload, setPendingUpload] = useState<{ tipo: string; file: File } | null>(null);
+  const [pendingValidade, setPendingValidade] = useState("");
+
   // Batch upload
   const batchInputRef = useRef<HTMLInputElement | null>(null);
   const [batchEntries, setBatchEntries] = useState<BatchFileEntry[]>([]);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [batchUploading, setBatchUploading] = useState(false);
-
-  // Re-extração de validade em documentos já anexados
-  const [reextractingTipo, setReextractingTipo] = useState<string | null>(null);
 
   useEffect(() => {
     loadDocumentos();
@@ -207,7 +215,7 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
     }
   };
 
-  const handleUpload = async (tipo: string, file: File) => {
+  const handleUpload = async (tipo: string, file: File, dataValidade?: string) => {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       toast.error("Ficheiro muito grande. Máximo: 10MB");
@@ -249,11 +257,14 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
           console.error("Erro ao atualizar motorista:", updateMotoristaError);
           throw new Error(`Erro na base de dados: ${updateMotoristaError.message}`);
         }
-        toast.success(`${tipoDef.label} atualizado com sucesso!`);
-        // Se tem campo de validade, tentar extração automática por IA
-        if (tipoDef.validityField) {
-          void extractAndConfirmValidade(filePath, file.type || '', tipoDef.validityField);
+        // Guardar validade se fornecida
+        if (dataValidade && tipoDef.validityField) {
+          await supabase
+            .from("motoristas_ativos")
+            .update({ [tipoDef.validityField]: dataValidade })
+            .eq("id", motorista.id);
         }
+        toast.success(`${tipoDef.label} atualizado com sucesso!`);
       } else {
         // Tipos extras guardados em motorista_documentos
         // Caso contrário, trata como documento extra na tabela secundária
@@ -266,6 +277,7 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
               ficheiro_url: filePath,
               nome_ficheiro: file.name,
               updated_at: new Date().toISOString(),
+              ...(dataValidade ? { data_validade: dataValidade } : {}),
             })
             .eq("id", existente.id);
 
@@ -277,16 +289,12 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
             tipo_documento: tipo,
             ficheiro_url: filePath,
             nome_ficheiro: file.name,
+            ...(dataValidade ? { data_validade: dataValidade } : {}),
           });
 
           if (insertError) throw insertError;
         }
         toast.success("Documento extra carregado com sucesso!");
-        // Tentar extração de validade por IA para tipos que têm data de validade
-        const TIPOS_COM_VALIDADE_EXTRA = ["registo_criminal"];
-        if (TIPOS_COM_VALIDADE_EXTRA.includes(tipo)) {
-          void extractAndConfirmValidade(filePath, file.type || '', null, tipo);
-        }
       }
 
       loadDocumentos();
@@ -379,78 +387,6 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
     fileInputRefs.current[tipo]?.click();
   };
 
-  const handleReextractValidade = async (tipo: typeof TIPOS_DOCUMENTO[number]) => {
-    const documento = getDocumentoByTipo(tipo.value, tipo.field);
-    if (!documento) return;
-
-    const filePath = documento.ficheiro_url;
-    // Inferir mimeType pela extensão
-    const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
-    const mimeType = ext === 'pdf' ? 'application/pdf' : ext === 'png' ? 'image/png' : 'image/jpeg';
-
-    setReextractingTipo(tipo.value);
-    try {
-      await extractAndConfirmValidade(filePath, mimeType, tipo.validityField ?? null, tipo.validityField ? undefined : tipo.value);
-    } finally {
-      setReextractingTipo(null);
-    }
-  };
-
-  // ── AI: extrai data de validade do documento ──────────────────────────────
-  // validityField → guarda em motoristas_ativos (campos oficiais)
-  // tipoDocumento → guarda em motorista_documentos.data_validade (RC, etc.)
-  const extractAndConfirmValidade = useCallback(async (
-    filePath: string,
-    mimeType: string,
-    validityField: string | null,
-    tipoDocumento?: string,
-  ) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('extract-document-expiry', {
-        body: { filePath, mimeType },
-      });
-      if (error || !data?.date) return;
-
-      const dateFormatted = format(new Date(data.date), 'dd/MM/yyyy', { locale: pt });
-
-      toast(`🤖 Validade detetada: ${dateFormatted}`, {
-        description: 'A IA identificou uma data de validade. Deseja aplicar?',
-        duration: 20000,
-        action: {
-          label: 'Aplicar',
-          onClick: async () => {
-            let updErr = null;
-            if (validityField) {
-              // Campo oficial em motoristas_ativos
-              const { error: e } = await supabase
-                .from('motoristas_ativos')
-                .update({ [validityField]: data.date })
-                .eq('id', motorista.id);
-              updErr = e;
-            } else if (tipoDocumento) {
-              // Guarda em motorista_documentos.data_validade
-              const { error: e } = await supabase
-                .from('motorista_documentos')
-                .update({ data_validade: data.date })
-                .eq('motorista_id', motorista.id)
-                .eq('tipo_documento', tipoDocumento);
-              updErr = e;
-            }
-            if (updErr) {
-              toast.error('Erro ao guardar a validade');
-            } else {
-              toast.success('Validade atualizada automaticamente!');
-              loadDocumentos();
-              if (onMotoristaUpdated) onMotoristaUpdated();
-            }
-          },
-        },
-      });
-    } catch {
-      // silently ignore — AI extraction is best-effort
-    }
-  }, [motorista.id, onMotoristaUpdated, loadDocumentos]);
-
   const handleBatchSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -468,6 +404,7 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
         reconhecido: tipo !== "outros",
         isFinanceiro,
         valor: "",
+        validade: "",
       };
     });
     setBatchEntries(entries);
@@ -519,7 +456,7 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
           toast.error(`Erro ao processar "${entry.file.name}": ${err.message}`);
         }
       } else {
-        await handleUpload(entry.tipoDetectado, entry.file);
+        await handleUpload(entry.tipoDetectado, entry.file, entry.validade || undefined);
       }
     }
 
@@ -691,7 +628,14 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
                         accept=".pdf,.jpg,.jpeg,.png"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) handleUpload(tipo.value, file);
+                          if (file) {
+                            if (tipoTemValidade(tipo.value)) {
+                              setPendingUpload({ tipo: tipo.value, file });
+                              setPendingValidade("");
+                            } else {
+                              handleUpload(tipo.value, file);
+                            }
+                          }
                           e.target.value = "";
                         }}
                       />
@@ -704,20 +648,6 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
                           <Button variant="ghost" size="icon" onClick={() => handleDownload(documento)} title="Download">
                             <Download className="h-4 w-4" />
                           </Button>
-                          {(tipo.validityField || tipo.value === 'registo_criminal') && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleReextractValidade(tipo)}
-                              disabled={reextractingTipo === tipo.value}
-                              title="Re-extrair validade com IA"
-                              className="text-violet-500 hover:text-violet-600"
-                            >
-                              {reextractingTipo === tipo.value
-                                ? <RefreshCw className="h-4 w-4 animate-spin" />
-                                : <Sparkles className="h-4 w-4" />}
-                            </Button>
-                          )}
                           <Button variant="ghost" size="icon" onClick={() => triggerFileInput(tipo.value)} disabled={uploading === tipo.value} title="Substituir">
                             <RefreshCw className={`h-4 w-4 ${uploading === tipo.value ? "animate-spin" : ""}`} />
                           </Button>
@@ -811,6 +741,24 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
                     />
                   </div>
                 )}
+                {!entry.isFinanceiro && tipoTemValidade(entry.tipoDetectado) && (
+                  <div className="flex items-center gap-2 pl-7">
+                    <CalendarDays className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                    <Label className="text-xs text-blue-700 dark:text-blue-400 shrink-0">
+                      Validade
+                    </Label>
+                    <Input
+                      type="date"
+                      className="h-7 text-sm w-40"
+                      value={entry.validade}
+                      onChange={e => {
+                        setBatchEntries(prev =>
+                          prev.map((item, idx) => idx === i ? { ...item, validade: e.target.value } : item)
+                        );
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -829,6 +777,53 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
             <Button onClick={handleBatchUpload} disabled={batchUploading}>
               {batchUploading ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
               {batchUploading ? "A carregar..." : `Carregar ${batchEntries.length} ficheiro(s)`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de validade no upload individual */}
+      <Dialog open={!!pendingUpload} onOpenChange={open => { if (!open) setPendingUpload(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-blue-500" />
+              Data de Validade
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Introduza a data de validade do documento (opcional).
+          </p>
+          <Input
+            type="date"
+            value={pendingValidade}
+            onChange={e => setPendingValidade(e.target.value)}
+            className="w-full"
+          />
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (pendingUpload) {
+                  handleUpload(pendingUpload.tipo, pendingUpload.file);
+                  setPendingUpload(null);
+                  setPendingValidade("");
+                }
+              }}
+            >
+              Saltar
+            </Button>
+            <Button
+              onClick={() => {
+                if (pendingUpload) {
+                  handleUpload(pendingUpload.tipo, pendingUpload.file, pendingValidade || undefined);
+                  setPendingUpload(null);
+                  setPendingValidade("");
+                }
+              }}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Carregar
             </Button>
           </DialogFooter>
         </DialogContent>
