@@ -5,11 +5,25 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, Camera, CheckCircle, FileSignature, Film, Loader2, Upload, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  Camera,
+  CheckCircle,
+  FileSignature,
+  Film,
+  Loader2,
+  Upload,
+  X,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatMatricula } from './calendarioUtils';
 import type { PendingEventoData } from './NovoEventoPage';
-import { CheckinDadosSection, emptyCheckinDados, validateCheckinDados, saveCheckinDados } from './CheckinDadosSection';
+import {
+  CheckinDadosSection,
+  emptyCheckinDados,
+  validateCheckinDados,
+  saveCheckinDados,
+} from './CheckinDadosSection';
 import type { CheckinDadosState } from './CheckinDadosSection';
 
 export interface RecolhaCheckinStepProps {
@@ -25,10 +39,23 @@ interface SelectedFile {
 }
 
 export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
-  eventoData, onConcluir, onVoltar,
+  eventoData,
+  onConcluir,
+  onVoltar,
 }) => {
-  const { motoristaId, motoristaNome, viaturaId, viatura, userId,
-          data, hora, diaTodo, observacoes, estacaoId, estacaoNome } = eventoData;
+  const {
+    motoristaId,
+    motoristaNome,
+    viaturaId,
+    viatura,
+    userId,
+    data,
+    hora,
+    diaTodo,
+    observacoes,
+    estacaoId,
+    estacaoNome,
+  } = eventoData;
   const fazerDepois = eventoData.fazerDepois ?? false;
 
   const queryClient = useQueryClient();
@@ -61,9 +88,9 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || []);
-    setFiles(prev => [
+    setFiles((prev) => [
       ...prev,
-      ...selected.map(f => ({
+      ...selected.map((f) => ({
         id: Math.random().toString(36).slice(2),
         file: f,
         preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
@@ -73,10 +100,10 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
   };
 
   const removeFile = (id: string) => {
-    setFiles(prev => {
-      const f = prev.find(x => x.id === id);
+    setFiles((prev) => {
+      const f = prev.find((x) => x.id === id);
       if (f?.preview) URL.revokeObjectURL(f.preview);
-      return prev.filter(x => x.id !== id);
+      return prev.filter((x) => x.id !== id);
     });
   };
 
@@ -86,8 +113,15 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
         toast.error('Adicione pelo menos uma foto/vídeo ou registe um dano com foto');
         return;
       }
-      const checkinErr = validateCheckinDados(checkinDados, viatura.km_atual ?? 0, viatura.combustivel ?? '');
-      if (checkinErr) { toast.error(checkinErr); return; }
+      const checkinErr = validateCheckinDados(
+        checkinDados,
+        viatura.km_atual ?? 0,
+        viatura.combustivel ?? ''
+      );
+      if (checkinErr) {
+        toast.error(checkinErr);
+        return;
+      }
     }
     setSaving(true);
     try {
@@ -108,7 +142,11 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
       };
       if (motoristaId) eventoPayload.motorista_id = motoristaId;
 
-      let evResult = await supabase.from('calendario_eventos').insert(eventoPayload).select('id').single();
+      let evResult = await supabase
+        .from('calendario_eventos')
+        .insert(eventoPayload)
+        .select('id')
+        .single();
       if (evResult.error) {
         const { motorista_id: _, ...fallback } = eventoPayload;
         evResult = await supabase.from('calendario_eventos').insert(fallback).select('id').single();
@@ -134,27 +172,40 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
       }
 
       // 3. Viatura status
-      await supabase.from('viaturas')
-        .update(fazerDepois
-          ? { status: 'em_recolha', estacao_id: null }
-          : { status: 'disponivel', estacao_id: estacaoId || null })
+      await supabase
+        .from('viaturas')
+        .update(
+          fazerDepois
+            ? { status: 'em_recolha', estacao_id: null }
+            : { status: 'disponivel', estacao_id: estacaoId || null }
+        )
         .eq('id', viaturaId);
 
       // 4. Notification (fire & forget)
       try {
         await supabase.functions.invoke('send-calendar-notification', {
-          body: { matricula: eventoPayload.titulo, cidade: estacaoNome, tipo: 'recolha', data_inicio: dataISO, dia_todo: diaTodo },
+          body: {
+            matricula: eventoPayload.titulo,
+            cidade: estacaoNome,
+            tipo: 'recolha',
+            data_inicio: dataISO,
+            dia_todo: diaTodo,
+          },
         });
-      } catch { /* non-critical */ }
+      } catch {
+        /* non-critical */
+      }
 
       // 5. Contrato
       if (contrato) {
         if (fazerDepois) {
-          await supabase.from('contratos')
+          await supabase
+            .from('contratos')
             .update({ checkin_pendente: true, calendario_evento_id: eventoId })
             .eq('id', contrato.id);
         } else {
-          await supabase.from('contratos')
+          await supabase
+            .from('contratos')
             .update({ status: 'encerrado', calendario_evento_id: eventoId })
             .eq('id', contrato.id);
         }
@@ -163,7 +214,13 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
       if (!fazerDepois) {
         // 6. KM, combustivel, danos
         if (contrato) {
-          await saveCheckinDados({ dados: checkinDados, contratoId: contrato.id, viaturaId, userId, tipo: 'checkin' });
+          await saveCheckinDados({
+            dados: checkinDados,
+            contratoId: contrato.id,
+            viaturaId,
+            userId,
+            tipo: 'checkin',
+          });
         }
 
         // 7. Upload checkin media
@@ -199,8 +256,12 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
 
       toast.success(
         fazerDepois
-          ? (isDevolucao ? 'Devolução registada — check-in pendente' : 'Recolha registada — check-in pendente')
-          : (isDevolucao ? 'Devolução confirmada' : 'Recolha confirmada'),
+          ? isDevolucao
+            ? 'Devolução registada — check-in pendente'
+            : 'Recolha registada — check-in pendente'
+          : isDevolucao
+            ? 'Devolução confirmada'
+            : 'Recolha confirmada'
       );
       setDone(true);
       setTimeout(() => onConcluir(), 1500);
@@ -214,8 +275,12 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
   if (done) {
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-4">
-        <CheckCircle className={cn('h-16 w-16', isDevolucao ? 'text-orange-500' : 'text-blue-500')} />
-        <p className="text-xl font-semibold">{isDevolucao ? 'Devolução confirmada!' : 'Recolha confirmada!'}</p>
+        <CheckCircle
+          className={cn('h-16 w-16', isDevolucao ? 'text-orange-500' : 'text-blue-500')}
+        />
+        <p className="text-xl font-semibold">
+          {isDevolucao ? 'Devolução confirmada!' : 'Recolha confirmada!'}
+        </p>
       </div>
     );
   }
@@ -223,7 +288,13 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b border-border px-4 py-3 bg-card shrink-0">
-        <Button variant="ghost" size="icon" onClick={onVoltar} className="shrink-0" disabled={saving}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onVoltar}
+          className="shrink-0"
+          disabled={saving}
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 min-w-0">
@@ -231,33 +302,40 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
             {isDevolucao ? 'Checkin de Devolução' : 'Checkin de Recolha'}
           </h1>
           <p className="text-xs text-muted-foreground truncate">
-            {motoristaNome ? `${motoristaNome} — ` : ''}{formatMatricula(viatura.matricula)}
+            {motoristaNome ? `${motoristaNome} — ` : ''}
+            {formatMatricula(viatura.matricula)}
           </p>
         </div>
         <Button onClick={handleConfirm} disabled={saving} className="shrink-0">
-          {saving
-            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...</>
-            : 'Confirmar'}
+          {saving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...
+            </>
+          ) : (
+            'Confirmar'
+          )}
         </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-
-          <div className={cn(
-            'rounded-lg border p-4 text-sm',
-            isDevolucao
-              ? 'border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300'
-              : 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
-          )}>
-            <p className="font-medium">{isDevolucao ? 'Devolução pronta para registar.' : 'Recolha pronta para registar.'}</p>
+          <div
+            className={cn(
+              'rounded-lg border p-4 text-sm',
+              isDevolucao
+                ? 'border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300'
+                : 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
+            )}
+          >
+            <p className="font-medium">
+              {isDevolucao ? 'Devolução pronta para registar.' : 'Recolha pronta para registar.'}
+            </p>
             <p className="mt-0.5 opacity-80">Adicione fotos de checkin ou confirme sem fotos.</p>
           </div>
 
           {loadingContrato ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              A verificar contrato ativo...
+              <Loader2 className="h-4 w-4 animate-spin" />A verificar contrato ativo...
             </div>
           ) : contrato ? (
             <div className="rounded-lg border border-border p-4 space-y-2">
@@ -296,17 +374,37 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
                 matricula={formatMatricula(viatura.matricula)}
                 dataEvento={data}
                 contratoNumero={contrato?.numero_contrato}
-                accentClass={isDevolucao ? 'border-orange-200 dark:border-orange-800' : 'border-blue-200 dark:border-blue-800'}
+                accentClass={
+                  isDevolucao
+                    ? 'border-orange-200 dark:border-orange-800'
+                    : 'border-blue-200 dark:border-blue-800'
+                }
               />
 
               <div className="space-y-3">
                 <Label>
                   Fotos / Vídeos{' '}
-                  <span className="text-muted-foreground font-normal text-xs">(obrigatório se sem danos)</span>
+                  <span className="text-muted-foreground font-normal text-xs">
+                    (obrigatório se sem danos)
+                  </span>
                 </Label>
 
-                <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
-                <input ref={cameraInputRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileChange} />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -329,10 +427,17 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
 
                 {files.length > 0 && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {files.map(f => (
-                      <div key={f.id} className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted">
+                    {files.map((f) => (
+                      <div
+                        key={f.id}
+                        className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted"
+                      >
                         {f.preview ? (
-                          <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
+                          <img
+                            src={f.preview}
+                            alt={f.file.name}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
                             <Film className="h-6 w-6 text-muted-foreground" />
@@ -355,7 +460,6 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
               </div>
             </>
           )}
-
         </div>
       </div>
     </div>

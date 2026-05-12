@@ -200,7 +200,9 @@ export const SidebarMenu: React.FC = () => {
                 SISTEMA
               </div>
               <div className="space-y-1 mb-2">
-                <NavItem item={{ label: 'Administração', url: '/admin/settings', icon: Settings }} />
+                <NavItem
+                  item={{ label: 'Administração', url: '/admin/settings', icon: Settings }}
+                />
               </div>
             </>
           )}

@@ -54,15 +54,24 @@ export const TicketAccessPanel = forwardRef<TicketAccessPanelRef, TicketAccessPa
               .select(`profile_id, profiles!profile_id (id, nome, cargo, is_admin, cargo_id)`)
               .eq('ticket_id', targetId),
             supabase.from('assistencia_tickets').select('criado_por').eq('id', targetId).single(),
-            supabase.from('profiles').select('id, nome, cargo, is_admin, cargo_id').eq('is_admin', true),
-            supabase.from('profiles').select('id, nome, cargo, is_admin, cargo_id').in('cargo_id', GESTOR_CARGO_IDS),
-            supabase.from('profiles').select('id, nome, cargo, is_admin, cargo_id').ilike('cargo', '%Gestor%Assist%'),
+            supabase
+              .from('profiles')
+              .select('id, nome, cargo, is_admin, cargo_id')
+              .eq('is_admin', true),
+            supabase
+              .from('profiles')
+              .select('id, nome, cargo, is_admin, cargo_id')
+              .in('cargo_id', GESTOR_CARGO_IDS),
+            supabase
+              .from('profiles')
+              .select('id, nome, cargo, is_admin, cargo_id')
+              .ilike('cargo', '%Gestor%Assist%'),
           ]);
 
         const peopleMap = new Map<string, any>();
-        adminsRes.data?.forEach(p => peopleMap.set(p.id, p));
-        gestoresByIdRes.data?.forEach(p => peopleMap.set(p.id, p));
-        gestoresByNomeRes.data?.forEach(p => peopleMap.set(p.id, p));
+        adminsRes.data?.forEach((p) => peopleMap.set(p.id, p));
+        gestoresByIdRes.data?.forEach((p) => peopleMap.set(p.id, p));
+        gestoresByNomeRes.data?.forEach((p) => peopleMap.set(p.id, p));
 
         if (ticketRes.data?.criado_por) {
           const { data: creator } = await supabase
@@ -95,7 +104,7 @@ export const TicketAccessPanel = forwardRef<TicketAccessPanelRef, TicketAccessPa
           .limit(100);
 
         const seenNames = new Set<string>();
-        const filtered = (data || []).filter(p => {
+        const filtered = (data || []).filter((p) => {
           if (!p.nome) return false;
           const isStaff = p.is_admin || (p.cargo && p.cargo.length > 2);
           if (!isStaff) return false;
@@ -184,14 +193,14 @@ export const TicketAccessPanel = forwardRef<TicketAccessPanelRef, TicketAccessPa
                   placeholder="Pesquisar utilizador..."
                   className="pl-9"
                   value={searchUser}
-                  onChange={e => setSearchUser(e.target.value)}
+                  onChange={(e) => setSearchUser(e.target.value)}
                 />
               </div>
               <ScrollArea className="h-[300px]">
                 <div className="space-y-2">
                   {allProfiles
-                    .filter(p => p.nome?.toLowerCase().includes(searchUser.toLowerCase()))
-                    .map(profile => (
+                    .filter((p) => p.nome?.toLowerCase().includes(searchUser.toLowerCase()))
+                    .map((profile) => (
                       <button
                         key={profile.id}
                         onClick={() => handleAddAccess(profile.id)}
@@ -205,7 +214,9 @@ export const TicketAccessPanel = forwardRef<TicketAccessPanelRef, TicketAccessPa
                           <div>
                             <p className="font-medium text-sm">{profile.nome}</p>
                             <p className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-2">
-                              <span>{profile.is_admin ? 'Administrador' : profile.cargo || 'Sem Cargo'}</span>
+                              <span>
+                                {profile.is_admin ? 'Administrador' : profile.cargo || 'Sem Cargo'}
+                              </span>
                               {profile.created_at && (
                                 <span className="opacity-50 font-normal">
                                   Criado em: {new Date(profile.created_at).toLocaleDateString()}
@@ -238,14 +249,19 @@ export const TicketAccessPanel = forwardRef<TicketAccessPanelRef, TicketAccessPa
             </DialogHeader>
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-4">
-                {acessos.map(user => (
-                  <div key={user.id} className="flex items-center gap-3 p-2 rounded-lg border bg-muted/30">
+                {acessos.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center gap-3 p-2 rounded-lg border bg-muted/30"
+                  >
                     <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center font-bold">
                       {user.nome?.substring(0, 2).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{user.nome}</p>
-                      <p className="text-xs text-muted-foreground uppercase">{user.cargo || 'Colaborador'}</p>
+                      <p className="text-xs text-muted-foreground uppercase">
+                        {user.cargo || 'Colaborador'}
+                      </p>
                     </div>
                     {canManageAccess && user.id !== criadoPor && (
                       <Button
@@ -265,7 +281,7 @@ export const TicketAccessPanel = forwardRef<TicketAccessPanelRef, TicketAccessPa
         </Dialog>
       </>
     );
-  },
+  }
 );
 
 TicketAccessPanel.displayName = 'TicketAccessPanel';

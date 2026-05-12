@@ -8,7 +8,10 @@ export function formatCurrency(value: number | null | undefined): string {
 
 export function formatNumber(value: number | null | undefined, decimals = 0): string {
   if (value == null) return '0';
-  return value.toLocaleString('pt-PT', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  return value.toLocaleString('pt-PT', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
 }
 
 export function formatDate(date: string | Date | null | undefined, fmt = 'dd/MM/yyyy'): string {

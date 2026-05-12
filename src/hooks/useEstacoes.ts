@@ -22,10 +22,7 @@ export function useEstacoes(options: UseEstacoesOptions = {}) {
   return useQuery({
     queryKey: ['estacoes', { apenasAtivas }],
     queryFn: async () => {
-      let q = supabase
-        .from('estacoes')
-        .select('id, nome, morada, cidade, ativa')
-        .order('nome');
+      let q = supabase.from('estacoes').select('id, nome, morada, cidade, ativa').order('nome');
 
       if (apenasAtivas) q = q.eq('ativa', true);
 

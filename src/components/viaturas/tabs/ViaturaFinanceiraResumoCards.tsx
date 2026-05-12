@@ -23,7 +23,9 @@ export function ViaturaFinanceiraResumoCards({
       <Card className="bg-background border-border shadow-sm">
         <CardContent className="p-4">
           <div className="flex items-center justify-between space-y-0 pb-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Custo Aquisição</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Custo Aquisição
+            </p>
             <Coins className="h-4 w-4 text-primary" />
           </div>
           <div className="text-xl font-bold">{formatCurrency(totalAquisicaoVal)}</div>
@@ -33,7 +35,9 @@ export function ViaturaFinanceiraResumoCards({
       <Card className="bg-background border-border shadow-sm">
         <CardContent className="p-4">
           <div className="flex items-center justify-between space-y-0 pb-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Restante Financiamento</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Restante Financiamento
+            </p>
             <Calendar className="h-4 w-4 text-blue-500" />
           </div>
           <div className="text-xl font-bold">
@@ -45,35 +49,52 @@ export function ViaturaFinanceiraResumoCards({
       <Card className="bg-background border-border shadow-sm">
         <CardContent className="p-4">
           <div className="flex items-center justify-between space-y-0 pb-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Receitas Totais</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Receitas Totais
+            </p>
             <TrendingUp className="h-4 w-4 text-green-500" />
           </div>
-          <div className="text-xl font-bold text-green-600 dark:text-green-400">{formatCurrency(totalReceitasVal)}</div>
+          <div className="text-xl font-bold text-green-600 dark:text-green-400">
+            {formatCurrency(totalReceitasVal)}
+          </div>
         </CardContent>
       </Card>
 
       <Card className="bg-background border-border shadow-sm">
         <CardContent className="p-4">
           <div className="flex items-center justify-between space-y-0 pb-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Despesas Totais</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Despesas Totais
+            </p>
             <TrendingDown className="h-4 w-4 text-red-500" />
           </div>
-          <div className="text-xl font-bold text-red-600 dark:text-red-400">{formatCurrency(totalDespesasVal)}</div>
+          <div className="text-xl font-bold text-red-600 dark:text-red-400">
+            {formatCurrency(totalDespesasVal)}
+          </div>
         </CardContent>
       </Card>
 
       <Card
         className={cn(
           'border-border shadow-sm',
-          rentabilidadePerc >= 0 ? 'bg-green-50/50 dark:bg-green-950/20' : 'bg-red-50/50 dark:bg-red-950/20',
+          rentabilidadePerc >= 0
+            ? 'bg-green-50/50 dark:bg-green-950/20'
+            : 'bg-red-50/50 dark:bg-red-950/20'
         )}
       >
         <CardContent className="p-4">
           <div className="flex items-center justify-between space-y-0 pb-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Rentabilidade</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Rentabilidade
+            </p>
             <Activity className="h-4 w-4 text-primary" />
           </div>
-          <div className={cn('text-xl font-bold', rentabilidadePerc >= 0 ? 'text-primary' : 'text-red-500')}>
+          <div
+            className={cn(
+              'text-xl font-bold',
+              rentabilidadePerc >= 0 ? 'text-primary' : 'text-red-500'
+            )}
+          >
             {formatPercentage(rentabilidadePerc, 2)}
           </div>
         </CardContent>

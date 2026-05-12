@@ -18,12 +18,42 @@ interface Props {
 }
 
 const TIPOS = [
-  { value: 'entrega',   label: 'Entrega',             color: 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400',   desc: 'Entregar viatura a um motorista' },
-  { value: 'recolha',   label: 'Recolha',             color: 'border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-400',       desc: 'Motorista entrega a viatura — pendente chegada ao parque' },
-  { value: 'devolucao', label: 'Devolução',           color: 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-400', desc: 'Viatura já entregue no parque — fica disponível imediatamente' },
-  { value: 'troca',     label: 'Troca',               color: 'border-purple-500 bg-purple-500/10 text-purple-700 dark:text-purple-400', desc: 'Substituir viatura para o mesmo motorista' },
-  { value: 'upgrade',       label: 'Upgrade / Downgrade', color: 'border-yellow-500 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400', desc: 'Mudar categoria de viatura (impacto no dashboard)' },
-  { value: 'lista_espera',  label: 'Lista de Espera',     color: 'border-pink-500 bg-pink-500/10 text-pink-700 dark:text-pink-400',       desc: 'Motorista aguarda viatura — regista marca e modelo pretendido' },
+  {
+    value: 'entrega',
+    label: 'Entrega',
+    color: 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400',
+    desc: 'Entregar viatura a um motorista',
+  },
+  {
+    value: 'recolha',
+    label: 'Recolha',
+    color: 'border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-400',
+    desc: 'Motorista entrega a viatura — pendente chegada ao parque',
+  },
+  {
+    value: 'devolucao',
+    label: 'Devolução',
+    color: 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-400',
+    desc: 'Viatura já entregue no parque — fica disponível imediatamente',
+  },
+  {
+    value: 'troca',
+    label: 'Troca',
+    color: 'border-purple-500 bg-purple-500/10 text-purple-700 dark:text-purple-400',
+    desc: 'Substituir viatura para o mesmo motorista',
+  },
+  {
+    value: 'upgrade',
+    label: 'Upgrade / Downgrade',
+    color: 'border-yellow-500 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
+    desc: 'Mudar categoria de viatura (impacto no dashboard)',
+  },
+  {
+    value: 'lista_espera',
+    label: 'Lista de Espera',
+    color: 'border-pink-500 bg-pink-500/10 text-pink-700 dark:text-pink-400',
+    desc: 'Motorista aguarda viatura — regista marca e modelo pretendido',
+  },
 ];
 
 function toLocalDate(iso: string): string {
@@ -69,13 +99,15 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
         data_fim: null,
         dia_todo: diaTodo,
         descricao: observacoes.trim() || null,
-        matricula_devolver: (tipo === 'troca' || tipo === 'upgrade')
-          ? (matriculaDevolver.toUpperCase().replace(/[-\s]/g, '') || null)
-          : null,
+        matricula_devolver:
+          tipo === 'troca' || tipo === 'upgrade'
+            ? matriculaDevolver.toUpperCase().replace(/[-\s]/g, '') || null
+            : null,
       };
 
       // Record changes for history
-      const changes: { campo: string; valor_anterior: string | null; valor_novo: string | null }[] = [];
+      const changes: { campo: string; valor_anterior: string | null; valor_novo: string | null }[] =
+        [];
       const compare = (campo: string, oldVal: any, newVal: any) => {
         const o = oldVal == null ? null : String(oldVal);
         const n = newVal == null ? null : String(newVal);
@@ -89,12 +121,21 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
       compare('descricao', evento.descricao, payload.descricao);
       compare('matricula_devolver', evento.matricula_devolver, payload.matricula_devolver);
 
-      const { error } = await supabase.from('calendario_eventos').update(payload).eq('id', evento.id);
+      const { error } = await supabase
+        .from('calendario_eventos')
+        .update(payload)
+        .eq('id', evento.id);
       if (error) throw error;
 
       if (changes.length > 0) {
         await supabase.from('calendario_eventos_historico').insert(
-          changes.map(c => ({ evento_id: evento.id, editado_por: userId, campo: c.campo, valor_anterior: c.valor_anterior, valor_novo: c.valor_novo }))
+          changes.map((c) => ({
+            evento_id: evento.id,
+            editado_por: userId,
+            campo: c.campo,
+            valor_anterior: c.valor_anterior,
+            valor_novo: c.valor_novo,
+          }))
         );
       }
     },
@@ -107,11 +148,10 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
   });
 
   const canSave = !!matricula.trim() && !!data;
-  const tipoInfo = TIPOS.find(t => t.value === tipo);
+  const tipoInfo = TIPOS.find((t) => t.value === tipo);
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
-
       {/* ── Header ── */}
       <div className="flex items-center gap-3 border-b border-border px-4 py-3 bg-card shrink-0">
         <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0">
@@ -119,26 +159,31 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
         </Button>
         <div className="flex-1 min-w-0">
           <h1 className="text-base font-semibold leading-tight">Editar Evento</h1>
-          {tipoInfo && (
-            <p className="text-xs text-muted-foreground truncate">{tipoInfo.desc}</p>
-          )}
+          {tipoInfo && <p className="text-xs text-muted-foreground truncate">{tipoInfo.desc}</p>}
         </div>
-        <Button onClick={() => mutation.mutate()} disabled={!canSave || mutation.isPending} className="shrink-0">
-          {mutation.isPending
-            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...</>
-            : 'Guardar'}
+        <Button
+          onClick={() => mutation.mutate()}
+          disabled={!canSave || mutation.isPending}
+          className="shrink-0"
+        >
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...
+            </>
+          ) : (
+            'Guardar'
+          )}
         </Button>
       </div>
 
       {/* ── Body ── */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-
           {/* Tipo de Evento */}
           <div className="space-y-2">
             <Label>Tipo de Evento</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {TIPOS.map(t => (
+              {TIPOS.map((t) => (
                 <button
                   key={t.value}
                   type="button"
@@ -151,7 +196,12 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
                   )}
                 >
                   <div className="font-medium">{t.label}</div>
-                  <div className={cn('text-xs mt-0.5 leading-tight', tipo === t.value ? 'opacity-80' : 'text-muted-foreground')}>
+                  <div
+                    className={cn(
+                      'text-xs mt-0.5 leading-tight',
+                      tipo === t.value ? 'opacity-80' : 'text-muted-foreground'
+                    )}
+                  >
                     {t.desc}
                   </div>
                 </button>
@@ -173,7 +223,7 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
               <Input
                 id="matricula"
                 value={matricula}
-                onChange={e => setMatricula(e.target.value.toUpperCase())}
+                onChange={(e) => setMatricula(e.target.value.toUpperCase())}
                 placeholder="Ex: AA-00-AA"
                 className="font-mono"
               />
@@ -188,7 +238,7 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
                 <Input
                   id="matricula-devolver"
                   value={matriculaDevolver}
-                  onChange={e => setMatriculaDevolver(e.target.value.toUpperCase())}
+                  onChange={(e) => setMatriculaDevolver(e.target.value.toUpperCase())}
                   placeholder="Ex: AA-00-AA"
                   className="font-mono"
                 />
@@ -206,7 +256,12 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="data">Data *</Label>
-                <Input id="data" type="date" value={data} onChange={e => setData(e.target.value)} />
+                <Input
+                  id="data"
+                  type="date"
+                  value={data}
+                  onChange={(e) => setData(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center gap-3">
@@ -215,7 +270,7 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
                     <input
                       type="checkbox"
                       checked={diaTodo}
-                      onChange={e => setDiaTodo(e.target.checked)}
+                      onChange={(e) => setDiaTodo(e.target.checked)}
                       className="rounded"
                     />
                     Dia inteiro
@@ -225,7 +280,7 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
                   id="hora"
                   type="time"
                   value={hora}
-                  onChange={e => setHora(e.target.value)}
+                  onChange={(e) => setHora(e.target.value)}
                   disabled={diaTodo}
                 />
               </div>
@@ -239,7 +294,7 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
               <Input
                 id="cidade"
                 value={cidade}
-                onChange={e => setCidade(e.target.value)}
+                onChange={(e) => setCidade(e.target.value)}
                 placeholder="Ex: Lisboa, Porto, Faro..."
               />
             </div>
@@ -251,12 +306,11 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
             <Textarea
               id="obs"
               value={observacoes}
-              onChange={e => setObservacoes(e.target.value)}
+              onChange={(e) => setObservacoes(e.target.value)}
               placeholder="Notas adicionais sobre este evento..."
               rows={3}
             />
           </div>
-
         </div>
       </div>
     </div>

@@ -16,7 +16,7 @@ interface ListaEsperaDrawerProps {
 
 interface ListaEsperaEvento {
   id: string;
-  titulo: string;        // marca + modelo
+  titulo: string; // marca + modelo
   motorista_id: string | null;
   criado_por: string;
   created_at: string;
@@ -25,7 +25,9 @@ interface ListaEsperaEvento {
 }
 
 export const ListaEsperaDrawer: React.FC<ListaEsperaDrawerProps> = ({
-  open, onOpenChange, canManage,
+  open,
+  onOpenChange,
+  canManage,
 }) => {
   const queryClient = useQueryClient();
 
@@ -42,8 +44,10 @@ export const ListaEsperaDrawer: React.FC<ListaEsperaDrawerProps> = ({
       if (!data || data.length === 0) return [];
 
       // Fetch motorista names
-      const motoristaIds = [...new Set(data.map(e => e.motorista_id).filter(Boolean))] as string[];
-      const gestorIds = [...new Set(data.map(e => e.criado_por))];
+      const motoristaIds = [
+        ...new Set(data.map((e) => e.motorista_id).filter(Boolean)),
+      ] as string[];
+      const gestorIds = [...new Set(data.map((e) => e.criado_por))];
 
       const [motoristasRes, gestoresRes] = await Promise.all([
         motoristaIds.length > 0
@@ -53,15 +57,13 @@ export const ListaEsperaDrawer: React.FC<ListaEsperaDrawerProps> = ({
       ]);
 
       const motoristasMap = Object.fromEntries(
-        (motoristasRes.data || []).map(m => [m.id, m.nome])
+        (motoristasRes.data || []).map((m) => [m.id, m.nome])
       );
-      const gestoresMap = Object.fromEntries(
-        (gestoresRes.data || []).map(p => [p.id, p.nome])
-      );
+      const gestoresMap = Object.fromEntries((gestoresRes.data || []).map((p) => [p.id, p.nome]));
 
-      return data.map(e => ({
+      return data.map((e) => ({
         ...e,
-        motoristaNome: e.motorista_id ? (motoristasMap[e.motorista_id] || null) : null,
+        motoristaNome: e.motorista_id ? motoristasMap[e.motorista_id] || null : null,
         gestorNome: gestoresMap[e.criado_por] || null,
       })) as ListaEsperaEvento[];
     },
@@ -100,7 +102,7 @@ export const ListaEsperaDrawer: React.FC<ListaEsperaDrawerProps> = ({
               Sem entradas na lista de espera.
             </p>
           )}
-          {lista.map(entry => (
+          {lista.map((entry) => (
             <div
               key={entry.id}
               className="border border-l-4 border-l-pink-500 rounded-lg p-3 bg-card space-y-2"
@@ -123,7 +125,11 @@ export const ListaEsperaDrawer: React.FC<ListaEsperaDrawerProps> = ({
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <CalendarDays className="h-3 w-3 shrink-0" />
-                    <span>{format(new Date(entry.created_at), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: pt })}</span>
+                    <span>
+                      {format(new Date(entry.created_at), "d 'de' MMMM 'de' yyyy, HH:mm", {
+                        locale: pt,
+                      })}
+                    </span>
                   </div>
                 </div>
                 {canManage && (

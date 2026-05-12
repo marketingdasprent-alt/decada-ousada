@@ -20,8 +20,7 @@ interface TicketGalleryDialogProps {
 
 function MediaThumb({ anexo, onClick }: { anexo: Anexo; onClick: () => void }) {
   const isVideo =
-    anexo.tipo_ficheiro === 'video' ||
-    anexo.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i);
+    anexo.tipo_ficheiro === 'video' || anexo.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i);
   return (
     <div
       className="group relative aspect-square rounded-lg border overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all"
@@ -51,10 +50,10 @@ export function TicketGalleryDialog({
   onOpenLightbox,
 }: TicketGalleryDialogProps) {
   const checkinAnexos = anexos.filter(
-    a => !a.tipo_inspecao || a.tipo_inspecao === 'checkin' || a.tipo_inspecao === 'entrada',
+    (a) => !a.tipo_inspecao || a.tipo_inspecao === 'checkin' || a.tipo_inspecao === 'entrada'
   );
   const checkoutAnexos = anexos.filter(
-    a => a.tipo_inspecao === 'checkout' || a.tipo_inspecao === 'saida',
+    (a) => a.tipo_inspecao === 'checkout' || a.tipo_inspecao === 'saida'
   );
 
   return (
@@ -82,7 +81,7 @@ export function TicketGalleryDialog({
                     Nenhuma média de entrada registada.
                   </p>
                 ) : (
-                  checkinAnexos.map(anexo => (
+                  checkinAnexos.map((anexo) => (
                     <MediaThumb
                       key={anexo.id}
                       anexo={anexo}
@@ -103,7 +102,7 @@ export function TicketGalleryDialog({
                     Nenhuma média de saída registada.
                   </p>
                 ) : (
-                  checkoutAnexos.map(anexo => (
+                  checkoutAnexos.map((anexo) => (
                     <MediaThumb
                       key={anexo.id}
                       anexo={anexo}

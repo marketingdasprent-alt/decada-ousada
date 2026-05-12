@@ -1,6 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Coins, FileText, RefreshCw, TrendingDown, Zap, Fuel, Activity, Building2 } from 'lucide-react';
+import {
+  Loader2,
+  Coins,
+  FileText,
+  RefreshCw,
+  TrendingDown,
+  Zap,
+  Fuel,
+  Activity,
+  Building2,
+} from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import { cn } from '@/lib/utils';
 
@@ -56,8 +66,16 @@ function AmountCard({
   );
 }
 
-export function ViaturaFinanceiraReceitas({ receitas, loadReceitas }: ViaturaFinanceiraMovimentosProps) {
-  const balanco = (receitas.contratos || 0) + (receitas.outros || 0) - (receitas.portagens || 0) - (receitas.combustivel || 0) - (receitas.danos || 0);
+export function ViaturaFinanceiraReceitas({
+  receitas,
+  loadReceitas,
+}: ViaturaFinanceiraMovimentosProps) {
+  const balanco =
+    (receitas.contratos || 0) +
+    (receitas.outros || 0) -
+    (receitas.portagens || 0) -
+    (receitas.combustivel || 0) -
+    (receitas.danos || 0);
 
   return (
     <>
@@ -85,10 +103,20 @@ export function ViaturaFinanceiraReceitas({ receitas, loadReceitas }: ViaturaFin
           <CardContent className="pt-6">
             <div className="flex flex-col gap-2">
               <p className="text-sm font-medium text-muted-foreground">Balanço Operacional</p>
-              <p className={cn('text-3xl font-black', balanco >= 0 ? 'text-primary' : 'text-red-500')}>
+              <p
+                className={cn(
+                  'text-3xl font-black',
+                  balanco >= 0 ? 'text-primary' : 'text-red-500'
+                )}
+              >
                 {formatCurrency(balanco)}
               </p>
-              <Button variant="ghost" size="sm" onClick={loadReceitas} className="w-fit h-7 px-2 text-[10px] uppercase tracking-wider font-bold">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={loadReceitas}
+                className="w-fit h-7 px-2 text-[10px] uppercase tracking-wider font-bold"
+              >
                 <RefreshCw className="h-3 w-3 mr-1" /> Atualizar Dados
               </Button>
             </div>
@@ -98,7 +126,8 @@ export function ViaturaFinanceiraReceitas({ receitas, loadReceitas }: ViaturaFin
 
       <div className="mt-8 p-4 bg-muted/30 rounded-xl border border-dashed text-center">
         <p className="text-sm text-muted-foreground">
-          Os dados acima são calculados automaticamente com base nas associações temporais dos motoristas a esta viatura e nos registos financeiros correspondentes.
+          Os dados acima são calculados automaticamente com base nas associações temporais dos
+          motoristas a esta viatura e nos registos financeiros correspondentes.
         </p>
       </div>
     </>

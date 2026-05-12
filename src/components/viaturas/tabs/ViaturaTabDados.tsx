@@ -137,7 +137,7 @@ const STATUS_OPTIONS = [
 
 const DOCUMENTOS_VIATURA = [
   { tipo: 'dua_frente', label: 'DUA - Frente', obrigatorio: true },
-  { tipo: 'dua_verso',  label: 'DUA - Verso',  obrigatorio: true },
+  { tipo: 'dua_verso', label: 'DUA - Verso', obrigatorio: true },
   { tipo: 'dav', label: 'DAV - Declaração Aduaneira de Veículo', obrigatorio: false },
   { tipo: 'ac', label: 'AC - Certificado de Aprovação', obrigatorio: false },
   { tipo: 'ipo', label: 'IPO - Inspeção Periódica Obrigatória', obrigatorio: true },
