@@ -29,6 +29,7 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
 }) => {
   const { motoristaId, motoristaNome, viaturaId, viatura, userId,
           data, hora, diaTodo, observacoes, estacaoId, estacaoNome } = eventoData;
+  const fazerDepois = eventoData.fazerDepois ?? false;
 
   const queryClient = useQueryClient();
   const [files, setFiles] = useState<SelectedFile[]>([]);
@@ -80,12 +81,14 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
   };
 
   const handleConfirm = async () => {
-    if (files.length === 0 && checkinDados.novosDanos.length === 0) {
-      toast.error('Adicione pelo menos uma foto/vídeo ou registe um dano com foto');
-      return;
+    if (!fazerDepois) {
+      if (files.length === 0 && checkinDados.novosDanos.length === 0) {
+        toast.error('Adicione pelo menos uma foto/vídeo ou registe um dano com foto');
+        return;
+      }
+      const checkinErr = validateCheckinDados(checkinDados, viatura.km_atual ?? 0, viatura.combustivel ?? '');
+      if (checkinErr) { toast.error(checkinErr); return; }
     }
-    const checkinErr = validateCheckinDados(checkinDados, viatura.km_atual ?? 0, viatura.combustivel ?? '');
-    if (checkinErr) { toast.error(checkinErr); return; }
     setSaving(true);
     try {
       // 1. Create the recolha calendar event
@@ -130,9 +133,11 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
           .eq('status', 'ativo');
       }
 
-      // 3. Viatura → disponivel + estação
+      // 3. Viatura status
       await supabase.from('viaturas')
-        .update({ status: 'disponivel', estacao_id: estacaoId || null })
+        .update(fazerDepois
+          ? { status: 'em_recolha', estacao_id: null }
+          : { status: 'disponivel', estacao_id: estacaoId || null })
         .eq('id', viaturaId);
 
       // 4. Notification (fire & forget)
@@ -142,41 +147,48 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
         });
       } catch { /* non-critical */ }
 
-      // 5. Close active contract
+      // 5. Contrato
       if (contrato) {
-        await supabase
-          .from('contratos')
-          .update({ status: 'encerrado', calendario_evento_id: eventoId })
-          .eq('id', contrato.id);
-      }
-
-      // 6. KM, combustivel, danos
-      if (contrato) {
-        await saveCheckinDados({ dados: checkinDados, contratoId: contrato.id, viaturaId, userId, tipo: 'checkin' });
-      }
-
-      // 7. Upload checkin media
-      if (files.length > 0 && contrato) {
-        const mediaRecords: any[] = [];
-        for (const { file } of files) {
-          const ext = file.name.split('.').pop() || 'bin';
-          const path = `${contrato.id}/checkin/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-          const { error: upErr } = await supabase.storage
-            .from('contrato-media')
-            .upload(path, file, { contentType: file.type });
-          if (upErr) throw upErr;
-          mediaRecords.push({
-            contrato_id: contrato.id,
-            tipo: 'checkin',
-            url: path,
-            nome_ficheiro: file.name,
-            tipo_ficheiro: file.type,
-            tamanho_bytes: file.size,
-            criado_por: userId,
-          });
+        if (fazerDepois) {
+          await supabase.from('contratos')
+            .update({ checkin_pendente: true, calendario_evento_id: eventoId })
+            .eq('id', contrato.id);
+        } else {
+          await supabase.from('contratos')
+            .update({ status: 'encerrado', calendario_evento_id: eventoId })
+            .eq('id', contrato.id);
         }
-        const { error: mediaErr } = await supabase.from('contrato_media').insert(mediaRecords);
-        if (mediaErr) throw mediaErr;
+      }
+
+      if (!fazerDepois) {
+        // 6. KM, combustivel, danos
+        if (contrato) {
+          await saveCheckinDados({ dados: checkinDados, contratoId: contrato.id, viaturaId, userId, tipo: 'checkin' });
+        }
+
+        // 7. Upload checkin media
+        if (files.length > 0 && contrato) {
+          const mediaRecords: any[] = [];
+          for (const { file } of files) {
+            const ext = file.name.split('.').pop() || 'bin';
+            const path = `${contrato.id}/checkin/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+            const { error: upErr } = await supabase.storage
+              .from('contrato-media')
+              .upload(path, file, { contentType: file.type });
+            if (upErr) throw upErr;
+            mediaRecords.push({
+              contrato_id: contrato.id,
+              tipo: 'checkin',
+              url: path,
+              nome_ficheiro: file.name,
+              tipo_ficheiro: file.type,
+              tamanho_bytes: file.size,
+              criado_por: userId,
+            });
+          }
+          const { error: mediaErr } = await supabase.from('contrato_media').insert(mediaRecords);
+          if (mediaErr) throw mediaErr;
+        }
       }
 
       // 8. Invalidate caches
@@ -185,7 +197,11 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
       queryClient.invalidateQueries({ queryKey: ['viaturas-pendentes-recolha'] });
       queryClient.invalidateQueries({ queryKey: ['motorista-viaturas'] });
 
-      toast.success(isDevolucao ? 'Devolução confirmada' : 'Recolha confirmada');
+      toast.success(
+        fazerDepois
+          ? (isDevolucao ? 'Devolução registada — check-in pendente' : 'Recolha registada — check-in pendente')
+          : (isDevolucao ? 'Devolução confirmada' : 'Recolha confirmada'),
+      );
       setDone(true);
       setTimeout(() => onConcluir(), 1500);
     } catch (err: any) {
@@ -267,74 +283,78 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
             </div>
           )}
 
-          <CheckinDadosSection
-            viaturaId={viaturaId}
-            kmMinimo={viatura.km_atual ?? 0}
-            dados={checkinDados}
-            onChange={setCheckinDados}
-            tipo="checkin"
-            tipoCombustivel={viatura.combustivel ?? ''}
-            motoristaNome={motoristaNome}
-            matricula={formatMatricula(viatura.matricula)}
-            dataEvento={data}
-            contratoNumero={contrato?.numero_contrato}
-            accentClass={isDevolucao ? 'border-orange-200 dark:border-orange-800' : 'border-blue-200 dark:border-blue-800'}
-          />
+          {!fazerDepois && (
+            <>
+              <CheckinDadosSection
+                viaturaId={viaturaId}
+                kmMinimo={viatura.km_atual ?? 0}
+                dados={checkinDados}
+                onChange={setCheckinDados}
+                tipo="checkin"
+                tipoCombustivel={viatura.combustivel ?? ''}
+                motoristaNome={motoristaNome}
+                matricula={formatMatricula(viatura.matricula)}
+                dataEvento={data}
+                contratoNumero={contrato?.numero_contrato}
+                accentClass={isDevolucao ? 'border-orange-200 dark:border-orange-800' : 'border-blue-200 dark:border-blue-800'}
+              />
 
-          <div className="space-y-3">
-            <Label>
-              Fotos / Vídeos{' '}
-              <span className="text-muted-foreground font-normal text-xs">(obrigatório se sem danos)</span>
-            </Label>
+              <div className="space-y-3">
+                <Label>
+                  Fotos / Vídeos{' '}
+                  <span className="text-muted-foreground font-normal text-xs">(obrigatório se sem danos)</span>
+                </Label>
 
-            <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
-            <input ref={cameraInputRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileChange} />
+                <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
+                <input ref={cameraInputRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileChange} />
 
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => cameraInputRef.current?.click()}
-                className="rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-colors py-6 flex flex-col items-center gap-2 text-sm text-muted-foreground"
-              >
-                <Camera className="h-6 w-6 opacity-40" />
-                <span>Câmara</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-colors py-6 flex flex-col items-center gap-2 text-sm text-muted-foreground"
-              >
-                <Upload className="h-6 w-6 opacity-40" />
-                <span>Galeria / Ficheiros</span>
-              </button>
-            </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-colors py-6 flex flex-col items-center gap-2 text-sm text-muted-foreground"
+                  >
+                    <Camera className="h-6 w-6 opacity-40" />
+                    <span>Câmara</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-colors py-6 flex flex-col items-center gap-2 text-sm text-muted-foreground"
+                  >
+                    <Upload className="h-6 w-6 opacity-40" />
+                    <span>Galeria / Ficheiros</span>
+                  </button>
+                </div>
 
-            {files.length > 0 && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {files.map(f => (
-                  <div key={f.id} className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted">
-                    {f.preview ? (
-                      <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
-                        <Film className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground text-center leading-tight truncate w-full">
-                          {f.file.name}
-                        </span>
+                {files.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {files.map(f => (
+                      <div key={f.id} className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted">
+                        {f.preview ? (
+                          <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
+                            <Film className="h-6 w-6 text-muted-foreground" />
+                            <span className="text-[10px] text-muted-foreground text-center leading-tight truncate w-full">
+                              {f.file.name}
+                            </span>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeFile(f.id)}
+                          className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
                       </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => removeFile(f.id)}
-                      className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
 
         </div>
       </div>
