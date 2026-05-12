@@ -251,6 +251,7 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
           void extractAndConfirmValidade(filePath, file.type || '', tipoDef.validityField);
         }
       } else {
+        // Tipos extras guardados em motorista_documentos
         // Caso contrário, trata como documento extra na tabela secundária
         const existente = documentos.find(d => d.tipo_documento === tipo);
 
@@ -277,6 +278,11 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
           if (insertError) throw insertError;
         }
         toast.success("Documento extra carregado com sucesso!");
+        // Tentar extração de validade por IA para tipos que têm data de validade
+        const TIPOS_COM_VALIDADE_EXTRA = ["registo_criminal"];
+        if (TIPOS_COM_VALIDADE_EXTRA.includes(tipo)) {
+          void extractAndConfirmValidade(filePath, file.type || '', null, tipo);
+        }
       }
 
       loadDocumentos();
@@ -370,10 +376,13 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
   };
 
   // ── AI: extrai data de validade do documento ──────────────────────────────
+  // validityField → guarda em motoristas_ativos (campos oficiais)
+  // tipoDocumento → guarda em motorista_documentos.data_validade (RC, etc.)
   const extractAndConfirmValidade = useCallback(async (
     filePath: string,
     mimeType: string,
-    validityField: string,
+    validityField: string | null,
+    tipoDocumento?: string,
   ) => {
     try {
       const { data, error } = await supabase.functions.invoke('extract-document-expiry', {
@@ -389,14 +398,28 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
         action: {
           label: 'Aplicar',
           onClick: async () => {
-            const { error: updErr } = await supabase
-              .from('motoristas_ativos')
-              .update({ [validityField]: data.date })
-              .eq('id', motorista.id);
+            let updErr = null;
+            if (validityField) {
+              // Campo oficial em motoristas_ativos
+              const { error: e } = await supabase
+                .from('motoristas_ativos')
+                .update({ [validityField]: data.date })
+                .eq('id', motorista.id);
+              updErr = e;
+            } else if (tipoDocumento) {
+              // Guarda em motorista_documentos.data_validade
+              const { error: e } = await supabase
+                .from('motorista_documentos')
+                .update({ data_validade: data.date })
+                .eq('motorista_id', motorista.id)
+                .eq('tipo_documento', tipoDocumento);
+              updErr = e;
+            }
             if (updErr) {
               toast.error('Erro ao guardar a validade');
             } else {
               toast.success('Validade atualizada automaticamente!');
+              loadDocumentos();
               if (onMotoristaUpdated) onMotoristaUpdated();
             }
           },
@@ -405,7 +428,7 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
     } catch {
       // silently ignore — AI extraction is best-effort
     }
-  }, [motorista.id, onMotoristaUpdated]);
+  }, [motorista.id, onMotoristaUpdated, loadDocumentos]);
 
   const handleBatchSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);

@@ -17,9 +17,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!anthropicKey) {
-      return new Response(JSON.stringify({ date: null, error: 'ANTHROPIC_API_KEY not configured' }), {
+    const geminiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!geminiKey) {
+      return new Response(JSON.stringify({ date: null, error: 'GEMINI_API_KEY not configured' }), {
         headers: { ...corsHeaders, 'content-type': 'application/json' },
       });
     }
@@ -57,46 +57,50 @@ Deno.serve(async (req) => {
        ext === 'png' ? 'image/png' :
        'image/jpeg');
 
-    const isPdf = resolvedMime === 'application/pdf';
-
-    // Build content for Claude
-    const docContent = isPdf
-      ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } }
-      : { type: 'image', source: { type: 'base64', media_type: resolvedMime, data: base64Data } };
-
-    const anthropicResp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
+    // Build Gemini content part
+    const inlinePart = {
+      inline_data: {
+        mime_type: resolvedMime,
+        data: base64Data,
       },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 60,
-        messages: [{
-          role: 'user',
-          content: [
-            docContent,
-            {
-              type: 'text',
-              text: 'Este é um documento de identificação, carta de condução ou licença. Extrai APENAS a data de validade/expiração/validity. Responde SOMENTE com a data no formato YYYY-MM-DD (ex: 2028-03-15). Se o documento não tiver data de validade visível ou não conseguires identificar, responde apenas com a palavra: null',
-            },
-          ],
-        }],
-      }),
-    });
+    };
 
-    if (!anthropicResp.ok) {
-      const errText = await anthropicResp.text();
-      console.error('Anthropic error:', errText);
+    const geminiResp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              inlinePart,
+              {
+                text: `Analisa este documento e encontra a data de VALIDADE/EXPIRAÇÃO.
+REGRAS IMPORTANTES:
+- Procura especificamente por campos como "Validade", "Válido até", "Data de validade", "Expiry", "Valid until"
+- IGNORA completamente números de referência, números de certificado, números de processo, NIFs, NISPs e qualquer número que não esteja explicitamente identificado como data de validade
+- IGNORA o ano presente em números de documento como "n.º 1062037/2026" — esse não é uma data de validade
+- A data de validade é normalmente uma data futura (vários anos no futuro)
+- Responde SOMENTE com a data no formato YYYY-MM-DD (ex: 2031-03-19)
+- Se não encontrares nenhuma data de validade explícita, responde apenas com a palavra: null`,
+              },
+            ],
+          }],
+          generationConfig: { maxOutputTokens: 30, temperature: 0 },
+        }),
+      }
+    );
+
+    if (!geminiResp.ok) {
+      const errText = await geminiResp.text();
+      console.error('Gemini error:', errText);
       return new Response(JSON.stringify({ date: null, error: 'AI API error' }), {
         headers: { ...corsHeaders, 'content-type': 'application/json' },
       });
     }
 
-    const aiResult = await anthropicResp.json();
-    const rawText = (aiResult.content?.[0]?.text ?? '').trim();
+    const aiResult = await geminiResp.json();
+    const rawText = (aiResult.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim();
 
     // Extract ISO date
     const match = rawText.match(/\d{4}-\d{2}-\d{2}/);
