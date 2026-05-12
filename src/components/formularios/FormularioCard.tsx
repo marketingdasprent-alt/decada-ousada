@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,7 @@ export const FormularioCard: React.FC<FormularioCardProps> = ({
   formulario,
   onEdit,
   onToggleAtivo,
-  onDelete
+  onDelete,
 }) => {
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -45,14 +44,14 @@ export const FormularioCard: React.FC<FormularioCardProps> = ({
       'bg-purple-500/20 text-purple-300 border-purple-500/30',
       'bg-orange-500/20 text-orange-300 border-orange-500/30',
       'bg-pink-500/20 text-pink-300 border-pink-500/30',
-      'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+      'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
     ];
-    
+
     const hash = tag.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
+      a = (a << 5) - a + b.charCodeAt(0);
       return a & a;
     }, 0);
-    
+
     return colors[Math.abs(hash) % colors.length];
   };
 
@@ -60,8 +59,8 @@ export const FormularioCard: React.FC<FormularioCardProps> = ({
     const formLink = `${window.location.origin}/formulario/${formulario.id}`;
     navigator.clipboard.writeText(formLink);
     toast({
-      title: "Link copiado!",
-      description: "O link do formulário foi copiado para a área de transferência"
+      title: 'Link copiado!',
+      description: 'O link do formulário foi copiado para a área de transferência',
     });
   };
 
@@ -76,9 +75,13 @@ export const FormularioCard: React.FC<FormularioCardProps> = ({
 
   return (
     <>
-      <Card className={`bg-gradient-to-br from-gray-800/90 to-gray-900/90 border-gray-700/50 backdrop-blur-sm transition-all duration-300 ${
-        formulario.ativo ? 'hover:border-yellow-500/50 hover:shadow-lg hover:shadow-yellow-500/10' : 'opacity-75'
-      }`}>
+      <Card
+        className={`bg-gradient-to-br from-gray-800/90 to-gray-900/90 border-gray-700/50 backdrop-blur-sm transition-all duration-300 ${
+          formulario.ativo
+            ? 'hover:border-yellow-500/50 hover:shadow-lg hover:shadow-yellow-500/10'
+            : 'opacity-75'
+        }`}
+      >
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-white text-lg font-semibold truncate">
@@ -90,19 +93,20 @@ export const FormularioCard: React.FC<FormularioCardProps> = ({
                 onCheckedChange={() => onToggleAtivo(formulario.id, formulario.ativo)}
                 className="data-[state=checked]:bg-green-500"
               />
-              <Badge variant={formulario.ativo ? "default" : "secondary"} className={
-                formulario.ativo 
-                  ? "bg-green-500/20 text-green-300 border-green-500/30" 
-                  : "bg-gray-500/20 text-gray-400 border-gray-500/30"
-              }>
+              <Badge
+                variant={formulario.ativo ? 'default' : 'secondary'}
+                className={
+                  formulario.ativo
+                    ? 'bg-green-500/20 text-green-300 border-green-500/30'
+                    : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                }
+              >
                 {formulario.ativo ? 'Ativo' : 'Inativo'}
               </Badge>
             </div>
           </div>
           {formulario.descricao && (
-            <p className="text-gray-400 text-sm mt-2 line-clamp-2">
-              {formulario.descricao}
-            </p>
+            <p className="text-gray-400 text-sm mt-2 line-clamp-2">{formulario.descricao}</p>
           )}
         </CardHeader>
 
@@ -123,9 +127,7 @@ export const FormularioCard: React.FC<FormularioCardProps> = ({
                 <Copy className="h-3 w-3" />
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-1 truncate">
-              /formulario/{formulario.id}
-            </p>
+            <p className="text-xs text-gray-500 mt-1 truncate">/formulario/{formulario.id}</p>
           </div>
 
           {/* Campanhas Associadas */}

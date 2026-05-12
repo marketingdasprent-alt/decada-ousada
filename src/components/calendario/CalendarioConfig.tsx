@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -75,7 +81,7 @@ export const CalendarioConfig: React.FC<Props> = ({ open, onOpenChange, userId }
               id="email-cc"
               type="email"
               value={emailCc}
-              onChange={e => setEmailCc(e.target.value)}
+              onChange={(e) => setEmailCc(e.target.value)}
               placeholder="email@exemplo.pt"
             />
             <p className="text-xs text-muted-foreground mt-1">
@@ -84,7 +90,9 @@ export const CalendarioConfig: React.FC<Props> = ({ open, onOpenChange, userId }
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
             {mutation.isPending ? 'A guardar...' : 'Guardar'}
           </Button>

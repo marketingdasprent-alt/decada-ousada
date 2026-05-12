@@ -5,8 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Users, Plus, Edit, Trash2 } from 'lucide-react';
 import DasprentNavigation from '@/components/DasprentNavigation';
 
@@ -34,7 +48,7 @@ const DasprentFuncionarios = () => {
     cargo: '',
     departamento: '',
     data_admissao: '',
-    ativo: true
+    ativo: true,
   });
   const { toast } = useToast();
 
@@ -54,9 +68,9 @@ const DasprentFuncionarios = () => {
       setFuncionarios(data || []);
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: "Erro ao carregar funcionários: " + error.message,
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Erro ao carregar funcionários: ' + error.message,
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -76,15 +90,13 @@ const DasprentFuncionarios = () => {
           .eq('id', editingFuncionario.id);
 
         if (error) throw error;
-        toast({ title: "Sucesso", description: "Funcionário atualizado com sucesso!" });
+        toast({ title: 'Sucesso', description: 'Funcionário atualizado com sucesso!' });
       } else {
         // Using any type to handle the current type issues
-        const { error } = await (supabase as any)
-          .from('funcionarios_dasprent')
-          .insert([formData]);
+        const { error } = await (supabase as any).from('funcionarios_dasprent').insert([formData]);
 
         if (error) throw error;
-        toast({ title: "Sucesso", description: "Funcionário criado com sucesso!" });
+        toast({ title: 'Sucesso', description: 'Funcionário criado com sucesso!' });
       }
 
       setShowDialog(false);
@@ -96,14 +108,14 @@ const DasprentFuncionarios = () => {
         cargo: '',
         departamento: '',
         data_admissao: '',
-        ativo: true
+        ativo: true,
       });
       fetchFuncionarios();
     } catch (error: any) {
       toast({
-        title: "Erro",
+        title: 'Erro',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -119,7 +131,7 @@ const DasprentFuncionarios = () => {
       cargo: funcionario.cargo || '',
       departamento: funcionario.departamento || '',
       data_admissao: funcionario.data_admissao || '',
-      ativo: funcionario.ativo
+      ativo: funcionario.ativo,
     });
     setShowDialog(true);
   };
@@ -129,19 +141,16 @@ const DasprentFuncionarios = () => {
 
     try {
       // Using any type to handle the current type issues
-      const { error } = await (supabase as any)
-        .from('funcionarios_dasprent')
-        .delete()
-        .eq('id', id);
+      const { error } = await (supabase as any).from('funcionarios_dasprent').delete().eq('id', id);
 
       if (error) throw error;
-      toast({ title: "Sucesso", description: "Funcionário excluído com sucesso!" });
+      toast({ title: 'Sucesso', description: 'Funcionário excluído com sucesso!' });
       fetchFuncionarios();
     } catch (error: any) {
       toast({
-        title: "Erro",
+        title: 'Erro',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     }
   };
@@ -160,7 +169,7 @@ const DasprentFuncionarios = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
       <DasprentNavigation />
-      
+
       <div className="p-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-8">
@@ -168,7 +177,7 @@ const DasprentFuncionarios = () => {
               <h1 className="text-3xl font-bold text-white mb-2">Funcionários DasPrent</h1>
               <p className="text-gray-400">Gerir equipa da empresa</p>
             </div>
-            
+
             <Dialog open={showDialog} onOpenChange={setShowDialog}>
               <DialogTrigger asChild>
                 <Button className="bg-yellow-500 hover:bg-yellow-600 text-black">
@@ -182,7 +191,9 @@ const DasprentFuncionarios = () => {
                     {editingFuncionario ? 'Editar Funcionário' : 'Novo Funcionário'}
                   </DialogTitle>
                   <DialogDescription className="sr-only">
-                    {editingFuncionario ? 'Edite os dados do funcionário selecionado.' : 'Preencha os dados para criar um novo funcionário.'}
+                    {editingFuncionario
+                      ? 'Edite os dados do funcionário selecionado.'
+                      : 'Preencha os dados para criar um novo funcionário.'}
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -245,7 +256,9 @@ const DasprentFuncionarios = () => {
                         id="data_admissao"
                         type="date"
                         value={formData.data_admissao}
-                        onChange={(e) => setFormData({ ...formData, data_admissao: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, data_admissao: e.target.value })
+                        }
                         className="bg-gray-800 border-gray-600"
                       />
                     </div>
@@ -290,11 +303,13 @@ const DasprentFuncionarios = () => {
                       <TableCell className="text-gray-300">{funcionario.cargo}</TableCell>
                       <TableCell className="text-gray-300">{funcionario.departamento}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          funcionario.ativo 
-                            ? 'bg-green-500/20 text-green-400' 
-                            : 'bg-red-500/20 text-red-400'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            funcionario.ativo
+                              ? 'bg-green-500/20 text-green-400'
+                              : 'bg-red-500/20 text-red-400'
+                          }`}
+                        >
                           {funcionario.ativo ? 'Ativo' : 'Inativo'}
                         </span>
                       </TableCell>

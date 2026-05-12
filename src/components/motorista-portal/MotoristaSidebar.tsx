@@ -1,17 +1,17 @@
-import React from "react";
-import { 
-  LayoutDashboard, 
-  Car, 
-  BarChart3, 
-  Euro, 
-  Truck, 
-  Calendar, 
-  MessageSquare, 
+import React from 'react';
+import {
+  LayoutDashboard,
+  Car,
+  BarChart3,
+  Euro,
+  Truck,
+  Calendar,
+  MessageSquare,
   LifeBuoy,
-  ChevronRight
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useLocation, useNavigate } from "react-router-dom";
+  ChevronRight,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -22,26 +22,26 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@/components/ui/sidebar";
+} from '@/components/ui/sidebar';
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-  { icon: LifeBuoy, label: "Suporte", id: "support" },
+  { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
+  { icon: LifeBuoy, label: 'Suporte', id: 'support' },
 ];
 
 export function MotoristaSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const activeId = "dashboard";
+  const activeId = 'dashboard';
 
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <SidebarHeader className="px-6 py-8">
         <div className="flex items-center justify-center">
-          <img 
+          <img
             src="/Logo.png"
             alt="WeGest"
-            className="h-16 w-auto object-contain transition-all hover:scale-105" 
+            className="h-16 w-auto object-contain transition-all hover:scale-105"
           />
         </div>
       </SidebarHeader>
@@ -55,23 +55,29 @@ export function MotoristaSidebar() {
                   <SidebarMenuButton
                     isActive={activeId === item.id}
                     className={cn(
-                      "w-full h-11 px-4 flex items-center justify-between rounded-xl transition-all duration-200 group outline-none",
-                      activeId === item.id 
-                        ? "bg-primary/10 text-primary font-bold shadow-sm" 
-                        : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      'w-full h-11 px-4 flex items-center justify-between rounded-xl transition-all duration-200 group outline-none',
+                      activeId === item.id
+                        ? 'bg-primary/10 text-primary font-bold shadow-sm'
+                        : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                     )}
                   >
                     <div className="flex items-center gap-3">
-                      <item.icon className={cn(
-                        "w-5 h-5 transition-colors",
-                        activeId === item.id 
-                          ? "text-primary" 
-                          : "text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground"
-                      )} />
-                      <span className={cn(
-                        "text-sm font-semibold transition-colors",
-                        activeId === item.id ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-sidebar-accent-foreground"
-                      )}>
+                      <item.icon
+                        className={cn(
+                          'w-5 h-5 transition-colors',
+                          activeId === item.id
+                            ? 'text-primary'
+                            : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground'
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          'text-sm font-semibold transition-colors',
+                          activeId === item.id
+                            ? 'text-primary'
+                            : 'text-sidebar-foreground/60 group-hover:text-sidebar-accent-foreground'
+                        )}
+                      >
                         {item.label}
                       </span>
                     </div>
@@ -85,7 +91,6 @@ export function MotoristaSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
     </Sidebar>
   );
 }

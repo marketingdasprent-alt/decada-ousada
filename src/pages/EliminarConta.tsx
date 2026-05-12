@@ -1,34 +1,34 @@
-import { useState } from "react";
-import { SimpleNavbar } from "@/components/landing/SimpleNavbar";
-import { Footer } from "@/components/landing/Footer";
-import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Trash2, CheckCircle, AlertTriangle } from "lucide-react";
+import { useState } from 'react';
+import { SimpleNavbar } from '@/components/landing/SimpleNavbar';
+import { Footer } from '@/components/landing/Footer';
+import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2, Trash2, CheckCircle, AlertTriangle } from 'lucide-react';
 
 export default function EliminarConta() {
-  const [email, setEmail] = useState("");
-  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState('');
+  const [nome, setNome] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
 
     if (!email.trim()) {
-      setError("Por favor, introduza o seu endereço de email.");
+      setError('Por favor, introduza o seu endereço de email.');
       return;
     }
 
     setLoading(true);
     try {
-      const { error: fnError } = await supabase.functions.invoke("solicitar-eliminacao", {
+      const { error: fnError } = await supabase.functions.invoke('solicitar-eliminacao', {
         body: { email: email.trim(), nome: nome.trim() || undefined },
       });
 
@@ -36,7 +36,9 @@ export default function EliminarConta() {
 
       setSubmitted(true);
     } catch (err: any) {
-      setError("Ocorreu um erro ao enviar o pedido. Por favor, tente novamente ou contacte o suporte.");
+      setError(
+        'Ocorreu um erro ao enviar o pedido. Por favor, tente novamente ou contacte o suporte.'
+      );
     } finally {
       setLoading(false);
     }
@@ -54,9 +56,7 @@ export default function EliminarConta() {
             transition={{ duration: 0.6 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Eliminação de Conta
-            </h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">Eliminação de Conta</h1>
             <p className="text-muted-foreground text-lg">
               Pode solicitar a eliminação da sua conta e de todos os dados pessoais associados.
             </p>
@@ -67,7 +67,6 @@ export default function EliminarConta() {
       <section className="py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto space-y-6">
-
             {/* What gets deleted */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -77,7 +76,9 @@ export default function EliminarConta() {
             >
               <div className="flex items-center gap-3 mb-4">
                 <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500 flex-shrink-0" />
-                <h2 className="text-lg font-semibold text-amber-800 dark:text-amber-400">O que será eliminado</h2>
+                <h2 className="text-lg font-semibold text-amber-800 dark:text-amber-400">
+                  O que será eliminado
+                </h2>
               </div>
               <ul className="text-amber-900 dark:text-amber-300 space-y-1.5 list-disc list-inside text-sm">
                 <li>A sua conta de utilizador e credenciais de acesso</li>
@@ -86,7 +87,8 @@ export default function EliminarConta() {
                 <li>Todas as preferências e configurações pessoais</li>
               </ul>
               <p className="text-amber-700 dark:text-amber-400 text-sm mt-4">
-                Esta ação é <strong>irreversível</strong>. Após a eliminação não será possível recuperar os dados.
+                Esta ação é <strong>irreversível</strong>. Após a eliminação não será possível
+                recuperar os dados.
               </p>
             </motion.div>
 
@@ -102,8 +104,9 @@ export default function EliminarConta() {
                   <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
                   <h2 className="text-2xl font-bold mb-2">Pedido enviado</h2>
                   <p className="text-muted-foreground">
-                    Recebemos o seu pedido de eliminação de conta. Irá receber um email de confirmação e
-                    a sua conta será eliminada no prazo de <strong className="text-foreground">30 dias</strong>.
+                    Recebemos o seu pedido de eliminação de conta. Irá receber um email de
+                    confirmação e a sua conta será eliminada no prazo de{' '}
+                    <strong className="text-foreground">30 dias</strong>.
                   </p>
                 </div>
               ) : (
@@ -152,7 +155,9 @@ export default function EliminarConta() {
                         className="mt-0.5"
                       />
                       <Label htmlFor="confirm" className="text-sm leading-relaxed cursor-pointer">
-                        Compreendo que esta ação é <strong>irreversível</strong> e que todos os meus dados pessoais serão eliminados permanentemente. Não será possível recuperar a conta após a eliminação.
+                        Compreendo que esta ação é <strong>irreversível</strong> e que todos os meus
+                        dados pessoais serão eliminados permanentemente. Não será possível recuperar
+                        a conta após a eliminação.
                       </Label>
                     </div>
 
@@ -169,9 +174,13 @@ export default function EliminarConta() {
                       className="w-full"
                     >
                       {loading ? (
-                        <><Loader2 className="h-4 w-4 animate-spin mr-2" /> A enviar pedido...</>
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" /> A enviar pedido...
+                        </>
                       ) : (
-                        <><Trash2 className="h-4 w-4 mr-2" /> Solicitar eliminação da conta</>
+                        <>
+                          <Trash2 className="h-4 w-4 mr-2" /> Solicitar eliminação da conta
+                        </>
                       )}
                     </Button>
                   </form>
@@ -187,11 +196,14 @@ export default function EliminarConta() {
               className="text-center text-muted-foreground text-sm pb-4"
             >
               <p>
-                O pedido será processado no prazo de 30 dias conforme o{" "}
-                <span className="text-foreground/70">RGPD (Regulamento Geral sobre a Proteção de Dados)</span>.
+                O pedido será processado no prazo de 30 dias conforme o{' '}
+                <span className="text-foreground/70">
+                  RGPD (Regulamento Geral sobre a Proteção de Dados)
+                </span>
+                .
               </p>
               <p className="mt-2">
-                Para questões adicionais, contacte-nos em{" "}
+                Para questões adicionais, contacte-nos em{' '}
                 <a
                   href="mailto:motoristas.tvde@distanciaarrojada.pt"
                   className="text-primary hover:underline"
@@ -200,7 +212,6 @@ export default function EliminarConta() {
                 </a>
               </p>
             </motion.div>
-
           </div>
         </div>
       </section>

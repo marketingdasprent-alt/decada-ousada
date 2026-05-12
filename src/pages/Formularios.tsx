@@ -48,21 +48,21 @@ const Formularios = () => {
           type: 'text',
           label: 'Nome Completo',
           placeholder: 'Digite seu nome completo',
-          required: true
+          required: true,
         },
         {
           id: 'email',
           type: 'email',
           label: 'Email Corporativo',
           placeholder: 'seu.email@empresa.com',
-          required: true
+          required: true,
         },
         {
           id: 'telefone',
           type: 'tel',
           label: 'Telefone/WhatsApp',
           placeholder: '+351 xxx xxx xxx',
-          required: true
+          required: true,
         },
         {
           id: 'zona',
@@ -77,8 +77,8 @@ const Formularios = () => {
             'Alentejo',
             'Algarve',
             'Açores',
-            'Madeira'
-          ]
+            'Madeira',
+          ],
         },
         {
           id: 'tipoViatura',
@@ -86,22 +86,23 @@ const Formularios = () => {
           label: 'Tipo de Viatura',
           placeholder: 'Selecione o tipo de viatura',
           required: true,
-          options: ['Comercial', 'Passageiros']
+          options: ['Comercial', 'Passageiros'],
         },
         {
           id: 'dataAluguer',
           type: 'date',
           label: 'Data Pretendida para Aluguer',
           placeholder: 'Selecionar data',
-          required: true
+          required: true,
         },
         {
           id: 'observacoes',
           type: 'textarea',
           label: 'Observações (Opcional)',
-          placeholder: 'Adicione qualquer informação adicional que possa ser útil para personalizar sua experiência...',
-          required: false
-        }
+          placeholder:
+            'Adicione qualquer informação adicional que possa ser útil para personalizar sua experiência...',
+          required: false,
+        },
       ];
 
       const { data: formulario, error } = await supabase
@@ -110,7 +111,7 @@ const Formularios = () => {
           nome: 'Formulário Geral',
           descricao: 'Formulário padrão para captura de leads na página inicial',
           ativo: true,
-          campos: defaultFields
+          campos: defaultFields,
         })
         .select()
         .single();
@@ -118,12 +119,10 @@ const Formularios = () => {
       if (error) throw error;
 
       // Adicionar a campanha "Geral"
-      await supabase
-        .from('formulario_campanhas')
-        .insert({
-          formulario_id: formulario.id,
-          campanha_tag: 'Geral'
-        });
+      await supabase.from('formulario_campanhas').insert({
+        formulario_id: formulario.id,
+        campanha_tag: 'Geral',
+      });
 
       console.log('Formulário Geral criado com sucesso:', formulario.id);
     } catch (error) {
@@ -153,17 +152,17 @@ const Formularios = () => {
 
           if (campanhasError) {
             console.error('Erro ao buscar campanhas:', campanhasError);
-            return { 
-              ...formulario, 
+            return {
+              ...formulario,
               campanhas: [],
-              configuracoes: {}
+              configuracoes: {},
             };
           }
 
           return {
             ...formulario,
-            campanhas: campanhas?.map(c => c.campanha_tag) || [],
-            configuracoes: {}
+            campanhas: campanhas?.map((c) => c.campanha_tag) || [],
+            configuracoes: {},
           };
         })
       );
@@ -172,9 +171,9 @@ const Formularios = () => {
     } catch (error) {
       console.error('Erro ao carregar formulários:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao carregar formulários",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao carregar formulários',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -189,7 +188,7 @@ const Formularios = () => {
           nome: formData.nome,
           descricao: formData.descricao,
           ativo: formData.ativo,
-          campos: formData.campos || []
+          campos: formData.campos || [],
         })
         .select()
         .single();
@@ -200,7 +199,7 @@ const Formularios = () => {
       if (formData.campanhas && formData.campanhas.length > 0) {
         const campanhasData = formData.campanhas.map((campanha: string) => ({
           formulario_id: formulario.id,
-          campanha_tag: campanha
+          campanha_tag: campanha,
         }));
 
         const { error: campanhasError } = await supabase
@@ -212,15 +211,15 @@ const Formularios = () => {
 
       await fetchFormularios();
       toast({
-        title: "Sucesso",
-        description: "Formulário criado com sucesso"
+        title: 'Sucesso',
+        description: 'Formulário criado com sucesso',
       });
     } catch (error) {
       console.error('Erro ao criar formulário:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao criar formulário",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao criar formulário',
+        variant: 'destructive',
       });
     }
   };
@@ -234,22 +233,19 @@ const Formularios = () => {
           descricao: formData.descricao,
           ativo: formData.ativo,
           campos: formData.campos || [],
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', id);
 
       if (error) throw error;
 
       // Atualizar campanhas associadas
-      await supabase
-        .from('formulario_campanhas')
-        .delete()
-        .eq('formulario_id', id);
+      await supabase.from('formulario_campanhas').delete().eq('formulario_id', id);
 
       if (formData.campanhas && formData.campanhas.length > 0) {
         const campanhasData = formData.campanhas.map((campanha: string) => ({
           formulario_id: id,
-          campanha_tag: campanha
+          campanha_tag: campanha,
         }));
 
         const { error: campanhasError } = await supabase
@@ -261,15 +257,15 @@ const Formularios = () => {
 
       await fetchFormularios();
       toast({
-        title: "Sucesso",
-        description: "Formulário atualizado com sucesso"
+        title: 'Sucesso',
+        description: 'Formulário atualizado com sucesso',
       });
     } catch (error) {
       console.error('Erro ao atualizar formulário:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao atualizar formulário",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao atualizar formulário',
+        variant: 'destructive',
       });
     }
   };
@@ -278,9 +274,9 @@ const Formularios = () => {
     try {
       const { error } = await supabase
         .from('formularios')
-        .update({ 
+        .update({
           ativo: !ativo,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', id);
 
@@ -288,15 +284,15 @@ const Formularios = () => {
 
       await fetchFormularios();
       toast({
-        title: "Sucesso",
-        description: `Formulário ${!ativo ? 'ativado' : 'desativado'} com sucesso`
+        title: 'Sucesso',
+        description: `Formulário ${!ativo ? 'ativado' : 'desativado'} com sucesso`,
       });
     } catch (error) {
       console.error('Erro ao alterar status do formulário:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao alterar status do formulário",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao alterar status do formulário',
+        variant: 'destructive',
       });
     }
   };
@@ -320,24 +316,21 @@ const Formularios = () => {
       if (campanhasError) throw campanhasError;
 
       // Por fim deletar o formulário
-      const { error } = await supabase
-        .from('formularios')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from('formularios').delete().eq('id', id);
 
       if (error) throw error;
 
       await fetchFormularios();
       toast({
-        title: "Sucesso",
-        description: "Formulário excluído com sucesso. Os leads associados foram preservados."
+        title: 'Sucesso',
+        description: 'Formulário excluído com sucesso. Os leads associados foram preservados.',
       });
     } catch (error) {
       console.error('Erro ao excluir formulário:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao excluir formulário",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao excluir formulário',
+        variant: 'destructive',
       });
     }
   };
@@ -359,7 +352,7 @@ const Formularios = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent" />
       <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
-      
+
       <div className="relative z-10 p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -370,10 +363,12 @@ const Formularios = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-white">Gestão de Formulários</h1>
-                <p className="text-gray-400 mt-1">Crie e gerencie formulários para suas campanhas</p>
+                <p className="text-gray-400 mt-1">
+                  Crie e gerencie formulários para suas campanhas
+                </p>
               </div>
             </div>
-            <Button 
+            <Button
               onClick={() => setIsCreateDialogOpen(true)}
               className="bg-primary hover:bg-primary/90 text-white font-medium"
             >
@@ -397,7 +392,9 @@ const Formularios = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-400 text-sm">Formulários Ativos</p>
-                  <p className="text-white text-2xl font-bold">{formularios.filter(f => f.ativo).length}</p>
+                  <p className="text-white text-2xl font-bold">
+                    {formularios.filter((f) => f.ativo).length}
+                  </p>
                 </div>
                 <div className="h-3 w-3 rounded-full bg-green-500"></div>
               </div>
@@ -406,7 +403,9 @@ const Formularios = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-400 text-sm">Formulários Inativos</p>
-                  <p className="text-white text-2xl font-bold">{formularios.filter(f => !f.ativo).length}</p>
+                  <p className="text-white text-2xl font-bold">
+                    {formularios.filter((f) => !f.ativo).length}
+                  </p>
                 </div>
                 <div className="h-3 w-3 rounded-full bg-red-500"></div>
               </div>
@@ -429,9 +428,13 @@ const Formularios = () => {
           {formularios.length === 0 && (
             <div className="text-center py-12">
               <FileText className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Nenhum formulário encontrado</h3>
-              <p className="text-gray-400 mb-4">Crie seu primeiro formulário para começar a capturar leads</p>
-              <Button 
+              <h3 className="text-xl font-semibold text-white mb-2">
+                Nenhum formulário encontrado
+              </h3>
+              <p className="text-gray-400 mb-4">
+                Crie seu primeiro formulário para começar a capturar leads
+              </p>
+              <Button
                 onClick={() => setIsCreateDialogOpen(true)}
                 className="bg-primary hover:bg-primary/90 text-white font-medium"
               >

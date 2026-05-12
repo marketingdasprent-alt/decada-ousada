@@ -35,11 +35,18 @@ const AssinaturaDialog = ({ open, onOpenChange, assinatura }: Props) => {
       const payload = { nome, conteudo_html: conteudoHtml };
 
       if (assinatura?.id) {
-        const { error } = await supabase.from('marketing_assinaturas').update(payload).eq('id', assinatura.id);
+        const { error } = await supabase
+          .from('marketing_assinaturas')
+          .update(payload)
+          .eq('id', assinatura.id);
         if (error) throw error;
       } else {
-        const { data: { user } } = await supabase.auth.getUser();
-        const { error } = await supabase.from('marketing_assinaturas').insert({ ...payload, criado_por: user?.id });
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        const { error } = await supabase
+          .from('marketing_assinaturas')
+          .insert({ ...payload, criado_por: user?.id });
         if (error) throw error;
       }
     },
@@ -61,7 +68,11 @@ const AssinaturaDialog = ({ open, onOpenChange, assinatura }: Props) => {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Nome da assinatura</Label>
-            <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Assinatura Comercial" />
+            <Input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Ex: Assinatura Comercial"
+            />
           </div>
 
           <div className="space-y-2">
@@ -70,8 +81,13 @@ const AssinaturaDialog = ({ open, onOpenChange, assinatura }: Props) => {
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={() => saveMutation.mutate()} disabled={!nome || saveMutation.isPending}>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={!nome || saveMutation.isPending}
+            >
               {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {assinatura ? 'Guardar' : 'Criar Assinatura'}
             </Button>

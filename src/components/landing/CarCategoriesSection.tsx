@@ -1,33 +1,33 @@
-import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { motion } from 'framer-motion';
+import { Check } from 'lucide-react';
 
 const categories = [
   {
-    name: "X Saver / Economy",
-    description: "Económico e eficiente",
-    features: ["Consumo reduzido", "Ideal para cidade", "Manutenção acessível"],
-    image: "/images/x-saver.png",
+    name: 'X Saver / Economy',
+    description: 'Económico e eficiente',
+    features: ['Consumo reduzido', 'Ideal para cidade', 'Manutenção acessível'],
+    image: '/images/x-saver.png',
     popular: true,
   },
   {
-    name: "Comfort",
-    description: "Equilíbrio perfeito",
-    features: ["Maior conforto", "Mais espaço", "Clientes premium"],
-    image: "/images/comfort.png",
+    name: 'Comfort',
+    description: 'Equilíbrio perfeito',
+    features: ['Maior conforto', 'Mais espaço', 'Clientes premium'],
+    image: '/images/comfort.png',
     popular: false,
   },
   {
-    name: "Black",
-    description: "Categoria premium",
-    features: ["Viaturas de luxo", "Maior faturação", "Clientes executivos"],
-    image: "/images/black.png",
+    name: 'Black',
+    description: 'Categoria premium',
+    features: ['Viaturas de luxo', 'Maior faturação', 'Clientes executivos'],
+    image: '/images/black.png',
     popular: false,
   },
   {
-    name: "Green",
-    description: "100% Elétrico",
-    features: ["Zero emissões", "Menor custo/km", "Futuro sustentável"],
-    image: "/images/green.png",
+    name: 'Green',
+    description: '100% Elétrico',
+    features: ['Zero emissões', 'Menor custo/km', 'Futuro sustentável'],
+    image: '/images/green.png',
     popular: false,
   },
 ];
@@ -62,9 +62,7 @@ export const CarCategoriesSection = () => {
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
               className={`relative group overflow-hidden rounded-2xl border ${
-                category.popular 
-                  ? "border-[#B20101]/50" 
-                  : "border-gray-800"
+                category.popular ? 'border-[#B20101]/50' : 'border-gray-800'
               } bg-gray-900/50 hover:border-gray-700 transition-all duration-300`}
             >
               {/* Popular badge */}
@@ -73,7 +71,7 @@ export const CarCategoriesSection = () => {
                   Popular
                 </div>
               )}
-              
+
               {/* Image */}
               <div className="relative h-48 overflow-hidden">
                 <img
@@ -87,16 +85,12 @@ export const CarCategoriesSection = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent" />
               </div>
-              
+
               {/* Content */}
               <div className="p-6">
-                <h3 className="text-xl font-bold text-white mb-2">
-                  {category.name}
-                </h3>
-                <p className="text-gray-400 text-sm mb-4">
-                  {category.description}
-                </p>
-                
+                <h3 className="text-xl font-bold text-white mb-2">{category.name}</h3>
+                <p className="text-gray-400 text-sm mb-4">{category.description}</p>
+
                 <ul className="space-y-2">
                   {category.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2 text-gray-300 text-sm">

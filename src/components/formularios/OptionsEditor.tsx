@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,13 +7,10 @@ interface OptionsEditorProps {
   onChange: (options: string[]) => void;
 }
 
-export const OptionsEditor: React.FC<OptionsEditorProps> = ({
-  options,
-  onChange
-}) => {
+export const OptionsEditor: React.FC<OptionsEditorProps> = ({ options, onChange }) => {
   const handleOptionsChange = (value: string) => {
     console.log('Valor do textarea:', value);
-    const processedOptions = value.split('\n').filter(o => o.trim() !== '');
+    const processedOptions = value.split('\n').filter((o) => o.trim() !== '');
     console.log('Opções processadas:', processedOptions);
     onChange(processedOptions);
   };

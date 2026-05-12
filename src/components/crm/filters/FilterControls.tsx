@@ -1,8 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Tag, User, Calendar as CalendarIcon, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CampaignTagsManager } from '../CampaignTagsManager';
@@ -25,14 +30,14 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
   filters,
   onFilterChange,
   statusColumns,
-  availableTags
+  availableTags,
 }) => {
-  const [usuarios, setUsuarios] = useState<{nome: string}[]>([]);
+  const [usuarios, setUsuarios] = useState<{ nome: string }[]>([]);
 
   // Recarregar a lista de usuários sempre que o componente for montado
   useEffect(() => {
     fetchUsuarios();
-    
+
     // Também recarregar quando houver mudanças nos perfis
     const channel = supabase
       .channel('profiles-changes')
@@ -50,19 +55,19 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
   const fetchUsuarios = async () => {
     try {
       console.log('🔄 Atualizando lista de usuários para filtros...');
-      
+
       // Buscar o ID do cargo "Gestor TVDE"
       const { data: cargoData } = await supabase
         .from('cargos')
         .select('id')
         .eq('nome', 'Gestor TVDE')
         .maybeSingle();
-      
+
       if (!cargoData) {
         console.error('Cargo "Gestor TVDE" não encontrado');
         return;
       }
-      
+
       // Buscar profiles pelo cargo_id (foreign key - mais confiável)
       const { data, error } = await supabase
         .from('profiles')
@@ -70,17 +75,22 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
         .not('nome', 'is', null)
         .eq('cargo_id', cargoData.id)
         .order('nome');
-      
+
       if (error) throw error;
-      console.log('📋 Usuários carregados:', data?.map(u => u.nome));
+      console.log(
+        '📋 Usuários carregados:',
+        data?.map((u) => u.nome)
+      );
       setUsuarios(data || []);
-      
+
       // Também buscar gestores ativos (que têm leads atribuídos)
-      const { data: gestores, error: gestoresError } = await supabase
-        .rpc('get_gestores');
-      
+      const { data: gestores, error: gestoresError } = await supabase.rpc('get_gestores');
+
       if (!gestoresError && gestores) {
-        console.log('👨‍💼 Gestores ativos:', gestores.map(g => g.nome));
+        console.log(
+          '👨‍💼 Gestores ativos:',
+          gestores.map((g) => g.nome)
+        );
       }
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
@@ -108,7 +118,10 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
 
         {/* Status Filter - ocupa 3 colunas */}
         <div className="col-span-1 sm:col-span-3">
-          <Select value={filters.status} onValueChange={(value) => updateFilters({ status: value })}>
+          <Select
+            value={filters.status}
+            onValueChange={(value) => updateFilters({ status: value })}
+          >
             <SelectTrigger className="w-full bg-card/50 border-border text-foreground">
               <Filter className="h-4 w-4 mr-2 flex-shrink-0" />
               <SelectValue placeholder="Status" />
@@ -118,7 +131,11 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
                 Todos os Status
               </SelectItem>
               {statusColumns.map((status) => (
-                <SelectItem key={status.id} value={status.id} className="text-foreground hover:bg-muted">
+                <SelectItem
+                  key={status.id}
+                  value={status.id}
+                  className="text-foreground hover:bg-muted"
+                >
                   <div className="flex items-center gap-2">
                     <span>{status.icon}</span>
                     {status.title}
@@ -131,7 +148,10 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
 
         {/* User Filter - ocupa 3 colunas */}
         <div className="col-span-1 sm:col-span-3">
-          <Select value={filters.userId} onValueChange={(value) => updateFilters({ userId: value })}>
+          <Select
+            value={filters.userId}
+            onValueChange={(value) => updateFilters({ userId: value })}
+          >
             <SelectTrigger className="w-full bg-card/50 border-border text-foreground">
               <User className="h-4 w-4 mr-2 flex-shrink-0" />
               <SelectValue placeholder="Usuário" />
@@ -140,11 +160,17 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
               <SelectItem value="todos" className="text-foreground hover:bg-muted">
                 Todos os Usuários
               </SelectItem>
-              {usuarios.filter(u => u.nome && u.nome.trim() !== '').map((usuario) => (
-                <SelectItem key={usuario.nome} value={usuario.nome} className="text-foreground hover:bg-muted">
-                  {usuario.nome}
-                </SelectItem>
-              ))}
+              {usuarios
+                .filter((u) => u.nome && u.nome.trim() !== '')
+                .map((usuario) => (
+                  <SelectItem
+                    key={usuario.nome}
+                    value={usuario.nome}
+                    className="text-foreground hover:bg-muted"
+                  >
+                    {usuario.nome}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
@@ -159,13 +185,15 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full justify-start text-left font-normal bg-card/50 border-border text-foreground hover:bg-muted",
-                  !filters.customStartDate && "text-muted-foreground"
+                  'w-full justify-start text-left font-normal bg-card/50 border-border text-foreground hover:bg-muted',
+                  !filters.customStartDate && 'text-muted-foreground'
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                 <span className="truncate">
-                  {filters.customStartDate ? format(filters.customStartDate, "dd/MM/yyyy", { locale: ptBR }) : "Data início"}
+                  {filters.customStartDate
+                    ? format(filters.customStartDate, 'dd/MM/yyyy', { locale: ptBR })
+                    : 'Data início'}
                 </span>
               </Button>
             </PopoverTrigger>
@@ -175,13 +203,13 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
                 selected={filters.customStartDate}
                 onSelect={(date) => {
                   console.log('📅 Data início selecionada:', date);
-                  updateFilters({ 
+                  updateFilters({
                     customStartDate: date,
-                    dateRange: 'customizado'
+                    dateRange: 'customizado',
                   });
                 }}
                 initialFocus
-                className={cn("p-3 pointer-events-auto")}
+                className={cn('p-3 pointer-events-auto')}
               />
             </PopoverContent>
           </Popover>
@@ -194,13 +222,15 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full justify-start text-left font-normal bg-card/50 border-border text-foreground hover:bg-muted",
-                  !filters.customEndDate && "text-muted-foreground"
+                  'w-full justify-start text-left font-normal bg-card/50 border-border text-foreground hover:bg-muted',
+                  !filters.customEndDate && 'text-muted-foreground'
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                 <span className="truncate">
-                  {filters.customEndDate ? format(filters.customEndDate, "dd/MM/yyyy", { locale: ptBR }) : "Data fim"}
+                  {filters.customEndDate
+                    ? format(filters.customEndDate, 'dd/MM/yyyy', { locale: ptBR })
+                    : 'Data fim'}
                 </span>
               </Button>
             </PopoverTrigger>
@@ -210,16 +240,16 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
                 selected={filters.customEndDate}
                 onSelect={(date) => {
                   console.log('📅 Data fim selecionada:', date);
-                  updateFilters({ 
+                  updateFilters({
                     customEndDate: date,
-                    dateRange: 'customizado'
+                    dateRange: 'customizado',
                   });
                 }}
                 initialFocus
-                disabled={(date) => 
+                disabled={(date) =>
                   filters.customStartDate ? date < filters.customStartDate : false
                 }
-                className={cn("p-3 pointer-events-auto")}
+                className={cn('p-3 pointer-events-auto')}
               />
             </PopoverContent>
           </Popover>
@@ -229,8 +259,8 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
         <div className="col-span-1 sm:col-span-5">
           <Popover>
             <PopoverTrigger asChild>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full bg-card/50 border-border text-foreground hover:bg-muted justify-start"
               >
                 <Tag className="h-4 w-4 mr-2 flex-shrink-0" />
@@ -257,11 +287,13 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
         {(filters.customStartDate || filters.customEndDate) && (
           <div className="col-span-1 sm:col-span-1">
             <Button
-              onClick={() => updateFilters({
-                dateRange: 'todos',
-                customStartDate: undefined,
-                customEndDate: undefined
-              })}
+              onClick={() =>
+                updateFilters({
+                  dateRange: 'todos',
+                  customStartDate: undefined,
+                  customEndDate: undefined,
+                })
+              }
               variant="outline"
               size="icon"
               className="bg-card/50 border-border text-muted-foreground hover:bg-muted hover:text-foreground w-full"

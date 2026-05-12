@@ -29,39 +29,39 @@ export interface FilterState {
   userId: string;
 }
 
-export const CRMFilters: React.FC<CRMFiltersProps> = ({ 
+export const CRMFilters: React.FC<CRMFiltersProps> = ({
   filters,
-  onFilterChange, 
-  statusColumns, 
-  totalLeads, 
+  onFilterChange,
+  statusColumns,
+  totalLeads,
   filteredCount,
   availableTags = [],
   onGenerateReport,
-  filteredLeads = []
+  filteredLeads = [],
 }) => {
   const isMobile = useIsMobile();
-  
+
   const updateFilters = (newFilters: Partial<FilterState>) => {
     const updatedFilters = { ...filters, ...newFilters };
     onFilterChange(updatedFilters);
   };
 
   const clearFilters = () => {
-    const clearedFilters = { 
-      search: '', 
-      status: 'todos', 
-      dateRange: 'todos', 
-      customStartDate: undefined, 
-      customEndDate: undefined, 
-      campaignTags: [], 
-      userId: 'todos' 
+    const clearedFilters = {
+      search: '',
+      status: 'todos',
+      dateRange: 'todos',
+      customStartDate: undefined,
+      customEndDate: undefined,
+      campaignTags: [],
+      userId: 'todos',
     };
     onFilterChange(clearedFilters);
   };
 
   const hasActiveFilters = Boolean(
-    filters.search || 
-    filters.status !== 'todos' || 
+    filters.search ||
+    filters.status !== 'todos' ||
     filters.customStartDate ||
     filters.customEndDate ||
     filters.campaignTags.length > 0 ||
@@ -130,12 +130,7 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({
               )}
 
               {filters.userId !== 'todos' && onGenerateReport && (
-                <Button
-                  onClick={generateReport}
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                >
+                <Button onClick={generateReport} variant="outline" size="sm" className="w-full">
                   Gerar Relatório
                 </Button>
               )}
@@ -177,21 +172,27 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({
                   hasActiveFilters={hasActiveFilters}
                 />
               )}
-              
+
               {/* Results Summary and Clear Button */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm text-foreground flex-wrap">
                   <span className="whitespace-nowrap">Mostrando</span>
-                  <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
+                  <Badge
+                    variant="secondary"
+                    className="bg-primary/20 text-primary border-primary/30"
+                  >
                     {filteredCount}
                   </Badge>
                   <span className="whitespace-nowrap">de</span>
-                  <Badge variant="secondary" className="bg-muted/20 text-foreground border-border/30">
+                  <Badge
+                    variant="secondary"
+                    className="bg-muted/20 text-foreground border-border/30"
+                  >
                     {totalLeads}
                   </Badge>
                   <span className="whitespace-nowrap">leads</span>
                 </div>
-                
+
                 <div className="flex gap-2 flex-wrap">
                   {hasActiveFilters && (
                     <Button
@@ -204,7 +205,7 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({
                       Limpar Filtros
                     </Button>
                   )}
-                  
+
                   {filters.userId !== 'todos' && (
                     <Button
                       onClick={() => generateReport()}

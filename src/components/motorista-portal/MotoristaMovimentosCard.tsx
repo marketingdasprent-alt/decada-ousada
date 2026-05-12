@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Wallet, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
-import { format } from "date-fns";
-import { pt } from "date-fns/locale";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Wallet, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { format } from 'date-fns';
+import { pt } from 'date-fns/locale';
 
 interface Movimento {
   id: string;
@@ -34,35 +34,39 @@ export function MotoristaMovimentosCard({ motoristaId }: MotoristaMovimentosCard
   async function loadMovimentos() {
     try {
       const { data, error } = await supabase
-        .from("motorista_financeiro")
-        .select("*")
-        .eq("motorista_id", motoristaId)
-        .order("data_movimento", { ascending: false })
+        .from('motorista_financeiro')
+        .select('*')
+        .eq('motorista_id', motoristaId)
+        .order('data_movimento', { ascending: false })
         .limit(5);
 
       if (error) throw error;
       setMovimentos(data || []);
     } catch (error) {
-      console.error("Erro ao carregar movimentos:", error);
+      console.error('Erro ao carregar movimentos:', error);
     } finally {
       setLoading(false);
     }
   }
 
   function formatCurrency(value: number) {
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: "EUR"
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
     }).format(value);
   }
 
   function getStatusBadge(status: string) {
     switch (status) {
-      case "pago":
-        return <Badge variant="default" className="bg-green-600">Pago</Badge>;
-      case "pendente":
+      case 'pago':
+        return (
+          <Badge variant="default" className="bg-green-600">
+            Pago
+          </Badge>
+        );
+      case 'pendente':
         return <Badge variant="secondary">Pendente</Badge>;
-      case "cancelado":
+      case 'cancelado':
         return <Badge variant="destructive">Cancelado</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
@@ -80,7 +84,7 @@ export function MotoristaMovimentosCard({ motoristaId }: MotoristaMovimentosCard
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {[1, 2, 3].map(i => (
+            {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
@@ -118,7 +122,11 @@ export function MotoristaMovimentosCard({ motoristaId }: MotoristaMovimentosCard
             </div>
             Extrato Financeiro
           </CardTitle>
-          <Button variant="ghost" size="sm" className="bg-muted text-muted-foreground hover:text-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider h-8 border border-border">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-muted text-muted-foreground hover:text-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider h-8 border border-border"
+          >
             Ver Todos
           </Button>
         </div>
@@ -138,35 +146,45 @@ export function MotoristaMovimentosCard({ motoristaId }: MotoristaMovimentosCard
               {movimentos.map((movimento) => (
                 <tr key={movimento.id} className="group hover:bg-muted/30 transition-colors">
                   <td className="px-8 py-5 text-xs text-muted-foreground whitespace-nowrap">
-                    {format(new Date(movimento.data_movimento), "dd MMM, yyyy", { locale: pt })}
+                    {format(new Date(movimento.data_movimento), 'dd MMM, yyyy', { locale: pt })}
                   </td>
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center",
-                        movimento.tipo === "credito" ? "bg-green-500/10" : "bg-red-500/10"
-                      )}>
-                        {movimento.tipo === "credito" ? (
+                      <div
+                        className={cn(
+                          'w-8 h-8 rounded-lg flex items-center justify-center',
+                          movimento.tipo === 'credito' ? 'bg-green-500/10' : 'bg-red-500/10'
+                        )}
+                      >
+                        {movimento.tipo === 'credito' ? (
                           <ArrowUpCircle className="w-4 h-4 text-green-600" />
                         ) : (
                           <ArrowDownCircle className="w-4 h-4 text-red-600" />
                         )}
                       </div>
-                      <span className="text-sm font-bold text-foreground">{movimento.descricao}</span>
+                      <span className="text-sm font-bold text-foreground">
+                        {movimento.descricao}
+                      </span>
                     </div>
                   </td>
-                  <td className={cn(
-                    "px-8 py-5 text-right text-sm font-black",
-                    movimento.tipo === "credito" ? "text-green-600" : "text-destructive"
-                  )}>
-                    {movimento.tipo === "credito" ? "+" : "-"}
+                  <td
+                    className={cn(
+                      'px-8 py-5 text-right text-sm font-black',
+                      movimento.tipo === 'credito' ? 'text-green-600' : 'text-destructive'
+                    )}
+                  >
+                    {movimento.tipo === 'credito' ? '+' : '-'}
                     {formatCurrency(Number(movimento.valor))}
                   </td>
                   <td className="px-8 py-5 text-right">
-                    <div className={cn(
-                      "inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                      movimento.status === "pago" ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground"
-                    )}>
+                    <div
+                      className={cn(
+                        'inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider',
+                        movimento.status === 'pago'
+                          ? 'bg-green-500/10 text-green-600'
+                          : 'bg-muted text-muted-foreground'
+                      )}
+                    >
                       {movimento.status}
                     </div>
                   </td>

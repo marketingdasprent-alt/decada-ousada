@@ -1,13 +1,28 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Loader2, Search, User, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { generateDocumentFromTemplate, uploadDocumentToStorage } from '@/utils/generateDocumentFromTemplate';
+import {
+  generateDocumentFromTemplate,
+  uploadDocumentToStorage,
+} from '@/utils/generateDocumentFromTemplate';
 import { getEmpresaById } from '@/config/empresas';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -43,11 +58,7 @@ interface NewContractDialogProps {
   onSuccess: () => void;
 }
 
-export const NewContractDialog = ({
-  open,
-  onOpenChange,
-  onSuccess,
-}: NewContractDialogProps) => {
+export const NewContractDialog = ({ open, onOpenChange, onSuccess }: NewContractDialogProps) => {
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [filteredMotoristas, setFilteredMotoristas] = useState<Motorista[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -72,10 +83,11 @@ export const NewContractDialog = ({
     if (searchTerm.trim() === '') {
       setFilteredMotoristas(motoristas);
     } else {
-      const filtered = motoristas.filter(m =>
-        m.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (m.email && m.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (m.nif && m.nif.includes(searchTerm))
+      const filtered = motoristas.filter(
+        (m) =>
+          m.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (m.email && m.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (m.nif && m.nif.includes(searchTerm))
       );
       setFilteredMotoristas(filtered);
     }
@@ -96,7 +108,7 @@ export const NewContractDialog = ({
           .from('document_templates')
           .select('id, nome, tipo, empresa_id')
           .eq('ativo', true)
-          .order('nome', { ascending: true })
+          .order('nome', { ascending: true }),
       ]);
 
       if (motoristasResult.error) throw motoristasResult.error;
@@ -123,7 +135,7 @@ export const NewContractDialog = ({
       setIsGenerating(true);
 
       // Get template info
-      const template = templates.find(t => t.id === selectedTemplateId);
+      const template = templates.find((t) => t.id === selectedTemplateId);
       if (!template) throw new Error('Template não encontrado');
 
       const { data: user } = await supabase.auth.getUser();
@@ -214,15 +226,17 @@ export const NewContractDialog = ({
           data_assinatura: selectedMotorista.data_contratacao || today,
           cidade_assinatura: 'Leiria',
           duracao_meses: 12,
-          empresaData: empresa ? {
-            nomeCompleto: empresa.nomeCompleto,
-            nif: empresa.nif,
-            sede: empresa.sede,
-            licencaTVDE: empresa.licencaTVDE,
-            licencaValidade: empresa.licencaValidade,
-            representante: empresa.representante,
-            cargoRepresentante: empresa.cargoRepresentante,
-          } : undefined
+          empresaData: empresa
+            ? {
+                nomeCompleto: empresa.nomeCompleto,
+                nif: empresa.nif,
+                sede: empresa.sede,
+                licencaTVDE: empresa.licencaTVDE,
+                licencaValidade: empresa.licencaValidade,
+                representante: empresa.representante,
+                cargoRepresentante: empresa.cargoRepresentante,
+              }
+            : undefined,
         },
         contratoId: contratoData.id,
         action,
@@ -237,19 +251,18 @@ export const NewContractDialog = ({
       }
 
       // Log the generation
-      await supabase
-        .from('contratos_reimpressoes')
-        .insert({
-          contrato_id: contratoData.id,
-          reimpresso_por: user?.user?.id,
-          motivo: newVersion > 1 ? `Nova versão (v${newVersion})` : 'Geração inicial do documento',
-        });
+      await supabase.from('contratos_reimpressoes').insert({
+        contrato_id: contratoData.id,
+        reimpresso_por: user?.user?.id,
+        motivo: newVersion > 1 ? `Nova versão (v${newVersion})` : 'Geração inicial do documento',
+      });
 
-      toast.success(newVersion > 1 
-        ? `Nova versão do contrato gerada (v${newVersion})!` 
-        : 'Contrato gerado com sucesso!'
+      toast.success(
+        newVersion > 1
+          ? `Nova versão do contrato gerada (v${newVersion})!`
+          : 'Contrato gerado com sucesso!'
       );
-      
+
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
@@ -288,7 +301,7 @@ export const NewContractDialog = ({
                   className="pl-9"
                 />
               </div>
-              
+
               {!selectedMotorista && (
                 <ScrollArea className="h-[200px] border rounded-md">
                   {filteredMotoristas.length === 0 ? (
@@ -326,11 +339,7 @@ export const NewContractDialog = ({
                       {selectedMotorista.email || selectedMotorista.telefone}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedMotorista(null)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedMotorista(null)}>
                     Alterar
                   </Button>
                 </div>
@@ -367,8 +376,7 @@ export const NewContractDialog = ({
           >
             {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                A gerar...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A gerar...
               </>
             ) : (
               'Download'
@@ -380,8 +388,7 @@ export const NewContractDialog = ({
           >
             {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                A gerar...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A gerar...
               </>
             ) : (
               'Imprimir'

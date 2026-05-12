@@ -1,8 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { FileText, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
-import { format, differenceInDays, isPast } from "date-fns";
-import { pt } from "date-fns/locale";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { FileText, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { format, differenceInDays, isPast } from 'date-fns';
+import { pt } from 'date-fns/locale';
 
 interface MotoristaAtivo {
   documento_tipo: string;
@@ -29,21 +29,21 @@ interface DocumentoStatus {
 export function MotoristaDocumentosCard({ motorista }: MotoristaDocumentosCardProps) {
   const documentos: DocumentoStatus[] = [
     {
-      nome: motorista.documento_tipo || "Documento de Identificação",
+      nome: motorista.documento_tipo || 'Documento de Identificação',
       numero: motorista.documento_numero,
-      validade: motorista.documento_validade
+      validade: motorista.documento_validade,
     },
     {
-      nome: "Carta de Condução",
+      nome: 'Carta de Condução',
       numero: motorista.carta_conducao,
       validade: motorista.carta_validade,
-      categorias: motorista.carta_categorias
+      categorias: motorista.carta_categorias,
     },
     {
-      nome: "Licença TVDE",
+      nome: 'Licença TVDE',
       numero: motorista.licenca_tvde_numero,
-      validade: motorista.licenca_tvde_validade
-    }
+      validade: motorista.licenca_tvde_validade,
+    },
   ];
 
   function getStatusBadge(validade: string | null) {
@@ -71,7 +71,10 @@ export function MotoristaDocumentosCard({ motorista }: MotoristaDocumentosCardPr
 
     if (diasRestantes <= 30) {
       return (
-        <Badge variant="outline" className="flex items-center gap-1 border-yellow-500 text-yellow-600">
+        <Badge
+          variant="outline"
+          className="flex items-center gap-1 border-yellow-500 text-yellow-600"
+        >
           <AlertTriangle className="w-3 h-3" />
           Expira em {diasRestantes} dias
         </Badge>
@@ -99,12 +102,14 @@ export function MotoristaDocumentosCard({ motorista }: MotoristaDocumentosCardPr
       <CardContent className="p-0">
         <div className="divide-y divide-slate-50">
           {documentos.map((doc, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4 p-5 md:p-8 hover:bg-slate-50 transition-colors"
             >
               <div className="space-y-1">
-                <p className="font-black text-slate-900 tracking-tight text-sm md:text-base">{doc.nome}</p>
+                <p className="font-black text-slate-900 tracking-tight text-sm md:text-base">
+                  {doc.nome}
+                </p>
                 <div className="flex flex-wrap items-center gap-2 md:gap-3">
                   {doc.numero && (
                     <span className="font-mono text-[10px] md:text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
@@ -113,18 +118,20 @@ export function MotoristaDocumentosCard({ motorista }: MotoristaDocumentosCardPr
                   )}
                   {doc.categorias && doc.categorias.length > 0 && (
                     <span className="text-[9px] md:text-[10px] font-black uppercase tracking-wider text-teal-600/70 bg-teal-50 px-2 py-1 rounded-md">
-                      Cat: {doc.categorias.join(", ")}
+                      Cat: {doc.categorias.join(', ')}
                     </span>
                   )}
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between sm:justify-end gap-4 md:gap-6">
                 {doc.validade && (
                   <div className="text-left sm:text-right">
-                    <p className="text-[9px] md:text-[10px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Validade</p>
+                    <p className="text-[9px] md:text-[10px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">
+                      Validade
+                    </p>
                     <p className="text-[10px] md:text-xs font-bold text-slate-500">
-                      {format(new Date(doc.validade), "dd MMM yyyy", { locale: pt })}
+                      {format(new Date(doc.validade), 'dd MMM yyyy', { locale: pt })}
                     </p>
                   </div>
                 )}

@@ -1,11 +1,11 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
-import { SmartForm } from "./SmartForm";
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
+import { SmartForm } from './SmartForm';
 
 interface FormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialType?: "rent" | "slot" | null;
+  initialType?: 'rent' | 'slot' | null;
 }
 
 export const FormModal = ({ isOpen, onClose, initialType = null }: FormModalProps) => {
@@ -21,7 +21,7 @@ export const FormModal = ({ isOpen, onClose, initialType = null }: FormModalProp
             onClick={onClose}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
           />
-          
+
           {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -37,8 +37,12 @@ export const FormModal = ({ isOpen, onClose, initialType = null }: FormModalProp
               >
                 <X className="w-4 h-4" />
               </button>
-              
-              <SmartForm key={initialType || 'default'} initialType={initialType} onClose={onClose} />
+
+              <SmartForm
+                key={initialType || 'default'}
+                initialType={initialType}
+                onClose={onClose}
+              />
             </div>
           </motion.div>
         </>

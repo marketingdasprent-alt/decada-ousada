@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -14,14 +13,9 @@ interface SortableFieldCardProps {
 }
 
 export const SortableFieldCard: React.FC<SortableFieldCardProps> = (props) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: props.field.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.field.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -32,10 +26,7 @@ export const SortableFieldCard: React.FC<SortableFieldCardProps> = (props) => {
 
   return (
     <div ref={setNodeRef} style={style}>
-      <FieldCard
-        {...props}
-        dragHandleProps={{ ...attributes, ...listeners }}
-      />
+      <FieldCard {...props} dragHandleProps={{ ...attributes, ...listeners }} />
     </div>
   );
 };

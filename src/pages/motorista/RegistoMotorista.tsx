@@ -209,8 +209,7 @@ const RegistoMotorista: React.FC = () => {
         <Button type="submit" className="auth-primary-button w-full" disabled={loading}>
           {loading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              A registar...
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />A registar...
             </>
           ) : (
             'Criar conta'

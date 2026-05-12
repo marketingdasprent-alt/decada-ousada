@@ -3,7 +3,7 @@
  */
 
 export const CRON_PRESETS: Record<string, string> = {
-  weekly: '0 23 * * 0',     // Sunday 23:00 UTC ≈ Monday 00:00 Lisbon
+  weekly: '0 23 * * 0', // Sunday 23:00 UTC ≈ Monday 00:00 Lisbon
 };
 
 /**

@@ -1,13 +1,13 @@
-import { SimpleNavbar } from "@/components/landing/SimpleNavbar";
-import { Footer } from "@/components/landing/Footer";
-import { FAQSection } from "@/components/landing/FAQSection";
-import { motion } from "framer-motion";
+import { SimpleNavbar } from '@/components/landing/SimpleNavbar';
+import { Footer } from '@/components/landing/Footer';
+import { FAQSection } from '@/components/landing/FAQSection';
+import { motion } from 'framer-motion';
 
 const FAQ = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <SimpleNavbar />
-      
+
       {/* Hero Section */}
       <section className="py-20 bg-gradient-to-b from-gray-900 to-black">
         <div className="container mx-auto px-4">

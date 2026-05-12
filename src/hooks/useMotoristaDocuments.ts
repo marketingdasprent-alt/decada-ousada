@@ -35,7 +35,7 @@ export const useMotoristaDocuments = (motoristaId: string | null) => {
 
       if (error) throw error;
 
-      const docs = (data || []).map(d => ({
+      const docs = (data || []).map((d) => ({
         templateId: d.template_id || '',
         contratoId: d.id,
         documentoUrl: d.documento_url,
@@ -52,14 +52,12 @@ export const useMotoristaDocuments = (motoristaId: string | null) => {
   };
 
   const hasExistingDocument = (templateId: string): ExistingDocument | null => {
-    return existingDocuments.find(d => d.templateId === templateId) || null;
+    return existingDocuments.find((d) => d.templateId === templateId) || null;
   };
 
   const downloadDocument = async (documentoUrl: string) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('documentos')
-        .download(documentoUrl);
+      const { data, error } = await supabase.storage.from('documentos').download(documentoUrl);
 
       if (error) throw error;
 

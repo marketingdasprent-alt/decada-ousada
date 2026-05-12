@@ -20,16 +20,22 @@ interface SearchableDropdownProps {
 }
 
 export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
-  items, value, onChange, placeholder, icon, disabled, matchFn,
+  items,
+  value,
+  onChange,
+  placeholder,
+  icon,
+  disabled,
+  matchFn,
 }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const selected = items.find(i => i.id === value);
+  const selected = items.find((i) => i.id === value);
   const trimmedQuery = query.trim();
-  const filtered = trimmedQuery ? items.filter(i => matchFn(i, trimmedQuery)) : items;
+  const filtered = trimmedQuery ? items.filter((i) => matchFn(i, trimmedQuery)) : items;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -68,7 +74,12 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         {selected?.secondary && (
           <span className="text-xs text-muted-foreground shrink-0">{selected.secondary}</span>
         )}
-        <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} />
+        <ChevronDown
+          className={cn(
+            'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
+            open && 'rotate-180'
+          )}
+        />
       </button>
 
       {open && (
@@ -78,30 +89,45 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
             <input
               ref={inputRef}
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Pesquisar..."
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
           <div className="max-h-56 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="px-3 py-4 text-center text-sm text-muted-foreground">Nenhum resultado</p>
+              <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+                Nenhum resultado
+              </p>
             ) : (
-              filtered.map(item => (
+              filtered.map((item) => (
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => { onChange(item.id); setOpen(false); setQuery(''); }}
+                  onClick={() => {
+                    onChange(item.id);
+                    setOpen(false);
+                    setQuery('');
+                  }}
                   className={cn(
                     'flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent text-left',
                     item.id === value && 'bg-primary/10 text-primary font-medium'
                   )}
                 >
-                  <Check className={cn('h-4 w-4 shrink-0', item.id === value ? 'opacity-100' : 'opacity-0')} />
+                  <Check
+                    className={cn(
+                      'h-4 w-4 shrink-0',
+                      item.id === value ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
                   <span className="flex-1 truncate">{item.primary}</span>
-                  {item.secondary && <span className="text-xs text-muted-foreground">{item.secondary}</span>}
+                  {item.secondary && (
+                    <span className="text-xs text-muted-foreground">{item.secondary}</span>
+                  )}
                   {item.badge && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{item.badge}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                      {item.badge}
+                    </span>
                   )}
                 </button>
               ))

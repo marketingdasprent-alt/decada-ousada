@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Clock, FileText, CheckCircle, XCircle } from "lucide-react";
+import { Card, CardContent } from '@/components/ui/card';
+import { Clock, FileText, CheckCircle, XCircle } from 'lucide-react';
 
 interface FinanceiroStatsProps {
   recibos: Array<{
@@ -10,51 +10,51 @@ interface FinanceiroStatsProps {
 
 export function FinanceiroStats({ recibos }: FinanceiroStatsProps) {
   const stats = {
-    pendentes: recibos.filter(r => r.status === 'submetido'),
-    validados: recibos.filter(r => r.status === 'validado'),
-    rejeitados: recibos.filter(r => r.status === 'rejeitado'),
-    total: recibos
+    pendentes: recibos.filter((r) => r.status === 'submetido'),
+    validados: recibos.filter((r) => r.status === 'validado'),
+    rejeitados: recibos.filter((r) => r.status === 'rejeitado'),
+    total: recibos,
   };
 
-  const calcularValor = (lista: typeof recibos) => 
+  const calcularValor = (lista: typeof recibos) =>
     lista.reduce((acc, r) => acc + (r.valor_total || 0), 0);
 
-  const formatCurrency = (value: number) => 
+  const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
 
   const cards = [
     {
-      title: "Pendentes",
+      title: 'Pendentes',
       count: stats.pendentes.length,
       value: calcularValor(stats.pendentes),
       icon: Clock,
-      color: "text-yellow-500",
-      bgColor: "bg-yellow-500/10"
+      color: 'text-yellow-500',
+      bgColor: 'bg-yellow-500/10',
     },
     {
-      title: "Totais",
+      title: 'Totais',
       count: stats.total.length,
       value: calcularValor(stats.total),
       icon: FileText,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10"
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10',
     },
     {
-      title: "Validados",
+      title: 'Validados',
       count: stats.validados.length,
       value: calcularValor(stats.validados),
       icon: CheckCircle,
-      color: "text-green-500",
-      bgColor: "bg-green-500/10"
+      color: 'text-green-500',
+      bgColor: 'bg-green-500/10',
     },
     {
-      title: "Recusados",
+      title: 'Recusados',
       count: stats.rejeitados.length,
       value: calcularValor(stats.rejeitados),
       icon: XCircle,
-      color: "text-red-500",
-      bgColor: "bg-red-500/10"
-    }
+      color: 'text-red-500',
+      bgColor: 'bg-red-500/10',
+    },
   ];
 
   return (

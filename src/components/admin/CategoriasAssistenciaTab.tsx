@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Loader2,
-  GripVertical,
-  Check,
-  X,
-  Wrench,
-} from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, GripVertical, Check, X, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,7 +57,7 @@ export const CategoriasAssistenciaTab = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoriaToDelete, setCategoriaToDelete] = useState<Categoria | null>(null);
   const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(null);
-  
+
   const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
@@ -92,9 +83,9 @@ export const CategoriasAssistenciaTab = () => {
     } catch (error: any) {
       console.error('Erro ao carregar categorias:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar as categorias.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Não foi possível carregar as categorias.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -127,9 +118,9 @@ export const CategoriasAssistenciaTab = () => {
   const handleSave = async () => {
     if (!formData.nome.trim()) {
       toast({
-        title: "Erro",
-        description: "O nome da categoria é obrigatório.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'O nome da categoria é obrigatório.',
+        variant: 'destructive',
       });
       return;
     }
@@ -150,22 +141,20 @@ export const CategoriasAssistenciaTab = () => {
           .eq('id', editingCategoria.id);
 
         if (error) throw error;
-        toast({ title: "Sucesso", description: "Categoria atualizada." });
+        toast({ title: 'Sucesso', description: 'Categoria atualizada.' });
       } else {
-        const maxOrdem = Math.max(...categorias.map(c => c.ordem || 0), 0);
-        const { error } = await supabase
-          .from('assistencia_categorias')
-          .insert({
-            nome: formData.nome.trim(),
-            descricao: formData.descricao.trim() || null,
-            cor: formData.cor,
-            icone: formData.icone.trim() || null,
-            ativo: formData.ativo,
-            ordem: maxOrdem + 1,
-          });
+        const maxOrdem = Math.max(...categorias.map((c) => c.ordem || 0), 0);
+        const { error } = await supabase.from('assistencia_categorias').insert({
+          nome: formData.nome.trim(),
+          descricao: formData.descricao.trim() || null,
+          cor: formData.cor,
+          icone: formData.icone.trim() || null,
+          ativo: formData.ativo,
+          ordem: maxOrdem + 1,
+        });
 
         if (error) throw error;
-        toast({ title: "Sucesso", description: "Categoria criada." });
+        toast({ title: 'Sucesso', description: 'Categoria criada.' });
       }
 
       setDialogOpen(false);
@@ -173,9 +162,9 @@ export const CategoriasAssistenciaTab = () => {
     } catch (error: any) {
       console.error('Erro ao guardar categoria:', error);
       toast({
-        title: "Erro",
-        description: error.message || "Não foi possível guardar a categoria.",
-        variant: "destructive",
+        title: 'Erro',
+        description: error.message || 'Não foi possível guardar a categoria.',
+        variant: 'destructive',
       });
     } finally {
       setSaving(false);
@@ -190,21 +179,21 @@ export const CategoriasAssistenciaTab = () => {
         .eq('id', categoria.id);
 
       if (error) throw error;
-      
-      setCategorias(prev => 
-        prev.map(c => c.id === categoria.id ? { ...c, ativo: !c.ativo } : c)
+
+      setCategorias((prev) =>
+        prev.map((c) => (c.id === categoria.id ? { ...c, ativo: !c.ativo } : c))
       );
-      
+
       toast({
-        title: "Sucesso",
+        title: 'Sucesso',
         description: `Categoria ${!categoria.ativo ? 'ativada' : 'desativada'}.`,
       });
     } catch (error: any) {
       console.error('Erro ao atualizar categoria:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível atualizar a categoria.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Não foi possível atualizar a categoria.',
+        variant: 'destructive',
       });
     }
   };
@@ -221,16 +210,16 @@ export const CategoriasAssistenciaTab = () => {
 
       if (error) throw error;
 
-      toast({ title: "Sucesso", description: "Categoria eliminada." });
+      toast({ title: 'Sucesso', description: 'Categoria eliminada.' });
       setDeleteDialogOpen(false);
       setCategoriaToDelete(null);
       fetchCategorias();
     } catch (error: any) {
       console.error('Erro ao eliminar categoria:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível eliminar a categoria. Pode estar a ser usada por tickets.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Não foi possível eliminar a categoria. Pode estar a ser usada por tickets.',
+        variant: 'destructive',
       });
     } finally {
       setSaving(false);
@@ -283,16 +272,18 @@ export const CategoriasAssistenciaTab = () => {
             <Card key={categoria.id} className={categoria.ativo ? '' : 'opacity-60'}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
-                  <div 
+                  <div
                     className="w-4 h-4 rounded-full shrink-0"
                     style={{ backgroundColor: categoria.cor || '#6B7280' }}
                   />
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium">{categoria.nome}</h3>
                       {!categoria.ativo && (
-                        <Badge variant="outline" className="text-xs">Inativa</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          Inativa
+                        </Badge>
                       )}
                     </div>
                     {categoria.descricao && (
@@ -301,17 +292,13 @@ export const CategoriasAssistenciaTab = () => {
                       </p>
                     )}
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={categoria.ativo}
                       onCheckedChange={() => handleToggleAtivo(categoria)}
                     />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleOpenDialog(categoria)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(categoria)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
@@ -336,11 +323,9 @@ export const CategoriasAssistenciaTab = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingCategoria ? 'Editar Categoria' : 'Nova Categoria'}
-            </DialogTitle>
+            <DialogTitle>{editingCategoria ? 'Editar Categoria' : 'Nova Categoria'}</DialogTitle>
             <DialogDescription>
-              {editingCategoria 
+              {editingCategoria
                 ? 'Atualize os dados da categoria.'
                 : 'Crie uma nova categoria para tickets de assistência.'}
             </DialogDescription>
@@ -353,7 +338,7 @@ export const CategoriasAssistenciaTab = () => {
                 id="nome"
                 placeholder="Ex: Reparação Motor"
                 value={formData.nome}
-                onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
               />
             </div>
 
@@ -363,7 +348,7 @@ export const CategoriasAssistenciaTab = () => {
                 id="descricao"
                 placeholder="Descrição opcional..."
                 value={formData.descricao}
-                onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
               />
             </div>
 
@@ -378,7 +363,7 @@ export const CategoriasAssistenciaTab = () => {
                       formData.cor === cor ? 'border-foreground scale-110' : 'border-transparent'
                     }`}
                     style={{ backgroundColor: cor }}
-                    onClick={() => setFormData(prev => ({ ...prev, cor }))}
+                    onClick={() => setFormData((prev) => ({ ...prev, cor }))}
                   />
                 ))}
               </div>
@@ -388,7 +373,7 @@ export const CategoriasAssistenciaTab = () => {
               <Switch
                 id="ativo"
                 checked={formData.ativo}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, ativo: checked }))}
+                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, ativo: checked }))}
               />
               <Label htmlFor="ativo">Categoria ativa</Label>
             </div>
@@ -412,13 +397,17 @@ export const CategoriasAssistenciaTab = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar categoria?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem a certeza que deseja eliminar a categoria "{categoriaToDelete?.nome}"?
-              Esta ação não pode ser desfeita.
+              Tem a certeza que deseja eliminar a categoria "{categoriaToDelete?.nome}"? Esta ação
+              não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={saving}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={saving} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={saving}
+              className="bg-destructive text-destructive-foreground"
+            >
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Eliminar
             </AlertDialogAction>

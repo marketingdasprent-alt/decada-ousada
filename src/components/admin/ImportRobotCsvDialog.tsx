@@ -2,7 +2,12 @@ import React, { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Upload, Loader2, FileText, CheckCircle2, AlertCircle, Fuel, Zap } from 'lucide-react';
@@ -16,7 +21,10 @@ interface ImportRobotCsvDialogProps {
 }
 
 export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
-  open, onOpenChange, integracaoId, onImportComplete,
+  open,
+  onOpenChange,
+  integracaoId,
+  onImportComplete,
 }) => {
   const [importing, setImporting] = useState(false);
   const [activeTab, setActiveTab] = useState('uber');
@@ -67,7 +75,7 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ integracao_id: integracaoId, ...body }),
       });
@@ -110,12 +118,12 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
-          integracao_id: integracaoId, 
+        body: JSON.stringify({
+          integracao_id: integracaoId,
           dados_csv_bolt: csvText,
-          origem: 'Upload Manual (Contas)' 
+          origem: 'Upload Manual (Contas)',
         }),
       });
 
@@ -155,7 +163,7 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ integracao_id: integracaoId, combustivel_csv: csvText }),
       });
@@ -198,12 +206,16 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
     }
   };
 
-  const hasFiles = activeTab === 'uber'
-    ? (!!pagamentosFile || !!viagensFile)
-    : activeTab === 'bolt' ? !!boltFile
-    : activeTab === 'bp' ? !!combustivelFile
-    : activeTab === 'repsol' ? !!repsolFile
-    : !!edpFile;
+  const hasFiles =
+    activeTab === 'uber'
+      ? !!pagamentosFile || !!viagensFile
+      : activeTab === 'bolt'
+        ? !!boltFile
+        : activeTab === 'bp'
+          ? !!combustivelFile
+          : activeTab === 'repsol'
+            ? !!repsolFile
+            : !!edpFile;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -213,12 +225,16 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
             <Upload className="h-5 w-5" />
             Importar CSV Manual
           </DialogTitle>
-          <DialogDescription>
-            Carregue ficheiros CSV para importação manual.
-          </DialogDescription>
+          <DialogDescription>Carregue ficheiros CSV para importação manual.</DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setResult(null); }}>
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            setActiveTab(v);
+            setResult(null);
+          }}
+        >
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="uber">Uber</TabsTrigger>
             <TabsTrigger value="bolt">Bolt</TabsTrigger>
@@ -234,9 +250,16 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
                 className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
                 onClick={() => pagamentosRef.current?.click()}
               >
-                <input ref={pagamentosRef} type="file" accept=".csv,.txt"
-                  onChange={(e) => { setPagamentosFile(e.target.files?.[0] ?? null); setResult(null); }}
-                  className="hidden" />
+                <input
+                  ref={pagamentosRef}
+                  type="file"
+                  accept=".csv,.txt"
+                  onChange={(e) => {
+                    setPagamentosFile(e.target.files?.[0] ?? null);
+                    setResult(null);
+                  }}
+                  className="hidden"
+                />
                 {pagamentosFile ? (
                   <div className="flex items-center justify-center gap-2">
                     <FileText className="h-4 w-4 text-primary" />
@@ -250,36 +273,74 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
           </TabsContent>
 
           <TabsContent value="bolt" className="space-y-4 mt-4">
-            <FileUploadField file={boltFile} setFile={setBoltFile} inputRef={boltRef} label="CSV Bolt (Settlements)" icon={<FileText className="h-4 w-4" />} />
+            <FileUploadField
+              file={boltFile}
+              setFile={setBoltFile}
+              inputRef={boltRef}
+              label="CSV Bolt (Settlements)"
+              icon={<FileText className="h-4 w-4" />}
+            />
           </TabsContent>
 
           <TabsContent value="bp" className="space-y-4 mt-4">
-            <FileUploadField file={combustivelFile} setFile={setCombustivelFile} inputRef={combustivelRef} label="CSV BP (CardMonitor)" icon={<Fuel className="h-4 w-4" />} />
+            <FileUploadField
+              file={combustivelFile}
+              setFile={setCombustivelFile}
+              inputRef={combustivelRef}
+              label="CSV BP (CardMonitor)"
+              icon={<Fuel className="h-4 w-4" />}
+            />
           </TabsContent>
 
           <TabsContent value="repsol" className="space-y-4 mt-4">
-            <FileUploadField file={repsolFile} setFile={setRepsolFile} inputRef={repsolRef} label="CSV Repsol (Solred)" icon={<Fuel className="h-4 w-4" />} />
+            <FileUploadField
+              file={repsolFile}
+              setFile={setRepsolFile}
+              inputRef={repsolRef}
+              label="CSV Repsol (Solred)"
+              icon={<Fuel className="h-4 w-4" />}
+            />
           </TabsContent>
 
           <TabsContent value="edp" className="space-y-4 mt-4">
-            <FileUploadField file={edpFile} setFile={setEdpFile} inputRef={edpRef} label="CSV EDP (Mobilidade)" icon={<Zap className="h-4 w-4" />} />
+            <FileUploadField
+              file={edpFile}
+              setFile={setEdpFile}
+              inputRef={edpRef}
+              label="CSV EDP (Mobilidade)"
+              icon={<Zap className="h-4 w-4" />}
+            />
           </TabsContent>
         </Tabs>
 
         {result && (
-          <div className={`flex items-start gap-2 p-3 rounded-lg text-sm ${
-            result.success ? 'bg-green-500/10 text-green-600' : 'bg-destructive/10 text-destructive'
-          }`}>
-            {result.success ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+          <div
+            className={`flex items-start gap-2 p-3 rounded-lg text-sm ${
+              result.success
+                ? 'bg-green-500/10 text-green-600'
+                : 'bg-destructive/10 text-destructive'
+            }`}
+          >
+            {result.success ? (
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+            ) : (
+              <AlertCircle className="h-4 w-4 shrink-0" />
+            )}
             <span>{result.message}</span>
           </div>
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={importing}>Fechar</Button>
+          <Button variant="outline" onClick={handleClose} disabled={importing}>
+            Fechar
+          </Button>
           {!result?.success && (
             <Button onClick={handleImport} disabled={!hasFiles || importing}>
-              {importing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+              {importing ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Upload className="h-4 w-4 mr-2" />
+              )}
               Importar
             </Button>
           )}
@@ -292,10 +353,25 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
 const FileUploadField = ({ file, setFile, inputRef, label, icon }: any) => (
   <div>
     <p className="text-sm font-medium mb-1.5">{label}</p>
-    <div className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/50" onClick={() => inputRef.current?.click()}>
-      <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-      {file ? <div className="flex items-center justify-center gap-2">{icon}<span className="text-sm">{file.name}</span></div> : <p className="text-sm text-muted-foreground">Clique para selecionar</p>}
+    <div
+      className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/50"
+      onClick={() => inputRef.current?.click()}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".csv"
+        className="hidden"
+        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+      />
+      {file ? (
+        <div className="flex items-center justify-center gap-2">
+          {icon}
+          <span className="text-sm">{file.name}</span>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">Clique para selecionar</p>
+      )}
     </div>
   </div>
 );
-

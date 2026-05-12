@@ -58,7 +58,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
 
-    setState(prev => ({ ...prev, loading: true }));
+    setState((prev) => ({ ...prev, loading: true }));
 
     try {
       let { data: profile, error: profileError } = await supabase
@@ -69,7 +69,9 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       // Fallback se tipo_utilizador não existir na tabela
       if (profileError && profileError.message?.includes('tipo_utilizador')) {
-        console.warn('[PermissionsContext] Coluna tipo_utilizador não encontrada, tentando fallback...');
+        console.warn(
+          '[PermissionsContext] Coluna tipo_utilizador não encontrada, tentando fallback...'
+        );
         const { data: fallbackProfile, error: fallbackError } = await supabase
           .from('profiles')
           .select('is_admin, cargo_id, cargo')
@@ -155,7 +157,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return;
       }
 
-      const allRecursoIds = permissoesList.map(p => p.recurso_id);
+      const allRecursoIds = permissoesList.map((p) => p.recurso_id);
 
       const { data: recursosList, error: recursosError } = await supabase
         .from('recursos')
@@ -164,7 +166,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       if (currentFetchId !== fetchIdRef.current) return;
 
-      const allNomes = recursosError ? [] : (recursosList?.map(r => r.nome) || []);
+      const allNomes = recursosError ? [] : recursosList?.map((r) => r.nome) || [];
 
       let editNomes: string[] = [];
       try {
@@ -177,9 +179,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
         if (editData && editData.length > 0 && currentFetchId === fetchIdRef.current) {
           const editIds = editData.map((p: any) => p.recurso_id);
-          editNomes = (recursosList || [])
-            .filter(r => editIds.includes(r.id))
-            .map(r => r.nome);
+          editNomes = (recursosList || []).filter((r) => editIds.includes(r.id)).map((r) => r.nome);
         }
       } catch {
         // pode_editar ainda não existe na DB
@@ -209,25 +209,39 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     fetchPermissions();
   }, [user?.id, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasAccessToResource = useCallback((recurso: string): boolean => {
-    if (state.isAdmin) return true;
-    return state.recursos.includes(recurso);
-  }, [state.isAdmin, state.recursos]);
+  const hasAccessToResource = useCallback(
+    (recurso: string): boolean => {
+      if (state.isAdmin) return true;
+      return state.recursos.includes(recurso);
+    },
+    [state.isAdmin, state.recursos]
+  );
 
-  const canEdit = useCallback((recurso: string): boolean => {
-    if (state.isAdmin) return true;
-    if (state.recursosEditaveis.length === 0 && state.recursos.includes(recurso)) return true;
-    return state.recursosEditaveis.includes(recurso);
-  }, [state.isAdmin, state.recursos, state.recursosEditaveis]);
+  const canEdit = useCallback(
+    (recurso: string): boolean => {
+      if (state.isAdmin) return true;
+      if (state.recursosEditaveis.length === 0 && state.recursos.includes(recurso)) return true;
+      return state.recursosEditaveis.includes(recurso);
+    },
+    [state.isAdmin, state.recursos, state.recursosEditaveis]
+  );
 
   // Derived loading: true whenever user is present but their permissions haven't
   // been fetched yet. This is computed synchronously during render, eliminating
   // the race window between "user changes" and "fetchPermissions sets state.loading=true".
-  const effectiveLoading = state.loading ||
-    (!authLoading && user != null && user.id !== lastFetchedUserIdRef.current);
+  const effectiveLoading =
+    state.loading || (!authLoading && user != null && user.id !== lastFetchedUserIdRef.current);
 
   return (
-    <PermissionsContext.Provider value={{ ...state, loading: effectiveLoading, hasAccessToResource, canEdit, refreshPermissions: fetchPermissions }}>
+    <PermissionsContext.Provider
+      value={{
+        ...state,
+        loading: effectiveLoading,
+        hasAccessToResource,
+        canEdit,
+        refreshPermissions: fetchPermissions,
+      }}
+    >
       {children}
     </PermissionsContext.Provider>
   );

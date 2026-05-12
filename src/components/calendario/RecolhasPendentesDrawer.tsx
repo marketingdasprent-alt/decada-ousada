@@ -7,11 +7,24 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import {
-  ArrowLeft, Camera, Car, CheckCircle, Film, Loader2, MapPin, Upload, X,
+  ArrowLeft,
+  Camera,
+  Car,
+  CheckCircle,
+  Film,
+  Loader2,
+  MapPin,
+  Upload,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatMatricula, SearchableDropdown } from './calendarioUtils';
-import { CheckinDadosSection, emptyCheckinDados, validateCheckinDados, saveCheckinDados } from './CheckinDadosSection';
+import {
+  CheckinDadosSection,
+  emptyCheckinDados,
+  validateCheckinDados,
+  saveCheckinDados,
+} from './CheckinDadosSection';
 import type { CheckinDadosState } from './CheckinDadosSection';
 
 interface ViaturaEmRecolha {
@@ -47,7 +60,9 @@ function norm(s: string) {
 }
 
 export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = ({
-  open, onOpenChange, userId,
+  open,
+  onOpenChange,
+  userId,
 }) => {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<ViaturaEmRecolha | null>(null);
@@ -110,16 +125,20 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
           .maybeSingle();
         motoristaNome = mot?.nome || '';
       }
-      return { contratoId: ct.id, contratoNumero: ct.numero_contrato as number | null, motoristaNome };
+      return {
+        contratoId: ct.id,
+        contratoNumero: ct.numero_contrato as number | null,
+        motoristaNome,
+      };
     },
     enabled: !!selected?.id,
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const sel = Array.from(e.target.files || []);
-    setFiles(prev => [
+    setFiles((prev) => [
       ...prev,
-      ...sel.map(f => ({
+      ...sel.map((f) => ({
         id: Math.random().toString(36).slice(2),
         file: f,
         preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
@@ -129,10 +148,10 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
   };
 
   const removeFile = (id: string) => {
-    setFiles(prev => {
-      const f = prev.find(x => x.id === id);
+    setFiles((prev) => {
+      const f = prev.find((x) => x.id === id);
       if (f?.preview) URL.revokeObjectURL(f.preview);
-      return prev.filter(x => x.id !== id);
+      return prev.filter((x) => x.id !== id);
     });
   };
 
@@ -154,8 +173,15 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
       toast.error('Adicione pelo menos uma foto/vídeo ou registe um dano com foto');
       return;
     }
-    const checkinErr = validateCheckinDados(checkinDados, selected.km_atual ?? 0, selected.combustivel ?? '');
-    if (checkinErr) { toast.error(checkinErr); return; }
+    const checkinErr = validateCheckinDados(
+      checkinDados,
+      selected.km_atual ?? 0,
+      selected.combustivel ?? ''
+    );
+    if (checkinErr) {
+      toast.error(checkinErr);
+      return;
+    }
     setSaving(true);
     try {
       // 1. Encontrar contrato ativo para esta viatura
@@ -169,16 +195,21 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
         .maybeSingle();
 
       // 2. Viatura → disponivel + estação
-      await supabase.from('viaturas')
+      await supabase
+        .from('viaturas')
         .update({ status: 'disponivel', estacao_id: estacaoId })
         .eq('id', selected.id);
 
       // 3. Encerrar contrato + km/fuel/danos
       if (contrato) {
-        await supabase.from('contratos')
-          .update({ status: 'encerrado' })
-          .eq('id', contrato.id);
-        await saveCheckinDados({ dados: checkinDados, contratoId: contrato.id, viaturaId: selected.id, userId, tipo: 'checkin' });
+        await supabase.from('contratos').update({ status: 'encerrado' }).eq('id', contrato.id);
+        await saveCheckinDados({
+          dados: checkinDados,
+          contratoId: contrato.id,
+          viaturaId: selected.id,
+          userId,
+          tipo: 'checkin',
+        });
 
         // 4. Upload fotos se existirem
         if (files.length > 0) {
@@ -245,20 +276,29 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
           </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-semibold leading-tight">Check-in na Estação</h1>
-            <p className="text-xs text-muted-foreground truncate">{formatMatricula(selected.matricula)} — {selected.marca} {selected.modelo}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {formatMatricula(selected.matricula)} — {selected.marca} {selected.modelo}
+            </p>
           </div>
           <Button onClick={handleConfirm} disabled={saving} className="shrink-0">
-            {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...</> : 'Confirmar'}
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...
+              </>
+            ) : (
+              'Confirmar'
+            )}
           </Button>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-
             <div className="rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-4 text-sm text-green-700 dark:text-green-300">
               <p className="font-medium">Viatura chegou à estação.</p>
-              <p className="mt-0.5 opacity-80 text-xs">Selecione a estação, preencha a condição da viatura e confirme.</p>
+              <p className="mt-0.5 opacity-80 text-xs">
+                Selecione a estação, preencha a condição da viatura e confirme.
+              </p>
             </div>
 
             {/* Estação — obrigatória */}
@@ -268,7 +308,7 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
                 Estação de Chegada <span className="text-destructive ml-1">*</span>
               </Label>
               <SearchableDropdown
-                items={estacoes.map(e => ({
+                items={estacoes.map((e) => ({
                   id: e.id,
                   primary: e.nome,
                   secondary: e.cidade || undefined,
@@ -278,7 +318,7 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
                 placeholder="Selecionar estação..."
                 icon={<MapPin className="h-4 w-4" />}
                 matchFn={(item, q) => {
-                  const e = estacoes.find(x => x.id === item.id);
+                  const e = estacoes.find((x) => x.id === item.id);
                   if (!e) return false;
                   return norm(e.nome).includes(norm(q)) || norm(e.cidade || '').includes(norm(q));
                 }}
@@ -304,11 +344,27 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
             <div className="space-y-3">
               <Label>
                 Fotos / Vídeos{' '}
-                <span className="text-muted-foreground font-normal text-xs">(obrigatório se sem danos)</span>
+                <span className="text-muted-foreground font-normal text-xs">
+                  (obrigatório se sem danos)
+                </span>
               </Label>
 
-              <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
-              <input ref={cameraInputRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileChange} />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*,video/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileChange}
+              />
 
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -331,17 +387,30 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
 
               {files.length > 0 && (
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {files.map(f => (
-                    <div key={f.id} className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted">
-                      {f.preview
-                        ? <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
-                        : (
-                          <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
-                            <Film className="h-5 w-5 text-muted-foreground" />
-                            <span className="text-[10px] text-muted-foreground truncate w-full text-center">{f.file.name}</span>
-                          </div>
-                        )}
-                      <button type="button" onClick={() => removeFile(f.id)} className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white">
+                  {files.map((f) => (
+                    <div
+                      key={f.id}
+                      className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted"
+                    >
+                      {f.preview ? (
+                        <img
+                          src={f.preview}
+                          alt={f.file.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
+                          <Film className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-[10px] text-muted-foreground truncate w-full text-center">
+                            {f.file.name}
+                          </span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(f.id)}
+                        className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white"
+                      >
                         <X className="h-3 w-3" />
                       </button>
                     </div>
@@ -349,7 +418,6 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
                 </div>
               )}
             </div>
-
           </div>
         </div>
       </div>
@@ -381,14 +449,21 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {viaturas.map(v => (
-                <div key={v.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
+              {viaturas.map((v) => (
+                <div
+                  key={v.id}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors"
+                >
                   <div className={cn('rounded-lg p-2 bg-orange-500/10 shrink-0')}>
                     <Car className="h-4 w-4 text-orange-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-mono font-semibold text-sm">{formatMatricula(v.matricula)}</p>
-                    <p className="text-xs text-muted-foreground truncate">{v.marca} {v.modelo}</p>
+                    <p className="font-mono font-semibold text-sm">
+                      {formatMatricula(v.matricula)}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {v.marca} {v.modelo}
+                    </p>
                     {v.categoria && (
                       <p className="text-xs text-muted-foreground/70">{v.categoria}</p>
                     )}

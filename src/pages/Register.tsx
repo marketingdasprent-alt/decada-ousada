@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +12,7 @@ import { Eye, EyeOff, Car, UserPlus } from 'lucide-react';
 const Register = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  
+
   const [email, setEmail] = useState('');
   const [nome, setNome] = useState('');
   const [password, setPassword] = useState('');
@@ -25,7 +24,7 @@ const Register = () => {
   const [isFirstUser, setIsFirstUser] = useState(false);
   const [cargoId, setCargoId] = useState<string | null>(null);
   const [cargoNome, setCargoNome] = useState<string | null>(null);
-  
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -42,7 +41,7 @@ const Register = () => {
   const validateAccess = async () => {
     console.log('=== VALIDAÇÃO DE ACESSO ===');
     console.log('Token:', token);
-    
+
     try {
       // Verificar se há usuários no sistema
       const { count, error: countError } = await supabase
@@ -70,17 +69,19 @@ const Register = () => {
       // CASO 2: Token presente - validar convite
       if (token) {
         console.log('Validando token:', token);
-        
+
         // Buscar convite COM join para pegar nome do cargo
         const { data: convite, error } = await supabase
           .from('convites')
-          .select(`
+          .select(
+            `
             *,
             cargos:cargo_id (
               id,
               nome
             )
-          `)
+          `
+          )
           .eq('token', token)
           .eq('usado', false)
           .maybeSingle();
@@ -124,7 +125,6 @@ const Register = () => {
       console.log('Sistema tem usuários mas sem token - acesso negado');
       setTokenValid(false);
       setValidatingToken(false);
-
     } catch (error) {
       console.error('Erro na validação:', error);
       setTokenValid(false);
@@ -134,21 +134,21 @@ const Register = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       toast({
-        title: "Erro",
-        description: "As senhas não coincidem.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'As senhas não coincidem.',
+        variant: 'destructive',
       });
       return;
     }
 
     if (password.length < 6) {
       toast({
-        title: "Erro",
-        description: "A senha deve ter pelo menos 6 caracteres.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'A senha deve ter pelo menos 6 caracteres.',
+        variant: 'destructive',
       });
       return;
     }
@@ -157,7 +157,7 @@ const Register = () => {
 
     try {
       console.log('Registrando usuário:', { email, nome, cargoId, cargoNome, isFirstUser });
-      
+
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -178,26 +178,23 @@ const Register = () => {
       // Marcar convite como usado se tem token
       if (token) {
         console.log('Marcando convite como usado');
-        await supabase
-          .from('convites')
-          .update({ usado: true })
-          .eq('token', token);
+        await supabase.from('convites').update({ usado: true }).eq('token', token);
       }
 
       toast({
-        title: "Sucesso",
-        description: isFirstUser 
-          ? "Primeira conta criada com sucesso! Você é agora um administrador."
-          : "Conta criada com sucesso! Você já pode fazer login.",
+        title: 'Sucesso',
+        description: isFirstUser
+          ? 'Primeira conta criada com sucesso! Você é agora um administrador.'
+          : 'Conta criada com sucesso! Você já pode fazer login.',
       });
 
       navigate('/login');
     } catch (error: any) {
       console.error('Erro no registro:', error);
       toast({
-        title: "Erro no registro",
-        description: error.message || "Erro ao criar conta. Tente novamente.",
-        variant: "destructive",
+        title: 'Erro no registro',
+        description: error.message || 'Erro ao criar conta. Tente novamente.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -245,7 +242,7 @@ const Register = () => {
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
       <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.02] bg-grid-black/[0.02] bg-[size:60px_60px]" />
-      
+
       <div className="relative z-10 w-full max-w-md">
         <Card className="border-border/50 backdrop-blur-sm shadow-xl">
           <CardHeader className="text-center pb-8">
@@ -258,15 +255,14 @@ const Register = () => {
               {isFirstUser ? 'Primeiro Admin - WeGest' : 'Registro WeGest'}
             </CardTitle>
             <p className="text-muted-foreground mt-2">
-              {isFirstUser 
-                ? 'Configure a primeira conta de administrador' 
-                : cargoNome 
-                  ? `Complete seu registro como ${cargoNome}` 
-                  : 'Complete seu registro com o convite'
-              }
+              {isFirstUser
+                ? 'Configure a primeira conta de administrador'
+                : cargoNome
+                  ? `Complete seu registro como ${cargoNome}`
+                  : 'Complete seu registro com o convite'}
             </p>
           </CardHeader>
-          
+
           <CardContent>
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="space-y-2">
@@ -281,7 +277,7 @@ const Register = () => {
                   placeholder="seu@email.com"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="nome">Nome Completo</Label>
                 <Input
@@ -293,7 +289,7 @@ const Register = () => {
                   placeholder="Seu nome completo"
                 />
               </div>
-              
+
               {cargoNome && (
                 <div className="space-y-2">
                   <Label>Grupo de Permissões</Label>
@@ -302,13 +298,13 @@ const Register = () => {
                   </div>
                 </div>
               )}
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -324,7 +320,7 @@ const Register = () => {
                   </button>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirmar Senha</Label>
                 <Input
@@ -336,23 +332,20 @@ const Register = () => {
                   placeholder="Repita sua senha"
                 />
               </div>
-              
-                <Button
+
+              <Button
                 type="submit"
                 disabled={loading}
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold mt-6"
               >
-                {loading ? "Criando conta..." : (isFirstUser ? "Criar Conta Admin" : "Criar Conta")}
+                {loading ? 'Criando conta...' : isFirstUser ? 'Criar Conta Admin' : 'Criar Conta'}
               </Button>
             </form>
-            
+
             <div className="mt-6 text-center">
               <p className="text-muted-foreground text-sm">
                 Já tem uma conta?{' '}
-                <Link 
-                  to="/login" 
-                  className="text-primary hover:underline font-medium"
-                >
+                <Link to="/login" className="text-primary hover:underline font-medium">
                   Fazer login
                 </Link>
               </p>

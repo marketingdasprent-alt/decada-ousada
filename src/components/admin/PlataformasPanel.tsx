@@ -12,16 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Loader2,
-  Plus,
-  Settings,
-  Zap,
-  Car,
-  CheckCircle,
-  XCircle,
-  Clock,
-} from 'lucide-react';
+import { Loader2, Plus, Settings, Zap, Car, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { IntegracaoDialog } from './IntegracaoDialog';
@@ -71,8 +62,8 @@ export const PlataformasPanel: React.FC = () => {
 
     setIntegracoes((prev) =>
       prev.map((integracao) =>
-        integracao.id === updatedIntegracao.id ? updatedIntegracao : integracao,
-      ),
+        integracao.id === updatedIntegracao.id ? updatedIntegracao : integracao
+      )
     );
     setSelectedIntegracao(updatedIntegracao);
   };
@@ -154,9 +145,10 @@ export const PlataformasPanel: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {integracoes.map((integracao) => {
-                  const lastActivity = integracao.plataforma === 'uber'
-                    ? integracao.last_webhook_at ?? integracao.ultimo_sync
-                    : integracao.ultimo_sync;
+                  const lastActivity =
+                    integracao.plataforma === 'uber'
+                      ? (integracao.last_webhook_at ?? integracao.ultimo_sync)
+                      : integracao.ultimo_sync;
 
                   return (
                     <TableRow key={integracao.id} className="cursor-pointer hover:bg-muted/50">
@@ -164,11 +156,15 @@ export const PlataformasPanel: React.FC = () => {
                         <div>
                           <p className="font-medium">{integracao.nome}</p>
                           {integracao.company_name && (
-                            <p className="text-sm text-muted-foreground">{integracao.company_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {integracao.company_name}
+                            </p>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{getPlataformaBadge(integracao.plataforma as PlataformaOperacional)}</TableCell>
+                      <TableCell>
+                        {getPlataformaBadge(integracao.plataforma as PlataformaOperacional)}
+                      </TableCell>
                       <TableCell className="text-center">
                         {integracao.ativo ? (
                           <Badge variant="default" className="gap-1">

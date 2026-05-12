@@ -1,13 +1,9 @@
-import * as React from "react";
-import { ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
+import * as React from 'react';
+import { ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import {
   Command,
   CommandEmpty,
@@ -15,21 +11,21 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
+} from '@/components/ui/command';
 
 // Lista de países mais comuns para motoristas em Portugal
 const COUNTRIES = [
-  { code: "PT", name: "Portugal", dial: "+351", flag: "🇵🇹" },
-  { code: "BR", name: "Brasil", dial: "+55", flag: "🇧🇷" },
-  { code: "AO", name: "Angola", dial: "+244", flag: "🇦🇴" },
-  { code: "MZ", name: "Moçambique", dial: "+258", flag: "🇲🇿" },
-  { code: "CV", name: "Cabo Verde", dial: "+238", flag: "🇨🇻" },
-  { code: "GW", name: "Guiné-Bissau", dial: "+245", flag: "🇬🇼" },
-  { code: "ST", name: "São Tomé e Príncipe", dial: "+239", flag: "🇸🇹" },
-  { code: "ES", name: "Espanha", dial: "+34", flag: "🇪🇸" },
-  { code: "FR", name: "França", dial: "+33", flag: "🇫🇷" },
-  { code: "GB", name: "Reino Unido", dial: "+44", flag: "🇬🇧" },
-  { code: "DE", name: "Alemanha", dial: "+49", flag: "🇩🇪" },
+  { code: 'PT', name: 'Portugal', dial: '+351', flag: '🇵🇹' },
+  { code: 'BR', name: 'Brasil', dial: '+55', flag: '🇧🇷' },
+  { code: 'AO', name: 'Angola', dial: '+244', flag: '🇦🇴' },
+  { code: 'MZ', name: 'Moçambique', dial: '+258', flag: '🇲🇿' },
+  { code: 'CV', name: 'Cabo Verde', dial: '+238', flag: '🇨🇻' },
+  { code: 'GW', name: 'Guiné-Bissau', dial: '+245', flag: '🇬🇼' },
+  { code: 'ST', name: 'São Tomé e Príncipe', dial: '+239', flag: '🇸🇹' },
+  { code: 'ES', name: 'Espanha', dial: '+34', flag: '🇪🇸' },
+  { code: 'FR', name: 'França', dial: '+33', flag: '🇫🇷' },
+  { code: 'GB', name: 'Reino Unido', dial: '+44', flag: '🇬🇧' },
+  { code: 'DE', name: 'Alemanha', dial: '+49', flag: '🇩🇪' },
 ] as const;
 
 type Country = (typeof COUNTRIES)[number];
@@ -47,10 +43,10 @@ interface PhoneInputProps {
 
 // Parse phone number string to extract country code and number
 export function parsePhoneNumber(fullNumber: string): { countryCode: string; number: string } {
-  if (!fullNumber) return { countryCode: "PT", number: "" };
-  
+  if (!fullNumber) return { countryCode: 'PT', number: '' };
+
   const trimmed = fullNumber.trim();
-  
+
   // Find matching country by dial code
   for (const country of COUNTRIES) {
     if (trimmed.startsWith(country.dial)) {
@@ -58,40 +54,40 @@ export function parsePhoneNumber(fullNumber: string): { countryCode: string; num
       return { countryCode: country.code, number };
     }
   }
-  
+
   // If no country code found, assume it's just a number (default to PT)
   const digitsOnly = trimmed.replace(/\D/g, '');
-  return { countryCode: "PT", number: digitsOnly };
+  return { countryCode: 'PT', number: digitsOnly };
 }
 
 // Format phone number for storage
 export function formatPhoneNumber(countryCode: string, number: string): string {
-  const country = COUNTRIES.find(c => c.code === countryCode);
-  const dial = country?.dial || "+351";
+  const country = COUNTRIES.find((c) => c.code === countryCode);
+  const dial = country?.dial || '+351';
   const cleanNumber = number.replace(/\D/g, '');
-  
-  if (!cleanNumber) return "";
+
+  if (!cleanNumber) return '';
   return `${dial} ${cleanNumber}`;
 }
 
 // Format number for display (with spaces)
 function formatDisplayNumber(number: string, countryCode: string): string {
   const digits = number.replace(/\D/g, '');
-  
+
   // Portugal format: XXX XXX XXX
-  if (countryCode === "PT") {
+  if (countryCode === 'PT') {
     if (digits.length <= 3) return digits;
     if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
     return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
   }
-  
+
   // Brazil format: XX XXXXX XXXX
-  if (countryCode === "BR") {
+  if (countryCode === 'BR') {
     if (digits.length <= 2) return digits;
     if (digits.length <= 7) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
     return `${digits.slice(0, 2)} ${digits.slice(2, 7)} ${digits.slice(7, 11)}`;
   }
-  
+
   // Generic format: groups of 3
   const groups = [];
   for (let i = 0; i < digits.length; i += 3) {
@@ -104,69 +100,72 @@ function formatDisplayNumber(number: string, countryCode: string): string {
 export function validatePhoneNumber(fullNumber: string): boolean {
   const { countryCode, number } = parsePhoneNumber(fullNumber);
   const digits = number.replace(/\D/g, '');
-  
+
   if (!digits) return false;
-  
+
   // Portugal: 9 digits, starting with 9 (mobile) or 2 (fixed)
-  if (countryCode === "PT") {
+  if (countryCode === 'PT') {
     return /^[92]\d{8}$/.test(digits);
   }
-  
+
   // Brazil: 10-11 digits
-  if (countryCode === "BR") {
+  if (countryCode === 'BR') {
     return /^\d{10,11}$/.test(digits);
   }
-  
+
   // Generic: at least 7 digits
   return digits.length >= 7;
 }
 
 const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
-  ({ value, onChange, defaultCountry = "PT", placeholder, disabled, error, className, id }, ref) => {
+  (
+    { value, onChange, defaultCountry = 'PT', placeholder, disabled, error, className, id },
+    ref
+  ) => {
     const [open, setOpen] = React.useState(false);
-    
+
     // Parse the value to get country and number
     const { countryCode, number } = React.useMemo(() => {
       if (value) {
         return parsePhoneNumber(value);
       }
-      return { countryCode: defaultCountry, number: "" };
+      return { countryCode: defaultCountry, number: '' };
     }, [value, defaultCountry]);
-    
+
     const selectedCountry = React.useMemo(() => {
-      return COUNTRIES.find(c => c.code === countryCode) || COUNTRIES[0];
+      return COUNTRIES.find((c) => c.code === countryCode) || COUNTRIES[0];
     }, [countryCode]);
-    
+
     const displayNumber = React.useMemo(() => {
       return formatDisplayNumber(number, countryCode);
     }, [number, countryCode]);
-    
+
     const handleCountryChange = (newCountryCode: string) => {
-      const newCountry = COUNTRIES.find(c => c.code === newCountryCode);
+      const newCountry = COUNTRIES.find((c) => c.code === newCountryCode);
       if (newCountry) {
         const cleanNumber = number.replace(/\D/g, '');
-        const newValue = cleanNumber ? `${newCountry.dial} ${cleanNumber}` : "";
+        const newValue = cleanNumber ? `${newCountry.dial} ${cleanNumber}` : '';
         onChange(newValue);
       }
       setOpen(false);
     };
-    
+
     const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const inputValue = e.target.value;
       const digits = inputValue.replace(/\D/g, '');
-      
+
       // Limit based on country
       let maxDigits = 15; // Default max
-      if (countryCode === "PT") maxDigits = 9;
-      if (countryCode === "BR") maxDigits = 11;
-      
+      if (countryCode === 'PT') maxDigits = 9;
+      if (countryCode === 'BR') maxDigits = 11;
+
       const limitedDigits = digits.slice(0, maxDigits);
-      const newValue = limitedDigits ? `${selectedCountry.dial} ${limitedDigits}` : "";
+      const newValue = limitedDigits ? `${selectedCountry.dial} ${limitedDigits}` : '';
       onChange(newValue);
     };
-    
+
     return (
-      <div className={cn("flex", className)}>
+      <div className={cn('flex', className)}>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -175,9 +174,9 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
               aria-expanded={open}
               disabled={disabled}
               className={cn(
-                "w-[110px] justify-between rounded-r-none border-r-0 px-2 font-normal",
-                error && "border-destructive",
-                disabled && "cursor-not-allowed opacity-50"
+                'w-[110px] justify-between rounded-r-none border-r-0 px-2 font-normal',
+                error && 'border-destructive',
+                disabled && 'cursor-not-allowed opacity-50'
               )}
             >
               <span className="flex items-center gap-1 truncate">
@@ -210,25 +209,22 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
             </Command>
           </PopoverContent>
         </Popover>
-        
+
         <Input
           ref={ref}
           id={id}
           type="tel"
           value={displayNumber}
           onChange={handleNumberChange}
-          placeholder={placeholder || (countryCode === "PT" ? "912 345 678" : "Número de telefone")}
+          placeholder={placeholder || (countryCode === 'PT' ? '912 345 678' : 'Número de telefone')}
           disabled={disabled}
-          className={cn(
-            "rounded-l-none flex-1",
-            error && "border-destructive"
-          )}
+          className={cn('rounded-l-none flex-1', error && 'border-destructive')}
         />
       </div>
     );
   }
 );
 
-PhoneInput.displayName = "PhoneInput";
+PhoneInput.displayName = 'PhoneInput';
 
 export { PhoneInput, COUNTRIES };

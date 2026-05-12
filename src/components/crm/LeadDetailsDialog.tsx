@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,18 +15,18 @@ import { EditLeadDialog } from './EditLeadDialog';
 import { LeadStatusHistory } from './LeadStatusHistory';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Car, 
-  FileText, 
-  Edit3, 
-  Trash2, 
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Car,
+  FileText,
+  Edit3,
+  Trash2,
   X,
-  Tag
+  Tag,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -55,7 +61,7 @@ const statusLabels: Record<string, string> = {
   contactado: 'Contactado',
   interessado: 'Interessado',
   convertido: 'Convertido',
-  perdido: 'Perdido'
+  perdido: 'Perdido',
 };
 
 const statusColors: Record<string, string> = {
@@ -63,7 +69,7 @@ const statusColors: Record<string, string> = {
   contactado: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
   interessado: 'bg-green-500/20 text-green-400 border-green-500/50',
   convertido: 'bg-purple-500/20 text-purple-400 border-purple-500/50',
-  perdido: 'bg-red-500/20 text-red-400 border-red-500/50'
+  perdido: 'bg-red-500/20 text-red-400 border-red-500/50',
 };
 
 interface FormFieldData {
@@ -77,7 +83,7 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
   isOpen,
   onClose,
   onEdit,
-  onDelete
+  onDelete,
 }) => {
   const isMobile = useIsMobile();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -91,39 +97,62 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
       nome: lead.nome,
       email: lead.email,
       telefone: lead.telefone,
-      zona: lead.zona
+      zona: lead.zona,
     };
 
     if (lead.observacoes) {
       try {
         const observacoesData = JSON.parse(lead.observacoes);
-        
+
         if (typeof observacoesData === 'object' && observacoesData !== null) {
           // Novo formato com labels
           Object.entries(observacoesData).forEach(([key, fieldData]: [string, any]) => {
             if (fieldData && typeof fieldData === 'object' && fieldData.label) {
               const labelLower = fieldData.label.toLowerCase();
               const value = String(fieldData.value || '').trim();
-              
+
               if (!value) return;
-              
-              if (labelLower.includes('nome') && !labelLower.includes('sobre') && (!displayData.nome || displayData.nome === 'Nome não fornecido')) {
+
+              if (
+                labelLower.includes('nome') &&
+                !labelLower.includes('sobre') &&
+                (!displayData.nome || displayData.nome === 'Nome não fornecido')
+              ) {
                 displayData.nome = value;
-              } else if ((labelLower.includes('email') || labelLower.includes('e-mail')) && (!displayData.email || displayData.email === 'email@naoidentificado.com')) {
+              } else if (
+                (labelLower.includes('email') || labelLower.includes('e-mail')) &&
+                (!displayData.email || displayData.email === 'email@naoidentificado.com')
+              ) {
                 displayData.email = value;
-              } else if ((labelLower.includes('telefone') || labelLower.includes('whatsapp') || labelLower.includes('telemóvel')) && !displayData.telefone) {
+              } else if (
+                (labelLower.includes('telefone') ||
+                  labelLower.includes('whatsapp') ||
+                  labelLower.includes('telemóvel')) &&
+                !displayData.telefone
+              ) {
                 displayData.telefone = value;
-              } else if ((labelLower.includes('zona') || labelLower.includes('cidade') || labelLower.includes('região')) && !displayData.zona) {
+              } else if (
+                (labelLower.includes('zona') ||
+                  labelLower.includes('cidade') ||
+                  labelLower.includes('região')) &&
+                !displayData.zona
+              ) {
                 displayData.zona = value;
               }
             } else if (typeof fieldData === 'string') {
               // Formato antigo (fallback)
               const value = fieldData.trim();
               if (!value) return;
-              
-              if (value.includes('@') && (!displayData.email || displayData.email === 'email@naoidentificado.com')) {
+
+              if (
+                value.includes('@') &&
+                (!displayData.email || displayData.email === 'email@naoidentificado.com')
+              ) {
                 displayData.email = value;
-              } else if (/^\+?\d{9,}$/.test(value.replace(/[\s()-]/g, '')) && !displayData.telefone) {
+              } else if (
+                /^\+?\d{9,}$/.test(value.replace(/[\s()-]/g, '')) &&
+                !displayData.telefone
+              ) {
                 displayData.telefone = value;
               }
             }
@@ -140,25 +169,31 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
   // Extrair todos os campos do formulário das observações
   const extractFormFields = (lead: Lead): Record<string, FormFieldData> => {
     if (!lead.observacoes) return {};
-    
+
     try {
       const observacoesData = JSON.parse(lead.observacoes);
-      
+
       if (typeof observacoesData === 'object' && observacoesData !== null) {
         const fields: Record<string, FormFieldData> = {};
-        
+
         Object.entries(observacoesData).forEach(([key, fieldData]: [string, any]) => {
-          if (fieldData && typeof fieldData === 'object' && fieldData.label && fieldData.value !== undefined && fieldData.value !== '') {
+          if (
+            fieldData &&
+            typeof fieldData === 'object' &&
+            fieldData.label &&
+            fieldData.value !== undefined &&
+            fieldData.value !== ''
+          ) {
             fields[key] = fieldData as FormFieldData;
           }
         });
-        
+
         return fields;
       }
     } catch (error) {
       // Não é JSON válido
     }
-    
+
     return {};
   };
 
@@ -179,7 +214,7 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
 
         if (error) throw error;
 
-        const tags = data?.map(item => item.campanha_tag) || [];
+        const tags = data?.map((item) => item.campanha_tag) || [];
         setFormularioTags(tags);
       } catch (error) {
         console.error('Erro ao buscar etiquetas do formulário:', error);
@@ -193,12 +228,15 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
       if (!lead || (lead.gestor_responsavel && lead.gestor_responsavel.trim())) return;
 
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
         if (userError || !user) return;
 
         const { data, error } = await supabase.rpc('assign_lead_on_first_view', {
           lead_id_param: lead.id,
-          user_id_param: user.id
+          user_id_param: user.id,
         });
 
         if (!error && data === true) {
@@ -239,7 +277,9 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
   };
 
   const handleDelete = () => {
-    if (window.confirm('Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita.')) {
+    if (
+      window.confirm('Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita.')
+    ) {
       onDelete(lead.id);
       onClose();
     }
@@ -264,7 +304,10 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
     return (
       <>
         <Sheet open={isOpen} onOpenChange={onClose}>
-          <SheetContent side="bottom" className="h-[90vh] bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white p-0">
+          <SheetContent
+            side="bottom"
+            className="h-[90vh] bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white p-0"
+          >
             {/* Header */}
             <SheetHeader className="p-4 border-b border-gray-700">
               <div className="flex items-center justify-between">
@@ -272,8 +315,8 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                   <User className="h-5 w-5 text-yellow-500" />
                   {displayData.nome || 'Lead sem nome'}
                 </SheetTitle>
-                <Badge 
-                  variant="outline" 
+                <Badge
+                  variant="outline"
                   className={`text-xs ${statusColors[lead.status] || 'bg-gray-500/20 text-gray-400'}`}
                 >
                   {statusLabels[lead.status] || lead.status}
@@ -290,12 +333,15 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                     <User className="h-4 w-4 text-yellow-500" />
                     Informações de Contacto
                   </h3>
-                  
+
                   <div className="space-y-2 text-sm">
                     {displayData.email && (
                       <div className="flex items-center gap-2">
                         <Mail className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                        <button onClick={handleEmailClick} className="text-gray-300 hover:text-yellow-400 hover:underline truncate">
+                        <button
+                          onClick={handleEmailClick}
+                          className="text-gray-300 hover:text-yellow-400 hover:underline truncate"
+                        >
                           {displayData.email}
                         </button>
                       </div>
@@ -303,7 +349,10 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                     {displayData.telefone && (
                       <div className="flex items-center gap-2">
                         <Phone className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                        <button onClick={handlePhoneClick} className="text-gray-300 hover:text-yellow-400 hover:underline">
+                        <button
+                          onClick={handlePhoneClick}
+                          className="text-gray-300 hover:text-yellow-400 hover:underline"
+                        >
                           {displayData.telefone}
                         </button>
                       </div>
@@ -325,7 +374,11 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                       {lead.data_aluguer && (
                         <div className="flex items-center gap-2">
                           <Calendar className="h-3 w-3 text-gray-400" />
-                          <span className="text-gray-300">{format(new Date(lead.data_aluguer), "dd 'de' MMM, yyyy", { locale: pt })}</span>
+                          <span className="text-gray-300">
+                            {format(new Date(lead.data_aluguer), "dd 'de' MMM, yyyy", {
+                              locale: pt,
+                            })}
+                          </span>
                         </div>
                       )}
                       {lead.tipo_viatura && (
@@ -339,7 +392,7 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                 )}
 
                 {/* Campaign Tags */}
-                {(lead.campaign_tags && lead.campaign_tags.length > 0) && (
+                {lead.campaign_tags && lead.campaign_tags.length > 0 && (
                   <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
                     <h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
                       <Tag className="h-4 w-4 text-yellow-500" />
@@ -347,7 +400,11 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {lead.campaign_tags.map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs bg-yellow-500/10 text-yellow-300 border-yellow-500/30">
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className="text-xs bg-yellow-500/10 text-yellow-300 border-yellow-500/30"
+                        >
                           {tag}
                         </Badge>
                       ))}
@@ -359,7 +416,9 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                 {lead.observacoes_gestores && (
                   <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
                     <h3 className="text-sm font-semibold text-white mb-2">Observações</h3>
-                    <p className="text-xs text-gray-300 whitespace-pre-wrap">{lead.observacoes_gestores}</p>
+                    <p className="text-xs text-gray-300 whitespace-pre-wrap">
+                      {lead.observacoes_gestores}
+                    </p>
                   </div>
                 )}
 
@@ -373,11 +432,19 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
 
             {/* Action Buttons */}
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t border-gray-700 space-y-2">
-              <Button onClick={handleEdit} variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-800">
+              <Button
+                onClick={handleEdit}
+                variant="outline"
+                className="w-full border-gray-600 text-gray-300 hover:bg-gray-800"
+              >
                 <Edit3 className="h-4 w-4 mr-2" />
                 Editar Lead
               </Button>
-              <Button onClick={handleDelete} variant="outline" className="w-full border-red-600 text-red-400 hover:bg-red-900/20">
+              <Button
+                onClick={handleDelete}
+                variant="outline"
+                className="w-full border-red-600 text-red-400 hover:bg-red-900/20"
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Excluir Lead
               </Button>
@@ -410,15 +477,15 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                 </div>
                 <div>
                   <span>{displayData.nome || 'Lead sem nome'}</span>
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className={`ml-3 text-xs ${statusColors[lead.status] || 'bg-gray-500/20 text-gray-400'}`}
                   >
                     {statusLabels[lead.status] || lead.status}
                   </Badge>
                 </div>
               </DialogTitle>
-              
+
               {/* Action buttons */}
               <div className="flex items-center gap-2">
                 <Button
@@ -440,7 +507,11 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                   Excluir
                 </Button>
                 <DialogClose asChild>
-                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-gray-800">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-400 hover:text-white hover:bg-gray-800"
+                  >
                     <X className="h-4 w-4" />
                   </Button>
                 </DialogClose>
@@ -458,7 +529,7 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                     <User className="h-5 w-5 text-yellow-500" />
                     Informações de Contacto
                   </h3>
-                  
+
                   <div className="space-y-3">
                     {displayData.email && displayData.email.trim() && (
                       <div className="flex items-center gap-3">
@@ -471,7 +542,7 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                         </button>
                       </div>
                     )}
-                    
+
                     {displayData.telefone && displayData.telefone.trim() && (
                       <div className="flex items-center gap-3">
                         <Phone className="h-4 w-4 text-gray-400" />
@@ -483,7 +554,7 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                         </button>
                       </div>
                     )}
-                    
+
                     {displayData.zona && displayData.zona.trim() && (
                       <div className="flex items-center gap-3">
                         <MapPin className="h-4 w-4 text-gray-400" />
@@ -492,37 +563,51 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                     )}
 
                     {/* Dados do Formulário - Exibição dinâmica de todos os campos */}
-                    {Object.keys(formFields).length > 0 && (
+                    {Object.keys(formFields).length > 0 &&
                       Object.entries(formFields)
                         .filter(([key, fieldData]) => {
                           const value = String(fieldData.value || '').trim();
                           const labelLower = fieldData.label.toLowerCase();
                           // Não mostrar campos básicos (nome, email, telefone) já exibidos acima
-                          if (labelLower.includes('nome') && !labelLower.includes('sobre')) return false;
-                          if (labelLower.includes('email') || labelLower.includes('e-mail')) return false;
-                          if (labelLower.includes('telefone') || labelLower.includes('whatsapp') || labelLower.includes('telemóvel')) return false;
+                          if (labelLower.includes('nome') && !labelLower.includes('sobre'))
+                            return false;
+                          if (labelLower.includes('email') || labelLower.includes('e-mail'))
+                            return false;
+                          if (
+                            labelLower.includes('telefone') ||
+                            labelLower.includes('whatsapp') ||
+                            labelLower.includes('telemóvel')
+                          )
+                            return false;
                           return value.length > 0;
                         })
                         .map(([key, fieldData]) => (
-                          <div key={key} className="flex items-start gap-3 p-2 rounded bg-gray-700/30">
+                          <div
+                            key={key}
+                            className="flex items-start gap-3 p-2 rounded bg-gray-700/30"
+                          >
                             <FileText className="h-4 w-4 text-gray-400 mt-0.5" />
                             <div className="flex-1">
                               <span className="text-gray-400 text-sm block">
                                 {fieldData.label}:
                               </span>
                               <span className="text-white">
-                                {Array.isArray(fieldData.value) ? fieldData.value.join(', ') : String(fieldData.value)}
+                                {Array.isArray(fieldData.value)
+                                  ? fieldData.value.join(', ')
+                                  : String(fieldData.value)}
                               </span>
                             </div>
                           </div>
-                        ))
-                    )}
-                    
-                    {(!displayData.email || !displayData.email.trim()) && (!displayData.telefone || !displayData.telefone.trim()) && (!displayData.zona || !displayData.zona.trim()) && !lead.observacoes && (
-                      <div className="text-gray-500 text-sm italic">
-                        Nenhuma informação de contacto disponível
-                      </div>
-                    )}
+                        ))}
+
+                    {(!displayData.email || !displayData.email.trim()) &&
+                      (!displayData.telefone || !displayData.telefone.trim()) &&
+                      (!displayData.zona || !displayData.zona.trim()) &&
+                      !lead.observacoes && (
+                        <div className="text-gray-500 text-sm italic">
+                          Nenhuma informação de contacto disponível
+                        </div>
+                      )}
                   </div>
                 </div>
 
@@ -531,7 +616,7 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                     <Car className="h-5 w-5 text-yellow-500" />
                     Detalhes do Aluguer
                   </h3>
-                  
+
                   <div className="space-y-3">
                     {lead.data_aluguer && (
                       <div className="flex items-center gap-3">
@@ -541,7 +626,7 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                         </span>
                       </div>
                     )}
-                    
+
                     {lead.tipo_viatura && (
                       <div className="flex items-center gap-3">
                         <Car className="h-4 w-4 text-gray-400" />
@@ -559,9 +644,9 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {formularioTags.map((tag, index) => (
-                        <Badge 
-                          key={index} 
-                          variant="outline" 
+                        <Badge
+                          key={index}
+                          variant="outline"
                           className="bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
                         >
                           {tag}
@@ -579,7 +664,9 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                       Observações dos Gestores
                     </h3>
                     <div className="bg-gray-700/30 rounded p-3">
-                      <p className="text-gray-300 whitespace-pre-wrap">{lead.observacoes_gestores.trim()}</p>
+                      <p className="text-gray-300 whitespace-pre-wrap">
+                        {lead.observacoes_gestores.trim()}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -615,7 +702,10 @@ export const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
                 })()}
 
                 <div className="text-xs text-gray-500">
-                  <p>Lead criado em: {format(new Date(lead.created_at), 'dd/MM/yyyy HH:mm', { locale: pt })}</p>
+                  <p>
+                    Lead criado em:{' '}
+                    {format(new Date(lead.created_at), 'dd/MM/yyyy HH:mm', { locale: pt })}
+                  </p>
                 </div>
               </div>
 

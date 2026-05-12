@@ -1,13 +1,13 @@
-import { SimpleNavbar } from "@/components/landing/SimpleNavbar";
-import { Footer } from "@/components/landing/Footer";
-import { motion } from "framer-motion";
-import { Users, Target, Award, Heart } from "lucide-react";
+import { SimpleNavbar } from '@/components/landing/SimpleNavbar';
+import { Footer } from '@/components/landing/Footer';
+import { motion } from 'framer-motion';
+import { Users, Target, Award, Heart } from 'lucide-react';
 
 const Sobre = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <SimpleNavbar />
-      
+
       {/* Hero Section */}
       <section className="py-20 bg-gradient-to-b from-gray-900 to-black">
         <div className="container mx-auto px-4">
@@ -21,7 +21,8 @@ const Sobre = () => {
               Sobre a <span className="text-primary">WeGest</span>
             </h1>
             <p className="text-xl text-gray-400">
-              A empresa TVDE que mais cresce em Portugal, comprometida com o sucesso dos nossos motoristas parceiros.
+              A empresa TVDE que mais cresce em Portugal, comprometida com o sucesso dos nossos
+              motoristas parceiros.
             </p>
           </motion.div>
         </div>
@@ -39,13 +40,18 @@ const Sobre = () => {
             >
               <h2 className="text-3xl font-bold mb-6">A Nossa Missão</h2>
               <p className="text-gray-400 mb-4">
-                A WeGest nasceu com uma missão clara: proporcionar aos motoristas TVDE as melhores condições para desenvolverem a sua atividade de forma independente e lucrativa.
+                A WeGest nasceu com uma missão clara: proporcionar aos motoristas TVDE as melhores
+                condições para desenvolverem a sua atividade de forma independente e lucrativa.
               </p>
               <p className="text-gray-400 mb-4">
-                Acreditamos que cada motorista merece ter acesso a veículos de qualidade, suporte dedicado e condições transparentes que lhes permitam focar no que realmente importa - servir os seus clientes e construir o seu próprio negócio.
+                Acreditamos que cada motorista merece ter acesso a veículos de qualidade, suporte
+                dedicado e condições transparentes que lhes permitam focar no que realmente importa
+                - servir os seus clientes e construir o seu próprio negócio.
               </p>
               <p className="text-gray-400">
-                Com uma frota moderna e uma equipa de suporte sempre disponível, trabalhamos todos os dias para que os nossos parceiros possam alcançar os seus objetivos profissionais.
+                Com uma frota moderna e uma equipa de suporte sempre disponível, trabalhamos todos
+                os dias para que os nossos parceiros possam alcançar os seus objetivos
+                profissionais.
               </p>
             </motion.div>
             <motion.div
@@ -94,24 +100,25 @@ const Sobre = () => {
             {[
               {
                 icon: Users,
-                title: "Parceria",
-                description: "Tratamos cada motorista como um parceiro de negócio, não apenas um cliente."
+                title: 'Parceria',
+                description:
+                  'Tratamos cada motorista como um parceiro de negócio, não apenas um cliente.',
               },
               {
                 icon: Target,
-                title: "Transparência",
-                description: "Condições claras e sem surpresas. Sabes sempre o que esperar."
+                title: 'Transparência',
+                description: 'Condições claras e sem surpresas. Sabes sempre o que esperar.',
               },
               {
                 icon: Award,
-                title: "Excelência",
-                description: "Veículos de qualidade e serviço de suporte de primeira classe."
+                title: 'Excelência',
+                description: 'Veículos de qualidade e serviço de suporte de primeira classe.',
               },
               {
                 icon: Heart,
-                title: "Compromisso",
-                description: "O teu sucesso é o nosso sucesso. Estamos aqui para te apoiar."
-              }
+                title: 'Compromisso',
+                description: 'O teu sucesso é o nosso sucesso. Estamos aqui para te apoiar.',
+              },
             ].map((value, index) => (
               <motion.div
                 key={value.title}

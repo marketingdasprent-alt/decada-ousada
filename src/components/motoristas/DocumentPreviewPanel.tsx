@@ -1,8 +1,16 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Download, ChevronLeft, ChevronRight, FileText, Image, Loader2, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import {
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Image,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface DocumentInfo {
   label: string;
@@ -16,17 +24,17 @@ interface DocumentPreviewPanelProps {
   onSelectDocument: (index: number) => void;
 }
 
-export function DocumentPreviewPanel({ 
-  documents, 
-  selectedIndex, 
-  onSelectDocument 
+export function DocumentPreviewPanel({
+  documents,
+  selectedIndex,
+  onSelectDocument,
 }: DocumentPreviewPanelProps) {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const currentDoc = documents[selectedIndex];
-  const hasValidDocuments = documents.some(d => d.url);
+  const hasValidDocuments = documents.some((d) => d.url);
 
   useEffect(() => {
     async function loadSignedUrl() {
@@ -48,7 +56,7 @@ export function DocumentPreviewPanel({
           // É uma URL completa - extrair bucket e path
           const url = new URL(currentDoc.url);
           const pathParts = url.pathname.split('/storage/v1/object/public/');
-          
+
           if (pathParts.length >= 2) {
             const fullPath = pathParts[1];
             const pathSegments = fullPath.split('/');
@@ -63,11 +71,11 @@ export function DocumentPreviewPanel({
           .createSignedUrl(filePath, 3600);
 
         if (signError) throw signError;
-        
+
         setSignedUrl(data.signedUrl);
       } catch (err) {
-        console.error("Erro ao obter URL assinada:", err);
-        setError("Não foi possível carregar o documento");
+        console.error('Erro ao obter URL assinada:', err);
+        setError('Não foi possível carregar o documento');
         setSignedUrl(null);
       } finally {
         setLoading(false);
@@ -87,7 +95,7 @@ export function DocumentPreviewPanel({
       if (currentDoc.url.startsWith('http://') || currentDoc.url.startsWith('https://')) {
         const url = new URL(currentDoc.url);
         const pathParts = url.pathname.split('/storage/v1/object/public/');
-        
+
         if (pathParts.length >= 2) {
           const fullPath = pathParts[1];
           const pathSegments = fullPath.split('/');
@@ -96,9 +104,7 @@ export function DocumentPreviewPanel({
         }
       }
 
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .download(filePath);
+      const { data, error } = await supabase.storage.from(bucket).download(filePath);
 
       if (error) throw error;
 
@@ -111,7 +117,7 @@ export function DocumentPreviewPanel({
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
     } catch (err) {
-      console.error("Erro ao baixar documento:", err);
+      console.error('Erro ao baixar documento:', err);
     }
   };
 
@@ -152,9 +158,7 @@ export function DocumentPreviewPanel({
     return (
       <div className="flex flex-col items-center justify-center h-full bg-muted/30 rounded-lg p-8">
         <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-muted-foreground text-center">
-          Nenhum documento foi enviado
-        </p>
+        <p className="text-muted-foreground text-center">Nenhum documento foi enviado</p>
       </div>
     );
   }
@@ -163,12 +167,8 @@ export function DocumentPreviewPanel({
     return (
       <div className="flex flex-col items-center justify-center h-full bg-muted/30 rounded-lg p-8">
         <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-muted-foreground text-center">
-          Documento não enviado
-        </p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Selecione outro documento na lista
-        </p>
+        <p className="text-muted-foreground text-center">Documento não enviado</p>
+        <p className="text-sm text-muted-foreground mt-2">Selecione outro documento na lista</p>
       </div>
     );
   }
@@ -220,7 +220,9 @@ export function DocumentPreviewPanel({
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <FileText className="h-12 w-12 text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">Tipo de ficheiro não suportado para pré-visualização</p>
+              <p className="text-sm text-muted-foreground">
+                Tipo de ficheiro não suportado para pré-visualização
+              </p>
               <Button variant="outline" size="sm" className="mt-4" onClick={handleDownload}>
                 <Download className="h-4 w-4 mr-1" />
                 Baixar para visualizar

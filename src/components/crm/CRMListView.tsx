@@ -46,7 +46,15 @@ interface CRMListViewProps {
   getTagsForFormulario: (formularioId?: string) => string[];
 }
 
-type SortColumn = 'nome' | 'email' | 'telefone' | 'tipo_viatura' | 'tem_formacao_tvde' | 'status' | 'created_at' | 'gestor_responsavel';
+type SortColumn =
+  | 'nome'
+  | 'email'
+  | 'telefone'
+  | 'tipo_viatura'
+  | 'tem_formacao_tvde'
+  | 'status'
+  | 'created_at'
+  | 'gestor_responsavel';
 
 const statusColorMap: Record<string, string> = {
   novo: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
@@ -123,7 +131,7 @@ export const CRMListView: React.FC<CRMListViewProps> = ({
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "dd MMM yyyy", { locale: pt });
+      return format(new Date(dateString), 'dd MMM yyyy', { locale: pt });
     } catch {
       return '-';
     }
@@ -132,7 +140,7 @@ export const CRMListView: React.FC<CRMListViewProps> = ({
   const formatDataAluguer = (data?: string) => {
     if (!data) return '-';
     try {
-      return format(new Date(data), "dd MMM", { locale: pt });
+      return format(new Date(data), 'dd MMM', { locale: pt });
     } catch {
       return data;
     }
@@ -189,11 +197,31 @@ export const CRMListView: React.FC<CRMListViewProps> = ({
             <SortableHeader column="nome" label="Nome" />
             <SortableHeader column="telefone" label="Telefone" className="w-[110px]" />
             <SortableHeader column="status" label="Status" className="w-[100px]" />
-            <SortableHeader column="email" label="Email" className="hidden md:table-cell w-[200px]" />
-            <SortableHeader column="created_at" label="Criado" className="hidden md:table-cell w-[100px]" />
-            <SortableHeader column="tipo_viatura" label="Viatura" className="hidden lg:table-cell w-[100px]" />
-            <SortableHeader column="gestor_responsavel" label="Gestor" className="hidden lg:table-cell w-[140px]" />
-            <SortableHeader column="tem_formacao_tvde" label="Form." className="hidden xl:table-cell w-[70px]" />
+            <SortableHeader
+              column="email"
+              label="Email"
+              className="hidden md:table-cell w-[200px]"
+            />
+            <SortableHeader
+              column="created_at"
+              label="Criado"
+              className="hidden md:table-cell w-[100px]"
+            />
+            <SortableHeader
+              column="tipo_viatura"
+              label="Viatura"
+              className="hidden lg:table-cell w-[100px]"
+            />
+            <SortableHeader
+              column="gestor_responsavel"
+              label="Gestor"
+              className="hidden lg:table-cell w-[140px]"
+            />
+            <SortableHeader
+              column="tem_formacao_tvde"
+              label="Form."
+              className="hidden xl:table-cell w-[70px]"
+            />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -206,7 +234,7 @@ export const CRMListView: React.FC<CRMListViewProps> = ({
           ) : (
             sortedLeads.map((lead) => {
               const tipoViaturaKey = lead.tipo_viatura?.toLowerCase().replace(' ', '-') || '';
-              
+
               return (
                 <TableRow
                   key={lead.id}
@@ -214,17 +242,20 @@ export const CRMListView: React.FC<CRMListViewProps> = ({
                   onClick={() => handleRowClick(lead)}
                 >
                   {/* Nome - flexível */}
-                  <TableCell className="py-2 font-medium truncate overflow-hidden" title={lead.nome}>
+                  <TableCell
+                    className="py-2 font-medium truncate overflow-hidden"
+                    title={lead.nome}
+                  >
                     {lead.nome}
                   </TableCell>
-                  
+
                   {/* Telefone - com link para WhatsApp */}
-                  <TableCell 
+                  <TableCell
                     className="py-2 font-mono text-sm w-[110px] max-w-[110px] truncate overflow-hidden"
                     title={lead.telefone || '-'}
                   >
                     {lead.telefone ? (
-                      <a 
+                      <a
                         href={`https://wa.me/${lead.telefone.replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -234,9 +265,11 @@ export const CRMListView: React.FC<CRMListViewProps> = ({
                         <MessageCircle className="h-3 w-3 flex-shrink-0" />
                         <span className="truncate">{lead.telefone}</span>
                       </a>
-                    ) : '-'}
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
-                  
+
                   {/* Status */}
                   <TableCell className="py-2 w-[100px]">
                     <Badge
@@ -246,14 +279,14 @@ export const CRMListView: React.FC<CRMListViewProps> = ({
                       {statusLabelMap[lead.status] || lead.status}
                     </Badge>
                   </TableCell>
-                  
+
                   {/* Email - com link mailto */}
-                  <TableCell 
+                  <TableCell
                     className="py-2 truncate overflow-hidden hidden md:table-cell w-[200px] max-w-[200px]"
                     title={lead.email || ''}
                   >
                     {lead.email ? (
-                      <a 
+                      <a
                         href={`mailto:${lead.email}`}
                         onClick={(e) => e.stopPropagation()}
                         className="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1"
@@ -261,19 +294,21 @@ export const CRMListView: React.FC<CRMListViewProps> = ({
                         <Mail className="h-3 w-3 flex-shrink-0" />
                         <span className="truncate">{lead.email}</span>
                       </a>
-                    ) : '-'}
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
-                  
+
                   {/* Criado */}
                   <TableCell className="py-2 text-muted-foreground text-sm hidden md:table-cell w-[100px]">
                     {formatDate(lead.created_at)}
                   </TableCell>
-                  
+
                   {/* Tipo Viatura */}
                   <TableCell className="py-2 hidden lg:table-cell w-[100px]">
                     {lead.tipo_viatura ? (
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={cn(
                           'text-xs border',
                           tipoViaturaColorMap[tipoViaturaKey] || 'bg-muted text-muted-foreground'
@@ -281,28 +316,38 @@ export const CRMListView: React.FC<CRMListViewProps> = ({
                       >
                         {lead.tipo_viatura}
                       </Badge>
-                    ) : '-'}
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
-                  
+
                   {/* Gestor */}
-                  <TableCell 
-                    className="py-2 text-muted-foreground text-sm truncate overflow-hidden hidden lg:table-cell w-[140px] max-w-[140px]" 
+                  <TableCell
+                    className="py-2 text-muted-foreground text-sm truncate overflow-hidden hidden lg:table-cell w-[140px] max-w-[140px]"
                     title={lead.gestor_responsavel || ''}
                   >
                     {lead.gestor_responsavel || '-'}
                   </TableCell>
-                  
+
                   {/* Formação TVDE */}
                   <TableCell className="py-2 hidden xl:table-cell w-[70px]">
                     {lead.tem_formacao_tvde === true ? (
-                      <Badge variant="outline" className="text-xs bg-green-500/20 text-green-400 border-green-500/50">
+                      <Badge
+                        variant="outline"
+                        className="text-xs bg-green-500/20 text-green-400 border-green-500/50"
+                      >
                         Sim
                       </Badge>
                     ) : lead.tem_formacao_tvde === false ? (
-                      <Badge variant="outline" className="text-xs bg-red-500/20 text-red-400 border-red-500/50">
+                      <Badge
+                        variant="outline"
+                        className="text-xs bg-red-500/20 text-red-400 border-red-500/50"
+                      >
                         Não
                       </Badge>
-                    ) : '-'}
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
                 </TableRow>
               );

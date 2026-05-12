@@ -1,13 +1,13 @@
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Search, X } from "lucide-react";
+} from '@/components/ui/select';
+import { Search, X } from 'lucide-react';
 
 interface FinanceiroFiltersProps {
   searchTerm: string;
@@ -24,7 +24,7 @@ export function FinanceiroFilters({
   setSelectedStatus,
   onClearFilters,
 }: FinanceiroFiltersProps) {
-  const hasActiveFilters = searchTerm || selectedStatus !== "all";
+  const hasActiveFilters = searchTerm || selectedStatus !== 'all';
 
   return (
     <div className="flex flex-wrap gap-2 md:gap-3 items-center">
@@ -54,12 +54,7 @@ export function FinanceiroFilters({
 
       {/* Limpar filtros */}
       {hasActiveFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClearFilters}
-          className="h-9 px-2"
-        >
+        <Button variant="ghost" size="sm" onClick={onClearFilters} className="h-9 px-2">
           <X className="h-4 w-4 mr-1" />
           Limpar
         </Button>

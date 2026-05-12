@@ -5,8 +5,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ProgressIndicator } from '@/components/ui/progress-indicator';
@@ -52,7 +65,10 @@ const ImportarTab = () => {
   const { data: listas } = useQuery({
     queryKey: ['marketing-listas'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('marketing_listas').select('id, nome').order('nome');
+      const { data, error } = await supabase
+        .from('marketing_listas')
+        .select('id, nome')
+        .order('nome');
       if (error) throw error;
       return data;
     },
@@ -101,12 +117,15 @@ const ImportarTab = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) parseFile(file);
-  }, [parseFile]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragging(false);
+      const file = e.dataTransfer.files?.[0];
+      if (file) parseFile(file);
+    },
+    [parseFile]
+  );
 
   // ── Mapped preview rows ──
   const getMappedRows = () => {
@@ -114,7 +133,11 @@ const ImportarTab = () => {
     const emailCol = Object.entries(mapping).find(([, v]) => v === 'email')?.[0];
     return rawData.slice(0, 5).map((row) => ({
       nome: nomeCol ? String(row[nomeCol] ?? '').trim() : '',
-      email: emailCol ? String(row[emailCol] ?? '').trim().toLowerCase() : '',
+      email: emailCol
+        ? String(row[emailCol] ?? '')
+            .trim()
+            .toLowerCase()
+        : '',
     }));
   };
 
@@ -141,7 +164,9 @@ const ImportarTab = () => {
       let targetListaId = listaId;
 
       if (mode === 'nova') {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         const { data, error } = await supabase
           .from('marketing_listas')
           .insert({ nome: novaListaNome.trim(), criado_por: user?.id })
@@ -158,21 +183,24 @@ const ImportarTab = () => {
         .map((row) => ({
           lista_id: targetListaId,
           nome: String(row[nomeCol] ?? '').trim(),
-          email: String(row[emailCol] ?? '').trim().toLowerCase(),
+          email: String(row[emailCol] ?? '')
+            .trim()
+            .toLowerCase(),
         }))
         .filter((c) => c.nome && c.email && c.email.includes('@'));
 
       // Deduplicar por email para evitar erro "cannot affect row a second time"
-      const uniqueMap = new Map<string, typeof contactsRaw[0]>();
-      contactsRaw.forEach(c => uniqueMap.set(c.email, c));
+      const uniqueMap = new Map<string, (typeof contactsRaw)[0]>();
+      contactsRaw.forEach((c) => uniqueMap.set(c.email, c));
       const contacts = Array.from(uniqueMap.values());
 
       const batchSize = 100;
       for (let i = 0; i < contacts.length; i += batchSize) {
         const batch = contacts.slice(i, i + batchSize);
-        const { error } = await supabase
-          .from('marketing_contactos')
-          .upsert(batch, { onConflict: 'lista_id,email', ignoreDuplicates: ignoreDuplicates && !updateExisting });
+        const { error } = await supabase.from('marketing_contactos').upsert(batch, {
+          onConflict: 'lista_id,email',
+          ignoreDuplicates: ignoreDuplicates && !updateExisting,
+        });
         if (error) throw error;
       }
 
@@ -205,11 +233,15 @@ const ImportarTab = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Carregue um ficheiro <strong>.xlsx</strong> ou <strong>.csv</strong> com os seus contactos.
+          Carregue um ficheiro <strong>.xlsx</strong> ou <strong>.csv</strong> com os seus
+          contactos.
         </p>
 
         <div
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
@@ -218,18 +250,35 @@ const ImportarTab = () => {
           }`}
         >
           <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-          <p className="text-sm font-medium">Arraste o ficheiro aqui ou clique para selecionar</p>
+          <p className="text-sm font-medium hidden md:block">
+            Arraste o ficheiro aqui ou clique para selecionar
+          </p>
+          <p className="text-sm font-medium md:hidden">Clique para selecionar o ficheiro</p>
           <p className="text-xs text-muted-foreground mt-1">Formatos aceites: .xlsx, .xls, .csv</p>
         </div>
 
-        <input type="file" accept=".xlsx,.xls,.csv" ref={fileInputRef} className="hidden" onChange={handleFileInput} />
+        <input
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          ref={fileInputRef}
+          className="hidden"
+          onChange={handleFileInput}
+        />
 
         {fileName && (
           <div className="flex items-center gap-2 p-3 rounded-md bg-muted text-sm">
             <FileSpreadsheet className="h-4 w-4 text-primary" />
             <span className="font-medium">{fileName}</span>
             <span className="text-muted-foreground">— {rawData.length} linhas</span>
-            <button onClick={() => { setFileName(''); setRawData([]); setHeaders([]); setMapping({}); }} className="ml-auto">
+            <button
+              onClick={() => {
+                setFileName('');
+                setRawData([]);
+                setHeaders([]);
+                setMapping({});
+              }}
+              className="ml-auto"
+            >
               <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
             </button>
           </div>
@@ -251,8 +300,15 @@ const ImportarTab = () => {
         <div className="space-y-3">
           {headers.map((header) => (
             <div key={header} className="flex items-center gap-4">
-              <span className="text-sm font-medium w-40 truncate" title={header}>{header}</span>
-              <Select value={mapping[header] || 'ignorar'} onValueChange={(v) => setMapping((prev) => ({ ...prev, [header]: v as SystemField }))}>
+              <span className="text-sm font-medium w-40 truncate" title={header}>
+                {header}
+              </span>
+              <Select
+                value={mapping[header] || 'ignorar'}
+                onValueChange={(v) =>
+                  setMapping((prev) => ({ ...prev, [header]: v as SystemField }))
+                }
+              >
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -300,10 +356,18 @@ const ImportarTab = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-3">
-          <Button variant={mode === 'existente' ? 'default' : 'outline'} size="sm" onClick={() => setMode('existente')}>
+          <Button
+            variant={mode === 'existente' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setMode('existente')}
+          >
             Lista existente
           </Button>
-          <Button variant={mode === 'nova' ? 'default' : 'outline'} size="sm" onClick={() => setMode('nova')}>
+          <Button
+            variant={mode === 'nova' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setMode('nova')}
+          >
             Criar nova lista
           </Button>
         </div>
@@ -317,7 +381,9 @@ const ImportarTab = () => {
               </SelectTrigger>
               <SelectContent>
                 {listas?.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+                  <SelectItem key={l.id} value={l.id}>
+                    {l.nome}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -325,7 +391,11 @@ const ImportarTab = () => {
         ) : (
           <div className="space-y-2">
             <Label>Nome da nova lista</Label>
-            <Input value={novaListaNome} onChange={(e) => setNovaListaNome(e.target.value)} placeholder="Ex: Importação Fevereiro" />
+            <Input
+              value={novaListaNome}
+              onChange={(e) => setNovaListaNome(e.target.value)}
+              placeholder="Ex: Importação Fevereiro"
+            />
           </div>
         )}
       </CardContent>
@@ -336,10 +406,18 @@ const ImportarTab = () => {
     const nomeCol = Object.entries(mapping).find(([, v]) => v === 'nome')?.[0] ?? '';
     const emailCol = Object.entries(mapping).find(([, v]) => v === 'email')?.[0] ?? '';
     const allValid = rawData.filter((row) => {
-      const email = String(row[emailCol] ?? '').trim().toLowerCase();
+      const email = String(row[emailCol] ?? '')
+        .trim()
+        .toLowerCase();
       return String(row[nomeCol] ?? '').trim() && email.includes('@');
     });
-    const uniqueEmails = new Set(allValid.map(row => String(row[emailCol] ?? '').trim().toLowerCase()));
+    const uniqueEmails = new Set(
+      allValid.map((row) =>
+        String(row[emailCol] ?? '')
+          .trim()
+          .toLowerCase()
+      )
+    );
     const validContacts = uniqueEmails.size;
     const duplicatesRemoved = allValid.length - validContacts;
 
@@ -350,22 +428,45 @@ const ImportarTab = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="rounded-md bg-muted p-4 space-y-2 text-sm">
-            <p><strong>Ficheiro:</strong> {fileName}</p>
-            <p><strong>Contactos válidos:</strong> {validContacts}</p>
+            <p>
+              <strong>Ficheiro:</strong> {fileName}
+            </p>
+            <p>
+              <strong>Contactos válidos:</strong> {validContacts}
+            </p>
             {duplicatesRemoved > 0 && (
-              <p className="text-warning"><strong>Duplicados removidos:</strong> {duplicatesRemoved}</p>
+              <p className="text-warning">
+                <strong>Duplicados removidos:</strong> {duplicatesRemoved}
+              </p>
             )}
-            <p><strong>Lista destino:</strong> {mode === 'nova' ? novaListaNome : listas?.find((l) => l.id === listaId)?.nome ?? '—'}</p>
+            <p>
+              <strong>Lista destino:</strong>{' '}
+              {mode === 'nova'
+                ? novaListaNome
+                : (listas?.find((l) => l.id === listaId)?.nome ?? '—')}
+            </p>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="update-existing" className="text-sm">Atualizar atributos de contactos existentes</Label>
-              <Switch id="update-existing" checked={updateExisting} onCheckedChange={setUpdateExisting} />
+              <Label htmlFor="update-existing" className="text-sm">
+                Atualizar atributos de contactos existentes
+              </Label>
+              <Switch
+                id="update-existing"
+                checked={updateExisting}
+                onCheckedChange={setUpdateExisting}
+              />
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="ignore-duplicates" className="text-sm">Ignorar contactos duplicados</Label>
-              <Switch id="ignore-duplicates" checked={ignoreDuplicates} onCheckedChange={setIgnoreDuplicates} />
+              <Label htmlFor="ignore-duplicates" className="text-sm">
+                Ignorar contactos duplicados
+              </Label>
+              <Switch
+                id="ignore-duplicates"
+                checked={ignoreDuplicates}
+                onCheckedChange={setIgnoreDuplicates}
+              />
             </div>
           </div>
 
@@ -377,13 +478,22 @@ const ImportarTab = () => {
                 onCheckedChange={(v) => setOptInAccepted(v === true)}
               />
               <label htmlFor="opt-in" className="text-sm leading-snug cursor-pointer">
-                Certifico que todos os contactos desta lista deram o seu consentimento explícito para receber comunicações de marketing (opt-in).
+                Certifico que todos os contactos desta lista deram o seu consentimento explícito
+                para receber comunicações de marketing (opt-in).
               </label>
             </div>
           </div>
 
-          <Button onClick={handleImport} disabled={importing || !optInAccepted} className="w-full gap-2">
-            {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          <Button
+            onClick={handleImport}
+            disabled={importing || !optInAccepted}
+            className="w-full gap-2"
+          >
+            {importing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
             Confirme a sua importação
           </Button>
         </CardContent>
@@ -404,7 +514,9 @@ const ImportarTab = () => {
           <Button variant="outline" onClick={() => setStep((s) => s - 1)} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Anterior
           </Button>
-        ) : <div />}
+        ) : (
+          <div />
+        )}
 
         {step < 3 && (
           <Button onClick={() => setStep((s) => s + 1)} disabled={!canAdvance()} className="gap-2">

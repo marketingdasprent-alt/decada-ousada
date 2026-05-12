@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,7 +10,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 
 interface MotoristaDeleteDialogProps {
   open: boolean;
@@ -33,24 +33,21 @@ export function MotoristaDeleteDialog({
 
     setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from("motoristas_ativos")
-        .delete()
-        .eq("id", motorista.id);
+      const { error } = await supabase.from('motoristas_ativos').delete().eq('id', motorista.id);
 
       if (error) throw error;
 
       toast({
-        title: "Motorista deletado",
-        description: "O motorista foi removido com sucesso.",
+        title: 'Motorista deletado',
+        description: 'O motorista foi removido com sucesso.',
       });
 
       onSuccess();
     } catch (error: any) {
       toast({
-        title: "Erro ao deletar",
+        title: 'Erro ao deletar',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setIsDeleting(false);
@@ -63,15 +60,14 @@ export function MotoristaDeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta ação não pode ser desfeita. O motorista{" "}
-            <strong>{motorista?.nome}</strong> será permanentemente removido do
-            sistema.
+            Esta ação não pode ser desfeita. O motorista <strong>{motorista?.nome}</strong> será
+            permanentemente removido do sistema.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? "Deletando..." : "Deletar"}
+            {isDeleting ? 'Deletando...' : 'Deletar'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

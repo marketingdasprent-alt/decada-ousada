@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { MotoristaRecibosSection } from "./MotoristaRecibosSection";
-import type { Motorista } from "@/pages/Motoristas";
-import { subWeeks, addWeeks, startOfWeek, endOfWeek, format } from "date-fns";
-import { pt } from "date-fns/locale";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { useState } from 'react';
+import { MotoristaRecibosSection } from './MotoristaRecibosSection';
+import type { Motorista } from '@/pages/Motoristas';
+import { subWeeks, addWeeks, startOfWeek, endOfWeek, format } from 'date-fns';
+import { pt } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 
 interface MotoristaTabRecibosProps {
   motorista: Motorista;
@@ -34,43 +34,29 @@ export function MotoristaTabRecibos({ motorista }: MotoristaTabRecibosProps) {
         </div>
 
         <div className="flex items-center gap-2 bg-background p-1 rounded-lg border shadow-sm">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handlePrevWeek}
-            className="h-8 w-8"
-          >
+          <Button variant="ghost" size="icon" onClick={handlePrevWeek} className="h-8 w-8">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          
+
           <div className="px-3 py-1 text-sm font-medium min-w-[200px] text-center">
-            {format(weekStart, "dd MMM", { locale: pt })} - {format(weekEnd, "dd MMM", { locale: pt })}
+            {format(weekStart, 'dd MMM', { locale: pt })} -{' '}
+            {format(weekEnd, 'dd MMM', { locale: pt })}
           </div>
 
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleNextWeek}
-            className="h-8 w-8"
-          >
+          <Button variant="ghost" size="icon" onClick={handleNextWeek} className="h-8 w-8">
             <ChevronRight className="h-4 w-4" />
           </Button>
 
           <div className="h-4 w-[1px] bg-border mx-1" />
 
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleThisWeek}
-            className="h-8 text-xs px-2"
-          >
+          <Button variant="ghost" size="sm" onClick={handleThisWeek} className="h-8 text-xs px-2">
             Esta Semana
           </Button>
         </div>
       </div>
 
-      <MotoristaRecibosSection 
-        motoristaId={motorista.id} 
+      <MotoristaRecibosSection
+        motoristaId={motorista.id}
         selectedWeek={selectedWeek}
         motorista={motorista}
       />

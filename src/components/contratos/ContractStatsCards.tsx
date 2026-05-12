@@ -1,5 +1,5 @@
-import { Card } from "@/components/ui/card";
-import { Users, CheckCircle, XCircle, Calendar } from "lucide-react";
+import { Card } from '@/components/ui/card';
+import { Users, CheckCircle, XCircle, Calendar } from 'lucide-react';
 
 interface Contrato {
   motorista_id: string;
@@ -13,55 +13,55 @@ interface ContractStatsCardsProps {
 
 export function ContractStatsCards({ contratos }: ContractStatsCardsProps) {
   // Motoristas únicos com qualquer contrato
-  const totalMotoristas = new Set(contratos.map(c => c.motorista_id)).size;
-  
+  const totalMotoristas = new Set(contratos.map((c) => c.motorista_id)).size;
+
   // Motoristas com pelo menos 1 contrato ativo
   const motoristasAtivos = new Set(
-    contratos.filter(c => c.status === 'ativo').map(c => c.motorista_id)
+    contratos.filter((c) => c.status === 'ativo').map((c) => c.motorista_id)
   );
   const totalMotoristasAtivos = motoristasAtivos.size;
-  
+
   // Motoristas com contratos expirados (que NÃO têm ativo)
   const motoristasExpirados = new Set(
-    contratos.filter(c => c.status === 'expirado').map(c => c.motorista_id)
+    contratos.filter((c) => c.status === 'expirado').map((c) => c.motorista_id)
   );
   const totalMotoristasExpirados = [...motoristasExpirados].filter(
-    id => !motoristasAtivos.has(id)
+    (id) => !motoristasAtivos.has(id)
   ).length;
-  
+
   // Motoristas com contratos criados este mês
   const today = new Date();
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const motoristasDoMes = new Set(
-    contratos.filter(c => new Date(c.criado_em) >= firstDayOfMonth).map(c => c.motorista_id)
+    contratos.filter((c) => new Date(c.criado_em) >= firstDayOfMonth).map((c) => c.motorista_id)
   );
   const totalMotoristasDoMes = motoristasDoMes.size;
 
   const stats = [
     {
-      label: "Total de Motoristas",
+      label: 'Total de Motoristas',
       value: totalMotoristas,
       icon: Users,
-      color: "text-primary"
+      color: 'text-primary',
     },
     {
-      label: "Motoristas Ativos",
+      label: 'Motoristas Ativos',
       value: totalMotoristasAtivos,
       icon: CheckCircle,
-      color: "text-green-500"
+      color: 'text-green-500',
     },
     {
-      label: "Sem Contrato Ativo",
+      label: 'Sem Contrato Ativo',
       value: totalMotoristasExpirados,
       icon: XCircle,
-      color: "text-muted-foreground"
+      color: 'text-muted-foreground',
     },
     {
-      label: "Novos este Mês",
+      label: 'Novos este Mês',
       value: totalMotoristasDoMes,
       icon: Calendar,
-      color: "text-blue-500"
-    }
+      color: 'text-blue-500',
+    },
   ];
 
   return (

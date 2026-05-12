@@ -4,11 +4,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
-import {
-  Loader2, Search, Users, Clock, Route, Activity,
-} from 'lucide-react';
+import { Loader2, Search, Users, Clock, Route, Activity } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AtividadeMotorista {
@@ -67,7 +70,11 @@ export const UberViagensTab: React.FC<Props> = ({ uberDriversMap }) => {
       setAtividade((data || []) as AtividadeMotorista[]);
     } catch (error: any) {
       console.error('Erro ao carregar atividade:', error);
-      toast({ title: "Erro", description: "Não foi possível carregar a atividade.", variant: "destructive" });
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar a atividade.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -88,18 +95,21 @@ export const UberViagensTab: React.FC<Props> = ({ uberDriversMap }) => {
   const filtered = useMemo(() => {
     if (!searchTerm) return atividade;
     const term = searchTerm.toLowerCase();
-    return atividade.filter(a => {
+    return atividade.filter((a) => {
       const name = getDriverDisplayName(a).toLowerCase();
       return name.includes(term) || (a.periodo || '').includes(term);
     });
   }, [atividade, searchTerm, uberDriversMap]);
 
-  const stats = useMemo(() => ({
-    totalMotoristas: new Set(filtered.map(a => a.uber_driver_id)).size,
-    totalViagens: filtered.reduce((s, a) => s + (a.viagens_concluidas || 0), 0),
-    totalOnline: filtered.reduce((s, a) => s + (a.tempo_online_minutos || 0), 0),
-    totalEmViagem: filtered.reduce((s, a) => s + (a.tempo_em_viagem_minutos || 0), 0),
-  }), [filtered]);
+  const stats = useMemo(
+    () => ({
+      totalMotoristas: new Set(filtered.map((a) => a.uber_driver_id)).size,
+      totalViagens: filtered.reduce((s, a) => s + (a.viagens_concluidas || 0), 0),
+      totalOnline: filtered.reduce((s, a) => s + (a.tempo_online_minutos || 0), 0),
+      totalEmViagem: filtered.reduce((s, a) => s + (a.tempo_em_viagem_minutos || 0), 0),
+    }),
+    [filtered]
+  );
 
   return (
     <div className="space-y-4">
@@ -188,9 +198,7 @@ export const UberViagensTab: React.FC<Props> = ({ uberDriversMap }) => {
             <TableBody>
               {filtered.map((a) => (
                 <TableRow key={a.id}>
-                  <TableCell className="text-sm font-medium">
-                    {getDriverDisplayName(a)}
-                  </TableCell>
+                  <TableCell className="text-sm font-medium">{getDriverDisplayName(a)}</TableCell>
                   <TableCell className="text-center font-medium">
                     {a.viagens_concluidas ?? '-'}
                   </TableCell>

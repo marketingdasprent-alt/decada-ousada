@@ -36,10 +36,26 @@ interface Props {
 }
 
 const PRIORIDADES = [
-  { value: 'baixa',   label: 'Baixa',   color: 'border-gray-400 bg-gray-400/10 text-gray-600 dark:text-gray-400' },
-  { value: 'media',   label: 'Média',   color: 'border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-400' },
-  { value: 'alta',    label: 'Alta',    color: 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-400' },
-  { value: 'urgente', label: 'Urgente', color: 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400' },
+  {
+    value: 'baixa',
+    label: 'Baixa',
+    color: 'border-gray-400 bg-gray-400/10 text-gray-600 dark:text-gray-400',
+  },
+  {
+    value: 'media',
+    label: 'Média',
+    color: 'border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  },
+  {
+    value: 'alta',
+    label: 'Alta',
+    color: 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-400',
+  },
+  {
+    value: 'urgente',
+    label: 'Urgente',
+    color: 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400',
+  },
 ];
 
 export const NovoTicketPage: React.FC<Props> = ({ onClose, onSuccess }) => {
@@ -82,10 +98,11 @@ export const NovoTicketPage: React.FC<Props> = ({ onClose, onSuccess }) => {
     load();
   }, []);
 
-  const filteredViaturas = viaturas.filter(v =>
-    v.matricula.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.modelo.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredViaturas = viaturas.filter(
+    (v) =>
+      v.matricula.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.modelo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSubmit = async () => {
@@ -113,7 +130,10 @@ export const NovoTicketPage: React.FC<Props> = ({ onClose, onSuccess }) => {
         criado_por: user?.id,
       });
 
-      toast({ title: 'Ticket criado', description: 'O gestor de assistência irá tratar do seu pedido.' });
+      toast({
+        title: 'Ticket criado',
+        description: 'O gestor de assistência irá tratar do seu pedido.',
+      });
       onSuccess();
     } catch (error: any) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
@@ -126,7 +146,6 @@ export const NovoTicketPage: React.FC<Props> = ({ onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
-
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-border px-4 py-3 bg-card shrink-0">
         <Button
@@ -146,12 +165,14 @@ export const NovoTicketPage: React.FC<Props> = ({ onClose, onSuccess }) => {
           </p>
         </div>
         {step === 2 && (
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit || submitting}
-            className="shrink-0"
-          >
-            {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A enviar...</> : 'Enviar Pedido'}
+          <Button onClick={handleSubmit} disabled={!canSubmit || submitting} className="shrink-0">
+            {submitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A enviar...
+              </>
+            ) : (
+              'Enviar Pedido'
+            )}
           </Button>
         )}
       </div>
@@ -183,10 +204,13 @@ export const NovoTicketPage: React.FC<Props> = ({ onClose, onSuccess }) => {
               </div>
             ) : (
               <div className="space-y-2">
-                {filteredViaturas.map(v => (
+                {filteredViaturas.map((v) => (
                   <button
                     key={v.id}
-                    onClick={() => { setSelectedViatura(v); setStep(2); }}
+                    onClick={() => {
+                      setSelectedViatura(v);
+                      setStep(2);
+                    }}
                     className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:bg-muted/50 hover:border-primary/40 transition-all text-left"
                   >
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -194,14 +218,20 @@ export const NovoTicketPage: React.FC<Props> = ({ onClose, onSuccess }) => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-mono font-bold">{v.matricula}</p>
-                      <p className="text-sm text-muted-foreground">{v.marca} {v.modelo}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {v.marca} {v.modelo}
+                      </p>
                     </div>
-                    <span className={cn(
-                      'text-xs px-2 py-1 rounded-full capitalize shrink-0',
-                      v.status === 'disponivel' ? 'bg-green-100 text-green-700' :
-                      v.status === 'manutencao' ? 'bg-amber-100 text-amber-700' :
-                      'bg-blue-100 text-blue-700'
-                    )}>
+                    <span
+                      className={cn(
+                        'text-xs px-2 py-1 rounded-full capitalize shrink-0',
+                        v.status === 'disponivel'
+                          ? 'bg-green-100 text-green-700'
+                          : v.status === 'manutencao'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-blue-100 text-blue-700'
+                      )}
+                    >
                       {v.status === 'em_uso' ? 'em uso' : v.status}
                     </span>
                     <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -213,12 +243,11 @@ export const NovoTicketPage: React.FC<Props> = ({ onClose, onSuccess }) => {
         ) : (
           /* ── Step 2: Ticket details ── */
           <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-
             {/* Prioridade */}
             <div className="space-y-2">
               <Label>Prioridade</Label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {PRIORIDADES.map(p => (
+                {PRIORIDADES.map((p) => (
                   <button
                     key={p.value}
                     type="button"
@@ -261,10 +290,13 @@ export const NovoTicketPage: React.FC<Props> = ({ onClose, onSuccess }) => {
                     <SelectValue placeholder="Selecionar categoria (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categorias.map(c => (
+                    {categorias.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         <div className="flex items-center gap-2">
-                          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: c.cor }} />
+                          <div
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: c.cor }}
+                          />
                           {c.nome}
                         </div>
                       </SelectItem>
@@ -284,7 +316,6 @@ export const NovoTicketPage: React.FC<Props> = ({ onClose, onSuccess }) => {
                 />
               </div>
             </div>
-
           </div>
         )}
       </div>

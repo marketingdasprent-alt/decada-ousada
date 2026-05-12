@@ -105,14 +105,24 @@ const CampanhasTab = () => {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Campanhas de Email</h2>
-        <Button onClick={() => { setEditingCampanha(null); setDialogOpen(true); }} className="gap-2">
+        <Button
+          onClick={() => {
+            setEditingCampanha(null);
+            setDialogOpen(true);
+          }}
+          className="gap-2"
+        >
           <Plus className="h-4 w-4" /> Nova Campanha
         </Button>
       </div>
@@ -130,25 +140,51 @@ const CampanhasTab = () => {
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">{c.nome}</CardTitle>
-                  <Badge className={statusColors[c.status] || ''}>{statusLabels[c.status] || c.status}</Badge>
+                  <Badge className={statusColors[c.status] || ''}>
+                    {statusLabels[c.status] || c.status}
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <p>Assunto: <span className="text-foreground">{c.assunto || '(sem assunto)'}</span></p>
-                    
-                    {c.enviado_em && <p>Enviado: {format(new Date(c.enviado_em), "dd/MM/yyyy 'às' HH:mm", { locale: pt })}</p>}
-                    {c.status === 'enviado' && <p>✅ {c.total_enviados} enviados · ❌ {c.total_erros} erros</p>}
+                    <p>
+                      Assunto:{' '}
+                      <span className="text-foreground">{c.assunto || '(sem assunto)'}</span>
+                    </p>
+
+                    {c.enviado_em && (
+                      <p>
+                        Enviado:{' '}
+                        {format(new Date(c.enviado_em), "dd/MM/yyyy 'às' HH:mm", { locale: pt })}
+                      </p>
+                    )}
+                    {c.status === 'enviado' && (
+                      <p>
+                        ✅ {c.total_enviados} enviados · ❌ {c.total_erros} erros
+                      </p>
+                    )}
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
-                    <Button variant="outline" size="sm" onClick={() => setHistoricoCampanha(c)} title="Histórico de envios">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setHistoricoCampanha(c)}
+                      title="Histórico de envios"
+                    >
                       <History className="h-4 w-4" />
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => setPreviewCampanha(c)}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => { setEditingCampanha(c); setDialogOpen(true); }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingCampanha(c);
+                        setDialogOpen(true);
+                      }}
+                    >
                       Editar
                     </Button>
                     {c.status === 'enviando' && (
@@ -156,11 +192,7 @@ const CampanhasTab = () => {
                         Repor
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      className="gap-1"
-                      onClick={() => setSendingCampanha(c)}
-                    >
+                    <Button size="sm" className="gap-1" onClick={() => setSendingCampanha(c)}>
                       <Send className="h-4 w-4" />
                       Enviar
                     </Button>
@@ -215,7 +247,9 @@ const CampanhasTab = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>Eliminar</AlertDialogAction>
+            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
+              Eliminar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

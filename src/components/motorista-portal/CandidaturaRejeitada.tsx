@@ -68,7 +68,7 @@ export const CandidaturaRejeitada: React.FC<CandidaturaRejeitadaProps> = ({
               <h1 className="text-lg font-semibold text-foreground">Área do Motorista</h1>
             </div>
           </div>
-          
+
           <Button variant="ghost" size="icon" onClick={() => signOut()}>
             <LogOut className="h-4 w-4" />
           </Button>
@@ -91,7 +91,10 @@ export const CandidaturaRejeitada: React.FC<CandidaturaRejeitadaProps> = ({
           <CardContent>
             {candidatura.data_decisao && (
               <p className="text-center text-sm text-muted-foreground mb-4">
-                Decisão tomada a {format(new Date(candidatura.data_decisao), "dd 'de' MMMM 'de' yyyy", { locale: pt })}
+                Decisão tomada a{' '}
+                {format(new Date(candidatura.data_decisao), "dd 'de' MMMM 'de' yyyy", {
+                  locale: pt,
+                })}
               </p>
             )}
           </CardContent>
@@ -118,15 +121,10 @@ export const CandidaturaRejeitada: React.FC<CandidaturaRejeitadaProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={handleResubmit} 
-              disabled={resubmitting}
-              className="w-full"
-            >
+            <Button onClick={handleResubmit} disabled={resubmitting} className="w-full">
               {resubmitting ? (
                 <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  A processar...
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />A processar...
                 </>
               ) : (
                 <>

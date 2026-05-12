@@ -84,7 +84,9 @@ export default function Viaturas() {
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>(() => searchParams.get('status') || 'all');
+  const [statusFilter, setStatusFilter] = useState<string>(
+    () => searchParams.get('status') || 'all'
+  );
   const [mostrarVendidas, setMostrarVendidas] = useState(false);
   const [categoriaFilter, setCategoriaFilter] = useState<string>('all');
   const [combustivelFilter, setCombustivelFilter] = useState<string>('all');
@@ -92,7 +94,7 @@ export default function Viaturas() {
   const [tipos, setTipos] = useState<ViaturasTipo[]>([]);
   const [sortColumn, setSortColumn] = useState<SortColumn>('matricula');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  
+
   // Dialog states
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedViatura, setSelectedViatura] = useState<Viatura | null>(null);
@@ -102,7 +104,11 @@ export default function Viaturas() {
 
   useEffect(() => {
     loadViaturas();
-    supabase.from('viatura_tipos').select('id, nome').eq('ativo', true).order('nome')
+    supabase
+      .from('viatura_tipos')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome')
       .then(({ data }) => setTipos(data || []));
   }, []);
 
@@ -141,7 +147,9 @@ export default function Viaturas() {
       }).length,
       vendidas: viaturas.filter((v) => v.is_vendida).length,
       slot: viaturas.filter((v) => v.is_slot && !v.is_vendida).length,
-      slotDisponiveis: viaturas.filter((v) => v.is_slot && !v.is_vendida && v.status === 'disponivel').length,
+      slotDisponiveis: viaturas.filter(
+        (v) => v.is_slot && !v.is_vendida && v.status === 'disponivel'
+      ).length,
     };
   }, [viaturas]);
 
@@ -158,20 +166,24 @@ export default function Viaturas() {
     if (sortColumn !== column) {
       return <ArrowUpDown className="h-4 w-4" />;
     }
-    return sortDirection === 'asc' 
-      ? <ArrowUp className="h-4 w-4" /> 
-      : <ArrowDown className="h-4 w-4" />;
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="h-4 w-4" />
+    ) : (
+      <ArrowDown className="h-4 w-4" />
+    );
   };
 
   const tiposCounts = useMemo(() => {
     const total: Record<string, number> = {};
     const disponiveis: Record<string, number> = {};
-    viaturas.filter(v => !v.is_vendida || mostrarVendidas).forEach(v => {
-      if (v.tipo_id) {
-        total[v.tipo_id] = (total[v.tipo_id] || 0) + 1;
-        if (v.status === 'disponivel') disponiveis[v.tipo_id] = (disponiveis[v.tipo_id] || 0) + 1;
-      }
-    });
+    viaturas
+      .filter((v) => !v.is_vendida || mostrarVendidas)
+      .forEach((v) => {
+        if (v.tipo_id) {
+          total[v.tipo_id] = (total[v.tipo_id] || 0) + 1;
+          if (v.status === 'disponivel') disponiveis[v.tipo_id] = (disponiveis[v.tipo_id] || 0) + 1;
+        }
+      });
     return { total, disponiveis };
   }, [viaturas, mostrarVendidas]);
 
@@ -180,14 +192,14 @@ export default function Viaturas() {
 
     // Ocultar vendidas por defeito
     if (!mostrarVendidas) {
-      result = result.filter(v => !v.is_vendida);
+      result = result.filter((v) => !v.is_vendida);
     }
 
     // Filtro de pesquisa
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
-        v =>
+        (v) =>
           v.matricula.toLowerCase().includes(term) ||
           v.marca.toLowerCase().includes(term) ||
           v.modelo.toLowerCase().includes(term)
@@ -196,24 +208,24 @@ export default function Viaturas() {
 
     // Filtro de status
     if (statusFilter !== 'all') {
-      result = result.filter(v => v.status === statusFilter);
+      result = result.filter((v) => v.status === statusFilter);
     }
 
     // Filtro de categoria
     if (categoriaFilter !== 'all') {
-      result = result.filter(v => v.categoria === categoriaFilter);
+      result = result.filter((v) => v.categoria === categoriaFilter);
     }
 
     // Filtro de combustível
     if (combustivelFilter !== 'all') {
-      result = result.filter(v => v.combustivel === combustivelFilter);
+      result = result.filter((v) => v.combustivel === combustivelFilter);
     }
 
     // Filtro de tipo / SLOT
     if (tipoFilter === 'slot') {
-      result = result.filter(v => v.is_slot);
+      result = result.filter((v) => v.is_slot);
     } else if (tipoFilter !== 'all') {
-      result = result.filter(v => v.tipo_id === tipoFilter);
+      result = result.filter((v) => v.tipo_id === tipoFilter);
     }
 
     // Ordenação
@@ -233,9 +245,20 @@ export default function Viaturas() {
     });
 
     return result;
-  }, [viaturas, searchTerm, statusFilter, categoriaFilter, combustivelFilter, tipoFilter, sortColumn, sortDirection, mostrarVendidas]);
+  }, [
+    viaturas,
+    searchTerm,
+    statusFilter,
+    categoriaFilter,
+    combustivelFilter,
+    tipoFilter,
+    sortColumn,
+    sortDirection,
+    mostrarVendidas,
+  ]);
 
-  const getCategoriaColor = (categoria: string | null | undefined) => getCategoriaBadgeClass(categoria);
+  const getCategoriaColor = (categoria: string | null | undefined) =>
+    getCategoriaBadgeClass(categoria);
 
   const getStatusColor = (status: string | null | undefined) => getStatusBadgeClass(status);
 
@@ -245,7 +268,9 @@ export default function Viaturas() {
     if (!date) return false;
     const expiryDate = new Date(date);
     const today = new Date();
-    const daysUntilExpiry = Math.floor((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const daysUntilExpiry = Math.floor(
+      (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
     return daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
   };
 
@@ -263,10 +288,7 @@ export default function Viaturas() {
     if (!selectedViatura) return;
     setDeleteLoading(true);
     try {
-      const { error } = await supabase
-        .from('viaturas')
-        .delete()
-        .eq('id', selectedViatura.id);
+      const { error } = await supabase.from('viaturas').delete().eq('id', selectedViatura.id);
 
       if (error) throw error;
       toast.success('Viatura eliminada com sucesso!');
@@ -323,14 +345,40 @@ export default function Viaturas() {
       {tipos.length > 0 && (
         <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
           {(() => {
-            const todosTotal = viaturas.filter(v => !v.is_vendida || mostrarVendidas).length;
-            const todosDisponiveis = viaturas.filter(v => (!v.is_vendida || mostrarVendidas) && v.status === 'disponivel').length;
+            const todosTotal = viaturas.filter((v) => !v.is_vendida || mostrarVendidas).length;
+            const todosDisponiveis = viaturas.filter(
+              (v) => (!v.is_vendida || mostrarVendidas) && v.status === 'disponivel'
+            ).length;
             const items = [
-              { id: 'all',  nome: 'Todos os Tipos', total: todosTotal,                       disponiveis: todosDisponiveis,                        icon: Car,    color: 'text-primary',    bgColor: 'bg-primary/10'    },
-              ...tipos.map(t => ({ id: t.id, nome: t.nome,               total: tiposCounts.total[t.id] || 0,       disponiveis: tiposCounts.disponiveis[t.id] || 0,      icon: Car,    color: 'text-primary',    bgColor: 'bg-primary/10'    })),
-              { id: 'slot', nome: 'SLOT',            total: stats.slot,                       disponiveis: stats.slotDisponiveis,                   icon: Layers, color: 'text-purple-600', bgColor: 'bg-purple-500/10' },
+              {
+                id: 'all',
+                nome: 'Todos os Tipos',
+                total: todosTotal,
+                disponiveis: todosDisponiveis,
+                icon: Car,
+                color: 'text-primary',
+                bgColor: 'bg-primary/10',
+              },
+              ...tipos.map((t) => ({
+                id: t.id,
+                nome: t.nome,
+                total: tiposCounts.total[t.id] || 0,
+                disponiveis: tiposCounts.disponiveis[t.id] || 0,
+                icon: Car,
+                color: 'text-primary',
+                bgColor: 'bg-primary/10',
+              })),
+              {
+                id: 'slot',
+                nome: 'SLOT',
+                total: stats.slot,
+                disponiveis: stats.slotDisponiveis,
+                icon: Layers,
+                color: 'text-purple-600',
+                bgColor: 'bg-purple-500/10',
+              },
             ];
-            return items.map(item => {
+            return items.map((item) => {
               const isActive = tipoFilter === item.id;
               const Icon = item.icon;
               return (
@@ -339,18 +387,26 @@ export default function Viaturas() {
                   onClick={() => setTipoFilter(isActive && item.id !== 'all' ? 'all' : item.id)}
                   className={cn(
                     'border-border/50 cursor-pointer transition-all hover:border-primary/50 hover:shadow-sm',
-                    isActive && 'border-primary ring-1 ring-primary shadow-sm',
+                    isActive && 'border-primary ring-1 ring-primary shadow-sm'
                   )}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className={cn('rounded-lg p-2', item.bgColor, isActive && 'ring-1 ring-current')}>
+                      <div
+                        className={cn(
+                          'rounded-lg p-2',
+                          item.bgColor,
+                          isActive && 'ring-1 ring-current'
+                        )}
+                      >
                         <Icon className={`h-5 w-5 ${item.color}`} />
                       </div>
                       <div>
                         <div className="flex items-baseline gap-2">
                           <p className="text-2xl font-bold text-green-600">{item.disponiveis}</p>
-                          <p className="text-sm font-medium text-muted-foreground">/ {item.total}</p>
+                          <p className="text-sm font-medium text-muted-foreground">
+                            / {item.total}
+                          </p>
                         </div>
                         <p className="text-xs text-muted-foreground">{item.nome}</p>
                       </div>
@@ -416,7 +472,10 @@ export default function Viaturas() {
             checked={mostrarVendidas}
             onCheckedChange={setMostrarVendidas}
           />
-          <Label htmlFor="mostrar-vendidas" className="text-sm cursor-pointer whitespace-nowrap text-muted-foreground">
+          <Label
+            htmlFor="mostrar-vendidas"
+            className="text-sm cursor-pointer whitespace-nowrap text-muted-foreground"
+          >
             Mostrar vendidas {mostrarVendidas && `(${stats.vendidas})`}
           </Label>
         </div>
@@ -455,7 +514,7 @@ export default function Viaturas() {
                       {viatura.categoria || 'N/D'}
                     </Badge>
                     <Badge variant="outline" className={getStatusColor(viatura.status)}>
-                       {getStatusText(viatura.status)}
+                      {getStatusText(viatura.status)}
                     </Badge>
                   </div>
                 </div>
@@ -482,13 +541,15 @@ export default function Viaturas() {
                     <span>Documentação expirada</span>
                   </div>
                 )}
-                {(isExpiringSoon(viatura.inspecao_validade) || isExpiringSoon(viatura.seguro_validade)) && 
-                  !isExpired(viatura.inspecao_validade) && !isExpired(viatura.seguro_validade) && (
-                  <div className="mt-2 flex items-center gap-1 text-yellow-500 text-xs">
-                    <AlertTriangle className="h-3 w-3" />
-                    <span>Documentação a expirar</span>
-                  </div>
-                )}
+                {(isExpiringSoon(viatura.inspecao_validade) ||
+                  isExpiringSoon(viatura.seguro_validade)) &&
+                  !isExpired(viatura.inspecao_validade) &&
+                  !isExpired(viatura.seguro_validade) && (
+                    <div className="mt-2 flex items-center gap-1 text-yellow-500 text-xs">
+                      <AlertTriangle className="h-3 w-3" />
+                      <span>Documentação a expirar</span>
+                    </div>
+                  )}
               </CardContent>
             </Card>
           ))}
@@ -499,7 +560,7 @@ export default function Viaturas() {
           <Table>
             <TableHeader>
               <TableRow className="h-10">
-                <TableHead 
+                <TableHead
                   className="h-10 cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort('matricula')}
                 >
@@ -508,7 +569,7 @@ export default function Viaturas() {
                     {getSortIcon('matricula')}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="h-10 cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort('marca')}
                 >
@@ -517,7 +578,7 @@ export default function Viaturas() {
                     {getSortIcon('marca')}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="h-10 cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort('ano')}
                 >
@@ -528,7 +589,7 @@ export default function Viaturas() {
                 </TableHead>
                 <TableHead className="h-10 text-xs">Categoria</TableHead>
                 <TableHead className="h-10 text-xs">Combustível</TableHead>
-                <TableHead 
+                <TableHead
                   className="h-10 cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort('status')}
                 >
@@ -537,7 +598,7 @@ export default function Viaturas() {
                     {getSortIcon('status')}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="h-10 cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort('km_atual')}
                 >
@@ -552,8 +613,8 @@ export default function Viaturas() {
             </TableHeader>
             <TableBody>
               {filteredViaturas.map((viatura) => (
-                <TableRow 
-                  key={viatura.id} 
+                <TableRow
+                  key={viatura.id}
                   className="cursor-pointer hover:bg-muted/50 h-10"
                   onClick={() => handleViewPage(viatura)}
                 >
@@ -573,8 +634,11 @@ export default function Viaturas() {
                     {viatura.combustivel || 'N/D'}
                   </TableCell>
                   <TableCell className="py-2">
-                    <Badge variant="outline" className={`text-xs ${getStatusColor(viatura.status)}`}>
-                       {getStatusText(viatura.status)}
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${getStatusColor(viatura.status)}`}
+                    >
+                      {getStatusText(viatura.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-2 text-sm">
@@ -585,23 +649,39 @@ export default function Viaturas() {
                       {isExpired(viatura.inspecao_validade) && (
                         <AlertTriangle className="h-3 w-3 text-destructive" />
                       )}
-                      {isExpiringSoon(viatura.inspecao_validade) && !isExpired(viatura.inspecao_validade) && (
-                        <AlertTriangle className="h-3 w-3 text-yellow-500" />
-                      )}
-                      {viatura.inspecao_validade 
+                      {isExpiringSoon(viatura.inspecao_validade) &&
+                        !isExpired(viatura.inspecao_validade) && (
+                          <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                        )}
+                      {viatura.inspecao_validade
                         ? format(new Date(viatura.inspecao_validade), 'dd/MM/yyyy', { locale: pt })
                         : 'N/D'}
                     </div>
                   </TableCell>
                   <TableCell className="py-2 text-right">
                     <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleViewPage(viatura)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => handleViewPage(viatura)}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleViewPage(viatura)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => handleViewPage(viatura)}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDeleteClick(viatura)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => handleDeleteClick(viatura)}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>

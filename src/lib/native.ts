@@ -27,11 +27,9 @@ export const getNativePanelRoute = () => NATIVE_DRIVER_PANEL_ROUTE;
 export const getUnauthenticatedRoute = () =>
   isNativeDriverOnlyMode() ? getNativeEntryRoute() : '/login';
 
-export const getPostAuthRoute = () =>
-  isNativeDriverOnlyMode() ? getNativePanelRoute() : '/crm';
+export const getPostAuthRoute = () => (isNativeDriverOnlyMode() ? getNativePanelRoute() : '/crm');
 
-export const getResetPasswordRedirectUrl = () =>
-  `${getAuthRedirectBaseUrl()}/reset-password`;
+export const getResetPasswordRedirectUrl = () => `${getAuthRedirectBaseUrl()}/reset-password`;
 
 export const getEmailRedirectUrl = (path = '/') => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;

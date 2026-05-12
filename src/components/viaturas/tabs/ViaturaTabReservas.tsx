@@ -49,7 +49,11 @@ interface ViaturaTabReservasProps {
 const ESTADOS = [
   { value: 'ativa', label: 'Ativa', color: 'bg-green-500/10 text-green-500 border-green-500/20' },
   { value: 'concluida', label: 'Concluída', color: 'bg-muted text-muted-foreground border-border' },
-  { value: 'cancelada', label: 'Cancelada', color: 'bg-destructive/10 text-destructive border-destructive/20' },
+  {
+    value: 'cancelada',
+    label: 'Cancelada',
+    color: 'bg-destructive/10 text-destructive border-destructive/20',
+  },
 ];
 
 export function ViaturaTabReservas({ viaturaId }: ViaturaTabReservasProps) {
@@ -79,10 +83,12 @@ export function ViaturaTabReservas({ viaturaId }: ViaturaTabReservasProps) {
     try {
       const { data, error } = await supabase
         .from('viatura_reservas')
-        .select(`
+        .select(
+          `
           *,
           motorista:motoristas_ativos(nome)
-        `)
+        `
+        )
         .eq('viatura_id', viaturaId)
         .order('data_inicio', { ascending: false });
 
@@ -119,16 +125,14 @@ export function ViaturaTabReservas({ viaturaId }: ViaturaTabReservasProps) {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('viatura_reservas')
-        .insert({
-          viatura_id: viaturaId,
-          motorista_id: motoristaId || null,
-          data_inicio: dataInicio,
-          data_fim: dataFim || null,
-          motivo: motivo.trim() || null,
-          estado: 'ativa',
-        });
+      const { error } = await supabase.from('viatura_reservas').insert({
+        viatura_id: viaturaId,
+        motorista_id: motoristaId || null,
+        data_inicio: dataInicio,
+        data_fim: dataFim || null,
+        motivo: motivo.trim() || null,
+        estado: 'ativa',
+      });
 
       if (error) throw error;
 
@@ -164,10 +168,7 @@ export function ViaturaTabReservas({ viaturaId }: ViaturaTabReservasProps) {
     if (!confirm('Tem certeza que deseja eliminar esta reserva?')) return;
 
     try {
-      const { error } = await supabase
-        .from('viatura_reservas')
-        .delete()
-        .eq('id', reservaId);
+      const { error } = await supabase.from('viatura_reservas').delete().eq('id', reservaId);
 
       if (error) throw error;
       toast.success('Reserva eliminada!');
@@ -186,7 +187,7 @@ export function ViaturaTabReservas({ viaturaId }: ViaturaTabReservasProps) {
   };
 
   const getEstadoConfig = (estado: string) => {
-    return ESTADOS.find(e => e.value === estado) || ESTADOS[0];
+    return ESTADOS.find((e) => e.value === estado) || ESTADOS[0];
   };
 
   if (!viaturaId) {
@@ -226,7 +227,9 @@ export function ViaturaTabReservas({ viaturaId }: ViaturaTabReservasProps) {
                   </SelectTrigger>
                   <SelectContent>
                     {motoristas.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.nome}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -290,17 +293,25 @@ export function ViaturaTabReservas({ viaturaId }: ViaturaTabReservasProps) {
               const isUpcoming = isFuture(new Date(reserva.data_inicio));
 
               return (
-                <div key={reserva.id} className={`border rounded-lg p-4 space-y-3 ${isUpcoming ? 'border-primary/30 bg-primary/5' : ''}`}>
+                <div
+                  key={reserva.id}
+                  className={`border rounded-lg p-4 space-y-3 ${isUpcoming ? 'border-primary/30 bg-primary/5' : ''}`}
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">
-                          {reserva.data_inicio ? format(new Date(reserva.data_inicio), "d 'de' MMMM", { locale: pt }) : 'Data N/D'}
-                          {reserva.data_fim && ` — ${format(new Date(reserva.data_fim), "d 'de' MMMM", { locale: pt })}`}
+                          {reserva.data_inicio
+                            ? format(new Date(reserva.data_inicio), "d 'de' MMMM", { locale: pt })
+                            : 'Data N/D'}
+                          {reserva.data_fim &&
+                            ` — ${format(new Date(reserva.data_fim), "d 'de' MMMM", { locale: pt })}`}
                         </span>
                         {isUpcoming && (
-                          <Badge variant="secondary" className="text-xs">Futura</Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            Futura
+                          </Badge>
                         )}
                       </div>
                       {reserva.motorista && (
@@ -311,7 +322,10 @@ export function ViaturaTabReservas({ viaturaId }: ViaturaTabReservasProps) {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Select value={reserva.estado} onValueChange={(v) => handleUpdateEstado(reserva.id, v)}>
+                      <Select
+                        value={reserva.estado}
+                        onValueChange={(v) => handleUpdateEstado(reserva.id, v)}
+                      >
                         <SelectTrigger className="w-[130px]">
                           <Badge variant="outline" className={estadoConfig.color}>
                             {estadoConfig.label}
@@ -319,11 +333,18 @@ export function ViaturaTabReservas({ viaturaId }: ViaturaTabReservasProps) {
                         </SelectTrigger>
                         <SelectContent>
                           {ESTADOS.map((est) => (
-                            <SelectItem key={est.value} value={est.value}>{est.label}</SelectItem>
+                            <SelectItem key={est.value} value={est.value}>
+                              {est.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(reserva.id)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive"
+                        onClick={() => handleDelete(reserva.id)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

@@ -46,31 +46,58 @@ const AdminSettings = () => {
       </StickyPageHeader>
 
       <TabsList className="bg-transparent border-b rounded-none h-auto p-0 gap-6 overflow-x-auto justify-start no-scrollbar mb-6">
-        <TabsTrigger value="users" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+        <TabsTrigger
+          value="users"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs"
+        >
           Utilizadores
         </TabsTrigger>
-        <TabsTrigger value="grupos" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+        <TabsTrigger
+          value="grupos"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs"
+        >
           Grupos
         </TabsTrigger>
-        <TabsTrigger value="documentos" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+        <TabsTrigger
+          value="documentos"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs"
+        >
           Documentos
         </TabsTrigger>
-        <TabsTrigger value="formularios" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+        <TabsTrigger
+          value="formularios"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs"
+        >
           Formulários
         </TabsTrigger>
-        <TabsTrigger value="categorias" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+        <TabsTrigger
+          value="categorias"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs"
+        >
           Assistência
         </TabsTrigger>
-        <TabsTrigger value="integracoes" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+        <TabsTrigger
+          value="integracoes"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs"
+        >
           Integrações
         </TabsTrigger>
-        <TabsTrigger value="estacoes" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+        <TabsTrigger
+          value="estacoes"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs"
+        >
           Estações
         </TabsTrigger>
-        <TabsTrigger value="empresas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+        <TabsTrigger
+          value="empresas"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs"
+        >
           Empresas
         </TabsTrigger>
-        <TabsTrigger value="viatura-tipos" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs">
+        <TabsTrigger
+          value="viatura-tipos"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs"
+        >
           Tipos Viatura
         </TabsTrigger>
       </TabsList>

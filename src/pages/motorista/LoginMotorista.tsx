@@ -154,15 +154,19 @@ const LoginMotorista: React.FC = () => {
           <Button type="submit" className="auth-primary-button w-full" disabled={loading}>
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                A enviar...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A enviar...
               </>
             ) : (
               'Enviar email de recuperação'
             )}
           </Button>
 
-          <Button type="button" variant="ghost" className="w-full" onClick={() => updateResetMode(false)}>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            onClick={() => updateResetMode(false)}
+          >
             Voltar ao login
           </Button>
         </form>
@@ -212,8 +216,7 @@ const LoginMotorista: React.FC = () => {
           <Button type="submit" className="auth-primary-button w-full" disabled={loading}>
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                A entrar...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A entrar...
               </>
             ) : (
               'Entrar'

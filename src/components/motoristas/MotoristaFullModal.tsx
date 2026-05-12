@@ -1,32 +1,19 @@
-import { useState, useEffect } from "react";
-import {
-  User,
-  FileText,
-  Wallet,
-  Car,
-  FileSignature,
-  Receipt,
-  AlertTriangle,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { MotoristaTabDados } from "./tabs/MotoristaTabDados";
-import { MotoristaTabDocumentos } from "./tabs/MotoristaTabDocumentos";
-import { MotoristaTabFinanceiro } from "./tabs/MotoristaTabFinanceiro";
-import { MotoristaTabRecibos } from "./tabs/MotoristaTabRecibos";
-import { MotoristaTabViaturas } from "./tabs/MotoristaTabViaturas";
-import { MotoristaTabContratos } from "./tabs/MotoristaTabContratos";
-import { MotoristaTabDanos } from "./tabs/MotoristaTabDanos";
-import type { Motorista } from "@/pages/Motoristas";
+import { useState, useEffect } from 'react';
+import { User, FileText, Wallet, Car, FileSignature, Receipt, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { MotoristaTabDados } from './tabs/MotoristaTabDados';
+import { MotoristaTabDocumentos } from './tabs/MotoristaTabDocumentos';
+import { MotoristaTabFinanceiro } from './tabs/MotoristaTabFinanceiro';
+import { MotoristaTabRecibos } from './tabs/MotoristaTabRecibos';
+import { MotoristaTabViaturas } from './tabs/MotoristaTabViaturas';
+import { MotoristaTabContratos } from './tabs/MotoristaTabContratos';
+import { MotoristaTabDanos } from './tabs/MotoristaTabDanos';
+import type { Motorista } from '@/pages/Motoristas';
 
-type TabId = "dados" | "documentos" | "financeiro" | "recibos" | "viaturas" | "contratos" | "danos";
+type TabId = 'dados' | 'documentos' | 'financeiro' | 'recibos' | 'viaturas' | 'contratos' | 'danos';
 
 interface Tab {
   id: TabId;
@@ -35,13 +22,13 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: "dados", label: "Dados", icon: User },
-  { id: "documentos", label: "Documentos", icon: FileText },
-  { id: "financeiro", label: "Financeiro", icon: Wallet },
-  { id: "recibos", label: "Recibos", icon: Receipt },
-  { id: "viaturas", label: "Viaturas", icon: Car },
-  { id: "contratos", label: "Contratos", icon: FileSignature },
-  { id: "danos", label: "Danos", icon: AlertTriangle },
+  { id: 'dados', label: 'Dados', icon: User },
+  { id: 'documentos', label: 'Documentos', icon: FileText },
+  { id: 'financeiro', label: 'Financeiro', icon: Wallet },
+  { id: 'recibos', label: 'Recibos', icon: Receipt },
+  { id: 'viaturas', label: 'Viaturas', icon: Car },
+  { id: 'contratos', label: 'Contratos', icon: FileSignature },
+  { id: 'danos', label: 'Danos', icon: AlertTriangle },
 ];
 
 interface MotoristaFullModalProps {
@@ -57,7 +44,7 @@ export function MotoristaFullModal({
   onOpenChange,
   motorista,
   onMotoristaUpdated,
-  initialTab = "dados",
+  initialTab = 'dados',
 }: MotoristaFullModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
@@ -74,25 +61,27 @@ export function MotoristaFullModal({
   };
 
   const handleClose = () => {
-    setActiveTab("dados"); // Reset to first tab
+    setActiveTab('dados'); // Reset to first tab
     onOpenChange(false);
   };
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case "dados":
+      case 'dados':
         return <MotoristaTabDados motorista={motorista} onSave={handleSave} />;
-      case "documentos":
+      case 'documentos':
         return <MotoristaTabDocumentos motorista={motorista} />;
-      case "financeiro":
+      case 'financeiro':
         return <MotoristaTabFinanceiro motorista={motorista} />;
-      case "recibos":
+      case 'recibos':
         return <MotoristaTabRecibos motorista={motorista} />;
-      case "viaturas":
+      case 'viaturas':
         return <MotoristaTabViaturas motorista={motorista} />;
-      case "contratos":
-        return <MotoristaTabContratos motorista={motorista} onMotoristaUpdated={onMotoristaUpdated} />;
-      case "danos":
+      case 'contratos':
+        return (
+          <MotoristaTabContratos motorista={motorista} onMotoristaUpdated={onMotoristaUpdated} />
+        );
+      case 'danos':
         return <MotoristaTabDanos motorista={motorista} />;
       default:
         return null;
@@ -112,8 +101,8 @@ export function MotoristaFullModal({
                 </span>
                 {motorista.nome}
               </DialogTitle>
-              <Badge variant={motorista.status_ativo ? "default" : "secondary"}>
-                {motorista.status_ativo ? "Ativo" : "Inativo"}
+              <Badge variant={motorista.status_ativo ? 'default' : 'secondary'}>
+                {motorista.status_ativo ? 'Ativo' : 'Inativo'}
               </Badge>
             </div>
           </div>
@@ -131,10 +120,10 @@ export function MotoristaFullModal({
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                    'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
                     isActive
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -146,9 +135,7 @@ export function MotoristaFullModal({
         </div>
 
         {/* Content */}
-        <ScrollArea className="flex-1 p-6">
-          {renderTabContent()}
-        </ScrollArea>
+        <ScrollArea className="flex-1 p-6">{renderTabContent()}</ScrollArea>
       </DialogContent>
     </Dialog>
   );

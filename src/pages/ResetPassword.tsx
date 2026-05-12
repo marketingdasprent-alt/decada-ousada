@@ -21,7 +21,9 @@ const ResetPassword = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || session) {
         setHasSession(!!session);
         setChecking(false);
@@ -148,10 +150,16 @@ const ResetPassword = () => {
       ) : (
         <div className="space-y-4 text-center">
           <p className="text-sm text-muted-foreground">
-            {checking ? 'A validar o link de recuperação...' : 'O link é inválido ou expirou. Peça um novo link.'}
+            {checking
+              ? 'A validar o link de recuperação...'
+              : 'O link é inválido ou expirou. Peça um novo link.'}
           </p>
           {!checking && (
-            <Button onClick={() => navigate(getUnauthenticatedRoute(), { replace: true })} variant="outline" className="mx-auto">
+            <Button
+              onClick={() => navigate(getUnauthenticatedRoute(), { replace: true })}
+              variant="outline"
+              className="mx-auto"
+            >
               Voltar
             </Button>
           )}

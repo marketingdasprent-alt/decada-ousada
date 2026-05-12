@@ -7,11 +7,21 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Car, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -43,16 +53,14 @@ export function ViaturasTiposTab() {
       if (error) throw error;
 
       // Count viaturas per tipo
-      const { data: counts } = await supabase
-        .from('viaturas')
-        .select('tipo_id');
+      const { data: counts } = await supabase.from('viaturas').select('tipo_id');
 
       const countMap: Record<string, number> = {};
-      (counts || []).forEach(v => {
+      (counts || []).forEach((v) => {
         if (v.tipo_id) countMap[v.tipo_id] = (countMap[v.tipo_id] || 0) + 1;
       });
 
-      return (tiposData || []).map(t => ({
+      return (tiposData || []).map((t) => ({
         ...t,
         viaturas_count: countMap[t.id] || 0,
       })) as ViaturasTipo[];
@@ -115,7 +123,9 @@ export function ViaturasTiposTab() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold">Tipos de Viatura</h3>
-          <p className="text-sm text-muted-foreground">Gerir os tipos disponíveis na ficha da viatura.</p>
+          <p className="text-sm text-muted-foreground">
+            Gerir os tipos disponíveis na ficha da viatura.
+          </p>
         </div>
         <Button size="sm" onClick={openCreate} className="gap-2">
           <Plus className="h-4 w-4" />
@@ -133,19 +143,29 @@ export function ViaturasTiposTab() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {tipos.map((tipo) => (
-            <div key={tipo.id} className="border rounded-lg p-4 flex items-center justify-between gap-3">
+            <div
+              key={tipo.id}
+              className="border rounded-lg p-4 flex items-center justify-between gap-3"
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <Car className="h-5 w-5 text-muted-foreground shrink-0" />
                 <div className="min-w-0">
                   <p className="font-medium truncate">{tipo.nome}</p>
-                  <p className="text-xs text-muted-foreground">{tipo.viaturas_count} viatura{tipo.viaturas_count !== 1 ? 's' : ''}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {tipo.viaturas_count} viatura{tipo.viaturas_count !== 1 ? 's' : ''}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Badge variant={tipo.ativo ? 'default' : 'secondary'} className="text-xs">
                   {tipo.ativo ? 'Ativo' : 'Inativo'}
                 </Badge>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(tipo)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => openEdit(tipo)}
+                >
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
                 <Button
@@ -177,7 +197,7 @@ export function ViaturasTiposTab() {
                 id="tipo-nome"
                 placeholder="Ex: Ligeira TVDE"
                 value={form.nome}
-                onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
               />
             </div>
             <div className="flex items-center justify-between rounded-lg border p-3">
@@ -187,12 +207,14 @@ export function ViaturasTiposTab() {
               </div>
               <Switch
                 checked={form.ativo}
-                onCheckedChange={v => setForm(f => ({ ...f, ativo: v }))}
+                onCheckedChange={(v) => setForm((f) => ({ ...f, ativo: v }))}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancelar
+            </Button>
             <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? 'A guardar...' : 'Guardar'}
             </Button>
@@ -201,12 +223,13 @@ export function ViaturasTiposTab() {
       </Dialog>
 
       {/* Delete confirmation */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={o => !o && setDeleteTarget(null)}>
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar tipo</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem a certeza que pretende eliminar <strong>{deleteTarget?.nome}</strong>? Esta ação não pode ser desfeita.
+              Tem a certeza que pretende eliminar <strong>{deleteTarget?.nome}</strong>? Esta ação
+              não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

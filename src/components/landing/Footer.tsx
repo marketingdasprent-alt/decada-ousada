@@ -1,5 +1,5 @@
-import { Facebook, Instagram } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Facebook, Instagram } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Footer = () => {
   return (
@@ -18,10 +18,10 @@ export const Footer = () => {
               className="h-12 mb-4"
             />
             <p className="text-gray-400 max-w-md">
-              A empresa TVDE que mais cresce em Portugal. Trabalhamos para que você 
-              trabalhe para si mesmo, com todo o apoio que precisa.
+              A empresa TVDE que mais cresce em Portugal. Trabalhamos para que você trabalhe para si
+              mesmo, com todo o apoio que precisa.
             </p>
-            
+
             {/* Social links */}
             <div className="flex gap-4 mt-6">
               <a
@@ -44,7 +44,7 @@ export const Footer = () => {
               </a>
             </div>
           </div>
-          
+
           {/* Links */}
           <div>
             <h4 className="text-white font-semibold mb-4">Links Úteis</h4>
@@ -55,7 +55,10 @@ export const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/contactos" className="text-gray-400 hover:text-primary transition-colors">
+                <Link
+                  to="/contactos"
+                  className="text-gray-400 hover:text-primary transition-colors"
+                >
                   Contactos
                 </Link>
               </li>
@@ -71,7 +74,7 @@ export const Footer = () => {
               </li>
             </ul>
           </div>
-          
+
           {/* Legal */}
           <div>
             <h4 className="text-white font-semibold mb-4">Legal</h4>
@@ -82,27 +85,31 @@ export const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/privacidade" className="text-gray-400 hover:text-primary transition-colors">
+                <Link
+                  to="/privacidade"
+                  className="text-gray-400 hover:text-primary transition-colors"
+                >
                   Política de Privacidade
                 </Link>
               </li>
               <li>
-                <Link to="/privacidade#cookies" className="text-gray-400 hover:text-primary transition-colors">
+                <Link
+                  to="/privacidade#cookies"
+                  className="text-gray-400 hover:text-primary transition-colors"
+                >
                   Cookies
                 </Link>
               </li>
             </ul>
           </div>
         </nav>
-        
+
         {/* Bottom bar */}
         <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-gray-500 text-sm">
             © {new Date().getFullYear()} WeGest. Todos os direitos reservados.
           </p>
-          <p className="text-gray-500 text-sm">
-            Operador TVDE Certificado
-          </p>
+          <p className="text-gray-500 text-sm">Operador TVDE Certificado</p>
         </div>
       </div>
     </footer>

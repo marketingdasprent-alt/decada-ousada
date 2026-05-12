@@ -1,14 +1,7 @@
 import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { 
-  Car, 
-  BarChart3, 
-  Receipt, 
-  Truck, 
-  MessageSquare, 
-  LifeBuoy 
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Card, CardContent } from '@/components/ui/card';
+import { Car, BarChart3, Receipt, Truck, MessageSquare, LifeBuoy } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ActionItemProps {
   icon: React.ElementType;
@@ -18,9 +11,9 @@ interface ActionItemProps {
 }
 
 const ActionItem: React.FC<ActionItemProps> = ({ icon: Icon, label, onClick, className }) => (
-  <Card 
+  <Card
     className={cn(
-      "cursor-pointer hover:bg-accent/50 transition-all duration-200 border-border/50 group active:scale-95",
+      'cursor-pointer hover:bg-accent/50 transition-all duration-200 border-border/50 group active:scale-95',
       className
     )}
     onClick={onClick}
@@ -54,7 +47,7 @@ export const MotoristaActionsPanel: React.FC = () => {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
       {actions.map((action) => (
-        <ActionItem 
+        <ActionItem
           key={action.label}
           icon={action.icon}
           label={action.label}

@@ -74,18 +74,55 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
   const [executingRobot, setExecutingRobot] = useState(false);
   const [loadingCron, setLoadingCron] = useState(false);
 
-  const initialCronRef = useRef<{ schedule: string; custom: string }>({ schedule: 'disabled', custom: '' });
+  const initialCronRef = useRef<{ schedule: string; custom: string }>({
+    schedule: 'disabled',
+    custom: '',
+  });
 
   // Determine if this is a simplified integration (robot with known target)
-  const isUberSimplified = integracao.plataforma === 'robot' && integracao.robot_target_platform === 'uber';
-  const isBoltSimplified = integracao.plataforma === 'robot' && integracao.robot_target_platform === 'bolt';
-  const isBpSimplified = integracao.plataforma === 'robot' && integracao.robot_target_platform === 'bp';
-  const isRepsolSimplified = integracao.plataforma === 'robot' && integracao.robot_target_platform === 'repsol';
-  const isEdpSimplified = integracao.plataforma === 'robot' && integracao.robot_target_platform === 'edp';
-  const isSimplified = isUberSimplified || isBoltSimplified || isBpSimplified || isRepsolSimplified || isEdpSimplified;
+  const isUberSimplified =
+    integracao.plataforma === 'robot' && integracao.robot_target_platform === 'uber';
+  const isBoltSimplified =
+    integracao.plataforma === 'robot' && integracao.robot_target_platform === 'bolt';
+  const isBpSimplified =
+    integracao.plataforma === 'robot' && integracao.robot_target_platform === 'bp';
+  const isRepsolSimplified =
+    integracao.plataforma === 'robot' && integracao.robot_target_platform === 'repsol';
+  const isEdpSimplified =
+    integracao.plataforma === 'robot' && integracao.robot_target_platform === 'edp';
+  const isSimplified =
+    isUberSimplified || isBoltSimplified || isBpSimplified || isRepsolSimplified || isEdpSimplified;
 
-  const displayIcon = isUberSimplified ? Car : isBoltSimplified ? Zap : isBpSimplified ? Fuel : isRepsolSimplified ? Fuel : isEdpSimplified ? Zap : integracao.plataforma === 'bolt' ? Zap : integracao.plataforma === 'robot' ? Bot : Car;
-  const displayLabel = isUberSimplified ? 'Uber' : isBoltSimplified ? 'Bolt' : isBpSimplified ? 'BP' : isRepsolSimplified ? 'Repsol' : isEdpSimplified ? 'EDP' : integracao.plataforma === 'bolt' ? 'Bolt' : integracao.plataforma === 'robot' ? 'Robot (Apify)' : 'Uber';
+  const displayIcon = isUberSimplified
+    ? Car
+    : isBoltSimplified
+      ? Zap
+      : isBpSimplified
+        ? Fuel
+        : isRepsolSimplified
+          ? Fuel
+          : isEdpSimplified
+            ? Zap
+            : integracao.plataforma === 'bolt'
+              ? Zap
+              : integracao.plataforma === 'robot'
+                ? Bot
+                : Car;
+  const displayLabel = isUberSimplified
+    ? 'Uber'
+    : isBoltSimplified
+      ? 'Bolt'
+      : isBpSimplified
+        ? 'BP'
+        : isRepsolSimplified
+          ? 'Repsol'
+          : isEdpSimplified
+            ? 'EDP'
+            : integracao.plataforma === 'bolt'
+              ? 'Bolt'
+              : integracao.plataforma === 'robot'
+                ? 'Robot (Apify)'
+                : 'Uber';
 
   const [formData, setFormData] = useState({
     nome: integracao.nome,
@@ -116,10 +153,10 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
       if (!error && data?.exists && data?.cron_expression) {
         const preset = cronExpressionToPreset(data.cron_expression);
         const customVal = preset === 'custom' ? data.cron_expression : '';
-        setFormData(prev => ({ ...prev, cron_schedule: preset, cron_custom: customVal }));
+        setFormData((prev) => ({ ...prev, cron_schedule: preset, cron_custom: customVal }));
         initialCronRef.current = { schedule: preset, custom: customVal };
       } else {
-        setFormData(prev => ({ ...prev, cron_schedule: 'disabled', cron_custom: '' }));
+        setFormData((prev) => ({ ...prev, cron_schedule: 'disabled', cron_custom: '' }));
         initialCronRef.current = { schedule: 'disabled', custom: '' };
       }
     } catch (err) {
@@ -168,9 +205,9 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
         .from('integracoes-logos')
         .upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage
-        .from('integracoes-logos')
-        .getPublicUrl(path);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('integracoes-logos').getPublicUrl(path);
       setLogoUrl(publicUrl);
       toast({ title: 'Logo carregado' });
     } catch (err: any) {
@@ -196,12 +233,23 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
       });
       if (error) throw error;
       if (data.success) {
-        toast({ title: 'Bolt validada', description: data.message || data.company?.company_name || 'Configuração válida' });
+        toast({
+          title: 'Bolt validada',
+          description: data.message || data.company?.company_name || 'Configuração válida',
+        });
       } else {
-        toast({ title: 'Falha na validação', description: data.error || 'Verifique a configuração', variant: 'destructive' });
+        toast({
+          title: 'Falha na validação',
+          description: data.error || 'Verifique a configuração',
+          variant: 'destructive',
+        });
       }
     } catch (error: any) {
-      toast({ title: 'Erro', description: error.message || 'Não foi possível validar', variant: 'destructive' });
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível validar',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -213,13 +261,20 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
       });
       if (error) {
         let msg = error.message;
-        try { const body = await error.context?.json?.(); msg = body?.error || msg; } catch {}
+        try {
+          const body = await error.context?.json?.();
+          msg = body?.error || msg;
+        } catch {}
         throw new Error(msg);
       }
       if (data?.success) {
         toast({ title: 'Robot iniciado', description: `Run ID: ${data.run_id || 'em execução'}` });
       } else {
-        toast({ title: 'Erro ao executar', description: data?.error || 'Não foi possível iniciar', variant: 'destructive' });
+        toast({
+          title: 'Erro ao executar',
+          description: data?.error || 'Não foi possível iniciar',
+          variant: 'destructive',
+        });
       }
     } catch (error: any) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
@@ -237,7 +292,13 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
         logo_url: logoUrl,
       };
 
-      if (isUberSimplified || isBoltSimplified || isBpSimplified || isRepsolSimplified || isEdpSimplified) {
+      if (
+        isUberSimplified ||
+        isBoltSimplified ||
+        isBpSimplified ||
+        isRepsolSimplified ||
+        isEdpSimplified
+      ) {
         // Simplified integrations (Uber/Bolt/BP/Repsol/EDP): login + password
         updatePayload.client_id = formData.client_id || null;
         updatePayload.client_secret = formData.client_secret || null;
@@ -251,13 +312,16 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
         updatePayload.intervalo_sync_horas = formData.intervalo_sync_horas;
       } else if (integracao.plataforma === 'robot') {
         // Advanced robot
-        updatePayload.client_id = formData.auth_mode === 'password' ? (formData.client_id || null) : null;
-        updatePayload.client_secret = formData.auth_mode === 'password' ? (formData.client_secret || null) : null;
+        updatePayload.client_id =
+          formData.auth_mode === 'password' ? formData.client_id || null : null;
+        updatePayload.client_secret =
+          formData.auth_mode === 'password' ? formData.client_secret || null : null;
         updatePayload.webhook_url = formData.site_url || null;
         updatePayload.apify_actor_id = formData.apify_actor_id || null;
         updatePayload.apify_api_token = formData.apify_api_token || null;
         updatePayload.auth_mode = formData.auth_mode;
-        updatePayload.cookies_json = formData.auth_mode === 'cookies' ? (formData.cookies_json || null) : null;
+        updatePayload.cookies_json =
+          formData.auth_mode === 'cookies' ? formData.cookies_json || null : null;
         updatePayload.robot_target_platform = formData.robot_target_platform;
       }
 
@@ -274,7 +338,8 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
       if (integracao.plataforma === 'robot') {
         const cronChanged =
           formData.cron_schedule !== initialCronRef.current.schedule ||
-          (formData.cron_schedule === 'custom' && formData.cron_custom !== initialCronRef.current.custom);
+          (formData.cron_schedule === 'custom' &&
+            formData.cron_custom !== initialCronRef.current.custom);
 
         if (cronChanged) {
           try {
@@ -283,17 +348,26 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
                 body: { integracao_id: integracao.id, action: 'delete' },
               });
             } else {
-              const cronExpression = presetToCronExpression(formData.cron_schedule, formData.cron_custom);
+              const cronExpression = presetToCronExpression(
+                formData.cron_schedule,
+                formData.cron_custom
+              );
               if (cronExpression) {
                 await supabase.functions.invoke('robot-schedule', {
                   body: { integracao_id: integracao.id, cron_expression: cronExpression },
                 });
               }
             }
-            initialCronRef.current = { schedule: formData.cron_schedule, custom: formData.cron_custom };
+            initialCronRef.current = {
+              schedule: formData.cron_schedule,
+              custom: formData.cron_custom,
+            };
           } catch (scheduleErr: any) {
             console.warn('Erro ao configurar agendamento:', scheduleErr);
-            toast({ title: 'Aviso', description: 'Integração guardada, mas o agendamento pode não ter sido configurado.' });
+            toast({
+              title: 'Aviso',
+              description: 'Integração guardada, mas o agendamento pode não ter sido configurado.',
+            });
           }
         }
       }
@@ -339,7 +413,9 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
             <DialogTitle className="flex items-center gap-2">
               <DisplayIcon className="h-5 w-5" />
               {isSimplified ? `Integração ${displayLabel}` : integracao.nome}
-              {isSimplified && <span className="text-muted-foreground font-normal">— {integracao.nome}</span>}
+              {isSimplified && (
+                <span className="text-muted-foreground font-normal">— {integracao.nome}</span>
+              )}
               <Badge variant={integracao.ativo ? 'default' : 'secondary'} className="ml-2">
                 {integracao.ativo ? 'Activo' : 'Inactivo'}
               </Badge>
@@ -362,45 +438,63 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
             </div>
 
             {/* Logo Upload — hidden for simplified integrations */}
-            {!isSimplified && <div className="space-y-2">
-              <Label>Logo / Imagem</Label>
-              <div className="flex items-center gap-3">
-                {logoUrl ? (
-                  <div className="relative h-12 w-12 rounded-lg border border-border overflow-hidden bg-muted/40">
-                    <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
-                    <button
-                      type="button"
-                      onClick={handleRemoveLogo}
-                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+            {!isSimplified && (
+              <div className="space-y-2">
+                <Label>Logo / Imagem</Label>
+                <div className="flex items-center gap-3">
+                  {logoUrl ? (
+                    <div className="relative h-12 w-12 rounded-lg border border-border overflow-hidden bg-muted/40">
+                      <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="h-12 w-12 rounded-lg border border-dashed border-border bg-muted/20 flex items-center justify-center">
+                      <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div>
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                        disabled={uploadingLogo}
+                      />
+                      <span className="text-sm text-primary hover:underline">
+                        {uploadingLogo
+                          ? 'A carregar...'
+                          : logoUrl
+                            ? 'Alterar imagem'
+                            : 'Carregar imagem'}
+                      </span>
+                    </label>
+                    <p className="text-xs text-muted-foreground">PNG, JPG. Máx 2MB.</p>
                   </div>
-                ) : (
-                  <div className="h-12 w-12 rounded-lg border border-dashed border-border bg-muted/20 flex items-center justify-center">
-                    <ImagePlus className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                )}
-                <div>
-                  <label className="cursor-pointer">
-                    <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
-                    <span className="text-sm text-primary hover:underline">
-                      {uploadingLogo ? 'A carregar...' : logoUrl ? 'Alterar imagem' : 'Carregar imagem'}
-                    </span>
-                  </label>
-                  <p className="text-xs text-muted-foreground">PNG, JPG. Máx 2MB.</p>
                 </div>
               </div>
-            </div>}
+            )}
 
             {/* Login + Password — shown for all simplified integrations (Uber/Bolt/BP/Repsol/EDP) */}
-            {(isUberSimplified || isBoltSimplified || isBpSimplified || isRepsolSimplified || isEdpSimplified) && (
+            {(isUberSimplified ||
+              isBoltSimplified ||
+              isBpSimplified ||
+              isRepsolSimplified ||
+              isEdpSimplified) && (
               <>
                 <div className="space-y-2">
                   <Label>Login (Email)</Label>
                   <Input
                     value={formData.client_id}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, client_id: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, client_id: e.target.value }))
+                    }
                     placeholder="email@empresa.com"
                   />
                 </div>
@@ -410,9 +504,17 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
                     <Input
                       type={showSecret ? 'text' : 'password'}
                       value={formData.client_secret}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, client_secret: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, client_secret: e.target.value }))
+                      }
                     />
-                    <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2" onClick={() => setShowSecret(!showSecret)}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2"
+                      onClick={() => setShowSecret(!showSecret)}
+                    >
                       {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
@@ -428,7 +530,9 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
                     <Label>Client ID</Label>
                     <Input
                       value={formData.client_id}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, client_id: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, client_id: e.target.value }))
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -436,7 +540,9 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
                     <Input
                       type="number"
                       value={formData.company_id}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, company_id: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, company_id: e.target.value }))
+                      }
                     />
                   </div>
                 </div>
@@ -446,9 +552,17 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
                     <Input
                       type={showSecret ? 'text' : 'password'}
                       value={formData.client_secret}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, client_secret: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, client_secret: e.target.value }))
+                      }
                     />
-                    <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2" onClick={() => setShowSecret(!showSecret)}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2"
+                      onClick={() => setShowSecret(!showSecret)}
+                    >
                       {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
@@ -467,23 +581,44 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
                       setFormData((prev) => ({ ...prev, robot_target_platform: value }))
                     }
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="bolt"><div className="flex items-center gap-2"><Zap className="h-4 w-4" /> Bolt</div></SelectItem>
-                      <SelectItem value="uber"><div className="flex items-center gap-2"><Car className="h-4 w-4" /> Uber</div></SelectItem>
+                      <SelectItem value="bolt">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-4 w-4" /> Bolt
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="uber">
+                        <div className="flex items-center gap-2">
+                          <Car className="h-4 w-4" /> Uber
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label>URL do Site</Label>
-                  <Input value={formData.site_url} onChange={(e) => setFormData((prev) => ({ ...prev, site_url: e.target.value }))} placeholder="https://portal.exemplo.pt" />
+                  <Input
+                    value={formData.site_url}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, site_url: e.target.value }))}
+                    placeholder="https://portal.exemplo.pt"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Modo de Autenticação</Label>
-                  <Select value={formData.auth_mode} onValueChange={(value: 'password' | 'cookies') => setFormData((prev) => ({ ...prev, auth_mode: value }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select
+                    value={formData.auth_mode}
+                    onValueChange={(value: 'password' | 'cookies') =>
+                      setFormData((prev) => ({ ...prev, auth_mode: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="password">Login + Password</SelectItem>
                       <SelectItem value="cookies">Cookies (JSON)</SelectItem>
@@ -495,14 +630,36 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
                   <>
                     <div className="space-y-2">
                       <Label>Login do Site</Label>
-                      <Input value={formData.client_id} onChange={(e) => setFormData((prev) => ({ ...prev, client_id: e.target.value }))} placeholder="Nome de utilizador ou email" />
+                      <Input
+                        value={formData.client_id}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, client_id: e.target.value }))
+                        }
+                        placeholder="Nome de utilizador ou email"
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label>Password do Site</Label>
                       <div className="relative">
-                        <Input type={showSecret ? 'text' : 'password'} value={formData.client_secret} onChange={(e) => setFormData((prev) => ({ ...prev, client_secret: e.target.value }))} />
-                        <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2" onClick={() => setShowSecret(!showSecret)}>
-                          {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        <Input
+                          type={showSecret ? 'text' : 'password'}
+                          value={formData.client_secret}
+                          onChange={(e) =>
+                            setFormData((prev) => ({ ...prev, client_secret: e.target.value }))
+                          }
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2"
+                          onClick={() => setShowSecret(!showSecret)}
+                        >
+                          {showSecret ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -512,8 +669,21 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
                 <div className="space-y-2">
                   <Label>API Token (Apify)</Label>
                   <div className="relative">
-                    <Input type={showSecret ? 'text' : 'password'} value={formData.apify_api_token} onChange={(e) => setFormData((prev) => ({ ...prev, apify_api_token: e.target.value }))} placeholder="apify_api_..." />
-                    <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2" onClick={() => setShowSecret(!showSecret)}>
+                    <Input
+                      type={showSecret ? 'text' : 'password'}
+                      value={formData.apify_api_token}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, apify_api_token: e.target.value }))
+                      }
+                      placeholder="apify_api_..."
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2"
+                      onClick={() => setShowSecret(!showSecret)}
+                    >
                       {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
@@ -521,26 +691,46 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
 
                 <div className="space-y-2">
                   <Label>Actor ID (Apify)</Label>
-                  <Input value={formData.apify_actor_id} onChange={(e) => setFormData((prev) => ({ ...prev, apify_actor_id: e.target.value }))} placeholder="apify/web-scraper" />
+                  <Input
+                    value={formData.apify_actor_id}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, apify_actor_id: e.target.value }))
+                    }
+                    placeholder="apify/web-scraper"
+                  />
                 </div>
 
                 <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-4">
                   <div className="flex items-center justify-between gap-2">
                     <Label>Callback URL (para o actor)</Label>
-                    <Button type="button" variant="outline" size="sm" onClick={async () => {
-                      const callbackUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/robot-webhook?integracao_id=${integracao.id}`;
-                      try {
-                        await navigator.clipboard.writeText(callbackUrl);
-                        toast({ title: 'URL copiada' });
-                      } catch {
-                        toast({ title: 'Erro', description: 'Não foi possível copiar.', variant: 'destructive' });
-                      }
-                    }}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const callbackUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/robot-webhook?integracao_id=${integracao.id}`;
+                        try {
+                          await navigator.clipboard.writeText(callbackUrl);
+                          toast({ title: 'URL copiada' });
+                        } catch {
+                          toast({
+                            title: 'Erro',
+                            description: 'Não foi possível copiar.',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                    >
                       <Copy className="mr-2 h-4 w-4" /> Copiar URL
                     </Button>
                   </div>
-                  <Input value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/robot-webhook?integracao_id=${integracao.id}`} readOnly />
-                  <p className="text-sm text-muted-foreground">Configure este URL no actor Apify para receber os resultados automaticamente.</p>
+                  <Input
+                    value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/robot-webhook?integracao_id=${integracao.id}`}
+                    readOnly
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Configure este URL no actor Apify para receber os resultados automaticamente.
+                  </p>
                 </div>
               </>
             )}
@@ -552,13 +742,19 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <Label>Sincronização Semanal</Label>
-                    <p className="text-sm text-muted-foreground">Segundas-feiras às 00:00 (hora de Lisboa)</p>
+                    <p className="text-sm text-muted-foreground">
+                      Segundas-feiras às 00:00 (hora de Lisboa)
+                    </p>
                   </div>
                 </div>
                 <Switch
                   checked={formData.cron_schedule === 'weekly'}
                   onCheckedChange={(checked) =>
-                    setFormData((prev) => ({ ...prev, cron_schedule: checked ? 'weekly' : 'disabled', cron_custom: '' }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      cron_schedule: checked ? 'weekly' : 'disabled',
+                      cron_custom: '',
+                    }))
                   }
                 />
               </div>
@@ -568,9 +764,14 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
             <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 p-4">
               <div>
                 <Label>Integração Activa</Label>
-                <p className="text-sm text-muted-foreground">Activa a sincronização de dados desta plataforma.</p>
+                <p className="text-sm text-muted-foreground">
+                  Activa a sincronização de dados desta plataforma.
+                </p>
               </div>
-              <Switch checked={formData.ativo} onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, ativo: checked }))} />
+              <Switch
+                checked={formData.ativo}
+                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, ativo: checked }))}
+              />
             </div>
 
             {/* Bolt sync toggle */}
@@ -580,10 +781,17 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <Label>Sincronização Semanal</Label>
-                    <p className="text-sm text-muted-foreground">Segundas-feiras às 00:00 (hora de Lisboa)</p>
+                    <p className="text-sm text-muted-foreground">
+                      Segundas-feiras às 00:00 (hora de Lisboa)
+                    </p>
                   </div>
                 </div>
-                <Switch checked={formData.sync_automatico} onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, sync_automatico: checked }))} />
+                <Switch
+                  checked={formData.sync_automatico}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, sync_automatico: checked }))
+                  }
+                />
               </div>
             )}
 
@@ -596,15 +804,30 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
               )}
               {integracao.plataforma === 'robot' && (
                 <Button variant="outline" onClick={handleExecuteRobot} disabled={executingRobot}>
-                  {executingRobot ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                  {executingRobot ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Play className="mr-2 h-4 w-4" />
+                  )}
                   Executar Robot
                 </Button>
               )}
               <Button onClick={handleSave} disabled={saving}>
-                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                {saving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
                 Guardar
               </Button>
-              <Button variant="destructive" className="ml-auto" onClick={() => { onOpenChange(false); setTimeout(() => setDeleteDialogOpen(true), 150); }}>
+              <Button
+                variant="destructive"
+                className="ml-auto"
+                onClick={() => {
+                  onOpenChange(false);
+                  setTimeout(() => setDeleteDialogOpen(true), 150);
+                }}
+              >
                 <Trash2 className="mr-2 h-4 w-4" /> Eliminar
               </Button>
             </div>
@@ -612,16 +835,32 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) onOpenChange(true); }}>
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) onOpenChange(true);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar integração?</AlertDialogTitle>
-            <AlertDialogDescription>Esta acção é irreversível. Todos os dados associados serão eliminados.</AlertDialogDescription>
+            <AlertDialogDescription>
+              Esta acção é irreversível. Todos os dados associados serão eliminados.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

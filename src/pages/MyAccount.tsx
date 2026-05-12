@@ -51,9 +51,9 @@ export default function MyAccount() {
         .single();
 
       if (error) throw error;
-      
+
       setProfile(data);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         nome: data.nome || '',
       }));
@@ -128,7 +128,7 @@ export default function MyAccount() {
     setChangingPassword(true);
     try {
       const { error } = await supabase.auth.updateUser({
-        password: formData.newPassword
+        password: formData.newPassword,
       });
 
       if (error) throw error;
@@ -138,7 +138,7 @@ export default function MyAccount() {
         description: 'Senha alterada com sucesso',
       });
 
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         currentPassword: '',
         newPassword: '',
@@ -203,18 +203,18 @@ export default function MyAccount() {
             {/* Informações Gerais */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Informações Pessoais</h3>
-              
+
               <div>
-                <Label htmlFor="nome">
-                  Nome
-                </Label>
+                <Label htmlFor="nome">Nome</Label>
                 <Input
                   id="nome"
                   value={formData.nome}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    nome: e.target.value
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      nome: e.target.value,
+                    }))
+                  }
                   onKeyDown={(e) => handleKeyDown(e, handleUpdateProfile)}
                   placeholder="Seu nome completo"
                 />
@@ -237,7 +237,9 @@ export default function MyAccount() {
                   disabled
                   className="bg-muted cursor-not-allowed opacity-80"
                 />
-                <p className="text-xs text-muted-foreground mt-1">O cargo só pode ser alterado por um administrador</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  O cargo só pode ser alterado por um administrador
+                </p>
               </div>
 
               <div>
@@ -271,20 +273,20 @@ export default function MyAccount() {
             {/* Alteração de Senha */}
             <div className="border-t pt-6 space-y-4">
               <h3 className="text-lg font-semibold">Alterar Senha</h3>
-              
+
               <div>
-                <Label htmlFor="newPassword">
-                  Nova Senha
-                </Label>
+                <Label htmlFor="newPassword">Nova Senha</Label>
                 <div className="relative">
                   <Input
                     id="newPassword"
                     type={showPasswords.new ? 'text' : 'password'}
                     value={formData.newPassword}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      newPassword: e.target.value
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        newPassword: e.target.value,
+                      }))
+                    }
                     placeholder="Nova senha (min. 6 caracteres)"
                   />
                   <Button
@@ -292,29 +294,35 @@ export default function MyAccount() {
                     variant="ghost"
                     size="sm"
                     className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => setShowPasswords(prev => ({
-                      ...prev,
-                      new: !prev.new
-                    }))}
+                    onClick={() =>
+                      setShowPasswords((prev) => ({
+                        ...prev,
+                        new: !prev.new,
+                      }))
+                    }
                   >
-                    {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPasswords.new ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="confirmPassword">
-                  Confirmar Nova Senha
-                </Label>
+                <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
                     type={showPasswords.confirm ? 'text' : 'password'}
                     value={formData.confirmPassword}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      confirmPassword: e.target.value
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        confirmPassword: e.target.value,
+                      }))
+                    }
                     onKeyDown={(e) => handleKeyDown(e, handleChangePassword)}
                     placeholder="Confirme a nova senha"
                   />
@@ -323,12 +331,18 @@ export default function MyAccount() {
                     variant="ghost"
                     size="sm"
                     className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => setShowPasswords(prev => ({
-                      ...prev,
-                      confirm: !prev.confirm
-                    }))}
+                    onClick={() =>
+                      setShowPasswords((prev) => ({
+                        ...prev,
+                        confirm: !prev.confirm,
+                      }))
+                    }
                   >
-                    {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPasswords.confirm ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -347,7 +361,8 @@ export default function MyAccount() {
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-1">Eliminar Conta</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Pode solicitar a eliminação permanente da sua conta e de todos os dados pessoais associados.
+                Pode solicitar a eliminação permanente da sua conta e de todos os dados pessoais
+                associados.
               </p>
               <Button
                 variant="outline"

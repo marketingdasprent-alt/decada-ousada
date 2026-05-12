@@ -1,19 +1,31 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CalendarIcon, FileText, AlertCircle, Loader2, RefreshCw, PlusCircle } from "lucide-react";
-import { format } from "date-fns";
-import { pt } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { generateDocumentFromTemplate } from "@/utils/generateDocumentFromTemplate";
-import { validateDriverData } from "@/utils/generateContract";
-import { toast } from "sonner";
-import { useEmpresas } from "@/hooks/useEmpresas";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CalendarIcon, FileText, AlertCircle, Loader2, RefreshCw, PlusCircle } from 'lucide-react';
+import { format } from 'date-fns';
+import { pt } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { generateDocumentFromTemplate } from '@/utils/generateDocumentFromTemplate';
+import { validateDriverData } from '@/utils/generateContract';
+import { toast } from 'sonner';
+import { useEmpresas } from '@/hooks/useEmpresas';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ExistingContract {
   id: string;
@@ -48,10 +60,14 @@ interface GenerateContractDialogProps {
   motorista: Motorista | null;
 }
 
-export function GenerateContractDialog({ open, onOpenChange, motorista }: GenerateContractDialogProps) {
+export function GenerateContractDialog({
+  open,
+  onOpenChange,
+  motorista,
+}: GenerateContractDialogProps) {
   const { empresas, getById } = useEmpresas();
-  const [signingCity, setSigningCity] = useState<string>("Leiria");
-  const [selectedEmpresa, setSelectedEmpresa] = useState<string>("decada_ousada");
+  const [signingCity, setSigningCity] = useState<string>('Leiria');
+  const [selectedEmpresa, setSelectedEmpresa] = useState<string>('decada_ousada');
   const [isGenerating, setIsGenerating] = useState(false);
   const [existingContract, setExistingContract] = useState<ExistingContract | null>(null);
   const [checkingContract, setCheckingContract] = useState(false);
@@ -98,7 +114,7 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
     if (motorista?.cidade_assinatura) {
       setSigningCity(motorista.cidade_assinatura);
     } else {
-      setSigningCity("Leiria");
+      setSigningCity('Leiria');
     }
   }, [motorista]);
 
@@ -110,7 +126,6 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
       setActionMode('choose');
     }
   }, [open]);
-
 
   // Validar que o ano da data está entre 1900 e 2100
   const isValidDateYear = (dateString: string | null | undefined): boolean => {
@@ -130,21 +145,19 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
     try {
       const { data: user } = await supabase.auth.getUser();
       const empresa = getById(selectedEmpresa);
-      
+
       if (!empresa) {
-        toast.error("Empresa não encontrada");
+        toast.error('Empresa não encontrada');
         setIsGenerating(false);
         return;
       }
 
       // Registrar reimpressão
-      await supabase
-        .from('contratos_reimpressoes')
-        .insert({
-          contrato_id: existingContract.id,
-          reimpresso_por: user?.user?.id,
-          motivo: 'Reimpressão de contrato existente'
-        });
+      await supabase.from('contratos_reimpressoes').insert({
+        contrato_id: existingContract.id,
+        reimpresso_por: user?.user?.id,
+        motivo: 'Reimpressão de contrato existente',
+      });
 
       // Buscar template ativo para a empresa
       const { data: templates } = await supabase
@@ -195,14 +208,13 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
             licencaValidade: empresa.licencaValidade,
             representante: empresa.representante,
             cargoRepresentante: empresa.cargoRepresentante,
-          }
+          },
         },
-        action: 'print'
+        action: 'print',
       });
 
       onOpenChange(false);
       toast.success('Contrato reimpresso com sucesso!');
-
     } catch (error: any) {
       console.error('Erro ao reimprimir contrato:', error);
       toast.error('Erro ao reimprimir contrato');
@@ -216,31 +228,35 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
     if (!motorista) return;
 
     if (!motorista.data_contratacao) {
-      toast.error("Este motorista não tem data de contratação definida. Por favor, edite o motorista e adicione a data de contratação antes de gerar o contrato.");
+      toast.error(
+        'Este motorista não tem data de contratação definida. Por favor, edite o motorista e adicione a data de contratação antes de gerar o contrato.'
+      );
       return;
     }
 
     // Validar ano da data de contratação
     if (!isValidDateYear(motorista.data_contratacao)) {
       const year = motorista.data_contratacao.split('-')[0];
-      toast.error(`Data de contratação inválida: ano "${year}" fora do intervalo permitido (1900-2100). Por favor, corrija a data no cadastro do motorista.`);
+      toast.error(
+        `Data de contratação inválida: ano "${year}" fora do intervalo permitido (1900-2100). Por favor, corrija a data no cadastro do motorista.`
+      );
       return;
     }
 
     const missingFields = validateDriverData(motorista);
     if (missingFields.length > 0) {
-      toast.error(`Campos obrigatórios em falta: ${missingFields.join(", ")}`);
+      toast.error(`Campos obrigatórios em falta: ${missingFields.join(', ')}`);
       return;
     }
 
     if (!signingCity.trim()) {
-      toast.error("Por favor, insira a cidade de assinatura");
+      toast.error('Por favor, insira a cidade de assinatura');
       return;
     }
 
     const empresa = getEmpresaById(selectedEmpresa);
     if (!empresa) {
-      toast.error("Empresa não selecionada");
+      toast.error('Empresa não selecionada');
       return;
     }
 
@@ -250,7 +266,7 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
 
     try {
       const { data: user } = await supabase.auth.getUser();
-      
+
       // Usar função atômica PostgreSQL para criar nova versão
       const { data: contratoData, error: contratoError } = await supabase
         .rpc('gerar_contrato_atomico', {
@@ -279,13 +295,11 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
       }
 
       // Registrar histórico de impressão
-      await supabase
-        .from('contratos_reimpressoes')
-        .insert({
-          contrato_id: contratoData.id,
-          reimpresso_por: user?.user?.id,
-          motivo: 'Nova versão de contrato'
-        });
+      await supabase.from('contratos_reimpressoes').insert({
+        contrato_id: contratoData.id,
+        reimpresso_por: user?.user?.id,
+        motivo: 'Nova versão de contrato',
+      });
 
       // Buscar template ativo para a empresa
       const { data: templates } = await supabase
@@ -333,14 +347,13 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
             licencaValidade: empresa.licencaValidade,
             representante: empresa.representante,
             cargoRepresentante: empresa.cargoRepresentante,
-          }
+          },
         },
-        action: 'print'
+        action: 'print',
       });
 
       onOpenChange(false);
       toast.success('Nova versão do contrato gerada com sucesso!');
-
     } catch (error: any) {
       console.error('Erro ao processar contrato:', error);
       toast.error('Erro ao processar contrato');
@@ -370,15 +383,15 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
                 </div>
                 <div>
                   <span className="text-muted-foreground">NIF:</span>
-                  <p className="font-medium">{motorista.nif || "—"}</p>
+                  <p className="font-medium">{motorista.nif || '—'}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Licença TVDE:</span>
-                  <p className="font-medium">{motorista.licenca_tvde_numero || "—"}</p>
+                  <p className="font-medium">{motorista.licenca_tvde_numero || '—'}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Email:</span>
-                  <p className="font-medium">{motorista.email || "—"}</p>
+                  <p className="font-medium">{motorista.email || '—'}</p>
                 </div>
               </div>
             </div>
@@ -392,7 +405,7 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
                   <div className="flex items-center gap-2">
                     <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">
-                      {format(new Date(motorista.data_contratacao), "PPP", { locale: pt })}
+                      {format(new Date(motorista.data_contratacao), 'PPP', { locale: pt })}
                     </span>
                   </div>
                 ) : (
@@ -402,8 +415,8 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Esta data será usada como data de início e data de assinatura do contrato. 
-                Para alterar, edite o cadastro do motorista.
+                Esta data será usada como data de início e data de assinatura do contrato. Para
+                alterar, edite o cadastro do motorista.
               </p>
             </div>
 
@@ -438,10 +451,13 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
         {existingContract && actionMode === 'choose' && (
           <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
             <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-800 dark:text-amber-200">Contrato Existente</AlertTitle>
+            <AlertTitle className="text-amber-800 dark:text-amber-200">
+              Contrato Existente
+            </AlertTitle>
             <AlertDescription className="text-amber-700 dark:text-amber-300">
-              Este motorista já possui um contrato ativo (v{existingContract.versao}) para esta empresa, 
-              assinado em {format(new Date(existingContract.data_assinatura), "dd/MM/yyyy")}.
+              Este motorista já possui um contrato ativo (v{existingContract.versao}) para esta
+              empresa, assinado em{' '}
+              {format(new Date(existingContract.data_assinatura), 'dd/MM/yyyy')}.
               <div className="mt-3 flex gap-2">
                 <Button
                   size="sm"
@@ -470,31 +486,34 @@ export function GenerateContractDialog({ open, onOpenChange, motorista }: Genera
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          
+
           {checkingContract ? (
             <Button disabled>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              A verificar...
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />A verificar...
             </Button>
           ) : actionMode === 'reprint' ? (
-            <Button 
-              onClick={handleReprint} 
+            <Button
+              onClick={handleReprint}
               disabled={isGenerating}
-              className={cn(isGenerating && "cursor-not-allowed opacity-50")}
+              className={cn(isGenerating && 'cursor-not-allowed opacity-50')}
             >
               {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <RefreshCw className="mr-2 h-4 w-4" />
               {isGenerating ? 'Reimprimindo...' : 'Reimprimir Contrato'}
             </Button>
           ) : actionMode === 'new' ? (
-            <Button 
-              onClick={handleCreateNew} 
+            <Button
+              onClick={handleCreateNew}
               disabled={isGenerating || !motorista?.data_contratacao}
-              className={cn(isGenerating && "cursor-not-allowed opacity-50")}
+              className={cn(isGenerating && 'cursor-not-allowed opacity-50')}
             >
               {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {existingContract ? <PlusCircle className="mr-2 h-4 w-4" /> : null}
-              {isGenerating ? 'Processando...' : existingContract ? 'Criar Nova Versão' : 'Gerar Contrato'}
+              {isGenerating
+                ? 'Processando...'
+                : existingContract
+                  ? 'Criar Nova Versão'
+                  : 'Gerar Contrato'}
             </Button>
           ) : null}
         </DialogFooter>

@@ -15,7 +15,5 @@ export const useThemedLogo = () => {
 
   const isLight = resolvedTheme === 'light' || theme === 'light';
 
-  return isLight 
-    ? '/Logo.png' 
-    : '/Logo.png';
+  return isLight ? '/Logo.png' : '/Logo.png';
 };

@@ -9,10 +9,10 @@ interface RealtimeStatusProps {
   lastActivity?: Date | null;
 }
 
-export const RealtimeStatus: React.FC<RealtimeStatusProps> = ({ 
+export const RealtimeStatus: React.FC<RealtimeStatusProps> = ({
   className = '',
   isConnected: externalIsConnected,
-  lastActivity: externalLastActivity 
+  lastActivity: externalLastActivity,
 }) => {
   // Usar estado externo se fornecido (via canal compartilhado)
   const connected = externalIsConnected !== undefined ? externalIsConnected : false;
@@ -31,7 +31,7 @@ export const RealtimeStatus: React.FC<RealtimeStatusProps> = ({
           ) : (
             <WifiOff className="h-4 w-4 text-red-500" />
           )}
-          
+
           {connected && (
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
@@ -43,10 +43,7 @@ export const RealtimeStatus: React.FC<RealtimeStatusProps> = ({
           )}
         </div>
 
-        <Badge 
-          variant={connected ? "default" : "destructive"}
-          className="text-xs px-2 py-0.5"
-        >
+        <Badge variant={connected ? 'default' : 'destructive'} className="text-xs px-2 py-0.5">
           {connected ? 'Tempo Real' : 'Desconectado'}
         </Badge>
       </motion.div>

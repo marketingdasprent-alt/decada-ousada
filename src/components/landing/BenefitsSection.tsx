@@ -1,43 +1,36 @@
-﻿import { motion } from "framer-motion";
-import { 
-  Wallet, 
-  CalendarCheck, 
-  Shield, 
-  FileCheck, 
-  Car, 
-  CheckCircle 
-} from "lucide-react";
+﻿import { motion } from 'framer-motion';
+import { Wallet, CalendarCheck, Shield, FileCheck, Car, CheckCircle } from 'lucide-react';
 
 const benefits = [
   {
     icon: Wallet,
-    title: "Custos claros e fixos",
-    description: "Sabe exatamente quanto paga. Renda fixa semanal sem surpresas.",
+    title: 'Custos claros e fixos',
+    description: 'Sabe exatamente quanto paga. Renda fixa semanal sem surpresas.',
   },
   {
     icon: CalendarCheck,
-    title: "Pagamento semanal",
-    description: "Receba o seu dinheiro todas as semanas, diretamente na sua conta.",
+    title: 'Pagamento semanal',
+    description: 'Receba o seu dinheiro todas as semanas, diretamente na sua conta.',
   },
   {
     icon: Shield,
-    title: "Suporte 7 dias",
-    description: "Equipa dedicada disponível 7 dias por semana para o ajudar.",
+    title: 'Suporte 7 dias',
+    description: 'Equipa dedicada disponível 7 dias por semana para o ajudar.',
   },
   {
     icon: FileCheck,
-    title: "Sem burocracia",
-    description: "Tratamos de toda a papelada. Você apenas conduz e fatura.",
+    title: 'Sem burocracia',
+    description: 'Tratamos de toda a papelada. Você apenas conduz e fatura.',
   },
   {
     icon: Car,
-    title: "Frota variada",
-    description: "Do económico ao premium. Escolha o carro ideal para si.",
+    title: 'Frota variada',
+    description: 'Do económico ao premium. Escolha o carro ideal para si.',
   },
   {
     icon: CheckCircle,
-    title: "Apenas certificado",
-    description: "Não precisa de empresa própria. Apenas a sua licença TVDE.",
+    title: 'Apenas certificado',
+    description: 'Não precisa de empresa própria. Apenas a sua licença TVDE.',
   },
 ];
 
@@ -75,18 +68,14 @@ export const BenefitsSection = () => {
             >
               {/* Gradient background on hover */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-primary/10 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-300" />
-              
+
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 mb-5">
                 <benefit.icon className="w-7 h-7 text-primary" />
               </div>
-              
-              <h3 className="text-xl font-bold text-white mb-3">
-                {benefit.title}
-              </h3>
-              
-              <p className="text-gray-400 leading-relaxed">
-                {benefit.description}
-              </p>
+
+              <h3 className="text-xl font-bold text-white mb-3">{benefit.title}</h3>
+
+              <p className="text-gray-400 leading-relaxed">{benefit.description}</p>
             </motion.div>
           ))}
         </div>

@@ -18,29 +18,32 @@ interface RealTimeNotificationsProps {
   onRealtimeEvent?: (payload: any) => void;
 }
 
-export const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({ onNewActivity, onRealtimeEvent }) => {
+export const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
+  onNewActivity,
+  onRealtimeEvent,
+}) => {
   const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
 
   const handleRealtimeEvent = (payload: any) => {
     console.log('📢 Notificação de lead:', payload);
-    
+
     const leadData = payload.new || payload.old;
     const leadName = (leadData as any)?.nome || 'Lead sem nome';
-    
+
     const notification: RealtimeNotification = {
       id: `${payload.eventType}-${Date.now()}`,
       type: payload.eventType as 'insert' | 'update' | 'delete',
       timestamp: new Date(),
       leadName,
       message: getNotificationMessage(payload.eventType, leadName),
-      icon: getNotificationIcon(payload.eventType)
+      icon: getNotificationIcon(payload.eventType),
     };
 
-    setNotifications(prev => [notification, ...prev].slice(0, 5));
-    
+    setNotifications((prev) => [notification, ...prev].slice(0, 5));
+
     // Auto-hide after 5 seconds
     setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
     }, 5000);
 
     onNewActivity?.();
@@ -97,41 +100,28 @@ export const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({ on
             className="mb-2 p-3 bg-background/95 border border-border rounded-lg shadow-lg backdrop-blur-sm"
           >
             <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 mt-0.5">
-                {notification.icon}
-              </div>
+              <div className="flex-shrink-0 mt-0.5">{notification.icon}</div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">
-                  {notification.message}
-                </p>
+                <p className="text-sm font-medium text-foreground">{notification.message}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {notification.timestamp.toLocaleTimeString()}
                 </p>
               </div>
-              <Badge 
-                variant="secondary" 
-                className="text-xs capitalize"
-              >
-                {notification.type === 'insert' ? 'Novo' : 
-                 notification.type === 'update' ? 'Editado' : 'Removido'}
+              <Badge variant="secondary" className="text-xs capitalize">
+                {notification.type === 'insert'
+                  ? 'Novo'
+                  : notification.type === 'update'
+                    ? 'Editado'
+                    : 'Removido'}
               </Badge>
             </div>
           </motion.div>
         ))}
       </AnimatePresence>
-      
+
       {notifications.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mt-2 text-center"
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearNotifications}
-            className="text-xs h-6"
-          >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 text-center">
+          <Button variant="ghost" size="sm" onClick={clearNotifications} className="text-xs h-6">
             <CheckCircle className="h-3 w-3 mr-1" />
             Limpar
           </Button>

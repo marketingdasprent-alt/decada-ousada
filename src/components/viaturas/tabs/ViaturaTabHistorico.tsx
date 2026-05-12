@@ -43,10 +43,12 @@ export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
     try {
       const { data, error } = await supabase
         .from('motorista_viaturas')
-        .select(`
+        .select(
+          `
           *,
           motorista:motoristas_ativos(nome, email)
-        `)
+        `
+        )
         .eq('viatura_id', viaturaId)
         .order('data_inicio', { ascending: false });
 
@@ -61,7 +63,12 @@ export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
   };
 
   const handleDesvincular = async (item: HistoricoItem) => {
-    if (!window.confirm(`Desvincular ${item.motorista?.nome ?? 'motorista'} desta viatura? A viatura ficará disponível.`)) return;
+    if (
+      !window.confirm(
+        `Desvincular ${item.motorista?.nome ?? 'motorista'} desta viatura? A viatura ficará disponível.`
+      )
+    )
+      return;
 
     setDesvinculando(item.id);
     try {
@@ -99,21 +106,31 @@ export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ativo': return 'bg-green-500/10 text-green-500 border-green-500/20';
-      case 'finalizado': return 'bg-muted text-muted-foreground border-border';
-      case 'encerrado': return 'bg-muted text-muted-foreground border-border';
-      case 'suspenso': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
-      default: return 'bg-muted text-muted-foreground border-border';
+      case 'ativo':
+        return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'finalizado':
+        return 'bg-muted text-muted-foreground border-border';
+      case 'encerrado':
+        return 'bg-muted text-muted-foreground border-border';
+      case 'suspenso':
+        return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
+      default:
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'ativo': return 'Ativo';
-      case 'finalizado': return 'Finalizado';
-      case 'encerrado': return 'Encerrado';
-      case 'suspenso': return 'Suspenso';
-      default: return status;
+      case 'ativo':
+        return 'Ativo';
+      case 'finalizado':
+        return 'Finalizado';
+      case 'encerrado':
+        return 'Encerrado';
+      case 'suspenso':
+        return 'Suspenso';
+      default:
+        return status;
     }
   };
 
@@ -153,11 +170,13 @@ export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
                 className={`relative pl-6 pb-4 ${index !== historico.length - 1 ? 'border-l-2 border-muted ml-2' : 'ml-2'}`}
               >
                 {/* Timeline dot */}
-                <div className={`absolute left-0 top-0 w-4 h-4 rounded-full border-2 -translate-x-1/2 ${
-                  item.status === 'ativo'
-                    ? 'bg-green-500 border-green-500'
-                    : 'bg-background border-muted-foreground'
-                }`} />
+                <div
+                  className={`absolute left-0 top-0 w-4 h-4 rounded-full border-2 -translate-x-1/2 ${
+                    item.status === 'ativo'
+                      ? 'bg-green-500 border-green-500'
+                      : 'bg-background border-muted-foreground'
+                  }`}
+                />
 
                 <div className="border rounded-lg p-4 ml-2">
                   <div className="flex items-start justify-between gap-4">
@@ -166,7 +185,9 @@ export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
                         <User className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div>
-                        <p className="font-medium">{item.motorista?.nome || 'Motorista desconhecido'}</p>
+                        <p className="font-medium">
+                          {item.motorista?.nome || 'Motorista desconhecido'}
+                        </p>
                         {item.motorista?.email && (
                           <p className="text-sm text-muted-foreground">{item.motorista.email}</p>
                         )}
@@ -184,10 +205,14 @@ export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
                           disabled={desvinculando === item.id}
                           onClick={() => handleDesvincular(item)}
                         >
-                          {desvinculando === item.id
-                            ? <Loader2 className="h-3 w-3 animate-spin" />
-                            : <><Unlink className="h-3 w-3 mr-1" />Desvincular</>
-                          }
+                          {desvinculando === item.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <>
+                              <Unlink className="h-3 w-3 mr-1" />
+                              Desvincular
+                            </>
+                          )}
                         </Button>
                       )}
                     </div>
@@ -196,11 +221,14 @@ export function ViaturaTabHistorico({ viaturaId }: ViaturaTabHistoricoProps) {
                   <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     <span>
-                      {item.data_inicio ? format(new Date(item.data_inicio), "d 'de' MMMM 'de' yyyy", { locale: pt }) : 'Data N/D'}
+                      {item.data_inicio
+                        ? format(new Date(item.data_inicio), "d 'de' MMMM 'de' yyyy", {
+                            locale: pt,
+                          })
+                        : 'Data N/D'}
                       {item.data_fim
                         ? ` — ${format(new Date(item.data_fim), "d 'de' MMMM 'de' yyyy", { locale: pt })}`
-                        : ' — Presente'
-                      }
+                        : ' — Presente'}
                     </span>
                   </div>
 

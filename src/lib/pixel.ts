@@ -37,12 +37,9 @@ export function trackEventOnce(eventName: string, params: PixelEventParams = {},
 }
 
 export function trackLeadOnce(params: PixelEventParams = {}) {
-  trackEventOnce(
-    'Lead',
-    {
-      value: 1,
-      content_name: 'Formulário enviado',
-      ...params,
-    }
-  );
+  trackEventOnce('Lead', {
+    value: 1,
+    content_name: 'Formulário enviado',
+    ...params,
+  });
 }

@@ -1,6 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Car, FileText, AlertTriangle, Wrench, History, Calendar, Receipt, Radio, Paperclip, Loader2, Wallet } from 'lucide-react';
+import {
+  ArrowLeft,
+  Car,
+  FileText,
+  AlertTriangle,
+  Wrench,
+  History,
+  Calendar,
+  Receipt,
+  Radio,
+  Paperclip,
+  Loader2,
+  Wallet,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -92,7 +105,7 @@ export default function ViaturaDetalhe() {
   const { isAdmin, cargo } = usePermissions();
   const canSeeFinanceiro = isAdmin || cargo?.toLowerCase().includes('financeiro');
 
-  const filteredTabs = TABS.filter(tab => {
+  const filteredTabs = TABS.filter((tab) => {
     if (tab.id === 'financeiro') return canSeeFinanceiro;
     return true;
   });
@@ -125,11 +138,7 @@ export default function ViaturaDetalhe() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('viaturas')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase.from('viaturas').select('*').eq('id', id).single();
 
       if (error) throw error;
       setViatura(data as Viatura);
@@ -156,10 +165,7 @@ export default function ViaturaDetalhe() {
         toast.success('Viatura criada com sucesso!');
         navigate(`/viaturas/${newViatura.id}`);
       } else if (viatura) {
-        const { error } = await supabase
-          .from('viaturas')
-          .update(data)
-          .eq('id', viatura.id);
+        const { error } = await supabase.from('viaturas').update(data).eq('id', viatura.id);
 
         if (error) throw error;
         toast.success('Viatura atualizada com sucesso!');
@@ -197,13 +203,16 @@ export default function ViaturaDetalhe() {
                 <AlertTriangle className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-yellow-800 dark:text-yellow-400">Decisão Financeira Pendente!</h3>
+                <h3 className="font-bold text-yellow-800 dark:text-yellow-400">
+                  Decisão Financeira Pendente!
+                </h3>
                 <p className="text-sm text-yellow-700 dark:text-yellow-500/80">
-                  Existem {reparacoesAbertas.length} reparações com custos por definir (Empresa ou Motorista).
+                  Existem {reparacoesAbertas.length} reparações com custos por definir (Empresa ou
+                  Motorista).
                 </p>
               </div>
             </div>
-            <Button 
+            <Button
               className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold"
               onClick={() => setActiveTab('reparacoes')}
             >
@@ -247,9 +256,13 @@ export default function ViaturaDetalhe() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         {/* Tab Navigation */}
         <div className="overflow-x-auto -mx-4 px-4">
-          <TabsList 
+          <TabsList
             className={`${isMobile ? 'w-max' : 'w-full grid'} h-auto p-1`}
-            style={!isMobile ? { gridTemplateColumns: `repeat(${filteredTabs.length}, minmax(0, 1fr))` } : undefined}
+            style={
+              !isMobile
+                ? { gridTemplateColumns: `repeat(${filteredTabs.length}, minmax(0, 1fr))` }
+                : undefined
+            }
           >
             {filteredTabs.map((tab) => {
               const Icon = tab.icon;
@@ -270,11 +283,11 @@ export default function ViaturaDetalhe() {
 
         {/* Tab Contents */}
         <TabsContent value="dados" className="mt-0">
-          <ViaturaTabDados 
-            viatura={viatura} 
-            isNew={isNew} 
-            onSave={handleSaveViatura} 
-            saving={saving} 
+          <ViaturaTabDados
+            viatura={viatura}
+            isNew={isNew}
+            onSave={handleSaveViatura}
+            saving={saving}
           />
         </TabsContent>
 

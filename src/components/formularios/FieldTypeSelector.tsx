@@ -1,6 +1,11 @@
-
 import React from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { FormField } from './DynamicFieldEditor';
 
@@ -9,10 +14,7 @@ interface FieldTypeSelectorProps {
   onChange: (value: FormField['type']) => void;
 }
 
-export const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({
-  value,
-  onChange
-}) => {
+export const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({ value, onChange }) => {
   return (
     <div>
       <Label className="text-gray-300">Tipo de Campo</Label>

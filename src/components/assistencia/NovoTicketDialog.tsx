@@ -60,12 +60,12 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  
+
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  
+
   const [formData, setFormData] = useState({
     viatura_id: viaturaId || '',
     categoria_id: '',
@@ -80,7 +80,7 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
     if (open) {
       fetchData();
       if (viaturaId) {
-        setFormData(prev => ({ ...prev, viatura_id: viaturaId }));
+        setFormData((prev) => ({ ...prev, viatura_id: viaturaId }));
         fetchMotoristaFromViatura(viaturaId);
       }
     }
@@ -95,12 +95,9 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       const [viaturasRes, categoriasRes] = await Promise.all([
-        supabase
-          .from('viaturas')
-          .select('id, matricula, marca, modelo')
-          .order('matricula'),
+        supabase.from('viaturas').select('id, matricula, marca, modelo').order('matricula'),
         supabase
           .from('assistencia_categorias')
           .select('id, nome, cor, icone')
@@ -141,21 +138,21 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.viatura_id) {
       toast({
-        title: "Erro",
-        description: "Selecione uma viatura.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Selecione uma viatura.',
+        variant: 'destructive',
       });
       return;
     }
 
     if (!formData.titulo.trim()) {
       toast({
-        title: "Erro",
-        description: "Preencha o título do ticket.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Preencha o título do ticket.',
+        variant: 'destructive',
       });
       return;
     }
@@ -179,7 +176,7 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
         .single();
 
       if (error) throw error;
-      
+
       const ticketId = insertedTicket?.id;
 
       // --- ACESSO AUTOMÁTICO ---
@@ -195,9 +192,9 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
           supabase.from('profiles').select('id').ilike('cargo', '%Gestor%Assist%'),
         ]);
 
-        adminsRes.data?.forEach(p => userIdsSet.add(p.id));
-        gestoresByIdRes.data?.forEach(p => userIdsSet.add(p.id));
-        gestoresByNomeRes.data?.forEach(p => userIdsSet.add(p.id));
+        adminsRes.data?.forEach((p) => userIdsSet.add(p.id));
+        gestoresByIdRes.data?.forEach((p) => userIdsSet.add(p.id));
+        gestoresByNomeRes.data?.forEach((p) => userIdsSet.add(p.id));
 
         if (motoristaId) {
           const { data: motorista } = await supabase
@@ -216,7 +213,7 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
           }
         }
 
-        const accessEntries = Array.from(userIdsSet).map(uid => ({
+        const accessEntries = Array.from(userIdsSet).map((uid) => ({
           ticket_id: ticketId,
           profile_id: uid,
         }));
@@ -237,42 +234,42 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
         const [{ data: ticketCompleto }, { data: gestorProfile }] = await Promise.all([
           supabase
             .from('assistencia_tickets')
-            .select(`
+            .select(
+              `
               *,
               viatura:viaturas(id, matricula, marca, modelo, cor, ano),
               motorista:motoristas_ativos(id, nome, email, telefone, codigo),
               categoria:assistencia_categorias(id, nome, cor)
-            `)
+            `
+            )
             .eq('id', insertedTicket.id)
             .single(),
-          supabase
-            .from('profiles')
-            .select('nome, cargo')
-            .eq('id', user?.id)
-            .single(),
+          supabase.from('profiles').select('nome, cargo').eq('id', user?.id).single(),
         ]);
 
         // Enviar para webhooks configurados (fire and forget)
-        supabase.functions.invoke('send-webhook', {
-          body: {
-            evento: 'ticket_criado',
-            dados: {
-              acao: 'criacao',
-              ticket: ticketCompleto,
-              criado_por: {
-                id: user?.id,
-                email: user?.email,
-                nome: gestorProfile?.nome || null,
-                cargo: gestorProfile?.cargo || null,
+        supabase.functions
+          .invoke('send-webhook', {
+            body: {
+              evento: 'ticket_criado',
+              dados: {
+                acao: 'criacao',
+                ticket: ticketCompleto,
+                criado_por: {
+                  id: user?.id,
+                  email: user?.email,
+                  nome: gestorProfile?.nome || null,
+                  cargo: gestorProfile?.cargo || null,
+                },
               },
             },
-          },
-        }).catch(err => console.error('Erro ao enviar webhook:', err));
+          })
+          .catch((err) => console.error('Erro ao enviar webhook:', err));
       }
 
       toast({
-        title: "Sucesso",
-        description: "Ticket de assistência criado com sucesso.",
+        title: 'Sucesso',
+        description: 'Ticket de assistência criado com sucesso.',
       });
 
       // Reset form
@@ -284,21 +281,21 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
         prioridade: 'media',
       });
       setMotoristaId(null);
-      
+
       onSuccess();
     } catch (error: any) {
       console.error('Erro ao criar ticket:', error);
       toast({
-        title: "Erro",
-        description: error.message || "Não foi possível criar o ticket.",
-        variant: "destructive",
+        title: 'Erro',
+        description: error.message || 'Não foi possível criar o ticket.',
+        variant: 'destructive',
       });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const selectedViatura = viaturas.find(v => v.id === formData.viatura_id);
+  const selectedViatura = viaturas.find((v) => v.id === formData.viatura_id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -324,7 +321,7 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
               <Label htmlFor="viatura">Viatura *</Label>
               <Select
                 value={formData.viatura_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, viatura_id: value }))}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, viatura_id: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a viatura" />
@@ -347,7 +344,7 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
               <Label htmlFor="categoria">Categoria</Label>
               <Select
                 value={formData.categoria_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, categoria_id: value }))}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, categoria_id: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a categoria (opcional)" />
@@ -356,8 +353,8 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
                   {categorias.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
+                        <div
+                          className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: cat.cor }}
                         />
                         {cat.nome}
@@ -373,7 +370,7 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
               <Label htmlFor="prioridade">Prioridade</Label>
               <Select
                 value={formData.prioridade}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, prioridade: value }))}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, prioridade: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -394,7 +391,7 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
                 id="titulo"
                 placeholder="Descreva brevemente o problema..."
                 value={formData.titulo}
-                onChange={(e) => setFormData(prev => ({ ...prev, titulo: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, titulo: e.target.value }))}
               />
             </div>
 
@@ -405,7 +402,7 @@ export const NovoTicketDialog: React.FC<NovoTicketDialogProps> = ({
                 id="descricao"
                 placeholder="Detalhe o problema, sintomas, quando começou..."
                 value={formData.descricao}
-                onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
                 rows={4}
               />
             </div>

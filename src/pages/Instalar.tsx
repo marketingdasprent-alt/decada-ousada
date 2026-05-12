@@ -1,10 +1,21 @@
-﻿import { useState, useEffect } from "react";
-import { Download, Smartphone, Share, MoreVertical, Plus, ArrowDown, CheckCircle2, Zap, Wifi, Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useThemedLogo } from "@/hooks/useThemedLogo";
+﻿import { useState, useEffect } from 'react';
+import {
+  Download,
+  Smartphone,
+  Share,
+  MoreVertical,
+  Plus,
+  ArrowDown,
+  CheckCircle2,
+  Zap,
+  Wifi,
+  Bell,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useThemedLogo } from '@/hooks/useThemedLogo';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -48,7 +59,7 @@ export default function Instalar() {
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
+
     if (outcome === 'accepted') {
       setIsInstalled(true);
     }
@@ -58,19 +69,19 @@ export default function Instalar() {
   const benefits = [
     {
       icon: <Zap className="h-5 w-5" />,
-      title: "Acesso Rápido",
-      description: "Abra a app diretamente do ecrã inicial"
+      title: 'Acesso Rápido',
+      description: 'Abra a app diretamente do ecrã inicial',
     },
     {
       icon: <Wifi className="h-5 w-5" />,
-      title: "Funciona Offline",
-      description: "Aceda aos dados mesmo sem internet"
+      title: 'Funciona Offline',
+      description: 'Aceda aos dados mesmo sem internet',
     },
     {
       icon: <Bell className="h-5 w-5" />,
-      title: "Notificações",
-      description: "Receba alertas importantes em tempo real"
-    }
+      title: 'Notificações',
+      description: 'Receba alertas importantes em tempo real',
+    },
   ];
 
   if (isInstalled) {
@@ -87,7 +98,7 @@ export default function Instalar() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" onClick={() => window.location.href = "/"}>
+            <Button variant="outline" onClick={() => (window.location.href = '/')}>
               Voltar ao Início
             </Button>
           </CardContent>
@@ -101,11 +112,7 @@ export default function Instalar() {
       {/* Header */}
       <div className="bg-gradient-to-b from-primary/10 to-background px-6 pt-12 pb-8 text-center">
         <div className="mx-auto mb-6 w-20 h-20 rounded-2xl bg-card border shadow-lg flex items-center justify-center">
-          <img 
-            src={logoSrc} 
-            alt="WeGest" 
-            className="w-14 h-14 object-contain"
-          />
+          <img src={logoSrc} alt="WeGest" className="w-14 h-14 object-contain" />
         </div>
         <h1 className="text-3xl font-bold mb-2">Instalar App</h1>
         <p className="text-muted-foreground max-w-sm mx-auto">
@@ -133,11 +140,7 @@ export default function Instalar() {
 
         {/* Install Button (Android/Desktop with prompt) */}
         {deferredPrompt && (
-          <Button 
-            size="lg" 
-            className="w-full h-14 text-lg gap-2"
-            onClick={handleInstallClick}
-          >
+          <Button size="lg" className="w-full h-14 text-lg gap-2" onClick={handleInstallClick}>
             <Download className="h-5 w-5" />
             Instalar Aplicação
           </Button>
@@ -154,7 +157,10 @@ export default function Instalar() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-4 items-start">
-                <Badge variant="outline" className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0"
+                >
                   1
                 </Badge>
                 <div className="flex items-center gap-2">
@@ -163,9 +169,12 @@ export default function Instalar() {
                   <span>Partilhar</span>
                 </div>
               </div>
-              
+
               <div className="flex gap-4 items-start">
-                <Badge variant="outline" className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0"
+                >
                   2
                 </Badge>
                 <div>
@@ -173,9 +182,12 @@ export default function Instalar() {
                   <span className="font-medium">"Adicionar ao Ecrã principal"</span>
                 </div>
               </div>
-              
+
               <div className="flex gap-4 items-start">
-                <Badge variant="outline" className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0"
+                >
                   3
                 </Badge>
                 <div>
@@ -206,7 +218,10 @@ export default function Instalar() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-4 items-start">
-                <Badge variant="outline" className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0"
+                >
                   1
                 </Badge>
                 <div className="flex items-center gap-2">
@@ -215,9 +230,12 @@ export default function Instalar() {
                   <span>do navegador</span>
                 </div>
               </div>
-              
+
               <div className="flex gap-4 items-start">
-                <Badge variant="outline" className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0"
+                >
                   2
                 </Badge>
                 <div className="flex items-center gap-2">
@@ -226,9 +244,12 @@ export default function Instalar() {
                   <span className="font-medium">"Adicionar ao ecrã inicial"</span>
                 </div>
               </div>
-              
+
               <div className="flex gap-4 items-start">
-                <Badge variant="outline" className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0"
+                >
                   3
                 </Badge>
                 <div>
@@ -245,22 +266,26 @@ export default function Instalar() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Instalar no Computador</CardTitle>
-              <CardDescription>
-                Use o Chrome, Edge ou outro navegador compatível
-              </CardDescription>
+              <CardDescription>Use o Chrome, Edge ou outro navegador compatível</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-4 items-start">
-                <Badge variant="outline" className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0"
+                >
                   1
                 </Badge>
                 <div>
                   Procure o ícone <Download className="inline h-4 w-4" /> na barra de endereço
                 </div>
               </div>
-              
+
               <div className="flex gap-4 items-start">
-                <Badge variant="outline" className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center p-0"
+                >
                   2
                 </Badge>
                 <div>
@@ -274,7 +299,7 @@ export default function Instalar() {
 
         {/* Back button */}
         <div className="text-center pt-4">
-          <Button variant="ghost" onClick={() => window.location.href = "/"}>
+          <Button variant="ghost" onClick={() => (window.location.href = '/')}>
             Voltar ao site
           </Button>
         </div>

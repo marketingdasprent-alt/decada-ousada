@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +16,7 @@ export const FilterSummary: React.FC<FilterSummaryProps> = ({
   filteredCount,
   hasActiveFilters,
   onClearFilters,
-  showOnlyClearButton = false
+  showOnlyClearButton = false,
 }) => {
   if (showOnlyClearButton) {
     return hasActiveFilters ? (
@@ -36,11 +35,17 @@ export const FilterSummary: React.FC<FilterSummaryProps> = ({
     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full xl:w-auto min-w-0">
       <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
         <span className="whitespace-nowrap">Mostrando</span>
-        <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30 flex-shrink-0">
+        <Badge
+          variant="secondary"
+          className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30 flex-shrink-0"
+        >
           {filteredCount}
         </Badge>
         <span className="whitespace-nowrap">de</span>
-        <Badge variant="secondary" className="bg-muted/20 text-foreground border-border/30 flex-shrink-0">
+        <Badge
+          variant="secondary"
+          className="bg-muted/20 text-foreground border-border/30 flex-shrink-0"
+        >
           {totalLeads}
         </Badge>
         <span className="whitespace-nowrap">leads</span>

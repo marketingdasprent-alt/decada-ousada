@@ -50,7 +50,7 @@ export const FormulariosTab = () => {
           return {
             ...form,
             configuracoes: {},
-            campanhas: campanhas?.map(c => c.campanha_tag) || []
+            campanhas: campanhas?.map((c) => c.campanha_tag) || [],
           } as Formulario;
         })
       );
@@ -59,9 +59,9 @@ export const FormulariosTab = () => {
     } catch (error) {
       console.error('Erro ao carregar formulários:', error);
       toast({
-        title: "Erro ao carregar formulários",
-        description: "Não foi possível carregar a lista de formulários.",
-        variant: "destructive",
+        title: 'Erro ao carregar formulários',
+        description: 'Não foi possível carregar a lista de formulários.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -76,7 +76,7 @@ export const FormulariosTab = () => {
           nome: formData.nome,
           descricao: formData.descricao,
           ativo: formData.ativo,
-          campos: formData.campos
+          campos: formData.campos,
         })
         .select()
         .single();
@@ -86,17 +86,15 @@ export const FormulariosTab = () => {
       if (formData.campanhas?.length > 0) {
         const campanhasInsert = formData.campanhas.map((tag: string) => ({
           formulario_id: formulario.id,
-          campanha_tag: tag
+          campanha_tag: tag,
         }));
 
-        await supabase
-          .from('formulario_campanhas')
-          .insert(campanhasInsert);
+        await supabase.from('formulario_campanhas').insert(campanhasInsert);
       }
 
       toast({
-        title: "Formulário criado",
-        description: "O formulário foi criado com sucesso.",
+        title: 'Formulário criado',
+        description: 'O formulário foi criado com sucesso.',
       });
 
       setIsCreateDialogOpen(false);
@@ -104,9 +102,9 @@ export const FormulariosTab = () => {
     } catch (error) {
       console.error('Erro ao criar formulário:', error);
       toast({
-        title: "Erro ao criar formulário",
-        description: "Não foi possível criar o formulário.",
-        variant: "destructive",
+        title: 'Erro ao criar formulário',
+        description: 'Não foi possível criar o formulário.',
+        variant: 'destructive',
       });
     }
   };
@@ -119,31 +117,26 @@ export const FormulariosTab = () => {
           nome: formData.nome,
           descricao: formData.descricao,
           ativo: formData.ativo,
-          campos: formData.campos
+          campos: formData.campos,
         })
         .eq('id', id);
 
       if (error) throw error;
 
-      await supabase
-        .from('formulario_campanhas')
-        .delete()
-        .eq('formulario_id', id);
+      await supabase.from('formulario_campanhas').delete().eq('formulario_id', id);
 
       if (formData.campanhas?.length > 0) {
         const campanhasInsert = formData.campanhas.map((tag: string) => ({
           formulario_id: id,
-          campanha_tag: tag
+          campanha_tag: tag,
         }));
 
-        await supabase
-          .from('formulario_campanhas')
-          .insert(campanhasInsert);
+        await supabase.from('formulario_campanhas').insert(campanhasInsert);
       }
 
       toast({
-        title: "Formulário atualizado",
-        description: "O formulário foi atualizado com sucesso.",
+        title: 'Formulário atualizado',
+        description: 'O formulário foi atualizado com sucesso.',
       });
 
       setEditingFormulario(null);
@@ -151,34 +144,31 @@ export const FormulariosTab = () => {
     } catch (error) {
       console.error('Erro ao atualizar formulário:', error);
       toast({
-        title: "Erro ao atualizar formulário",
-        description: "Não foi possível atualizar o formulário.",
-        variant: "destructive",
+        title: 'Erro ao atualizar formulário',
+        description: 'Não foi possível atualizar o formulário.',
+        variant: 'destructive',
       });
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('formularios')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from('formularios').delete().eq('id', id);
 
       if (error) throw error;
 
       toast({
-        title: "Formulário eliminado",
-        description: "O formulário foi eliminado com sucesso.",
+        title: 'Formulário eliminado',
+        description: 'O formulário foi eliminado com sucesso.',
       });
 
       fetchFormularios();
     } catch (error) {
       console.error('Erro ao eliminar formulário:', error);
       toast({
-        title: "Erro ao eliminar formulário",
-        description: "Não foi possível eliminar o formulário.",
-        variant: "destructive",
+        title: 'Erro ao eliminar formulário',
+        description: 'Não foi possível eliminar o formulário.',
+        variant: 'destructive',
       });
     }
   };
@@ -193,7 +183,7 @@ export const FormulariosTab = () => {
       if (error) throw error;
 
       toast({
-        title: currentStatus ? "Formulário desativado" : "Formulário ativado",
+        title: currentStatus ? 'Formulário desativado' : 'Formulário ativado',
         description: `O formulário foi ${currentStatus ? 'desativado' : 'ativado'} com sucesso.`,
       });
 
@@ -201,9 +191,9 @@ export const FormulariosTab = () => {
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       toast({
-        title: "Erro ao atualizar status",
-        description: "Não foi possível atualizar o status do formulário.",
-        variant: "destructive",
+        title: 'Erro ao atualizar status',
+        description: 'Não foi possível atualizar o status do formulário.',
+        variant: 'destructive',
       });
     }
   };

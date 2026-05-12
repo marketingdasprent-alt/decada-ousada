@@ -14,7 +14,10 @@ export const useCurrentUser = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+        const {
+          data: { user: authUser },
+          error: userError,
+        } = await supabase.auth.getUser();
         if (userError || !authUser) {
           console.error('Erro ao obter usuário atual:', userError);
           setUser(null);

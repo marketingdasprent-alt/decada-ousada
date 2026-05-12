@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -6,7 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Plus, UserPlus } from 'lucide-react';
 
 interface Cargo {
@@ -30,11 +35,8 @@ export const InviteGenerationForm = ({ onInviteGenerated }: InviteGenerationForm
   }, []);
 
   const fetchCargos = async () => {
-    const { data, error } = await supabase
-      .from('cargos')
-      .select('id, nome')
-      .order('nome');
-    
+    const { data, error } = await supabase.from('cargos').select('id, nome').order('nome');
+
     if (!error && data) {
       setCargos(data);
     }
@@ -42,21 +44,21 @@ export const InviteGenerationForm = ({ onInviteGenerated }: InviteGenerationForm
 
   const generateInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email) {
       toast({
-        title: "Erro",
-        description: "Email é obrigatório",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Email é obrigatório',
+        variant: 'destructive',
       });
       return;
     }
 
     if (!cargoId) {
       toast({
-        title: "Erro",
-        description: "Selecione um grupo para o utilizador",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Selecione um grupo para o utilizador',
+        variant: 'destructive',
       });
       return;
     }
@@ -67,21 +69,18 @@ export const InviteGenerationForm = ({ onInviteGenerated }: InviteGenerationForm
       console.log('=== GERANDO CONVITE PARA USUÁRIO ===');
       console.log('Email:', email);
       console.log('Cargo ID:', cargoId);
-      
+
       // Gerar token único
       const token = crypto.randomUUID().replace(/-/g, '');
       console.log('Token gerado:', token);
-      
+
       // Data de expiração (7 dias)
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
       console.log('Expira em:', expiresAt.toISOString());
 
       // Remover convites antigos para este email
-      await supabase
-        .from('convites')
-        .delete()
-        .eq('email', email.toLowerCase().trim());
+      await supabase.from('convites').delete().eq('email', email.toLowerCase().trim());
 
       // Inserir novo convite COM cargo_id
       const { data, error } = await supabase
@@ -91,7 +90,7 @@ export const InviteGenerationForm = ({ onInviteGenerated }: InviteGenerationForm
           token,
           expires_at: expiresAt.toISOString(),
           usado: false,
-          cargo_id: cargoId
+          cargo_id: cargoId,
         })
         .select()
         .single();
@@ -106,24 +105,23 @@ export const InviteGenerationForm = ({ onInviteGenerated }: InviteGenerationForm
       // Gerar link
       const baseUrl = window.location.origin;
       const inviteLink = `${baseUrl}/register?token=${token}`;
-      
+
       console.log('Link gerado:', inviteLink);
-      
+
       onInviteGenerated(inviteLink);
       setEmail('');
       setCargoId('');
 
       toast({
-        title: "Convite gerado!",
-        description: "Link de convite para usuário normal criado com sucesso",
+        title: 'Convite gerado!',
+        description: 'Link de convite para usuário normal criado com sucesso',
       });
-
     } catch (error: any) {
       console.error('Erro ao gerar convite:', error);
       toast({
-        title: "Erro",
-        description: error.message || "Erro ao gerar convite",
-        variant: "destructive",
+        title: 'Erro',
+        description: error.message || 'Erro ao gerar convite',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -168,8 +166,8 @@ export const InviteGenerationForm = ({ onInviteGenerated }: InviteGenerationForm
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-700">
                 {cargos.map((cargo) => (
-                  <SelectItem 
-                    key={cargo.id} 
+                  <SelectItem
+                    key={cargo.id}
                     value={cargo.id}
                     className="text-white hover:bg-gray-700"
                   >
@@ -179,14 +177,14 @@ export const InviteGenerationForm = ({ onInviteGenerated }: InviteGenerationForm
               </SelectContent>
             </Select>
           </div>
-          
+
           <Button
             type="submit"
             disabled={loading || !cargoId}
             className="w-full bg-primary hover:bg-primary/90 text-white font-semibold"
           >
             <Plus className="h-4 w-4 mr-2" />
-            {loading ? "Gerando..." : "Gerar Convite"}
+            {loading ? 'Gerando...' : 'Gerar Convite'}
           </Button>
         </form>
       </CardContent>

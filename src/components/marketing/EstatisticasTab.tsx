@@ -2,11 +2,35 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Send, CheckCircle, Eye, MousePointerClick, AlertTriangle, ShieldAlert, Ban, RefreshCw, Clock } from 'lucide-react';
+import {
+  Loader2,
+  Send,
+  CheckCircle,
+  Eye,
+  MousePointerClick,
+  AlertTriangle,
+  ShieldAlert,
+  Ban,
+  RefreshCw,
+  Clock,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -22,7 +46,9 @@ const EstatisticasTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('marketing_campanhas')
-        .select('id, nome, assunto, enviado_em, total_enviados, total_entregues, total_abertos, total_clicados, total_bounces')
+        .select(
+          'id, nome, assunto, enviado_em, total_enviados, total_entregues, total_abertos, total_clicados, total_bounces'
+        )
         .in('status', ['enviado', 'enviando'])
         .order('enviado_em', { ascending: false });
       if (error) throw error;
@@ -37,7 +63,11 @@ const EstatisticasTab = () => {
   }, [campanhas, campanhaId]);
 
   // Fetch email_sends from local DB
-  const { data: emailSends, isLoading, refetch } = useQuery({
+  const {
+    data: emailSends,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['email-sends', campanhaId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -53,18 +83,21 @@ const EstatisticasTab = () => {
   });
 
   // Calculate KPIs from local data
-  const totais = emailSends ? {
-    total: emailSends.length,
-    delivered: emailSends.filter(e => ['delivered', 'opened', 'clicked'].includes(e.status)).length,
-    opened: emailSends.filter(e => ['opened', 'clicked'].includes(e.status)).length,
-    clicked: emailSends.filter(e => e.status === 'clicked').length,
-    bounced: emailSends.filter(e => e.status === 'bounced').length,
-    spam: emailSends.filter(e => e.status === 'spam').length,
-    blocked: emailSends.filter(e => ['blocked', 'invalid'].includes(e.status)).length,
-    unsubscribed: emailSends.filter(e => e.status === 'unsubscribed').length,
-  } : null;
+  const totais = emailSends
+    ? {
+        total: emailSends.length,
+        delivered: emailSends.filter((e) => ['delivered', 'opened', 'clicked'].includes(e.status))
+          .length,
+        opened: emailSends.filter((e) => ['opened', 'clicked'].includes(e.status)).length,
+        clicked: emailSends.filter((e) => e.status === 'clicked').length,
+        bounced: emailSends.filter((e) => e.status === 'bounced').length,
+        spam: emailSends.filter((e) => e.status === 'spam').length,
+        blocked: emailSends.filter((e) => ['blocked', 'invalid'].includes(e.status)).length,
+        unsubscribed: emailSends.filter((e) => e.status === 'unsubscribed').length,
+      }
+    : null;
 
-  const campanhaSelecionada = campanhas?.find(c => c.id === campanhaId);
+  const campanhaSelecionada = campanhas?.find((c) => c.id === campanhaId);
   const totalEnviados = campanhaSelecionada?.total_enviados || totais?.total || 0;
 
   const taxa = (valor: number) => {
@@ -82,7 +115,9 @@ const EstatisticasTab = () => {
       });
       if (error) throw error;
       setLastSync(new Date());
-      toast.success(`Sincronizado: ${data?.total_events || 0} eventos, ${data?.upserted || 0} registos`);
+      toast.success(
+        `Sincronizado: ${data?.total_events || 0} eventos, ${data?.upserted || 0} registos`
+      );
       refetch();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -99,18 +134,41 @@ const EstatisticasTab = () => {
     }
   }, [campanhaId]);
 
-  const kpis = totais ? [
-    { label: 'Enviados', valor: totais.total, icon: Send, cor: 'text-blue-500' },
-    { label: 'Entregues', valor: totais.delivered, icon: CheckCircle, cor: 'text-green-500', taxa: taxa(totais.delivered) },
-    { label: 'Abertos', valor: totais.opened, icon: Eye, cor: 'text-purple-500', taxa: taxa(totais.opened) },
-    { label: 'Clicados', valor: totais.clicked, icon: MousePointerClick, cor: 'text-orange-500', taxa: taxa(totais.clicked) },
-    { label: 'Bounces', valor: totais.bounced, icon: AlertTriangle, cor: 'text-yellow-500' },
-    { label: 'Spam', valor: totais.spam, icon: ShieldAlert, cor: 'text-red-500' },
-    { label: 'Bloqueados', valor: totais.blocked, icon: Ban, cor: 'text-muted-foreground' },
-  ] : [];
+  const kpis = totais
+    ? [
+        { label: 'Enviados', valor: totais.total, icon: Send, cor: 'text-blue-500' },
+        {
+          label: 'Entregues',
+          valor: totais.delivered,
+          icon: CheckCircle,
+          cor: 'text-green-500',
+          taxa: taxa(totais.delivered),
+        },
+        {
+          label: 'Abertos',
+          valor: totais.opened,
+          icon: Eye,
+          cor: 'text-purple-500',
+          taxa: taxa(totais.opened),
+        },
+        {
+          label: 'Clicados',
+          valor: totais.clicked,
+          icon: MousePointerClick,
+          cor: 'text-orange-500',
+          taxa: taxa(totais.clicked),
+        },
+        { label: 'Bounces', valor: totais.bounced, icon: AlertTriangle, cor: 'text-yellow-500' },
+        { label: 'Spam', valor: totais.spam, icon: ShieldAlert, cor: 'text-red-500' },
+        { label: 'Bloqueados', valor: totais.blocked, icon: Ban, cor: 'text-muted-foreground' },
+      ]
+    : [];
 
   const statusBadge = (status: string) => {
-    const map: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+    const map: Record<
+      string,
+      { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
+    > = {
       sent: { label: 'Enviado', variant: 'outline' },
       delivered: { label: 'Entregue', variant: 'default' },
       opened: { label: 'Aberto', variant: 'secondary' },
@@ -136,9 +194,12 @@ const EstatisticasTab = () => {
               <SelectValue placeholder="Selecionar campanha..." />
             </SelectTrigger>
             <SelectContent>
-              {campanhas?.map(c => (
+              {campanhas?.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
-                  {c.nome} {c.enviado_em ? `(${format(new Date(c.enviado_em), 'dd/MM/yyyy', { locale: pt })})` : ''}
+                  {c.nome}{' '}
+                  {c.enviado_em
+                    ? `(${format(new Date(c.enviado_em), 'dd/MM/yyyy', { locale: pt })})`
+                    : ''}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -155,7 +216,7 @@ const EstatisticasTab = () => {
       {lastSync && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
-          Última sincronização: {format(lastSync, "dd/MM/yyyy HH:mm:ss", { locale: pt })}
+          Última sincronização: {format(lastSync, 'dd/MM/yyyy HH:mm:ss', { locale: pt })}
           <span className="ml-2">• Auto-refresh a cada 10s</span>
         </div>
       )}
@@ -169,7 +230,7 @@ const EstatisticasTab = () => {
       {totais && !isLoading && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-            {kpis.map(kpi => (
+            {kpis.map((kpi) => (
               <Card key={kpi.label}>
                 <CardContent className="p-4 text-center">
                   <kpi.icon className={`h-5 w-5 mx-auto mb-1 ${kpi.cor}`} />
@@ -183,7 +244,9 @@ const EstatisticasTab = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Detalhes por Destinatário ({emailSends?.length || 0})</CardTitle>
+              <CardTitle className="text-lg">
+                Detalhes por Destinatário ({emailSends?.length || 0})
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {!emailSends?.length ? (
@@ -206,9 +269,15 @@ const EstatisticasTab = () => {
                       <TableRow key={send.id}>
                         <TableCell className="text-sm">{send.email}</TableCell>
                         <TableCell>{statusBadge(send.status)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{send.last_event || '-'}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {send.last_event_at ? format(new Date(send.last_event_at), "dd/MM/yyyy HH:mm", { locale: pt }) : '-'}
+                          {send.last_event || '-'}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {send.last_event_at
+                            ? format(new Date(send.last_event_at), 'dd/MM/yyyy HH:mm', {
+                                locale: pt,
+                              })
+                            : '-'}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                           {send.error_message || '-'}
@@ -224,7 +293,9 @@ const EstatisticasTab = () => {
       )}
 
       {!campanhaId && !isLoading && (
-        <p className="text-center text-muted-foreground py-12">Selecione uma campanha para ver as estatísticas.</p>
+        <p className="text-center text-muted-foreground py-12">
+          Selecione uma campanha para ver as estatísticas.
+        </p>
       )}
     </div>
   );

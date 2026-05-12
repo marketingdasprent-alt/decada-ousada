@@ -36,9 +36,9 @@ export const ViaVerdeLogoUpload: React.FC<ViaVerdeLogoUploadProps> = ({
         .from('integracoes-logos')
         .upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage
-        .from('integracoes-logos')
-        .getPublicUrl(path);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('integracoes-logos').getPublicUrl(path);
       onLogoChange(publicUrl);
       toast({ title: 'Logo carregado' });
     } catch (err: any) {

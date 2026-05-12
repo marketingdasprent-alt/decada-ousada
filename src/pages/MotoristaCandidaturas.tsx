@@ -6,10 +6,23 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Search, Users, Clock, CheckCircle2, XCircle, FileText, 
-  Eye, Download, Loader2, RefreshCw, CreditCard, Home, 
-  FileCheck, Building, Car, IdCard
+import {
+  Search,
+  Users,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  FileText,
+  Eye,
+  Download,
+  Loader2,
+  RefreshCw,
+  CreditCard,
+  Home,
+  FileCheck,
+  Building,
+  Car,
+  IdCard,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -83,7 +96,10 @@ interface DocumentInfo {
   validity?: string | null;
 }
 
-const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+const STATUS_LABELS: Record<
+  string,
+  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
+> = {
   rascunho: { label: 'Rascunho', variant: 'outline' },
   submetido: { label: 'Pendente', variant: 'secondary' },
   em_analise: { label: 'Em Análise', variant: 'default' },
@@ -105,7 +121,7 @@ const MotoristaCandidaturas: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  
+
   // Dialog states
   const [selectedCandidatura, setSelectedCandidatura] = useState<Candidatura | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -113,7 +129,7 @@ const MotoristaCandidaturas: React.FC = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
   const [selectedDocIndex, setSelectedDocIndex] = useState(0);
-  
+
   // Contract dialog states
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
   const [approvedMotorista, setApprovedMotorista] = useState<any>(null);
@@ -144,23 +160,24 @@ const MotoristaCandidaturas: React.FC = () => {
     }
   };
 
-  const filteredCandidaturas = candidaturas.filter(c => {
+  const filteredCandidaturas = candidaturas.filter((c) => {
     const term = normalizeString(searchTerm);
-    const matchesSearch = 
+    const matchesSearch =
       normalizeString(c.nome).includes(term) ||
       normalizeString(c.email).includes(term) ||
       (c.nif && normalizeString(c.nif).includes(term));
-    
+
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
   const stats = {
     total: candidaturas.length,
-    pendentes: candidaturas.filter(c => c.status === 'submetido' || c.status === 'em_analise').length,
-    aprovados: candidaturas.filter(c => c.status === 'aprovado').length,
-    rejeitados: candidaturas.filter(c => c.status === 'rejeitado').length,
+    pendentes: candidaturas.filter((c) => c.status === 'submetido' || c.status === 'em_analise')
+      .length,
+    aprovados: candidaturas.filter((c) => c.status === 'aprovado').length,
+    rejeitados: candidaturas.filter((c) => c.status === 'rejeitado').length,
   };
 
   const handleApprove = async (candidatura: Candidatura) => {
@@ -206,7 +223,7 @@ const MotoristaCandidaturas: React.FC = () => {
 
   const handleReject = async () => {
     if (!selectedCandidatura) return;
-    
+
     setProcessing(true);
     try {
       const { error } = await supabase.rpc('rejeitar_candidatura_motorista', {
@@ -267,7 +284,10 @@ const MotoristaCandidaturas: React.FC = () => {
       {
         label: 'Documento de Identificação',
         url: candidatura.documento_ficheiro_url,
-        type: TIPO_DOCUMENTO_LABELS[candidatura.documento_tipo || ''] || candidatura.documento_tipo || 'ID',
+        type:
+          TIPO_DOCUMENTO_LABELS[candidatura.documento_tipo || ''] ||
+          candidatura.documento_tipo ||
+          'ID',
         icon: <IdCard className="h-4 w-4" />,
         validity: candidatura.documento_validade,
       },
@@ -325,9 +345,7 @@ const MotoristaCandidaturas: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Candidaturas de Motoristas</h1>
-          <p className="text-muted-foreground">
-            Analise e aprove candidaturas para a frota
-          </p>
+          <p className="text-muted-foreground">Analise e aprove candidaturas para a frota</p>
         </div>
         <Button onClick={loadCandidaturas} variant="outline" disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -437,20 +455,23 @@ const MotoristaCandidaturas: React.FC = () => {
                   <TableRow key={candidatura.id}>
                     <TableCell className="font-medium">{candidatura.nome}</TableCell>
                     <TableCell className="hidden md:table-cell">{candidatura.email}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{candidatura.telefone || '-'}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {candidatura.telefone || '-'}
+                    </TableCell>
                     <TableCell>
-                      <Badge 
+                      <Badge
                         variant={STATUS_LABELS[candidatura.status]?.variant || 'default'}
-                        className={candidatura.status === 'aprovado' ? 'bg-green-500 hover:bg-green-600' : ''}
+                        className={
+                          candidatura.status === 'aprovado' ? 'bg-green-500 hover:bg-green-600' : ''
+                        }
                       >
                         {STATUS_LABELS[candidatura.status]?.label || candidatura.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      {candidatura.data_submissao 
+                      {candidatura.data_submissao
                         ? format(new Date(candidatura.data_submissao), 'dd/MM/yyyy', { locale: pt })
-                        : format(new Date(candidatura.created_at), 'dd/MM/yyyy', { locale: pt })
-                      }
+                        : format(new Date(candidatura.created_at), 'dd/MM/yyyy', { locale: pt })}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -482,7 +503,7 @@ const MotoristaCandidaturas: React.FC = () => {
               <DialogHeader className="p-6 pb-0">
                 <DialogTitle className="flex items-center gap-2">
                   {selectedCandidatura.nome}
-                  <Badge 
+                  <Badge
                     variant={STATUS_LABELS[selectedCandidatura.status]?.variant || 'default'}
                     className={selectedCandidatura.status === 'aprovado' ? 'bg-green-500' : ''}
                   >
@@ -491,10 +512,15 @@ const MotoristaCandidaturas: React.FC = () => {
                 </DialogTitle>
                 <DialogDescription>
                   Candidatura submetida a{' '}
-                  {selectedCandidatura.data_submissao 
-                    ? format(new Date(selectedCandidatura.data_submissao), "dd/MM/yyyy 'às' HH:mm", { locale: pt })
-                    : format(new Date(selectedCandidatura.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: pt })
-                  }
+                  {selectedCandidatura.data_submissao
+                    ? format(
+                        new Date(selectedCandidatura.data_submissao),
+                        "dd/MM/yyyy 'às' HH:mm",
+                        { locale: pt }
+                      )
+                    : format(new Date(selectedCandidatura.created_at), "dd/MM/yyyy 'às' HH:mm", {
+                        locale: pt,
+                      })}
                 </DialogDescription>
               </DialogHeader>
 
@@ -545,24 +571,34 @@ const MotoristaCandidaturas: React.FC = () => {
                         <div>
                           <span className="text-muted-foreground text-xs">Tipo</span>
                           <p className="font-medium">
-                            {TIPO_DOCUMENTO_LABELS[selectedCandidatura.documento_tipo || ''] || selectedCandidatura.documento_tipo || '-'}
+                            {TIPO_DOCUMENTO_LABELS[selectedCandidatura.documento_tipo || ''] ||
+                              selectedCandidatura.documento_tipo ||
+                              '-'}
                           </p>
                         </div>
                         <div>
                           <span className="text-muted-foreground text-xs">Número</span>
-                          <p className="font-medium">{selectedCandidatura.documento_numero || '-'}</p>
+                          <p className="font-medium">
+                            {selectedCandidatura.documento_numero || '-'}
+                          </p>
                         </div>
                         <div>
                           <span className="text-muted-foreground text-xs">Validade</span>
-                          <p className={cn(
-                            "font-medium",
-                            isDocumentExpired(selectedCandidatura.documento_validade) && "text-destructive",
-                            isDocumentExpiringSoon(selectedCandidatura.documento_validade) && "text-amber-600"
-                          )}>
-                            {selectedCandidatura.documento_validade 
-                              ? format(new Date(selectedCandidatura.documento_validade), 'dd/MM/yyyy')
-                              : '-'
-                            }
+                          <p
+                            className={cn(
+                              'font-medium',
+                              isDocumentExpired(selectedCandidatura.documento_validade) &&
+                                'text-destructive',
+                              isDocumentExpiringSoon(selectedCandidatura.documento_validade) &&
+                                'text-amber-600'
+                            )}
+                          >
+                            {selectedCandidatura.documento_validade
+                              ? format(
+                                  new Date(selectedCandidatura.documento_validade),
+                                  'dd/MM/yyyy'
+                                )
+                              : '-'}
                           </p>
                         </div>
                       </div>
@@ -580,19 +616,24 @@ const MotoristaCandidaturas: React.FC = () => {
                         </div>
                         <div>
                           <span className="text-muted-foreground text-xs">Categorias</span>
-                          <p className="font-medium">{selectedCandidatura.carta_categorias?.join(', ') || '-'}</p>
+                          <p className="font-medium">
+                            {selectedCandidatura.carta_categorias?.join(', ') || '-'}
+                          </p>
                         </div>
                         <div>
                           <span className="text-muted-foreground text-xs">Validade</span>
-                          <p className={cn(
-                            "font-medium",
-                            isDocumentExpired(selectedCandidatura.carta_validade) && "text-destructive",
-                            isDocumentExpiringSoon(selectedCandidatura.carta_validade) && "text-amber-600"
-                          )}>
-                            {selectedCandidatura.carta_validade 
+                          <p
+                            className={cn(
+                              'font-medium',
+                              isDocumentExpired(selectedCandidatura.carta_validade) &&
+                                'text-destructive',
+                              isDocumentExpiringSoon(selectedCandidatura.carta_validade) &&
+                                'text-amber-600'
+                            )}
+                          >
+                            {selectedCandidatura.carta_validade
                               ? format(new Date(selectedCandidatura.carta_validade), 'dd/MM/yyyy')
-                              : '-'
-                            }
+                              : '-'}
                           </p>
                         </div>
                       </div>
@@ -606,19 +647,27 @@ const MotoristaCandidaturas: React.FC = () => {
                       <div className="grid grid-cols-2 gap-3 text-sm bg-muted/30 rounded-lg p-4">
                         <div>
                           <span className="text-muted-foreground text-xs">Número</span>
-                          <p className="font-medium">{selectedCandidatura.licenca_tvde_numero || '-'}</p>
+                          <p className="font-medium">
+                            {selectedCandidatura.licenca_tvde_numero || '-'}
+                          </p>
                         </div>
                         <div>
                           <span className="text-muted-foreground text-xs">Validade</span>
-                          <p className={cn(
-                            "font-medium",
-                            isDocumentExpired(selectedCandidatura.licenca_tvde_validade) && "text-destructive",
-                            isDocumentExpiringSoon(selectedCandidatura.licenca_tvde_validade) && "text-amber-600"
-                          )}>
-                            {selectedCandidatura.licenca_tvde_validade 
-                              ? format(new Date(selectedCandidatura.licenca_tvde_validade), 'dd/MM/yyyy')
-                              : '-'
-                            }
+                          <p
+                            className={cn(
+                              'font-medium',
+                              isDocumentExpired(selectedCandidatura.licenca_tvde_validade) &&
+                                'text-destructive',
+                              isDocumentExpiringSoon(selectedCandidatura.licenca_tvde_validade) &&
+                                'text-amber-600'
+                            )}
+                          >
+                            {selectedCandidatura.licenca_tvde_validade
+                              ? format(
+                                  new Date(selectedCandidatura.licenca_tvde_validade),
+                                  'dd/MM/yyyy'
+                                )
+                              : '-'}
                           </p>
                         </div>
                       </div>
@@ -630,7 +679,12 @@ const MotoristaCandidaturas: React.FC = () => {
                     <div>
                       <h4 className="font-semibold mb-3 flex items-center gap-2">
                         <FileText className="h-4 w-4" />
-                        Documentos ({getDocumentsForCandidatura(selectedCandidatura).filter(d => d.url).length}/6)
+                        Documentos (
+                        {
+                          getDocumentsForCandidatura(selectedCandidatura).filter((d) => d.url)
+                            .length
+                        }
+                        /6)
                       </h4>
                       <div className="space-y-2">
                         {getDocumentsForCandidatura(selectedCandidatura).map((doc, index) => (
@@ -638,31 +692,37 @@ const MotoristaCandidaturas: React.FC = () => {
                             key={index}
                             onClick={() => setSelectedDocIndex(index)}
                             className={cn(
-                              "w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left",
-                              selectedDocIndex === index 
-                                ? "border-primary bg-primary/5" 
-                                : "border-border hover:bg-muted/50",
-                              !doc.url && "opacity-50"
+                              'w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left',
+                              selectedDocIndex === index
+                                ? 'border-primary bg-primary/5'
+                                : 'border-border hover:bg-muted/50',
+                              !doc.url && 'opacity-50'
                             )}
                           >
                             <div className="flex items-center gap-3">
-                              <div className={cn(
-                                "p-2 rounded-full",
-                                doc.url ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                              )}>
+                              <div
+                                className={cn(
+                                  'p-2 rounded-full',
+                                  doc.url
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'bg-muted text-muted-foreground'
+                                )}
+                              >
                                 {doc.icon}
                               </div>
                               <div>
                                 <p className="font-medium text-sm">{doc.label}</p>
                                 {doc.validity && (
-                                  <p className={cn(
-                                    "text-xs",
-                                    isDocumentExpired(doc.validity) 
-                                      ? "text-destructive" 
-                                      : isDocumentExpiringSoon(doc.validity)
-                                        ? "text-amber-600"
-                                        : "text-muted-foreground"
-                                  )}>
+                                  <p
+                                    className={cn(
+                                      'text-xs',
+                                      isDocumentExpired(doc.validity)
+                                        ? 'text-destructive'
+                                        : isDocumentExpiringSoon(doc.validity)
+                                          ? 'text-amber-600'
+                                          : 'text-muted-foreground'
+                                    )}
+                                  >
                                     Validade: {format(new Date(doc.validity), 'dd/MM/yyyy')}
                                   </p>
                                 )}
@@ -670,12 +730,18 @@ const MotoristaCandidaturas: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-2">
                               {doc.url ? (
-                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                <Badge
+                                  variant="outline"
+                                  className="bg-green-50 text-green-700 border-green-200"
+                                >
                                   <CheckCircle2 className="h-3 w-3 mr-1" />
                                   Enviado
                                 </Badge>
                               ) : (
-                                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                                <Badge
+                                  variant="outline"
+                                  className="bg-amber-50 text-amber-700 border-amber-200"
+                                >
                                   <XCircle className="h-3 w-3 mr-1" />
                                   Em falta
                                 </Badge>
@@ -700,11 +766,12 @@ const MotoristaCandidaturas: React.FC = () => {
 
               {/* Footer with Actions */}
               <DialogFooter className="p-6 pt-4 border-t flex-col sm:flex-row gap-2">
-                {(selectedCandidatura.status === 'submetido' || selectedCandidatura.status === 'em_analise') && (
+                {(selectedCandidatura.status === 'submetido' ||
+                  selectedCandidatura.status === 'em_analise') && (
                   <>
                     {selectedCandidatura.status === 'submetido' && (
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => handleMarkAsAnalyzing(selectedCandidatura)}
                       >
                         <Clock className="h-4 w-4 mr-2" />
@@ -712,8 +779,8 @@ const MotoristaCandidaturas: React.FC = () => {
                       </Button>
                     )}
                     <div className="flex-1" />
-                    <Button 
-                      variant="destructive" 
+                    <Button
+                      variant="destructive"
                       onClick={() => {
                         setRejectDialogOpen(true);
                       }}
@@ -722,15 +789,14 @@ const MotoristaCandidaturas: React.FC = () => {
                       <XCircle className="h-4 w-4 mr-2" />
                       Rejeitar
                     </Button>
-                    <Button 
+                    <Button
                       onClick={() => handleApprove(selectedCandidatura)}
                       disabled={processing}
                       className="bg-green-600 hover:bg-green-700"
                     >
                       {processing ? (
                         <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          A processar...
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />A processar...
                         </>
                       ) : (
                         <>
@@ -753,10 +819,11 @@ const MotoristaCandidaturas: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Rejeitar Candidatura</DialogTitle>
             <DialogDescription>
-              Indique o motivo da rejeição (opcional). Esta informação será visível para o candidato.
+              Indique o motivo da rejeição (opcional). Esta informação será visível para o
+              candidato.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4">
             <Label htmlFor="rejectReason">Motivo da Rejeição</Label>
             <Textarea
@@ -773,15 +840,10 @@ const MotoristaCandidaturas: React.FC = () => {
             <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleReject}
-              disabled={processing}
-            >
+            <Button variant="destructive" onClick={handleReject} disabled={processing}>
               {processing ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  A processar...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />A processar...
                 </>
               ) : (
                 'Confirmar Rejeição'

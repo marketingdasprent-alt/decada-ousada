@@ -4,10 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Wrench, 
+import {
+  Wrench,
   Plus,
-  Search, 
+  Search,
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -15,7 +15,7 @@ import {
   Car,
   User,
   UserCheck,
-  Filter
+  Filter,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,12 +40,28 @@ interface Criador {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  pendente:     { label: 'Pendente de Aprovação', color: 'bg-purple-600', icon: <Clock className="h-4 w-4" /> },
-  aberto:       { label: 'Aberto',           color: 'bg-blue-500',   icon: <AlertCircle className="h-4 w-4" /> },
-  em_andamento: { label: 'Em Manutenção',    color: 'bg-yellow-500', icon: <Clock className="h-4 w-4" /> },
-  aguardando:   { label: 'Aguardando Peças', color: 'bg-orange-500', icon: <Clock className="h-4 w-4" /> },
-  resolvido:    { label: 'Concluído',        color: 'bg-green-500',  icon: <CheckCircle2 className="h-4 w-4" /> },
-  fechado:      { label: 'Fechado',          color: 'bg-gray-500',   icon: <CheckCircle2 className="h-4 w-4" /> },
+  pendente: {
+    label: 'Pendente de Aprovação',
+    color: 'bg-purple-600',
+    icon: <Clock className="h-4 w-4" />,
+  },
+  aberto: { label: 'Aberto', color: 'bg-blue-500', icon: <AlertCircle className="h-4 w-4" /> },
+  em_andamento: {
+    label: 'Em Manutenção',
+    color: 'bg-yellow-500',
+    icon: <Clock className="h-4 w-4" />,
+  },
+  aguardando: {
+    label: 'Aguardando Peças',
+    color: 'bg-orange-500',
+    icon: <Clock className="h-4 w-4" />,
+  },
+  resolvido: {
+    label: 'Concluído',
+    color: 'bg-green-500',
+    icon: <CheckCircle2 className="h-4 w-4" />,
+  },
+  fechado: { label: 'Fechado', color: 'bg-gray-500', icon: <CheckCircle2 className="h-4 w-4" /> },
 };
 
 const prioridadeConfig: Record<string, { label: string; color: string }> = {
@@ -61,17 +77,29 @@ const Assistencia = () => {
   const isAssistanceManager = hasAccessToResource('assistencia_tickets');
   const { toast } = useToast();
   const navigate = useNavigate();
-  
+
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [criadores, setCriadores] = useState<Criador[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(sessionStorage.getItem('assistencia_searchTerm') || '');
-  const [statusFilter, setStatusFilter] = useState<string>(sessionStorage.getItem('assistencia_statusFilter') || 'pendentes');
-  const [prioridadeFilter, setPrioridadeFilter] = useState<string>(sessionStorage.getItem('assistencia_prioridadeFilter') || 'todos');
-  const [categoriaFilter, setCategoriaFilter] = useState<string>(sessionStorage.getItem('assistencia_categoriaFilter') || 'todos');
-  const [criadorFilter, setCriadorFilter] = useState<string>(sessionStorage.getItem('assistencia_criadorFilter') || 'todos');
-  const [atribuidoFilter, setAtribuidoFilter] = useState<string>(sessionStorage.getItem('assistencia_atribuidoFilter') || 'todos');
+  const [searchTerm, setSearchTerm] = useState(
+    sessionStorage.getItem('assistencia_searchTerm') || ''
+  );
+  const [statusFilter, setStatusFilter] = useState<string>(
+    sessionStorage.getItem('assistencia_statusFilter') || 'pendentes'
+  );
+  const [prioridadeFilter, setPrioridadeFilter] = useState<string>(
+    sessionStorage.getItem('assistencia_prioridadeFilter') || 'todos'
+  );
+  const [categoriaFilter, setCategoriaFilter] = useState<string>(
+    sessionStorage.getItem('assistencia_categoriaFilter') || 'todos'
+  );
+  const [criadorFilter, setCriadorFilter] = useState<string>(
+    sessionStorage.getItem('assistencia_criadorFilter') || 'todos'
+  );
+  const [atribuidoFilter, setAtribuidoFilter] = useState<string>(
+    sessionStorage.getItem('assistencia_atribuidoFilter') || 'todos'
+  );
 
   // Persist filters to sessionStorage
   useEffect(() => {
@@ -94,17 +122,18 @@ const Assistencia = () => {
       .select('id, nome, cor')
       .eq('ativo', true)
       .order('nome');
-    
+
     if (data) setCategorias(data);
   };
 
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      
+
       const { data: ticketsData, error } = await supabase
         .from('assistencia_tickets')
-        .select(`
+        .select(
+          `
           id,
           numero,
           titulo,
@@ -118,21 +147,32 @@ const Assistencia = () => {
           viatura_id,
           motorista_id,
           categoria_id
-        `)
+        `
+        )
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       // Fetch related data
-      const viaturaIds = [...new Set(ticketsData?.map(t => t.viatura_id).filter(Boolean))] as string[];
-      const motoristaIds = [...new Set(ticketsData?.map(t => t.motorista_id).filter(Boolean))] as string[];
-      const categoriaIds = [...new Set(ticketsData?.map(t => t.categoria_id).filter(Boolean))] as string[];
-      const criadorIds = [...new Set(ticketsData?.map(t => t.criado_por).filter(Boolean))] as string[];
-      const atribuidoIds = [...new Set(ticketsData?.map(t => t.atribuido_a).filter(Boolean))] as string[];
+      const viaturaIds = [
+        ...new Set(ticketsData?.map((t) => t.viatura_id).filter(Boolean)),
+      ] as string[];
+      const motoristaIds = [
+        ...new Set(ticketsData?.map((t) => t.motorista_id).filter(Boolean)),
+      ] as string[];
+      const categoriaIds = [
+        ...new Set(ticketsData?.map((t) => t.categoria_id).filter(Boolean)),
+      ] as string[];
+      const criadorIds = [
+        ...new Set(ticketsData?.map((t) => t.criado_por).filter(Boolean)),
+      ] as string[];
+      const atribuidoIds = [
+        ...new Set(ticketsData?.map((t) => t.atribuido_a).filter(Boolean)),
+      ] as string[];
       const allUserIds = [...new Set([...criadorIds, ...atribuidoIds])];
-      
+
       const [viaturasRes, motoristasRes, categoriasRes, usersRes] = await Promise.all([
-        viaturaIds.length > 0 
+        viaturaIds.length > 0
           ? supabase.from('viaturas').select('id, matricula, marca, modelo').in('id', viaturaIds)
           : Promise.resolve({ data: [] }),
         motoristaIds.length > 0
@@ -145,33 +185,31 @@ const Assistencia = () => {
           ? supabase.from('profiles').select('id, nome').in('id', allUserIds)
           : Promise.resolve({ data: [] }),
       ]);
-      
-      const viaturasMap = new Map((viaturasRes.data || []).map(v => [v.id, v]));
-      const motoristasMap = new Map((motoristasRes.data || []).map(m => [m.id, m]));
-      const categoriasMap = new Map((categoriasRes.data || []).map(c => [c.id, c]));
-      const usersMap = new Map((usersRes.data || []).map(p => [p.id, p]));
-      
+
+      const viaturasMap = new Map((viaturasRes.data || []).map((v) => [v.id, v]));
+      const motoristasMap = new Map((motoristasRes.data || []).map((m) => [m.id, m]));
+      const categoriasMap = new Map((categoriasRes.data || []).map((c) => [c.id, c]));
+      const usersMap = new Map((usersRes.data || []).map((p) => [p.id, p]));
+
       // Build unique creators list for filter
-      const uniqueCriadores = (usersRes.data || []).filter(u => 
-        criadorIds.includes(u.id)
-      );
+      const uniqueCriadores = (usersRes.data || []).filter((u) => criadorIds.includes(u.id));
       setCriadores(uniqueCriadores);
-      
-      const enrichedTickets = (ticketsData || []).map(ticket => ({
+
+      const enrichedTickets = (ticketsData || []).map((ticket) => ({
         ...ticket,
         viatura: ticket.viatura_id ? viaturasMap.get(ticket.viatura_id) || null : null,
         motorista: ticket.motorista_id ? motoristasMap.get(ticket.motorista_id) || null : null,
         categoria: ticket.categoria_id ? categoriasMap.get(ticket.categoria_id) || null : null,
         criador: ticket.criado_por ? usersMap.get(ticket.criado_por) || null : null,
       }));
-      
+
       setTickets(enrichedTickets as Ticket[]);
     } catch (error: any) {
       console.error('Erro ao carregar tickets:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar os tickets.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Não foi possível carregar os tickets.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -180,40 +218,40 @@ const Assistencia = () => {
 
   const handleAtribuirAMim = async (ticketId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     try {
       const { error } = await supabase
         .from('assistencia_tickets')
-        .update({ 
+        .update({
           atribuido_a: user?.id,
-          status: 'em_andamento'
+          status: 'em_andamento',
         })
         .eq('id', ticketId);
 
       if (error) throw error;
 
       toast({
-        title: "Ticket atribuído",
-        description: "O ticket foi atribuído a si.",
+        title: 'Ticket atribuído',
+        description: 'O ticket foi atribuído a si.',
       });
 
       fetchTickets();
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: "Não foi possível atribuir o ticket.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Não foi possível atribuir o ticket.',
+        variant: 'destructive',
       });
     }
   };
 
-  const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = 
+  const filteredTickets = tickets.filter((ticket) => {
+    const matchesSearch =
       ticket.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.viatura?.matricula.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.numero.toString().includes(searchTerm) ||
       ticket.criador?.nome.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     // Status filter - "pendentes" shows open, in progress, and waiting
     let matchesStatus = true;
     if (statusFilter === 'pendentes') {
@@ -221,30 +259,45 @@ const Assistencia = () => {
     } else if (statusFilter !== 'todos') {
       matchesStatus = ticket.status === statusFilter;
     }
-    
-    const matchesPrioridade = prioridadeFilter === 'todos' || ticket.prioridade === prioridadeFilter;
-    const matchesCategoria = categoriaFilter === 'todos' || ticket.categoria?.id === categoriaFilter;
+
+    const matchesPrioridade =
+      prioridadeFilter === 'todos' || ticket.prioridade === prioridadeFilter;
+    const matchesCategoria =
+      categoriaFilter === 'todos' || ticket.categoria?.id === categoriaFilter;
     const matchesCriador = criadorFilter === 'todos' || ticket.criador?.id === criadorFilter;
-    
+
     let matchesAtribuido = true;
     if (atribuidoFilter === 'meus') {
       matchesAtribuido = ticket.atribuido_a === user?.id;
     } else if (atribuidoFilter === 'nao_atribuidos') {
       matchesAtribuido = !ticket.atribuido_a;
     }
-    
+
     // Visibility rule: Only managers, admins or the creator can see pending tickets
     const canSeePendente = isAdmin || isAssistanceManager || ticket.criado_por === user?.id;
     if (ticket.status === 'pendente' && !canSeePendente) return false;
-    
-    return matchesSearch && matchesStatus && matchesPrioridade && matchesCategoria && matchesCriador && matchesAtribuido;
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesPrioridade &&
+      matchesCategoria &&
+      matchesCriador &&
+      matchesAtribuido
+    );
   });
 
   const stats = {
-    porResolver: tickets.filter(t => ['pendente', 'aberto', 'em_andamento', 'aguardando'].includes(t.status)).length,
-    meus: tickets.filter(t => t.atribuido_a === user?.id && !['resolvido', 'fechado'].includes(t.status)).length,
-    naoAtribuidos: tickets.filter(t => !t.atribuido_a && !['resolvido', 'fechado'].includes(t.status)).length,
-    resolvidosHoje: tickets.filter(t => {
+    porResolver: tickets.filter((t) =>
+      ['pendente', 'aberto', 'em_andamento', 'aguardando'].includes(t.status)
+    ).length,
+    meus: tickets.filter(
+      (t) => t.atribuido_a === user?.id && !['resolvido', 'fechado'].includes(t.status)
+    ).length,
+    naoAtribuidos: tickets.filter(
+      (t) => !t.atribuido_a && !['resolvido', 'fechado'].includes(t.status)
+    ).length,
+    resolvidosHoje: tickets.filter((t) => {
       if (t.status !== 'resolvido') return false;
       const today = new Date().toDateString();
       return new Date(t.created_at).toDateString() === today;
@@ -274,36 +327,48 @@ const Assistencia = () => {
 
       {/* Stats Cards - Focused on Management */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card 
+        <Card
           className={`cursor-pointer transition-all ${atribuidoFilter === 'todos' && statusFilter === 'pendentes' ? 'ring-2 ring-primary' : 'hover:bg-accent/50'}`}
-          onClick={() => { setAtribuidoFilter('todos'); setStatusFilter('pendentes'); }}
+          onClick={() => {
+            setAtribuidoFilter('todos');
+            setStatusFilter('pendentes');
+          }}
         >
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-orange-500">{stats.porResolver}</div>
             <p className="text-xs text-muted-foreground">Por Resolver</p>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all ${atribuidoFilter === 'nao_atribuidos' ? 'ring-2 ring-primary' : 'hover:bg-accent/50'}`}
-          onClick={() => { setAtribuidoFilter('nao_atribuidos'); setStatusFilter('pendentes'); }}
+          onClick={() => {
+            setAtribuidoFilter('nao_atribuidos');
+            setStatusFilter('pendentes');
+          }}
         >
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-red-500">{stats.naoAtribuidos}</div>
             <p className="text-xs text-muted-foreground">Não Atribuídos</p>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all ${atribuidoFilter === 'meus' ? 'ring-2 ring-primary' : 'hover:bg-accent/50'}`}
-          onClick={() => { setAtribuidoFilter('meus'); setStatusFilter('pendentes'); }}
+          onClick={() => {
+            setAtribuidoFilter('meus');
+            setStatusFilter('pendentes');
+          }}
         >
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-blue-500">{stats.meus}</div>
             <p className="text-xs text-muted-foreground">Atribuídos a Mim</p>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all ${statusFilter === 'resolvido' ? 'ring-2 ring-primary' : 'hover:bg-accent/50'}`}
-          onClick={() => { setAtribuidoFilter('todos'); setStatusFilter('resolvido'); }}
+          onClick={() => {
+            setAtribuidoFilter('todos');
+            setStatusFilter('resolvido');
+          }}
         >
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-green-500">{stats.resolvidosHoje}</div>
@@ -324,7 +389,7 @@ const Assistencia = () => {
               className="pl-10"
             />
           </div>
-          
+
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Estado" />
@@ -340,7 +405,7 @@ const Assistencia = () => {
               <SelectItem value="fechado">Fechado</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Select value={prioridadeFilter} onValueChange={setPrioridadeFilter}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Prioridade" />
@@ -354,7 +419,7 @@ const Assistencia = () => {
             </SelectContent>
           </Select>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-4">
           <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
             <SelectTrigger className="w-full sm:w-[200px]">
@@ -362,24 +427,28 @@ const Assistencia = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todas categorias</SelectItem>
-              {categorias.map(cat => (
-                <SelectItem key={cat.id} value={cat.id}>{cat.nome}</SelectItem>
+              {categorias.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.nome}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          
+
           <Select value={criadorFilter} onValueChange={setCriadorFilter}>
             <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="Criado por" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos os criadores</SelectItem>
-              {criadores.map(c => (
-                <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+              {criadores.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.nome}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          
+
           <Select value={atribuidoFilter} onValueChange={setAtribuidoFilter}>
             <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="Atribuição" />
@@ -400,7 +469,11 @@ const Assistencia = () => {
             <Wrench className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">Nenhum ticket encontrado</h3>
             <p className="text-muted-foreground">
-              {searchTerm || statusFilter !== 'pendentes' || prioridadeFilter !== 'todos' || categoriaFilter !== 'todos' || criadorFilter !== 'todos'
+              {searchTerm ||
+              statusFilter !== 'pendentes' ||
+              prioridadeFilter !== 'todos' ||
+              categoriaFilter !== 'todos' ||
+              criadorFilter !== 'todos'
                 ? 'Tente ajustar os filtros de pesquisa.'
                 : 'Não existem tickets pendentes de resolução.'}
             </p>
@@ -409,8 +482,8 @@ const Assistencia = () => {
       ) : (
         <div className="space-y-3">
           {filteredTickets.map((ticket) => (
-            <Card 
-              key={ticket.id} 
+            <Card
+              key={ticket.id}
               className="hover:bg-accent/50 transition-colors cursor-pointer"
               onClick={() => navigate(`/assistencia/${ticket.id}`)}
             >
@@ -423,27 +496,31 @@ const Assistencia = () => {
                         #{String(ticket.numero).padStart(4, '0')}
                       </span>
                       {ticket.categoria && (
-                        <Badge 
-                          variant="outline" 
+                        <Badge
+                          variant="outline"
                           style={{ borderColor: ticket.categoria.cor, color: ticket.categoria.cor }}
                         >
                           {ticket.categoria.nome}
                         </Badge>
                       )}
-                      <Badge className={prioridadeConfig[ticket.prioridade]?.color || 'bg-gray-400'}>
+                      <Badge
+                        className={prioridadeConfig[ticket.prioridade]?.color || 'bg-gray-400'}
+                      >
                         {prioridadeConfig[ticket.prioridade]?.label || ticket.prioridade}
                       </Badge>
                     </div>
-                    
+
                     <h3 className="font-semibold text-foreground truncate">{ticket.titulo}</h3>
-                    
+
                     {/* Creator info - highlighted */}
                     <div className="flex items-center gap-2 mt-1 text-sm">
                       <span className="text-muted-foreground">Criado por:</span>
-                      <span className="font-medium text-primary">{ticket.criador?.nome || 'Desconhecido'}</span>
+                      <span className="font-medium text-primary">
+                        {ticket.criador?.nome || 'Desconhecido'}
+                      </span>
                     </div>
                   </div>
-                  
+
                   {/* Middle: Vehicle & Driver */}
                   <div className="flex flex-wrap gap-4 text-sm">
                     {ticket.viatura && (
@@ -459,24 +536,26 @@ const Assistencia = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Right: Status, Date & Actions */}
                   <div className="flex items-center gap-3">
                     <div className="text-right text-sm">
                       <div className="text-muted-foreground">
-                        {format(new Date(ticket.created_at), "dd MMM yyyy", { locale: pt })}
+                        {format(new Date(ticket.created_at), 'dd MMM yyyy', { locale: pt })}
                       </div>
                     </div>
-                    
-                    <Badge className={`${statusConfig[ticket.status]?.color || 'bg-gray-500'} flex items-center gap-1`}>
+
+                    <Badge
+                      className={`${statusConfig[ticket.status]?.color || 'bg-gray-500'} flex items-center gap-1`}
+                    >
                       {statusConfig[ticket.status]?.icon}
                       {statusConfig[ticket.status]?.label || ticket.status}
                     </Badge>
-                    
+
                     {/* Quick action: Assign to me */}
                     {!ticket.atribuido_a && ticket.status === 'aberto' && (
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={(e) => handleAtribuirAMim(ticket.id, e)}
                         className="shrink-0"
@@ -485,7 +564,7 @@ const Assistencia = () => {
                         Atribuir
                       </Button>
                     )}
-                    
+
                     {ticket.atribuido_a === user?.id && (
                       <Badge variant="secondary" className="shrink-0">
                         <UserCheck className="h-3 w-3 mr-1" />

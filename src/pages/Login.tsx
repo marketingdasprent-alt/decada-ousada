@@ -59,7 +59,8 @@ const Login = () => {
       console.error('Login error:', error);
       toast({
         title: 'Erro no login',
-        description: error.message || 'Não foi possível iniciar sessão. Verifique as suas credenciais.',
+        description:
+          error.message || 'Não foi possível iniciar sessão. Verifique as suas credenciais.',
         variant: 'destructive',
       });
     } finally {
@@ -184,8 +185,7 @@ const Login = () => {
           <Button type="submit" disabled={resetLoading} className="auth-primary-button w-full">
             {resetLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                A enviar...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A enviar...
               </>
             ) : (
               'Enviar email de recuperação'
@@ -252,8 +252,7 @@ const Login = () => {
             <Button type="submit" disabled={loading} className="auth-primary-button w-full">
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  A entrar...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />A entrar...
                 </>
               ) : (
                 'Entrar'
@@ -280,8 +279,7 @@ const Login = () => {
             >
               {resetLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  A enviar...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />A enviar...
                 </>
               ) : (
                 'Receber link de acesso'

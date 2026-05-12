@@ -1,7 +1,14 @@
 ﻿import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronRight, Download, Printer, Edit, History, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -63,7 +70,7 @@ export const ContratosGroupedView = ({
   // Group contracts by motorista
   const groupedByMotorista = contratos.reduce<Record<string, MotoristGroup>>((acc, contrato) => {
     const key = contrato.motorista_id;
-    
+
     if (!acc[key]) {
       acc[key] = {
         motorista_id: contrato.motorista_id,
@@ -77,11 +84,11 @@ export const ContratosGroupedView = ({
     }
 
     acc[key].total_contratos++;
-    
+
     if (contrato.status === 'ativo') {
       acc[key].contratos_ativos++;
     }
-    
+
     const empresaNome = getEmpresaNome(contrato.empresa_id);
     if (!acc[key].empresas.includes(empresaNome)) {
       acc[key].empresas.push(empresaNome);
@@ -97,12 +104,12 @@ export const ContratosGroupedView = ({
     return acc;
   }, {});
 
-  const groups = Object.values(groupedByMotorista).sort((a, b) => 
+  const groups = Object.values(groupedByMotorista).sort((a, b) =>
     a.motorista_nome.localeCompare(b.motorista_nome)
   );
 
   const toggleExpand = (motoristaId: string) => {
-    setExpandedMotoristas(prev => {
+    setExpandedMotoristas((prev) => {
       const next = new Set(prev);
       if (next.has(motoristaId)) {
         next.delete(motoristaId);
@@ -114,13 +121,13 @@ export const ContratosGroupedView = ({
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      ativo: "default",
-      expirado: "secondary",
-      cancelado: "destructive",
-      substituido: "outline",
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+      ativo: 'default',
+      expirado: 'secondary',
+      cancelado: 'destructive',
+      substituido: 'outline',
     };
-    return <Badge variant={variants[status] || "default"}>{status}</Badge>;
+    return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
   };
 
   return (
@@ -139,12 +146,12 @@ export const ContratosGroupedView = ({
         <TableBody>
           {groups.map((group) => {
             const isExpanded = expandedMotoristas.has(group.motorista_id);
-            
+
             return (
               <Collapsible key={group.motorista_id} asChild open={isExpanded}>
                 <>
                   <CollapsibleTrigger asChild>
-                    <TableRow 
+                    <TableRow
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => toggleExpand(group.motorista_id)}
                     >
@@ -170,21 +177,29 @@ export const ContratosGroupedView = ({
                           <Badge variant="secondary">{group.total_contratos}</Badge>
                           {group.contratos_ativos > 0 && (
                             <span className="text-xs text-muted-foreground">
-                              ({group.contratos_ativos} ativo{group.contratos_ativos > 1 ? 's' : ''})
+                              ({group.contratos_ativos} ativo{group.contratos_ativos > 1 ? 's' : ''}
+                              )
                             </span>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(group.ultimo_contrato.status)}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="flex justify-end gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => onDownload(group.ultimo_contrato)}
-                            disabled={downloadingId === group.ultimo_contrato.id || generatingId === group.ultimo_contrato.id}
+                            disabled={
+                              downloadingId === group.ultimo_contrato.id ||
+                              generatingId === group.ultimo_contrato.id
+                            }
                           >
-                            {(downloadingId === group.ultimo_contrato.id || generatingId === group.ultimo_contrato.id) ? (
+                            {downloadingId === group.ultimo_contrato.id ||
+                            generatingId === group.ultimo_contrato.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               <Download className="h-4 w-4" />
@@ -209,12 +224,18 @@ export const ContratosGroupedView = ({
                   <CollapsibleContent asChild>
                     <>
                       {group.contratos
-                        .sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime())
+                        .sort(
+                          (a, b) =>
+                            new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime()
+                        )
                         .map((contrato) => (
                           <TableRow key={contrato.id} className="bg-muted/30">
                             <TableCell></TableCell>
                             <TableCell className="pl-8 text-muted-foreground">
-                              v{contrato.versao || 1} - {format(new Date(contrato.data_inicio), "dd/MM/yyyy", { locale: ptBR })}
+                              v{contrato.versao || 1} -{' '}
+                              {format(new Date(contrato.data_inicio), 'dd/MM/yyyy', {
+                                locale: ptBR,
+                              })}
                             </TableCell>
                             <TableCell>{getEmpresaNome(contrato.empresa_id)}</TableCell>
                             <TableCell></TableCell>
@@ -225,19 +246,17 @@ export const ContratosGroupedView = ({
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => onDownload(contrato)}
-                                  disabled={downloadingId === contrato.id || generatingId === contrato.id}
+                                  disabled={
+                                    downloadingId === contrato.id || generatingId === contrato.id
+                                  }
                                 >
-                                  {(downloadingId === contrato.id || generatingId === contrato.id) ? (
+                                  {downloadingId === contrato.id || generatingId === contrato.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                   ) : (
                                     <Download className="h-4 w-4" />
                                   )}
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => onEdit(contrato)}
-                                >
+                                <Button size="sm" variant="ghost" onClick={() => onEdit(contrato)}>
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button

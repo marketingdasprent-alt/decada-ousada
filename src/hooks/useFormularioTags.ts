@@ -13,8 +13,6 @@ export const useFormularioTags = () => {
     const fetchAllTags = async () => {
       try {
         setLoading(true);
-        console.log('🏷️ Buscando todas as tags de formulários...');
-        
         const { data, error } = await supabase
           .from('formulario_campanhas')
           .select('formulario_id, campanha_tag');
@@ -30,7 +28,6 @@ export const useFormularioTags = () => {
           grouped[item.formulario_id].push(item.campanha_tag);
         });
 
-        console.log(`✅ Tags carregadas para ${Object.keys(grouped).length} formulários`);
         setTagsMap(grouped);
       } catch (error) {
         console.error('❌ Erro ao buscar tags de formulários:', error);
@@ -51,6 +48,6 @@ export const useFormularioTags = () => {
   return {
     tagsMap,
     loading,
-    getTagsForFormulario
+    getTagsForFormulario,
   };
 };

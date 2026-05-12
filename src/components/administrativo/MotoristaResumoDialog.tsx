@@ -1,37 +1,32 @@
-﻿import { useState, useEffect } from "react";
-import { format } from "date-fns";
-import { pt } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
-import { 
-  Printer, 
-  X, 
-  TrendingUp, 
-  TrendingDown, 
-  Calculator, 
+﻿import { useState, useEffect } from 'react';
+import { format } from 'date-fns';
+import { pt } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Printer,
+  X,
+  TrendingUp,
+  TrendingDown,
+  Calculator,
   Loader2,
   Send,
   Mail,
   MessageSquare,
-  UserCheck
-} from "lucide-react";
+  UserCheck,
+} from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { generateFinanceiroPDF } from "@/utils/generateFinanceiroPDF";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { generateFinanceiroPDF } from '@/utils/generateFinanceiroPDF';
 
-import { Separator } from "@/components/ui/separator";
-import { useThemedLogo } from "@/hooks/useThemedLogo";
+import { Separator } from '@/components/ui/separator';
+import { useThemedLogo } from '@/hooks/useThemedLogo';
 
 interface MotoristaResumoProps {
   driver_name: string;
@@ -70,11 +65,13 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
   const [motoristaEmail, setMotoristaEmail] = useState<string | null>(null);
   const [motoristaTelefone, setMotoristaTelefone] = useState<string | null>(null);
   const [motoristaIban, setMotoristaIban] = useState<string | null>(null);
-  const [extraCosts, setExtraCosts] = useState<{caucao: number, seguros: number, outros: number}>({
-    caucao: 0,
-    seguros: 0,
-    outros: 0
-  });
+  const [extraCosts, setExtraCosts] = useState<{ caucao: number; seguros: number; outros: number }>(
+    {
+      caucao: 0,
+      seguros: 0,
+      outros: 0,
+    }
+  );
   const [outrasReceitas, setOutrasReceitas] = useState(0);
 
   useEffect(() => {
@@ -85,28 +82,28 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
 
   async function fetchDadosMotorista() {
     if (!motorista?.motorista_id && !motorista?.driver_uuid) return;
-    
+
     setLoading(true);
     setMatricula(null);
     setCartaoFrota(null);
     setMotoristaIban(null);
     setExtraCosts({ caucao: 0, seguros: 0, outros: 0 });
-    
+
     try {
       // Usar motorista_id directamente se disponível
       let resolvedMotoristaId = motorista.motorista_id || null;
-      
+
       // Fallback 1: Match por IDs de Plataforma (Uber/Bolt) na tabela motoristas_ativos
       if (!resolvedMotoristaId) {
-        const query = supabase.from("motoristas_ativos").select("id");
-        
+        const query = supabase.from('motoristas_ativos').select('id');
+
         if (motorista.driver_uuid) {
-          const { data } = await query.eq("uber_uuid", motorista.driver_uuid).maybeSingle();
+          const { data } = await query.eq('uber_uuid', motorista.driver_uuid).maybeSingle();
           if (data) resolvedMotoristaId = data.id;
         }
-        
+
         if (!resolvedMotoristaId && motorista.identificador_bolt) {
-          const { data } = await query.eq("bolt_id", motorista.identificador_bolt).maybeSingle();
+          const { data } = await query.eq('bolt_id', motorista.identificador_bolt).maybeSingle();
           if (data) resolvedMotoristaId = data.id;
         }
       }
@@ -114,9 +111,9 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
       // Fallback 2: Mapeamento histórico Bolt
       if (!resolvedMotoristaId && motorista.driver_uuid) {
         const { data: mapeamento } = await supabase
-          .from("bolt_mapeamento_motoristas")
-          .select("motorista_id")
-          .eq("driver_uuid", motorista.driver_uuid)
+          .from('bolt_mapeamento_motoristas')
+          .select('motorista_id')
+          .eq('driver_uuid', motorista.driver_uuid)
           .maybeSingle();
         resolvedMotoristaId = mapeamento?.motorista_id || null;
       }
@@ -124,9 +121,9 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
       // Fallback 3: Busca por nome (último recurso)
       if (!resolvedMotoristaId && motorista.driver_name) {
         const { data: matched } = await supabase
-          .from("motoristas_ativos")
-          .select("id")
-          .ilike("nome", `%${motorista.driver_name}%`)
+          .from('motoristas_ativos')
+          .select('id')
+          .ilike('nome', `%${motorista.driver_name}%`)
           .limit(1)
           .maybeSingle();
         resolvedMotoristaId = matched?.id || null;
@@ -135,27 +132,27 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
       if (resolvedMotoristaId) {
         const results = await Promise.all([
           supabase
-            .from("motorista_viaturas")
-            .select("viatura_id, viaturas(matricula, valor_aluguer)")
-            .eq("motorista_id", resolvedMotoristaId)
+            .from('motorista_viaturas')
+            .select('viatura_id, viaturas(matricula, valor_aluguer)')
+            .eq('motorista_id', resolvedMotoristaId)
             // A viatura deve ter começado antes do fim do período
-            .lte("data_inicio", format(dateRange.to, "yyyy-MM-dd"))
+            .lte('data_inicio', format(dateRange.to, 'yyyy-MM-dd'))
             // E deve ter terminado depois do início do período (ou não ter terminado)
-            .or(`data_fim.is.null,data_fim.gte.${format(dateRange.from, "yyyy-MM-dd")}`)
-            .order("data_inicio", { ascending: false })
+            .or(`data_fim.is.null,data_fim.gte.${format(dateRange.from, 'yyyy-MM-dd')}`)
+            .order('data_inicio', { ascending: false })
             .limit(1)
             .maybeSingle(),
           supabase
-            .from("motoristas_ativos")
-            .select("cartao_frota, cartao_bp, cartao_repsol, cartao_edp, email, telefone, iban")
-            .eq("id", resolvedMotoristaId)
+            .from('motoristas_ativos')
+            .select('cartao_frota, cartao_bp, cartao_repsol, cartao_edp, email, telefone, iban')
+            .eq('id', resolvedMotoristaId)
             .maybeSingle(),
           supabase
-            .from("motorista_financeiro")
-            .select("categoria, valor, tipo")
-            .eq("motorista_id", resolvedMotoristaId)
-            .gte("data_movimento", format(dateRange.from, "yyyy-MM-dd"))
-            .lte("data_movimento", format(dateRange.to, "yyyy-MM-dd"))
+            .from('motorista_financeiro')
+            .select('categoria, valor, tipo')
+            .eq('motorista_id', resolvedMotoristaId)
+            .gte('data_movimento', format(dateRange.from, 'yyyy-MM-dd'))
+            .lte('data_movimento', format(dateRange.to, 'yyyy-MM-dd')),
         ]);
 
         const viaturaData = results[0].data;
@@ -175,9 +172,9 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
         if (motoristaData) {
           const m = motoristaData;
           const cards = [m.cartao_bp, m.cartao_repsol, m.cartao_edp, m.cartao_frota]
-            .filter(c => !!c)
+            .filter((c) => !!c)
             .join(' / ');
-          setCartaoFrota(cards || "N/A");
+          setCartaoFrota(cards || 'N/A');
           setMotoristaEmail(m.email);
           setMotoristaTelefone(m.telefone);
           setMotoristaIban(m.iban);
@@ -185,32 +182,35 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
 
         if (financeiroData) {
           let recExtras = 0;
-          const totals = financeiroData.reduce((acc, curr) => {
-            if (curr.categoria === "reparacao") return acc; 
-            if (curr.categoria === "renda_viatura") return acc;
+          const totals = financeiroData.reduce(
+            (acc, curr) => {
+              if (curr.categoria === 'reparacao') return acc;
+              if (curr.categoria === 'renda_viatura') return acc;
 
-            const val = Number(curr.valor) || 0;
-            
-            if (curr.tipo === "credito") {
-              // Não incluir caução como receita/crédito no recibo semanal
-              if (curr.categoria === "caucao") return acc;
-              recExtras += val;
+              const val = Number(curr.valor) || 0;
+
+              if (curr.tipo === 'credito') {
+                // Não incluir caução como receita/crédito no recibo semanal
+                if (curr.categoria === 'caucao') return acc;
+                recExtras += val;
+                return acc;
+              }
+
+              if (curr.categoria === 'caucao') acc.caucao += val;
+              else if (curr.categoria === 'seguros') acc.seguros += val;
+              else acc.outros += val;
+
               return acc;
-            }
+            },
+            { caucao: 0, seguros: 0, outros: 0 }
+          );
 
-            if (curr.categoria === "caucao") acc.caucao += val;
-            else if (curr.categoria === "seguros") acc.seguros += val;
-            else acc.outros += val; 
-            
-            return acc;
-          }, { caucao: 0, seguros: 0, outros: 0 });
-          
           setExtraCosts(totals);
           setOutrasReceitas(recExtras);
         }
       }
     } catch (error) {
-      console.error("Erro ao buscar dados do motorista:", error);
+      console.error('Erro ao buscar dados do motorista:', error);
     } finally {
       setLoading(false);
     }
@@ -243,9 +243,9 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
   const liquido = totalAReceber;
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-PT", {
-      style: "currency",
-      currency: "EUR",
+    return new Intl.NumberFormat('pt-PT', {
+      style: 'currency',
+      currency: 'EUR',
     }).format(value);
   };
 
@@ -255,25 +255,27 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
 
   const handleSendEmail = () => {
     const subject = `Resumo Financeiro - ${motorista.driver_name} - ${format(dateRange.from, 'dd/MM/yyyy')}`;
-    const body = `Olá ${motorista.driver_name},\n\nSegue o resumo financeiro do período ${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}:\n\n` +
+    const body =
+      `Olá ${motorista.driver_name},\n\nSegue o resumo financeiro do período ${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}:\n\n` +
       `Receitas: ${formatCurrency(totalReceitas)}\n` +
       `Despesas: ${formatCurrency(totalDespesas)}\n` +
       `Líquido a Receber: ${formatCurrency(liquido)}\n\n` +
       `Cumprimentos,\nEquipa WeGest`;
-    
+
     const mailto = `mailto:${motoristaEmail || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
   };
 
   const handleSendWhatsApp = () => {
-    const message = `*RESUMO FINANCEIRO - WeGest*\n\n` +
+    const message =
+      `*RESUMO FINANCEIRO - WeGest*\n\n` +
       `Olá *${motorista.driver_name}*,\n` +
       `Período: ${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}\n\n` +
       `💰 *Receitas:* ${formatCurrency(totalReceitas)}\n` +
       `💸 *Despesas:* ${formatCurrency(totalDespesas)}\n` +
       `🏁 *Líquido Final:* ${formatCurrency(liquido)}\n\n` +
       `Se tiver alguma dúvida, por favor contacte-nos.`;
-    
+
     const phone = motoristaTelefone?.replace(/\s/g, '') || '';
     const whatsappUrl = `https://wa.me/${phone.startsWith('+') ? phone : '+351' + phone}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -281,7 +283,7 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
 
   const handleSendAccount = async () => {
     if (!motorista.motorista_id) {
-      toast.error("ID do motorista não disponível para envio à conta.");
+      toast.error('ID do motorista não disponível para envio à conta.');
       return;
     }
 
@@ -293,26 +295,26 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
         cartaoFrota,
         dateRange,
         recibo_verde: motorista.recibo_verde,
-        receitas: { 
-          bolt: receitas.bolt, 
-          uber: receitas.uber, 
-          outras_receitas: receitas.outras_receitas, 
-          total: totalReceitas 
+        receitas: {
+          bolt: receitas.bolt,
+          uber: receitas.uber,
+          outras_receitas: receitas.outras_receitas,
+          total: totalReceitas,
         },
-        despesas: { 
-          aluguer: despesas.aluguer, 
-          combustivel: despesas.combustivel, 
-          portagens: despesas.portagens, 
-          reparacoes: despesas.reparacoes, 
+        despesas: {
+          aluguer: despesas.aluguer,
+          combustivel: despesas.combustivel,
+          portagens: despesas.portagens,
+          reparacoes: despesas.reparacoes,
           outros: despesas.outros_custos + despesas.caucao + despesas.seguros,
-          total: totalDespesas 
+          total: totalDespesas,
         },
-        resumo: { 
-          totalAReceber: totalAReceber, 
-          ajuste: motorista.recibo_verde ? undefined : (totalAReceber - liquido),
-          liquido: liquido 
+        resumo: {
+          totalAReceber: totalAReceber,
+          ajuste: motorista.recibo_verde ? undefined : totalAReceber - liquido,
+          liquido: liquido,
         },
-        logoSrc: logoSrc
+        logoSrc: logoSrc,
       });
 
       const fileName = `resumo_${motorista.motorista_id}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
@@ -326,9 +328,8 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
       if (uploadError) throw uploadError;
 
       // Insert or Update record in motorista_recibos
-      const { error: dbError } = await supabase
-        .from('motorista_recibos')
-        .upsert({
+      const { error: dbError } = await supabase.from('motorista_recibos').upsert(
+        {
           motorista_id: motorista.motorista_id,
           descricao: `Resumo Financeiro ${format(dateRange.from, 'dd/MM')} - ${format(dateRange.to, 'dd/MM')}`,
           periodo_referencia: format(dateRange.from, 'MMMM yyyy', { locale: pt }),
@@ -338,17 +339,19 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
           nome_ficheiro: fileName,
           status: 'validado',
           data_validacao: new Date().toISOString(),
-          tipo: 'relatorio'
-        }, {
-          onConflict: 'motorista_id,semana_referencia_inicio'
-        });
+          tipo: 'relatorio',
+        },
+        {
+          onConflict: 'motorista_id,semana_referencia_inicio',
+        }
+      );
 
       if (dbError) throw dbError;
 
-      toast.success("Resumo enviado para a conta do motorista com sucesso!");
+      toast.success('Resumo enviado para a conta do motorista com sucesso!');
     } catch (error: any) {
-      console.error("Erro ao enviar para conta:", error);
-      toast.error("Erro ao enviar resumo: " + (error.message || String(error)));
+      console.error('Erro ao enviar para conta:', error);
+      toast.error('Erro ao enviar resumo: ' + (error.message || String(error)));
     } finally {
       setIsSending(false);
     }
@@ -373,11 +376,7 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
         <div className="space-y-6 print:space-y-2 print-content" id="relatorio-motorista">
           {/* Cabeçalho com Logo */}
           <div className="text-center border-b pb-6 print:pb-2">
-            <img 
-              src={logoSrc} 
-              alt="Logo" 
-              className="h-32 mx-auto mb-4 print:h-24 print:mb-4"
-            />
+            <img src={logoSrc} alt="Logo" className="h-32 mx-auto mb-4 print:h-24 print:mb-4" />
             <h1 className="text-2xl print:text-lg font-bold text-foreground print:text-black">
               RESUMO FINANCEIRO DO MOTORISTA
             </h1>
@@ -396,7 +395,7 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
                   {loading ? (
                     <Loader2 className="h-4 w-4 animate-spin inline" />
                   ) : (
-                    matricula || "N/A"
+                    matricula || 'N/A'
                   )}
                 </p>
               </div>
@@ -406,14 +405,15 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
                   {loading ? (
                     <Loader2 className="h-4 w-4 animate-spin inline" />
                   ) : (
-                    cartaoFrota || "N/A"
+                    cartaoFrota || 'N/A'
                   )}
                 </p>
               </div>
               <div>
                 <span className="text-sm print:text-xs text-muted-foreground">Período</span>
                 <p className="font-semibold text-lg print:text-sm">
-                  {format(dateRange.from, "dd/MM/yyyy", { locale: pt })} a {format(dateRange.to, "dd/MM/yyyy", { locale: pt })}
+                  {format(dateRange.from, 'dd/MM/yyyy', { locale: pt })} a{' '}
+                  {format(dateRange.to, 'dd/MM/yyyy', { locale: pt })}
                 </p>
               </div>
               <div>
@@ -422,14 +422,16 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
                   {loading ? (
                     <Loader2 className="h-4 w-4 animate-spin inline" />
                   ) : (
-                    motoristaIban || "N/A"
+                    motoristaIban || 'N/A'
                   )}
                 </p>
               </div>
               <div>
                 <span className="text-sm print:text-xs text-muted-foreground">Recibo Verde</span>
-                <p className={`font-semibold text-lg print:text-sm ${motorista.recibo_verde ? "text-green-600" : "text-red-600"}`}>
-                  {motorista.recibo_verde ? "Sim" : "Não"}
+                <p
+                  className={`font-semibold text-lg print:text-sm ${motorista.recibo_verde ? 'text-green-600' : 'text-red-600'}`}
+                >
+                  {motorista.recibo_verde ? 'Sim' : 'Não'}
                 </p>
               </div>
             </div>
@@ -448,22 +450,32 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
               <div className="p-4 print:p-2 space-y-3 print:space-y-1">
                 <div className="flex justify-between items-center print:text-xs">
                   <span>Bolt</span>
-                  <span className="font-medium text-green-600">{formatCurrency(receitas.bolt)}</span>
+                  <span className="font-medium text-green-600">
+                    {formatCurrency(receitas.bolt)}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center print:text-xs">
                   <span>Uber</span>
-                  <span className={receitas.uber > 0 ? "font-medium text-green-600" : "text-muted-foreground"}>
+                  <span
+                    className={
+                      receitas.uber > 0 ? 'font-medium text-green-600' : 'text-muted-foreground'
+                    }
+                  >
                     {formatCurrency(receitas.uber)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center print:text-xs">
                   <span>Outras Receitas (Ajustes)</span>
-                  <span className="font-medium text-green-600">{formatCurrency(receitas.outras_receitas)}</span>
+                  <span className="font-medium text-green-600">
+                    {formatCurrency(receitas.outras_receitas)}
+                  </span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center font-bold print:text-xs">
                   <span>TOTAL RECEITAS</span>
-                  <span className="text-green-600 text-lg print:text-sm">{formatCurrency(totalReceitas)}</span>
+                  <span className="text-green-600 text-lg print:text-sm">
+                    {formatCurrency(totalReceitas)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -483,15 +495,21 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
                 </div>
                 <div className="flex justify-between items-center print:text-xs">
                   <span>Combustível</span>
-                  <span className="text-muted-foreground">{formatCurrency(despesas.combustivel)}</span>
+                  <span className="text-muted-foreground">
+                    {formatCurrency(despesas.combustivel)}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center print:text-xs">
                   <span>Portagens</span>
-                  <span className="text-muted-foreground">{formatCurrency(despesas.portagens)}</span>
+                  <span className="text-muted-foreground">
+                    {formatCurrency(despesas.portagens)}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center print:text-xs">
                   <span>Outros Custos</span>
-                  <span className="text-muted-foreground">{formatCurrency(despesas.outros_custos)}</span>
+                  <span className="text-muted-foreground">
+                    {formatCurrency(despesas.outros_custos)}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center print:text-xs">
                   <span>Caução</span>
@@ -503,12 +521,16 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
                 </div>
                 <div className="flex justify-between items-center print:text-xs">
                   <span>Reparações</span>
-                  <span className="text-muted-foreground">{formatCurrency(despesas.reparacoes)}</span>
+                  <span className="text-muted-foreground">
+                    {formatCurrency(despesas.reparacoes)}
+                  </span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center font-bold print:text-xs">
                   <span>TOTAL DESPESAS</span>
-                  <span className="text-red-600 text-lg print:text-sm">{formatCurrency(totalDespesas)}</span>
+                  <span className="text-red-600 text-lg print:text-sm">
+                    {formatCurrency(totalDespesas)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -525,25 +547,33 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
             <div className="p-4 print:p-2 space-y-3 print:space-y-1">
               <div className="flex justify-between items-center print:text-xs">
                 <span>Valores a Transportar (Semana Anterior)</span>
-                <span className="text-muted-foreground">{formatCurrency(valoresSemanaAnterior)}</span>
+                <span className="text-muted-foreground">
+                  {formatCurrency(valoresSemanaAnterior)}
+                </span>
               </div>
               <Separator />
               <div className="flex justify-between items-center print:text-xs">
                 <span className="font-medium">Total a Receber</span>
-                <span className={`font-medium ${totalAReceber >= 0 ? "text-green-600" : "text-red-600"}`}>
+                <span
+                  className={`font-medium ${totalAReceber >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                >
                   {formatCurrency(totalAReceber)}
                 </span>
               </div>
               {!motorista.recibo_verde && (
                 <div className="flex justify-between items-center print:text-xs">
                   <span>Ajuste (÷ 1.06)</span>
-                  <span className="text-orange-600">-{formatCurrency(totalAReceber - liquido)}</span>
+                  <span className="text-orange-600">
+                    -{formatCurrency(totalAReceber - liquido)}
+                  </span>
                 </div>
               )}
               <Separator className="my-4 print:my-1" />
               <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-950/20 -mx-4 px-4 py-4 print:py-2 print:bg-blue-50">
                 <span className="font-bold text-lg print:text-sm">VALOR LÍQUIDO A RECEBER</span>
-                <span className={`font-bold text-2xl print:text-lg ${liquido >= 0 ? "text-green-600" : "text-red-600"}`}>
+                <span
+                  className={`font-bold text-2xl print:text-lg ${liquido >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                >
                   {formatCurrency(liquido)}
                 </span>
               </div>
@@ -563,7 +593,7 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
             <X className="h-4 w-4 mr-2" />
             Fechar
           </Button>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" disabled={isSending}>
