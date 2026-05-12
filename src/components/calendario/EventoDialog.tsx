@@ -128,17 +128,15 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
       if (error) throw error;
 
       if (changes.length > 0) {
-        await supabase
-          .from('calendario_eventos_historico')
-          .insert(
-            changes.map((c) => ({
-              evento_id: evento.id,
-              editado_por: userId,
-              campo: c.campo,
-              valor_anterior: c.valor_anterior,
-              valor_novo: c.valor_novo,
-            }))
-          );
+        await supabase.from('calendario_eventos_historico').insert(
+          changes.map((c) => ({
+            evento_id: evento.id,
+            editado_por: userId,
+            campo: c.campo,
+            valor_anterior: c.valor_anterior,
+            valor_novo: c.valor_novo,
+          }))
+        );
       }
     },
     onSuccess: () => {
