@@ -16,6 +16,7 @@ import {
   Clock,
   PackageOpen,
   ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -140,6 +141,9 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
   const [batchEntries, setBatchEntries] = useState<BatchFileEntry[]>([]);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [batchUploading, setBatchUploading] = useState(false);
+
+  // Re-extração de validade em documentos já anexados
+  const [reextractingTipo, setReextractingTipo] = useState<string | null>(null);
 
   useEffect(() => {
     loadDocumentos();
@@ -373,6 +377,23 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
 
   const triggerFileInput = (tipo: string) => {
     fileInputRefs.current[tipo]?.click();
+  };
+
+  const handleReextractValidade = async (tipo: typeof TIPOS_DOCUMENTO[number]) => {
+    const documento = getDocumentoByTipo(tipo.value, tipo.field);
+    if (!documento) return;
+
+    const filePath = documento.ficheiro_url;
+    // Inferir mimeType pela extensão
+    const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+    const mimeType = ext === 'pdf' ? 'application/pdf' : ext === 'png' ? 'image/png' : 'image/jpeg';
+
+    setReextractingTipo(tipo.value);
+    try {
+      await extractAndConfirmValidade(filePath, mimeType, tipo.validityField ?? null, tipo.validityField ? undefined : tipo.value);
+    } finally {
+      setReextractingTipo(null);
+    }
   };
 
   // ── AI: extrai data de validade do documento ──────────────────────────────
@@ -683,6 +704,20 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
                           <Button variant="ghost" size="icon" onClick={() => handleDownload(documento)} title="Download">
                             <Download className="h-4 w-4" />
                           </Button>
+                          {(tipo.validityField || tipo.value === 'registo_criminal') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleReextractValidade(tipo)}
+                              disabled={reextractingTipo === tipo.value}
+                              title="Re-extrair validade com IA"
+                              className="text-violet-500 hover:text-violet-600"
+                            >
+                              {reextractingTipo === tipo.value
+                                ? <RefreshCw className="h-4 w-4 animate-spin" />
+                                : <Sparkles className="h-4 w-4" />}
+                            </Button>
+                          )}
                           <Button variant="ghost" size="icon" onClick={() => triggerFileInput(tipo.value)} disabled={uploading === tipo.value} title="Substituir">
                             <RefreshCw className={`h-4 w-4 ${uploading === tipo.value ? "animate-spin" : ""}`} />
                           </Button>
