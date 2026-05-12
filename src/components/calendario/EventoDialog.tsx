@@ -22,7 +22,8 @@ const TIPOS = [
   { value: 'recolha',   label: 'Recolha',             color: 'border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-400',       desc: 'Motorista entrega a viatura — pendente chegada ao parque' },
   { value: 'devolucao', label: 'Devolução',           color: 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-400', desc: 'Viatura já entregue no parque — fica disponível imediatamente' },
   { value: 'troca',     label: 'Troca',               color: 'border-purple-500 bg-purple-500/10 text-purple-700 dark:text-purple-400', desc: 'Substituir viatura para o mesmo motorista' },
-  { value: 'upgrade',   label: 'Upgrade / Downgrade', color: 'border-yellow-500 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400', desc: 'Mudar categoria de viatura (impacto no dashboard)' },
+  { value: 'upgrade',       label: 'Upgrade / Downgrade', color: 'border-yellow-500 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400', desc: 'Mudar categoria de viatura (impacto no dashboard)' },
+  { value: 'lista_espera',  label: 'Lista de Espera',     color: 'border-pink-500 bg-pink-500/10 text-pink-700 dark:text-pink-400',       desc: 'Motorista aguarda viatura — regista marca e modelo pretendido' },
 ];
 
 function toLocalDate(iso: string): string {

@@ -12,9 +12,10 @@ import { RelatorioDialog } from '@/components/calendario/RelatorioDialog';
 import { NovoEventoPage } from '@/components/calendario/NovoEventoPage';
 import { RecolhasPendentesDrawer } from '@/components/calendario/RecolhasPendentesDrawer';
 import { CheckOutPendentesDrawer } from '@/components/calendario/CheckOutPendentesDrawer';
+import { ListaEsperaDrawer } from '@/components/calendario/ListaEsperaDrawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Settings, CalendarDays, FileDown, PackageCheck, LogOut } from 'lucide-react';
+import { Plus, Settings, CalendarDays, FileDown, PackageCheck, LogOut, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import { format } from 'date-fns';
@@ -37,7 +38,7 @@ export interface CalendarioEvento {
 
 const Calendario: React.FC = () => {
   const { user } = useAuth();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, isAdmin, cargo } = usePermissions();
   const queryClient = useQueryClient();
   const [novoEventoOpen, setNovoEventoOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
@@ -45,6 +46,7 @@ const Calendario: React.FC = () => {
   const [relatorioOpen, setRelatorioOpen] = useState(false);
   const [recolhasPendentesOpen, setRecolhasPendentesOpen] = useState(false);
   const [checkoutPendentesOpen, setCheckoutPendentesOpen] = useState(false);
+  const [listaEsperaOpen, setListaEsperaOpen] = useState(false);
   const [editingEvento, setEditingEvento] = useState<CalendarioEvento | null>(null);
   const [detailsEvento, setDetailsEvento] = useState<CalendarioEvento | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -59,6 +61,7 @@ const Calendario: React.FC = () => {
         { event: '*', schema: 'public', table: 'calendario_eventos' },
         () => {
           queryClient.invalidateQueries({ queryKey: ['calendario-eventos'] });
+          queryClient.invalidateQueries({ queryKey: ['lista-espera-count'] });
         }
       )
       .subscribe();
@@ -76,6 +79,20 @@ const Calendario: React.FC = () => {
         .order('matricula');
       if (error) throw error;
       return data || [];
+    },
+  });
+
+  const canManageListaEspera = isAdmin || !!cargo?.toLowerCase().includes('supervisor');
+
+  const { data: listaEsperaCount = 0 } = useQuery({
+    queryKey: ['lista-espera-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('calendario_eventos')
+        .select('id', { count: 'exact', head: true })
+        .eq('tipo', 'lista_espera');
+      if (error) throw error;
+      return count || 0;
     },
   });
 
@@ -221,6 +238,11 @@ const Calendario: React.FC = () => {
 
   return (
     <>
+    <ListaEsperaDrawer
+      open={listaEsperaOpen}
+      onOpenChange={setListaEsperaOpen}
+      canManage={canManageListaEspera}
+    />
     <RecolhasPendentesDrawer
       open={recolhasPendentesOpen}
       onOpenChange={setRecolhasPendentesOpen}
@@ -252,6 +274,19 @@ const Calendario: React.FC = () => {
         icon={CalendarDays}
       >
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setListaEsperaOpen(true)}
+            className="relative gap-2"
+          >
+            <Clock className="h-4 w-4 text-pink-500" />
+            <span className="hidden sm:inline">Lista de Espera</span>
+            {listaEsperaCount > 0 && (
+              <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-pink-500 text-white border-0">
+                {listaEsperaCount}
+              </Badge>
+            )}
+          </Button>
           {hasPermission('calendario_exportar') && (
             <Button variant="outline" size="icon" onClick={() => setRelatorioOpen(true)}>
               <FileDown className="h-4 w-4" />
@@ -303,7 +338,9 @@ const Calendario: React.FC = () => {
         eventos={eventos}
         currentMonth={currentMonth}
         onMonthChange={setCurrentMonth}
-        onEventClick={(hasPermission('calendario_editar') || hasPermission('calendario_gerir_todos')) ? handleEdit : undefined}
+        onEventClick={(hasPermission('calendario_editar') || hasPermission('calendario_gerir_todos'))
+          ? (ev) => { if (ev.tipo === 'lista_espera' && !canManageListaEspera) return; handleEdit(ev); }
+          : undefined}
         onDeleteEvent={(hasPermission('calendario_eliminar') || hasPermission('calendario_gerir_todos')) ? (id) => deleteMutation.mutate(id) : undefined}
         onEventDetails={handleDetails}
         onDaySelect={setSelectedDay}

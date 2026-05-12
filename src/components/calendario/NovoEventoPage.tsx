@@ -141,6 +141,12 @@ const TIPOS = [
     color: 'border-yellow-500 bg-yellow-500/10 text-yellow-700',
     desc: 'Mudar categoria de viatura (impacto no dashboard)',
   },
+  {
+    value: 'lista_espera',
+    label: 'Lista de Espera',
+    color: 'border-pink-500 bg-pink-500/10 text-pink-700',
+    desc: 'Motorista aguarda viatura — regista marca e modelo pretendido',
+  },
 ];
 
 // ── Accent-insensitive search ─────────────────────────────────────────────────
@@ -228,6 +234,8 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
 
   const [tipo, setTipo] = useState('entrega');
   const [motoristaId, setMotoristaId] = useState('');
+  const [marcaModelo, setMarcaModelo] = useState('');     // lista_espera only
+  const [marcaModeloIsOutro, setMarcaModeloIsOutro] = useState(false); // "Outro" selected
   const [viaturaId, setViaturaId] = useState('');       // nova / principal
   const [autoViatura, setAutoViatura] = useState<Viatura | null>(null);   // auto-detectada pelo motorista
   const [loadingAutoViatura, setLoadingAutoViatura] = useState(false);
@@ -326,6 +334,8 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
   useEffect(() => {
     setMotoristaId('');
     setViaturaId('');
+    setMarcaModelo('');
+    setMarcaModeloIsOutro(false);
     setAutoViatura(null);
     setEstacaoId('');
     setFazerDepois(false);
@@ -381,6 +391,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
     if (tipo === 'troca' || tipo === 'upgrade') {
       return !!motoristaId && !!autoViatura && !!viaturaId;
     }
+    if (tipo === 'lista_espera') return !!motoristaId && !!marcaModelo.trim();
     return false;
   })();
 
@@ -388,6 +399,37 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
   // ── Mutation handles only devolucao / troca / upgrade ─────────────────────
   const mutation = useMutation({
     mutationFn: async () => {
+      // ── Lista de Espera: motorista + marca/modelo, sem viatura da frota ─────
+      if (tipo === 'lista_espera') {
+        const dataISO = diaTodo
+          ? new Date(`${data}T00:00:00`).toISOString()
+          : new Date(`${data}T${hora}:00`).toISOString();
+        const payload: Record<string, any> = {
+          titulo: marcaModelo.trim(),
+          tipo: 'lista_espera',
+          data_inicio: dataISO,
+          data_fim: null,
+          dia_todo: diaTodo,
+          cidade: selectedEstacao?.nome || null,
+          descricao: observacoes.trim() || null,
+          matricula_devolver: null,
+          criado_por: userId,
+          motorista_id: motoristaId,
+        };
+        let res = await supabase.from('calendario_eventos').insert(payload).select('id').single();
+        if (res.error) {
+          const { motorista_id: _, ...fallback } = payload;
+          res = await supabase.from('calendario_eventos').insert(fallback).select('id').single();
+          if (res.error) throw res.error;
+        }
+        try {
+          await supabase.functions.invoke('send-calendar-notification', {
+            body: { matricula: payload.titulo, cidade: payload.cidade, tipo: 'lista_espera', data_inicio: dataISO, dia_todo: diaTodo },
+          });
+        } catch { /* non-critical */ }
+        return;
+      }
+
       // Determine the "main" vehicle (the one being delivered or involved)
       const mainViaturaId =
         tipo === 'troca' || tipo === 'upgrade'
@@ -481,8 +523,12 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
   // ── For entrega/devolucao: show step; recolha: mutation (em_recolha) ───────
   const handleGuardar = () => {
     const fazerDepoisAtivo = fazerDepois && (tipo === 'entrega' || tipo === 'devolucao');
-    if (!estacaoId && !fazerDepoisAtivo) {
+    if (!estacaoId && !fazerDepoisAtivo && tipo !== 'lista_espera') {
       toast.error('Estação é obrigatória');
+      return;
+    }
+    if (tipo === 'lista_espera') {
+      mutation.mutate();
       return;
     }
     if (tipo === 'entrega' || tipo === 'devolucao') {
@@ -528,9 +574,10 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
   };
 
   // ── Helpers para mostrar/esconder campos por tipo ──────────────────────────
-  const showMotorista = tipo === 'entrega' || tipo === 'recolha' || tipo === 'troca' || tipo === 'upgrade';
+  const showMotorista = tipo === 'entrega' || tipo === 'recolha' || tipo === 'troca' || tipo === 'upgrade' || tipo === 'lista_espera';
   const showViaturaAutoDetect = tipo === 'troca' || tipo === 'upgrade';
-  const showViaturaManual = tipo !== 'troca' && tipo !== 'upgrade';
+  const showViaturaManual = tipo !== 'troca' && tipo !== 'upgrade' && tipo !== 'lista_espera';
+  const showMarcaModelo = tipo === 'lista_espera';
   // Para recolha, o campo viatura fica visível mas é preenchido automaticamente
   const viaturaLabel = (() => {
     if (tipo === 'entrega') return { label: 'Viatura a Entregar', hint: 'disponíveis' };
@@ -667,6 +714,47 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
               </div>
             )}
 
+            {/* Marca e Modelo (lista_espera) */}
+            {showMarcaModelo && (
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5">
+                  <Car className="h-3.5 w-3.5 text-muted-foreground" />
+                  Marca e Modelo <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <SearchableDropdown
+                  items={[
+                    ...Array.from(
+                      new Map(
+                        viaturas.map(v => [`${v.marca} ${v.modelo}`, { id: `${v.marca} ${v.modelo}`, primary: `${v.marca} ${v.modelo}` }])
+                      ).values()
+                    ),
+                    { id: '__outro__', primary: 'Outro' },
+                  ]}
+                  value={marcaModeloIsOutro ? '__outro__' : marcaModelo}
+                  onChange={val => {
+                    if (val === '__outro__') {
+                      setMarcaModeloIsOutro(true);
+                      setMarcaModelo('');
+                    } else {
+                      setMarcaModeloIsOutro(false);
+                      setMarcaModelo(val);
+                    }
+                  }}
+                  placeholder="Selecionar marca e modelo..."
+                  icon={<Car className="h-4 w-4" />}
+                  matchFn={(item, q) => norm(item.primary).includes(norm(q))}
+                />
+                {marcaModeloIsOutro && (
+                  <Input
+                    autoFocus
+                    value={marcaModelo}
+                    onChange={e => setMarcaModelo(e.target.value)}
+                    placeholder="Escrever marca e modelo..."
+                  />
+                )}
+              </div>
+            )}
+
             {/* Viatura atual auto-detectada (troca/upgrade) */}
             {showViaturaAutoDetect && (
               <div className="space-y-1.5">
@@ -755,7 +843,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
           </div>
 
           {/* ── Data e Localização ── */}
-          <div className="space-y-4 rounded-lg border border-border p-4">
+          <div className={cn("space-y-4 rounded-lg border border-border p-4", tipo === 'lista_espera' && "hidden")}>
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-primary" />
               Data e Localização
@@ -874,6 +962,9 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
             )}
             {(tipo === 'troca' || tipo === 'upgrade') && (
               <p>A viatura atual será devolvida ao parque e a nova ficará associada ao motorista. O histórico é preservado em ambas as fichas.</p>
+            )}
+            {tipo === 'lista_espera' && (
+              <p>O motorista fica registado como <strong>a aguardar</strong> uma viatura da marca e modelo indicado. Nenhuma viatura é reservada ou alterada.</p>
             )}
           </div>
 

@@ -126,10 +126,11 @@ export const CalendarioGrid: React.FC<Props> = ({
                         ev.tipo === 'recolha' && "bg-blue-500/20 text-blue-700 dark:text-blue-300",
                         ev.tipo === 'devolucao' && "bg-orange-500/20 text-orange-700 dark:text-orange-300",
                         ev.tipo === 'troca' && "bg-purple-500/20 text-purple-700 dark:text-purple-300",
-                        ev.tipo === 'upgrade' && "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300"
+                        ev.tipo === 'upgrade' && "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300",
+                        ev.tipo === 'lista_espera' && "bg-pink-500/20 text-pink-700 dark:text-pink-300"
                       )}
                     >
-                      {formatMatricula(ev.titulo)}{ev.cidade ? ` ${ev.cidade.toUpperCase()}` : ''}
+                      {ev.tipo === 'lista_espera' ? ev.titulo : formatMatricula(ev.titulo)}{ev.cidade ? ` ${ev.cidade.toUpperCase()}` : ''}
                     </div>
                   ))}
                   {extraCount > 0 && (
