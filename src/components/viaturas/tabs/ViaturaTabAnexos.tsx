@@ -32,7 +32,7 @@ interface ViaturaTabAnexosProps {
 }
 
 // Documentos que são geridos em outras tabs
-const EXCLUDED_TIPOS = ['dua', 'dav', 'ac', 'ipo', 'carta_verde', 'contrato_obe'];
+const EXCLUDED_TIPOS = ['dua', 'dua_frente', 'dua_verso', 'dav', 'ac', 'ipo', 'carta_verde', 'contrato_obe'];
 
 export function ViaturaTabAnexos({ viaturaId }: ViaturaTabAnexosProps) {
   const [documentos, setDocumentos] = useState<Documento[]>([]);

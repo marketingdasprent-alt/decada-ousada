@@ -1,16 +1,16 @@
-import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { useState, useEffect, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,21 +20,21 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Receipt, Plus, Upload, Loader2, FileText, Eye, Trash2, Check } from 'lucide-react';
-import { format, startOfWeek, addDays, addWeeks, isBefore, isEqual } from 'date-fns';
-import { pt } from 'date-fns/locale';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Receipt, Plus, Upload, Loader2, FileText, Eye, Trash2, Check } from "lucide-react";
+import { format, startOfWeek, addDays, addWeeks, isBefore, isEqual } from "date-fns";
+import { pt } from "date-fns/locale";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface Recibo {
   id: string;
@@ -60,27 +60,23 @@ interface MotoristaRecibosCardProps {
   dataContratacao?: string;
 }
 
-export function MotoristaRecibosCard({
-  motoristaId,
-  userId,
-  dataContratacao,
-}: MotoristaRecibosCardProps) {
+export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: MotoristaRecibosCardProps) {
   const [recibos, setRecibos] = useState<Recibo[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
-
+  
   // Delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reciboToDelete, setReciboToDelete] = useState<Recibo | null>(null);
   const [deleting, setDeleting] = useState(false);
-
+  
   // Form state
-  const [semanaSeleccionada, setSemanaSeleccionada] = useState('');
-  const [valor, setValor] = useState('');
+  const [semanaSeleccionada, setSemanaSeleccionada] = useState("");
+  const [valor, setValor] = useState("");
   const [ficheiro, setFicheiro] = useState<File | null>(null);
-  const [ficheiroUrl, setFicheiroUrl] = useState('');
+  const [ficheiroUrl, setFicheiroUrl] = useState("");
 
   useEffect(() => {
     loadRecibos();
@@ -98,7 +94,7 @@ export function MotoristaRecibosCard({
           event: '*',
           schema: 'public',
           table: 'motorista_recibos',
-          filter: `motorista_id=eq.${motoristaId}`,
+          filter: `motorista_id=eq.${motoristaId}`
         },
         () => {
           loadRecibos();
@@ -114,35 +110,34 @@ export function MotoristaRecibosCard({
   // Gerar lista de semanas desde a data de contratação
   const semanasDisponiveis = useMemo((): SemanaOption[] => {
     if (!dataContratacao) return [];
-
+    
     const semanas: SemanaOption[] = [];
     const dataContratacaoDate = new Date(dataContratacao);
     let inicio = startOfWeek(dataContratacaoDate, { weekStartsOn: 1 });
     const hoje = new Date();
     // Incluir até a semana actual (o motorista pode submeter recibo da semana em curso)
     const fimVerificacao = addWeeks(startOfWeek(hoje, { weekStartsOn: 1 }), 1);
-
+    
     // Criar set de semanas que já têm recibo
     const semanasComRecibo = new Set(
-      recibos.filter((r) => r.semana_referencia_inicio).map((r) => r.semana_referencia_inicio)
+      recibos
+        .filter(r => r.semana_referencia_inicio)
+        .map(r => r.semana_referencia_inicio)
     );
-
-    while (
-      isBefore(inicio, fimVerificacao) ||
-      isEqual(inicio, startOfWeek(hoje, { weekStartsOn: 1 }))
-    ) {
+    
+    while (isBefore(inicio, fimVerificacao) || isEqual(inicio, startOfWeek(hoje, { weekStartsOn: 1 }))) {
       const fim = addDays(inicio, 6);
-      const valorSemana = format(inicio, 'yyyy-MM-dd');
-
+      const valorSemana = format(inicio, "yyyy-MM-dd");
+      
       semanas.push({
         value: valorSemana,
-        label: `${format(inicio, 'dd MMM', { locale: pt })} - ${format(fim, 'dd MMM yyyy', { locale: pt })}`,
-        jaTemRecibo: semanasComRecibo.has(valorSemana),
+        label: `${format(inicio, "dd MMM", { locale: pt })} - ${format(fim, "dd MMM yyyy", { locale: pt })}`,
+        jaTemRecibo: semanasComRecibo.has(valorSemana)
       });
-
+      
       inicio = addWeeks(inicio, 1);
     }
-
+    
     // Ordenar do mais recente para o mais antigo
     return semanas.reverse();
   }, [dataContratacao, recibos]);
@@ -150,16 +145,16 @@ export function MotoristaRecibosCard({
   async function loadRecibos() {
     try {
       const { data, error } = await supabase
-        .from('motorista_recibos')
-        .select('*')
-        .eq('motorista_id', motoristaId)
-        .order('created_at', { ascending: false })
+        .from("motorista_recibos")
+        .select("*")
+        .eq("motorista_id", motoristaId)
+        .order("created_at", { ascending: false })
         .limit(10);
 
       if (error) throw error;
       setRecibos(data || []);
     } catch (error) {
-      console.error('Erro ao carregar recibos:', error);
+      console.error("Erro ao carregar recibos:", error);
     } finally {
       setLoading(false);
     }
@@ -170,7 +165,7 @@ export function MotoristaRecibosCard({
     if (!file) return;
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('Ficheiro muito grande. Máximo 10MB.');
+      toast.error("Ficheiro muito grande. Máximo 10MB.");
       return;
     }
 
@@ -182,16 +177,16 @@ export function MotoristaRecibosCard({
       const filePath = `${userId}/recibos/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('motorista-recibos')
+        .from("motorista-recibos")
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       setFicheiroUrl(filePath);
-      toast.success('Ficheiro carregado com sucesso');
+      toast.success("Ficheiro carregado com sucesso");
     } catch (error) {
-      console.error('Erro ao carregar ficheiro:', error);
-      toast.error('Erro ao carregar ficheiro');
+      console.error("Erro ao carregar ficheiro:", error);
+      toast.error("Erro ao carregar ficheiro");
       setFicheiro(null);
     } finally {
       setUploading(false);
@@ -200,18 +195,20 @@ export function MotoristaRecibosCard({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
+    
     // Validação
     if (!semanaSeleccionada || !valor || !ficheiroUrl) {
-      toast.error('Preencha todos os campos');
+      toast.error("Preencha todos os campos");
       return;
     }
 
     // Verificar se já existe recibo para esta semana
-    const semanaJaUsada = recibos.some((r) => r.semana_referencia_inicio === semanaSeleccionada);
-
+    const semanaJaUsada = recibos.some(
+      r => r.semana_referencia_inicio === semanaSeleccionada
+    );
+    
     if (semanaJaUsada) {
-      toast.error('Já existe um recibo para esta semana');
+      toast.error("Já existe um recibo para esta semana");
       return;
     }
 
@@ -219,34 +216,36 @@ export function MotoristaRecibosCard({
 
     try {
       // Formatar label da semana para a descrição
-      const semanaOption = semanasDisponiveis.find((s) => s.value === semanaSeleccionada);
+      const semanaOption = semanasDisponiveis.find(s => s.value === semanaSeleccionada);
       const periodoLabel = semanaOption?.label || semanaSeleccionada;
 
-      const { error } = await supabase.from('motorista_recibos').insert({
-        motorista_id: motoristaId,
-        user_id: userId,
-        descricao: `Recibo Verde - ${periodoLabel}`,
-        periodo_referencia: periodoLabel,
-        semana_referencia_inicio: semanaSeleccionada,
-        valor_total: parseFloat(valor.replace(',', '.')),
-        ficheiro_url: ficheiroUrl,
-        nome_ficheiro: ficheiro?.name,
-        status: 'submetido',
-      });
+      const { error } = await supabase
+        .from("motorista_recibos")
+        .insert({
+          motorista_id: motoristaId,
+          user_id: userId,
+          descricao: `Recibo Verde - ${periodoLabel}`,
+          periodo_referencia: periodoLabel,
+          semana_referencia_inicio: semanaSeleccionada,
+          valor_total: parseFloat(valor.replace(",", ".")),
+          ficheiro_url: ficheiroUrl,
+          nome_ficheiro: ficheiro?.name,
+          status: "submetido"
+        });
 
       if (error) throw error;
 
-      toast.success('Recibo verde submetido com sucesso');
+      toast.success("Recibo verde submetido com sucesso");
       setDialogOpen(false);
       resetForm();
       loadRecibos();
     } catch (error: any) {
-      console.error('Erro ao submeter recibo:', error);
+      console.error("Erro ao submeter recibo:", error);
       // Verificar se é erro de constraint de duplicado
-      if (error.code === '23505') {
-        toast.error('Já existe um recibo para esta semana');
+      if (error.code === "23505") {
+        toast.error("Já existe um recibo para esta semana");
       } else {
-        toast.error('Erro ao submeter recibo');
+        toast.error("Erro ao submeter recibo");
       }
     } finally {
       setSubmitting(false);
@@ -254,30 +253,26 @@ export function MotoristaRecibosCard({
   }
 
   function resetForm() {
-    setSemanaSeleccionada('');
-    setValor('');
+    setSemanaSeleccionada("");
+    setValor("");
     setFicheiro(null);
-    setFicheiroUrl('');
+    setFicheiroUrl("");
   }
 
   function formatCurrency(value: number) {
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: 'EUR',
+    return new Intl.NumberFormat("de-DE", {
+      style: "currency",
+      currency: "EUR"
     }).format(value);
   }
 
   function getStatusBadge(status: string) {
     switch (status) {
-      case 'validado':
-        return (
-          <Badge variant="default" className="bg-green-600">
-            Validado
-          </Badge>
-        );
-      case 'submetido':
+      case "validado":
+        return <Badge variant="default" className="bg-green-600">Validado</Badge>;
+      case "submetido":
         return <Badge variant="secondary">Pendente</Badge>;
-      case 'rejeitado':
+      case "rejeitado":
         return <Badge variant="destructive">Rejeitado</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
@@ -285,7 +280,7 @@ export function MotoristaRecibosCard({
   }
 
   function formatCodigo(codigo: number | null) {
-    if (!codigo) return '-';
+    if (!codigo) return "-";
     return `#${String(codigo).padStart(4, '0')}`;
   }
 
@@ -293,70 +288,72 @@ export function MotoristaRecibosCard({
     if (recibo.semana_referencia_inicio) {
       const inicio = new Date(recibo.semana_referencia_inicio);
       const fim = addDays(inicio, 6);
-      return `${format(inicio, 'dd/MM', { locale: pt })} - ${format(fim, 'dd/MM', { locale: pt })}`;
+      return `${format(inicio, "dd/MM", { locale: pt })} - ${format(fim, "dd/MM", { locale: pt })}`;
     }
-    return recibo.periodo_referencia || '-';
+    return recibo.periodo_referencia || "-";
   }
 
   async function handleViewRecibo(url: string) {
     try {
       const { data, error } = await supabase.storage
-        .from('motorista-recibos')
+        .from("motorista-recibos")
         .createSignedUrl(url, 3600);
 
       if (error) throw error;
-
+      
       // Abordagem compatível com PWA/iOS
       const response = await fetch(data.signedUrl);
       const blob = await response.blob();
       const objectUrl = URL.createObjectURL(blob);
-
+      
       // Criar link temporário e clicar
       const link = document.createElement('a');
       link.href = objectUrl;
       link.target = '_blank';
-
+      
       // Se for PDF ou imagem, abre no browser; senão força download
       const extension = url.split('.').pop()?.toLowerCase();
       if (!['pdf', 'jpg', 'jpeg', 'png'].includes(extension || '')) {
         link.download = url.split('/').pop() || 'recibo';
       }
-
+      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
+      
       // Limpar objectURL após um delay
       setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     } catch (error) {
-      console.error('Erro ao abrir recibo:', error);
-      toast.error('Erro ao abrir recibo');
+      console.error("Erro ao abrir recibo:", error);
+      toast.error("Erro ao abrir recibo");
     }
   }
 
   async function handleDeleteRecibo() {
     if (!reciboToDelete) return;
-
+    
     setDeleting(true);
     try {
       // 1. Apagar ficheiro do storage
-      await supabase.storage.from('motorista-recibos').remove([reciboToDelete.ficheiro_url]);
-
+      await supabase.storage
+        .from("motorista-recibos")
+        .remove([reciboToDelete.ficheiro_url]);
+      
       // 2. Apagar registo da base de dados
       const { error } = await supabase
-        .from('motorista_recibos')
+        .from("motorista_recibos")
         .delete()
-        .eq('id', reciboToDelete.id);
-
+        .eq("id", reciboToDelete.id);
+      
       if (error) throw error;
-
-      toast.success('Recibo apagado com sucesso');
+      
+      toast.success("Recibo apagado com sucesso");
       setDeleteDialogOpen(false);
       setReciboToDelete(null);
       loadRecibos();
     } catch (error) {
-      console.error('Erro ao apagar recibo:', error);
-      toast.error('Erro ao apagar recibo');
+      console.error("Erro ao apagar recibo:", error);
+      toast.error("Erro ao apagar recibo");
     } finally {
       setDeleting(false);
     }
@@ -373,7 +370,7 @@ export function MotoristaRecibosCard({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3].map(i => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
@@ -404,36 +401,22 @@ export function MotoristaRecibosCard({
               <DialogHeader>
                 <DialogTitle className="text-xl font-black">Submeter Recibo Verde</DialogTitle>
               </DialogHeader>
-
+              
               <form onSubmit={handleSubmit} className="space-y-6 pt-4">
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="semana"
-                    className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1"
-                  >
-                    Semana de Referência
-                  </Label>
+                  <Label htmlFor="semana" className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Semana de Referência</Label>
                   <Select value={semanaSeleccionada} onValueChange={setSemanaSeleccionada}>
                     <SelectTrigger className="h-12 rounded-xl border-border bg-muted/50 focus:ring-primary/20">
                       <SelectValue placeholder="Seleccione a semana..." />
                     </SelectTrigger>
                     <SelectContent className="max-h-[300px] rounded-xl border-border shadow-xl bg-background">
-                      {semanasDisponiveis.map((semana) => (
+                      {semanasDisponiveis.filter(s => !s.jaTemRecibo).map((semana) => (
                         <SelectItem
                           key={semana.value}
                           value={semana.value}
-                          disabled={semana.jaTemRecibo}
-                          className="flex items-center justify-between rounded-lg"
+                          className="rounded-lg"
                         >
-                          <span className="flex items-center gap-2 font-medium">
-                            {semana.jaTemRecibo && <Check className="w-4 h-4 text-green-600" />}
-                            {semana.label}
-                            {semana.jaTemRecibo && (
-                              <span className="text-[10px] text-muted-foreground font-black uppercase">
-                                (já submetido)
-                              </span>
-                            )}
-                          </span>
+                          <span className="font-medium">{semana.label}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -441,12 +424,7 @@ export function MotoristaRecibosCard({
                 </div>
 
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="valor"
-                    className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1"
-                  >
-                    Valor Total (€)
-                  </Label>
+                  <Label htmlFor="valor" className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Valor Total (€)</Label>
                   <Input
                     id="valor"
                     type="text"
@@ -458,17 +436,13 @@ export function MotoristaRecibosCard({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">
-                    Ficheiro do Recibo Verde
-                  </Label>
+                  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Ficheiro do Recibo Verde</Label>
                   <div className="border-2 border-dashed border-border rounded-[2rem] p-8 bg-muted/30 hover:bg-muted/50 transition-colors">
                     {ficheiro ? (
                       <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border shadow-sm">
                         <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-primary" />
-                          <span className="text-sm font-bold truncate max-w-[200px]">
-                            {ficheiro.name}
-                          </span>
+                           <FileText className="w-5 h-5 text-primary" />
+                           <span className="text-sm font-bold truncate max-w-[200px]">{ficheiro.name}</span>
                         </div>
                         {uploading && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
                       </div>
@@ -491,17 +465,18 @@ export function MotoristaRecibosCard({
                   </div>
                 </div>
 
-                <Button
-                  type="submit"
-                  className="w-full h-14 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center transition-all shadow-lg"
+                <Button 
+                  type="submit" 
+                  className="w-full h-14 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center transition-all shadow-lg" 
                   disabled={submitting || uploading || !ficheiroUrl}
                 >
                   {submitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />A submeter...
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      A submeter...
                     </>
                   ) : (
-                    'Confirmar Submissão'
+                    "Confirmar Submissão"
                   )}
                 </Button>
               </form>
@@ -521,32 +496,22 @@ export function MotoristaRecibosCard({
         ) : (
           <div className="divide-y divide-border">
             {recibos.map((recibo) => (
-              <div
-                key={recibo.id}
-                className="flex items-center justify-between px-4 md:px-8 py-4 gap-3 hover:bg-muted/30 transition-colors"
-              >
+              <div key={recibo.id} className="flex items-center justify-between px-4 md:px-8 py-4 gap-3 hover:bg-muted/30 transition-colors">
                 <div className="flex flex-col gap-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg shrink-0">
                       {formatCodigo(recibo.codigo)}
                     </span>
-                    <div
-                      className={cn(
-                        'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0',
-                        recibo.status === 'validado'
-                          ? 'bg-green-500/10 text-green-600'
-                          : recibo.status === 'submetido'
-                            ? 'bg-muted text-muted-foreground'
-                            : 'bg-destructive/10 text-destructive'
-                      )}
-                    >
+                    <div className={cn(
+                      "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0",
+                      recibo.status === "validado" ? "bg-green-500/10 text-green-600" :
+                      recibo.status === "submetido" ? "bg-muted text-muted-foreground" : "bg-destructive/10 text-destructive"
+                    )}>
                       {recibo.status}
                     </div>
                   </div>
                   <p className="text-sm font-bold truncate">{formatSemanaReferencia(recibo)}</p>
-                  <p className="text-xs font-black text-muted-foreground">
-                    {formatCurrency(Number(recibo.valor_total || 0))}
-                  </p>
+                  <p className="text-xs font-black text-muted-foreground">{formatCurrency(Number(recibo.valor_total || 0))}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Button
@@ -557,7 +522,7 @@ export function MotoristaRecibosCard({
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
-                  {recibo.status === 'submetido' && (
+                  {recibo.status === "submetido" && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -579,18 +544,13 @@ export function MotoristaRecibosCard({
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent className="rounded-[2rem] border-border bg-background">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-xl font-black">
-                Apagar Recibo Verde?
-              </AlertDialogTitle>
+              <AlertDialogTitle className="text-xl font-black">Apagar Recibo Verde?</AlertDialogTitle>
               <AlertDialogDescription className="text-muted-foreground font-medium leading-relaxed">
-                Tem a certeza que deseja apagar este recibo? Esta ação não pode ser desfeita e terá
-                de submeter um novo para esta semana.
+                Tem a certeza que deseja apagar este recibo? Esta ação não pode ser desfeita e terá de submeter um novo para esta semana.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="pt-4">
-              <AlertDialogCancel disabled={deleting} className="rounded-xl font-bold">
-                Cancelar
-              </AlertDialogCancel>
+              <AlertDialogCancel disabled={deleting} className="rounded-xl font-bold">Cancelar</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteRecibo}
                 disabled={deleting}
@@ -598,10 +558,11 @@ export function MotoristaRecibosCard({
               >
                 {deleting ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />A apagar...
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    A apagar...
                   </>
                 ) : (
-                  'Confirmar Eliminação'
+                  "Confirmar Eliminação"
                 )}
               </AlertDialogAction>
             </AlertDialogFooter>

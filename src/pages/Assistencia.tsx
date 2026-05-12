@@ -32,42 +32,7 @@ import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
-interface Ticket {
-  id: string;
-  numero: number;
-  titulo: string;
-  descricao: string | null;
-  prioridade: string;
-  status: string;
-  created_at: string;
-  data_estimada: string | null;
-  atribuido_a: string | null;
-  viatura: {
-    id: string;
-    matricula: string;
-    marca: string;
-    modelo: string;
-  } | null;
-  motorista: {
-    id: string;
-    nome: string;
-  } | null;
-  categoria: {
-    id: string;
-    nome: string;
-    cor: string;
-  } | null;
-  criador: {
-    id: string;
-    nome: string;
-  } | null;
-}
-
-interface Categoria {
-  id: string;
-  nome: string;
-  cor: string;
-}
+import type { TicketEnriched as Ticket, TicketCategoria as Categoria } from '@/types/ticket';
 
 interface Criador {
   id: string;

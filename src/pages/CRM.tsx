@@ -30,21 +30,7 @@ import { CRMViewToggle } from '@/components/crm/CRMViewToggle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 
-interface Lead {
-  id: string;
-  nome: string;
-  email: string;
-  telefone?: string;
-  zona?: string;
-  data_aluguer?: string;
-  status: string;
-  campaign_tags?: string[];
-  created_at: string;
-  formulario_id?: string;
-  observacoes?: string;
-  observacoes_gestores?: string;
-  gestor_responsavel?: string;
-}
+import type { Lead } from '@/types/lead';
 
 const statusColumns = [
   {

@@ -19,7 +19,14 @@ export function UpdateNotification() {
           Atualize para usar as melhorias mais recentes.
         </span>
       </div>
-      <Button size="sm" onClick={() => updateServiceWorker(true)} className="shrink-0 gap-1.5">
+      <Button size="sm" onClick={async () => {
+        await updateServiceWorker(true);
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        window.location.reload();
+      }} className="shrink-0 gap-1.5">
         <RefreshCw className="h-3.5 w-3.5" />
         Atualizar
       </Button>

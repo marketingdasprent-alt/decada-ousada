@@ -58,10 +58,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error);
-    }
+    await supabase.auth.signOut();
+    // Forçar reload limpo — garante redirect para login mesmo com PWA/SW em cache
+    window.location.href = '/login';
   };
 
   const value = {
