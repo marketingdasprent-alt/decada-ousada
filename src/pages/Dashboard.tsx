@@ -15,10 +15,12 @@ import {
   AlertTriangle,
   AlertCircle,
   ClipboardList,
+  UserCheck,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   ComposedChart,
   Bar,
@@ -115,6 +117,8 @@ const Dashboard = () => {
   const [preset, setPreset] = useState<PeriodPreset>('mes');
   const [range, setRange] = useState<DateRange>(getPeriodRange('mes'));
   const [loading, setLoading] = useState(true);
+  const [gestorFiltro, setGestorFiltro] = useState<string>('todos');
+  const [gestores, setGestores] = useState<{ id: string; nome: string }[]>([]);
 
   // State for each data section
   const [fleet, setFleet] = useState<FleetCounts>({ total: 0, disponiveis: 0, ocupadas: 0, manutencao: 0 });
@@ -124,6 +128,22 @@ const Dashboard = () => {
   const [trocasCount, setTrocasCount] = useState(0);
   const [extintoresAPrazo, setExtintoresAPrazo] = useState<any[]>([]);
   const [contratosAPrazo, setContratosAPrazo] = useState<any[]>([]);
+
+  // ── Load gestores ────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    supabase
+      .from('profiles')
+      .select('id, nome')
+      .in('cargo_id', [
+        'fd39a12b-86c9-43c0-8ae3-d7b4e090e0a2', // Gestor TVDE
+        '0cf27801-80ff-4480-857e-e90bfb75d5a6',  // Supervisor Gestor TVDE
+      ])
+      .order('nome', { ascending: true })
+      .then(({ data }) => {
+        if (data) setGestores(data.filter(p => p.nome));
+      });
+  }, []);
 
   // ── Period change ────────────────────────────────────────────────────────
 
@@ -139,6 +159,7 @@ const Dashboard = () => {
       setLoading(true);
       const fromStr = range.from.toISOString();
       const toStr = range.to.toISOString();
+      const filtrarGestor = gestorFiltro !== 'todos';
 
       // ── 1. Fleet counts ────────────────────────────────────────────────
       const { data: viaturas } = await supabase
@@ -217,12 +238,14 @@ const Dashboard = () => {
       setCandidaturasPendentes(pendentes || 0);
 
       // ── 3. Atividade & Rentabilidade (Baseado nos Eventos do Calendário) ─────────────────────────────────
-      const { data: rawEventosAtividade } = await supabase
+      let qAtividade = supabase
         .from('calendario_eventos')
         .select('tipo, data_inicio, titulo')
         .in('tipo', ['entrega', 'devolucao', 'recolha'])
         .gte('data_inicio', fromStr)
         .lte('data_inicio', toStr);
+      if (filtrarGestor) qAtividade = qAtividade.eq('criado_por', gestorFiltro);
+      const { data: rawEventosAtividade } = await qAtividade;
         
       const eventosAtividade = rawEventosAtividade || [];
 
@@ -240,12 +263,14 @@ const Dashboard = () => {
       setAtividadeData(points);
 
       // ── 5. Upgrades/Downgrades ────────────────────────────────────────
-      const { data: upgradeEvents } = await supabase
+      let qUpgrades = supabase
         .from('calendario_eventos')
         .select('id, titulo, matricula_devolver')
         .eq('tipo', 'upgrade')
         .gte('data_inicio', fromStr)
         .lte('data_inicio', toStr);
+      if (filtrarGestor) qUpgrades = qUpgrades.eq('criado_por', gestorFiltro);
+      const { data: upgradeEvents } = await qUpgrades;
 
       // Find matching vehicles ignoring hyphens and spaces
       const viaturasCompletas = viaturas || [];
@@ -278,12 +303,14 @@ const Dashboard = () => {
       });
 
       // ── 6. Trocas ─────────────────────────────────────────────────────
-      const { count: trocas } = await supabase
+      let qTrocas = supabase
         .from('calendario_eventos')
         .select('id', { count: 'exact', head: true })
         .eq('tipo', 'troca')
         .gte('data_inicio', fromStr)
         .lte('data_inicio', toStr);
+      if (filtrarGestor) qTrocas = qTrocas.eq('criado_por', gestorFiltro);
+      const { count: trocas } = await qTrocas;
 
       setTrocasCount(trocas || 0);
 
@@ -297,7 +324,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [range, toast]);
+  }, [range, toast, gestorFiltro]);
 
   useEffect(() => {
     fetchData();
@@ -408,6 +435,18 @@ const Dashboard = () => {
             {PRESET_LABELS[p]}
           </Button>
         ))}
+        <Select value={gestorFiltro} onValueChange={setGestorFiltro}>
+          <SelectTrigger className="h-9 w-44 gap-1.5">
+            <UserCheck className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <SelectValue placeholder="Todos os Gestores" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os Gestores</SelectItem>
+            {gestores.map(g => (
+              <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
           variant="ghost"
           size="icon"

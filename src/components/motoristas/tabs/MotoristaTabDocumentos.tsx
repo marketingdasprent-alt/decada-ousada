@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { format, differenceInDays } from "date-fns";
 import { pt } from "date-fns/locale";
 import {
@@ -14,9 +14,13 @@ import {
   Files,
   ShieldCheck,
   Clock,
+  PackageOpen,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -36,6 +40,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { SectionCard } from "@/components/ui/section-card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -53,8 +64,8 @@ interface MotoristDocumento {
 }
 
 const TIPOS_DOCUMENTO = [
-  { value: "documento_identificacao", label: "Cartão Cidadão (Frente)", field: "documento_ficheiro_url", validityField: "documento_validade", storageFolder: "documentos" },
-  { value: "documento_identificacao_verso", label: "Cartão Cidadão (Verso)", field: "documento_identificacao_verso_url", validityField: "documento_validade", storageFolder: "documentos" },
+  { value: "documento_identificacao", label: "Cartão Cidadão / Passaporte (Frente)", field: "documento_ficheiro_url", validityField: "documento_validade", storageFolder: "documentos" },
+  { value: "documento_identificacao_verso", label: "Cartão Cidadão / Passaporte (Verso)", field: "documento_identificacao_verso_url", validityField: "documento_validade", storageFolder: "documentos" },
   { value: "carta_conducao", label: "Carta Condução (Frente)", field: "carta_ficheiro_url", validityField: "carta_validade", storageFolder: "cartas" },
   { value: "carta_conducao_verso", label: "Carta Condução (Verso)", field: "carta_conducao_verso_url", validityField: "carta_validade", storageFolder: "cartas" },
   { value: "licenca_tvde", label: "Licença TVDE", field: "licenca_tvde_ficheiro_url", validityField: "licenca_tvde_validade", storageFolder: "tvde" },
@@ -65,6 +76,50 @@ const TIPOS_DOCUMENTO = [
   { value: "comprovativo_iban", label: "Comprovativo IBAN", field: "comprovativo_iban_url", storageFolder: "documentos" },
   { value: "outros", label: "Outros Documentos", storageFolder: "documentos" },
 ];
+
+// Tipos que criam movimento financeiro em vez de documento
+const FINANCIAL_TIPOS = ["sinal", "caucao"] as const;
+type FinancialTipo = typeof FINANCIAL_TIPOS[number];
+const FINANCIAL_META: Record<FinancialTipo, { label: string; categoria: string }> = {
+  sinal:  { label: "Sinal",            categoria: "outro"  },
+  caucao: { label: "Caução / Depósito", categoria: "caucao" },
+};
+
+// Mapeamento de prefixo de ficheiro → tipo de documento
+// Prefixos mais longos são verificados primeiro (LTVDE antes de L, CIBAN antes de C)
+const BATCH_PREFIX_MAP: Record<string, string> = {
+  LTVDE: "licenca_tvde",
+  CIBAN: "comprovativo_iban",
+  DPST:  "caucao",
+  IDF:   "documento_identificacao",
+  IDV:   "documento_identificacao_verso",
+  CCF:   "carta_conducao",
+  CCV:   "carta_conducao_verso",
+  RC:    "registo_criminal",
+  CM:    "comprovativo_morada",
+  SNL:   "sinal",
+};
+
+function detectTipoFromFilename(filename: string): string {
+  const base = filename.split(".")[0].toUpperCase();
+  // Ordena por comprimento decrescente para evitar que "CM" case com "CIBAN"
+  const prefixes = Object.keys(BATCH_PREFIX_MAP).sort((a, b) => b.length - a.length);
+  for (const prefix of prefixes) {
+    if (base === prefix || base.startsWith(prefix + "_") || base.startsWith(prefix + "-") || base.startsWith(prefix + " ")) {
+      return BATCH_PREFIX_MAP[prefix];
+    }
+  }
+  return "outros";
+}
+
+interface BatchFileEntry {
+  file: File;
+  tipoDetectado: string;
+  labelDetectado: string;
+  reconhecido: boolean;
+  isFinanceiro: boolean;
+  valor: string; // apenas para tipos financeiros
+}
 
 interface MotoristaTabDocumentosProps {
   motorista: Motorista;
@@ -79,6 +134,12 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentoToDelete, setDocumentoToDelete] = useState<MotoristDocumento | null>(null);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
+  // Batch upload
+  const batchInputRef = useRef<HTMLInputElement | null>(null);
+  const [batchEntries, setBatchEntries] = useState<BatchFileEntry[]>([]);
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [batchUploading, setBatchUploading] = useState(false);
 
   useEffect(() => {
     loadDocumentos();
@@ -185,6 +246,10 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
           throw new Error(`Erro na base de dados: ${updateMotoristaError.message}`);
         }
         toast.success(`${tipoDef.label} atualizado com sucesso!`);
+        // Se tem campo de validade, tentar extração automática por IA
+        if (tipoDef.validityField) {
+          void extractAndConfirmValidade(filePath, file.type || '', tipoDef.validityField);
+        }
       } else {
         // Caso contrário, trata como documento extra na tabela secundária
         const existente = documentos.find(d => d.tipo_documento === tipo);
@@ -304,6 +369,121 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
     fileInputRefs.current[tipo]?.click();
   };
 
+  // ── AI: extrai data de validade do documento ──────────────────────────────
+  const extractAndConfirmValidade = useCallback(async (
+    filePath: string,
+    mimeType: string,
+    validityField: string,
+  ) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('extract-document-expiry', {
+        body: { filePath, mimeType },
+      });
+      if (error || !data?.date) return;
+
+      const dateFormatted = format(new Date(data.date), 'dd/MM/yyyy', { locale: pt });
+
+      toast(`🤖 Validade detetada: ${dateFormatted}`, {
+        description: 'A IA identificou uma data de validade. Deseja aplicar?',
+        duration: 20000,
+        action: {
+          label: 'Aplicar',
+          onClick: async () => {
+            const { error: updErr } = await supabase
+              .from('motoristas_ativos')
+              .update({ [validityField]: data.date })
+              .eq('id', motorista.id);
+            if (updErr) {
+              toast.error('Erro ao guardar a validade');
+            } else {
+              toast.success('Validade atualizada automaticamente!');
+              if (onMotoristaUpdated) onMotoristaUpdated();
+            }
+          },
+        },
+      });
+    } catch {
+      // silently ignore — AI extraction is best-effort
+    }
+  }, [motorista.id, onMotoristaUpdated]);
+
+  const handleBatchSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const entries: BatchFileEntry[] = files.map(file => {
+      const tipo = detectTipoFromFilename(file.name);
+      const isFinanceiro = (FINANCIAL_TIPOS as readonly string[]).includes(tipo);
+      const tipoDef = TIPOS_DOCUMENTO.find(t => t.value === tipo);
+      const labelDetectado = isFinanceiro
+        ? FINANCIAL_META[tipo as FinancialTipo].label
+        : (tipoDef?.label ?? "Outros Documentos");
+      return {
+        file,
+        tipoDetectado: tipo,
+        labelDetectado,
+        reconhecido: tipo !== "outros",
+        isFinanceiro,
+        valor: "",
+      };
+    });
+    setBatchEntries(entries);
+    setBatchDialogOpen(true);
+    e.target.value = "";
+  };
+
+  const handleBatchUpload = async () => {
+    if (!user) return;
+
+    // Validar que todos os financeiros têm valor
+    const financeiros = batchEntries.filter(e => e.isFinanceiro);
+    for (const f of financeiros) {
+      const v = parseFloat(f.valor.replace(",", "."));
+      if (!f.valor.trim() || isNaN(v) || v <= 0) {
+        toast.error(`Introduz o valor para "${f.labelDetectado}" antes de continuar.`);
+        return;
+      }
+    }
+
+    setBatchUploading(true);
+
+    for (const entry of batchEntries) {
+      if (entry.isFinanceiro) {
+        // Upload do ficheiro para storage
+        try {
+          const fileExt = entry.file.name.split(".").pop();
+          const filePath = `${user.id}/documentos/${Date.now()}.${fileExt}`;
+          const { error: upErr } = await supabase.storage
+            .from("motorista-documentos")
+            .upload(filePath, entry.file, { cacheControl: "3600", upsert: false });
+          if (upErr) throw upErr;
+
+          const meta = FINANCIAL_META[entry.tipoDetectado as FinancialTipo];
+          const valor = parseFloat(entry.valor.replace(",", "."));
+          const { error: finErr } = await supabase.from("motorista_financeiro").insert({
+            motorista_id: motorista.id,
+            tipo: "credito",
+            categoria: meta.categoria,
+            descricao: meta.label,
+            valor,
+            data_movimento: new Date().toISOString().split("T")[0],
+            referencia: filePath,
+            status: "pendente",
+          });
+          if (finErr) throw finErr;
+          toast.success(`${meta.label} adicionado ao Financeiro (${valor.toFixed(2)} €)`);
+        } catch (err: any) {
+          toast.error(`Erro ao processar "${entry.file.name}": ${err.message}`);
+        }
+      } else {
+        await handleUpload(entry.tipoDetectado, entry.file);
+      }
+    }
+
+    setBatchUploading(false);
+    setBatchDialogOpen(false);
+    setBatchEntries([]);
+  };
+
   // Stats calculations
   const totalTipos = TIPOS_DOCUMENTO.length;
   const anexados = TIPOS_DOCUMENTO.filter(t => getDocumentoByTipo(t.value, t.field)).length;
@@ -360,10 +540,24 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
           <p className="text-sm text-muted-foreground">
             Documentos próximos do vencimento serão destacados.
           </p>
-          <Button variant="outline" size="sm" onClick={loadDocumentos}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
+          <div className="flex gap-2">
+            <input
+              ref={batchInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={handleBatchSelect}
+            />
+            <Button variant="outline" size="sm" onClick={() => batchInputRef.current?.click()}>
+              <PackageOpen className="h-4 w-4 mr-2" />
+              Carregar em Lote
+            </Button>
+            <Button variant="outline" size="sm" onClick={loadDocumentos}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Atualizar
+            </Button>
+          </div>
         </div>
 
         <Table>
@@ -509,6 +703,78 @@ export function MotoristaTabDocumentos({ motorista, onMotoristaUpdated }: Motori
           Formatos aceites: PDF, JPG, PNG. Tamanho máximo: 10MB.
         </p>
       </SectionCard>
+
+      {/* Dialog de carregamento em lote */}
+      <Dialog open={batchDialogOpen} onOpenChange={open => { if (!batchUploading) setBatchDialogOpen(open); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PackageOpen className="h-5 w-5" />
+              Carregar Documentos em Lote
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-80 overflow-y-auto py-1">
+            {batchEntries.map((entry, i) => (
+              <div key={i} className={`rounded-lg border px-3 py-2 text-sm space-y-2 ${entry.isFinanceiro ? "border-amber-400 bg-amber-50 dark:bg-amber-950/20" : ""}`}>
+                <div className="flex items-center gap-3">
+                  <FileText className={`h-4 w-4 shrink-0 ${entry.isFinanceiro ? "text-amber-500" : "text-muted-foreground"}`} />
+                  <span className="flex-1 truncate text-muted-foreground" title={entry.file.name}>{entry.file.name}</span>
+                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <Badge
+                    variant={entry.isFinanceiro ? "outline" : entry.reconhecido ? "default" : "outline"}
+                    className={
+                      entry.isFinanceiro
+                        ? "shrink-0 border-amber-500 text-amber-600 bg-amber-500/10"
+                        : entry.reconhecido
+                        ? "shrink-0 bg-green-600 text-white"
+                        : "shrink-0 text-muted-foreground"
+                    }
+                  >
+                    {entry.isFinanceiro ? `💶 ${entry.labelDetectado}` : entry.labelDetectado}
+                  </Badge>
+                </div>
+                {entry.isFinanceiro && (
+                  <div className="flex items-center gap-2 pl-7">
+                    <Label className="text-xs text-amber-700 dark:text-amber-400 shrink-0">
+                      Valor (€) *
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      className="h-7 text-sm w-32"
+                      value={entry.valor}
+                      onChange={e => {
+                        setBatchEntries(prev =>
+                          prev.map((item, idx) => idx === i ? { ...item, valor: e.target.value } : item)
+                        );
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {batchEntries.some(e => e.isFinanceiro) && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              Os documentos de Sinal e Caução serão criados como <strong>Crédito</strong> no separador Financeiro.
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Ficheiros não reconhecidos serão guardados em <strong>Outros Documentos</strong>.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBatchDialogOpen(false)} disabled={batchUploading}>
+              Cancelar
+            </Button>
+            <Button onClick={handleBatchUpload} disabled={batchUploading}>
+              {batchUploading ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+              {batchUploading ? "A carregar..." : `Carregar ${batchEntries.length} ficheiro(s)`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog de confirmação de remoção */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
