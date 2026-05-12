@@ -84,7 +84,10 @@ export function AssistenciaMultimediaUpload({
 
     // Se quiser tirar próxima, já abre a câmara enquanto o upload corre em background
     if (next) {
-      setTimeout(() => cameraInputRef.current?.click(), 100);
+      setTimeout(() => {
+        if (cameraInputRef.current) cameraInputRef.current.value = '';
+        cameraInputRef.current?.click();
+      }, 100);
     } else {
       setIsContinuousMode(false);
     }
@@ -232,6 +235,7 @@ export function AssistenciaMultimediaUpload({
               onClick={() => {
                 setPreviewFile(null);
                 setPreviewUrl(null);
+                if (cameraInputRef.current) cameraInputRef.current.value = '';
                 cameraInputRef.current?.click();
               }}
               className="flex flex-col items-center gap-2 text-white group"

@@ -15,10 +15,7 @@ export function useMotoristas(options: UseMotoristaOptions = {}) {
   return useQuery({
     queryKey: ['motoristas', { apenasAtivos }],
     queryFn: async () => {
-      let q = supabase
-        .from('motoristas_ativos')
-        .select('*')
-        .order('nome');
+      let q = supabase.from('motoristas_ativos').select('*').order('nome');
 
       if (apenasAtivos) q = q.eq('status_ativo', true);
 

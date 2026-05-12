@@ -30,15 +30,16 @@ export function TicketMediaLightbox({
 }: TicketMediaLightboxProps) {
   const current = mediaList[currentIndex];
   const isVideo =
-    current?.tipo_ficheiro === 'video' ||
-    current?.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i);
+    current?.tipo_ficheiro === 'video' || current?.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 bg-black/95 border-none flex flex-col items-center justify-center overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>Visualização de Multimédia</DialogTitle>
-          <DialogDescription>Visualização em ecrã inteiro de fotos e vídeos do ticket.</DialogDescription>
+          <DialogDescription>
+            Visualização em ecrã inteiro de fotos e vídeos do ticket.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="absolute top-4 right-4 z-50 flex gap-2">
@@ -101,14 +102,20 @@ export function TicketMediaLightbox({
             <div className="text-white text-center space-y-3 bg-black/60 p-4 rounded-xl backdrop-blur-md max-w-xl border border-white/10 shadow-2xl">
               {current?.legenda ? (
                 <div className="space-y-1">
-                  <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Legenda</p>
-                  <p className="text-lg text-green-400 font-semibold leading-tight">{current.legenda}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold">
+                    Legenda
+                  </p>
+                  <p className="text-lg text-green-400 font-semibold leading-tight">
+                    {current.legenda}
+                  </p>
                 </div>
               ) : (
                 <p className="text-xs text-white/30 italic">Sem legenda definida</p>
               )}
               <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-4">
-                <p className="text-[10px] text-white/40 truncate max-w-[200px]">{current?.nome_ficheiro}</p>
+                <p className="text-[10px] text-white/40 truncate max-w-[200px]">
+                  {current?.nome_ficheiro}
+                </p>
                 <p className="text-[10px] font-mono text-white/40 whitespace-nowrap">
                   {currentIndex + 1} / {mediaList.length}
                 </p>

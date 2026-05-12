@@ -7,7 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { ArrowLeft, Camera, Car, CheckCircle, Film, Loader2, Upload, X } from 'lucide-react';
 import { formatMatricula } from './calendarioUtils';
-import { CheckinDadosSection, emptyCheckinDados, validateCheckinDados, saveCheckinDados } from './CheckinDadosSection';
+import {
+  CheckinDadosSection,
+  emptyCheckinDados,
+  validateCheckinDados,
+  saveCheckinDados,
+} from './CheckinDadosSection';
 import type { CheckinDadosState } from './CheckinDadosSection';
 
 interface PendenteCheckout {
@@ -40,7 +45,9 @@ interface CheckOutPendentesDrawerProps {
 }
 
 export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = ({
-  open, onOpenChange, userId,
+  open,
+  onOpenChange,
+  userId,
 }) => {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<PendenteCheckout | null>(null);
@@ -56,10 +63,12 @@ export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = (
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contratos')
-        .select(`
+        .select(
+          `
           id, numero_contrato, viatura_id, motorista_id, data_inicio,
           viaturas (id, matricula, marca, modelo, km_atual, combustivel)
-        `)
+        `
+        )
         .eq('checkout_pendente', true)
         .eq('status', 'ativo')
         .order('data_inicio', { ascending: false });
@@ -67,7 +76,9 @@ export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = (
       const items = (data || []) as any[];
       if (items.length === 0) return [];
 
-      const motIds = [...new Set(items.filter(i => i.motorista_id).map((i: any) => i.motorista_id as string))];
+      const motIds = [
+        ...new Set(items.filter((i) => i.motorista_id).map((i: any) => i.motorista_id as string)),
+      ];
       let nomeMap: Record<string, string> = {};
       if (motIds.length > 0) {
         const { data: profiles } = await supabase
@@ -88,9 +99,9 @@ export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = (
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const sel = Array.from(e.target.files || []);
-    setFiles(prev => [
+    setFiles((prev) => [
       ...prev,
-      ...sel.map(f => ({
+      ...sel.map((f) => ({
         id: Math.random().toString(36).slice(2),
         file: f,
         preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
@@ -100,10 +111,10 @@ export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = (
   };
 
   const removeFile = (id: string) => {
-    setFiles(prev => {
-      const f = prev.find(x => x.id === id);
+    setFiles((prev) => {
+      const f = prev.find((x) => x.id === id);
       if (f?.preview) URL.revokeObjectURL(f.preview);
-      return prev.filter(x => x.id !== id);
+      return prev.filter((x) => x.id !== id);
     });
   };
 
@@ -121,11 +132,24 @@ export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = (
       toast.error('Adicione pelo menos uma foto/vídeo ou registe um dano com foto');
       return;
     }
-    const checkinErr = validateCheckinDados(checkinDados, viatura.km_atual ?? 0, viatura.combustivel ?? '');
-    if (checkinErr) { toast.error(checkinErr); return; }
+    const checkinErr = validateCheckinDados(
+      checkinDados,
+      viatura.km_atual ?? 0,
+      viatura.combustivel ?? ''
+    );
+    if (checkinErr) {
+      toast.error(checkinErr);
+      return;
+    }
     setSaving(true);
     try {
-      await saveCheckinDados({ dados: checkinDados, contratoId: selected.id, viaturaId: viatura.id, userId, tipo: 'checkout' });
+      await saveCheckinDados({
+        dados: checkinDados,
+        contratoId: selected.id,
+        viaturaId: viatura.id,
+        userId,
+        tipo: 'checkout',
+      });
 
       if (files.length > 0) {
         const records: any[] = [];
@@ -150,9 +174,7 @@ export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = (
         if (error) throw error;
       }
 
-      await supabase.from('contratos')
-        .update({ checkout_pendente: false })
-        .eq('id', selected.id);
+      await supabase.from('contratos').update({ checkout_pendente: false }).eq('id', selected.id);
 
       queryClient.invalidateQueries({ queryKey: ['contratos-checkout-pendentes'] });
       queryClient.invalidateQueries({ queryKey: ['viaturas-calendario'] });
@@ -201,7 +223,13 @@ export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = (
             </p>
           </div>
           <Button onClick={handleConfirm} disabled={saving} className="shrink-0">
-            {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...</> : 'Confirmar'}
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...
+              </>
+            ) : (
+              'Confirmar'
+            )}
           </Button>
         </div>
 
@@ -209,7 +237,9 @@ export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = (
           <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
             <div className="rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-4 text-sm text-green-700 dark:text-green-300">
               <p className="font-medium">Check-out da viatura ao motorista.</p>
-              <p className="mt-0.5 opacity-80 text-xs">Preencha as condições da viatura no momento da entrega.</p>
+              <p className="mt-0.5 opacity-80 text-xs">
+                Preencha as condições da viatura no momento da entrega.
+              </p>
             </div>
 
             <CheckinDadosSection
@@ -229,10 +259,26 @@ export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = (
             <div className="space-y-3">
               <p className="text-sm font-medium leading-none">
                 Fotos / Vídeos{' '}
-                <span className="text-muted-foreground font-normal text-xs">(obrigatório se sem danos)</span>
+                <span className="text-muted-foreground font-normal text-xs">
+                  (obrigatório se sem danos)
+                </span>
               </p>
-              <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
-              <input ref={cameraInputRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileChange} />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*,video/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileChange}
+              />
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -253,17 +299,30 @@ export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = (
               </div>
               {files.length > 0 && (
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {files.map(f => (
-                    <div key={f.id} className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted">
-                      {f.preview
-                        ? <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
-                        : (
-                          <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
-                            <Film className="h-5 w-5 text-muted-foreground" />
-                            <span className="text-[10px] text-muted-foreground truncate w-full text-center">{f.file.name}</span>
-                          </div>
-                        )}
-                      <button type="button" onClick={() => removeFile(f.id)} className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white">
+                  {files.map((f) => (
+                    <div
+                      key={f.id}
+                      className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted"
+                    >
+                      {f.preview ? (
+                        <img
+                          src={f.preview}
+                          alt={f.file.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
+                          <Film className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-[10px] text-muted-foreground truncate w-full text-center">
+                            {f.file.name}
+                          </span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(f.id)}
+                        className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white"
+                      >
                         <X className="h-3 w-3" />
                       </button>
                     </div>
@@ -301,8 +360,11 @@ export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = (
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {pendentes.map(c => (
-                <div key={c.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
+              {pendentes.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors"
+                >
                   <div className="rounded-lg p-2 bg-green-500/10 shrink-0">
                     <Car className="h-4 w-4 text-green-600" />
                   </div>

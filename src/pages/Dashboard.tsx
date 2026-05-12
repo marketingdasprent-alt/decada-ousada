@@ -20,7 +20,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   ComposedChart,
   Bar,
@@ -35,7 +41,23 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { format, startOfWeek, startOfMonth, startOfQuarter, startOfYear, subMonths, subWeeks, endOfMonth, endOfWeek, parseISO, eachMonthOfInterval, eachWeekOfInterval, addMonths, addDays, subDays } from 'date-fns';
+import {
+  format,
+  startOfWeek,
+  startOfMonth,
+  startOfQuarter,
+  startOfYear,
+  subMonths,
+  subWeeks,
+  endOfMonth,
+  endOfWeek,
+  parseISO,
+  eachMonthOfInterval,
+  eachWeekOfInterval,
+  addMonths,
+  addDays,
+  subDays,
+} from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
@@ -85,7 +107,6 @@ function getPeriodRange(preset: PeriodPreset): DateRange {
   }
 }
 
-
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
 }
@@ -121,10 +142,19 @@ const Dashboard = () => {
   const [gestores, setGestores] = useState<{ id: string; nome: string }[]>([]);
 
   // State for each data section
-  const [fleet, setFleet] = useState<FleetCounts>({ total: 0, disponiveis: 0, ocupadas: 0, manutencao: 0 });
+  const [fleet, setFleet] = useState<FleetCounts>({
+    total: 0,
+    disponiveis: 0,
+    ocupadas: 0,
+    manutencao: 0,
+  });
   const [candidaturasPendentes, setCandidaturasPendentes] = useState(0);
   const [atividadeData, setAtividadeData] = useState<AtividadePoint[]>([]);
-  const [upgradeData, setUpgradeData] = useState<UpgradeData>({ count: 0, rendaAtual: 0, rendaAnterior: 0 });
+  const [upgradeData, setUpgradeData] = useState<UpgradeData>({
+    count: 0,
+    rendaAtual: 0,
+    rendaAnterior: 0,
+  });
   const [trocasCount, setTrocasCount] = useState(0);
   const [extintoresAPrazo, setExtintoresAPrazo] = useState<any[]>([]);
   const [contratosAPrazo, setContratosAPrazo] = useState<any[]>([]);
@@ -137,11 +167,11 @@ const Dashboard = () => {
       .select('id, nome')
       .in('cargo_id', [
         'fd39a12b-86c9-43c0-8ae3-d7b4e090e0a2', // Gestor TVDE
-        '0cf27801-80ff-4480-857e-e90bfb75d5a6',  // Supervisor Gestor TVDE
+        '0cf27801-80ff-4480-857e-e90bfb75d5a6', // Supervisor Gestor TVDE
       ])
       .order('nome', { ascending: true })
       .then(({ data }) => {
-        if (data) setGestores(data.filter(p => p.nome));
+        if (data) setGestores(data.filter((p) => p.nome));
       });
   }, []);
 
@@ -169,9 +199,9 @@ const Dashboard = () => {
 
       const fleetCounts: FleetCounts = {
         total: viaturas?.length || 0,
-        disponiveis: viaturas?.filter(v => v.status === 'disponivel').length || 0,
-        ocupadas: viaturas?.filter(v => v.status === 'em_uso').length || 0,
-        manutencao: viaturas?.filter(v => v.status === 'manutencao').length || 0,
+        disponiveis: viaturas?.filter((v) => v.status === 'disponivel').length || 0,
+        ocupadas: viaturas?.filter((v) => v.status === 'em_uso').length || 0,
+        manutencao: viaturas?.filter((v) => v.status === 'manutencao').length || 0,
       };
       setFleet(fleetCounts);
 
@@ -182,7 +212,8 @@ const Dashboard = () => {
 
       const { data: extintoresData } = await supabase
         .from('viaturas')
-        .select(`
+        .select(
+          `
           id,
           matricula,
           extintor_validade,
@@ -190,19 +221,20 @@ const Dashboard = () => {
             status,
             motoristas_ativos(nome)
           )
-        `)
+        `
+        )
         .not('extintor_validade', 'is', null)
         .lte('extintor_validade', extStrStr)
         .order('extintor_validade', { ascending: true });
 
       // Filtrar para pegar apenas o motorista ativo de cada viatura
-      const extintoresComMotorista = (extintoresData || []).map(v => {
-        const motoristaAtivo = (v.motorista_viaturas as any[])?.find(mv => mv.status === 'ativo');
+      const extintoresComMotorista = (extintoresData || []).map((v) => {
+        const motoristaAtivo = (v.motorista_viaturas as any[])?.find((mv) => mv.status === 'ativo');
         return {
           id: v.id,
           extintor_validade: v.extintor_validade,
           matricula: v.matricula,
-          motorista_nome: motoristaAtivo?.motoristas_ativos?.nome || 'Livre'
+          motorista_nome: motoristaAtivo?.motoristas_ativos?.nome || 'Livre',
         };
       });
 
@@ -212,20 +244,24 @@ const Dashboard = () => {
       // Renovação = data_inicio + duracao_meses meses; alerta 60 dias antes
       const { data: contratosAtivos } = await supabase
         .from('contratos')
-        .select('id, numero_contrato, data_inicio, duracao_meses, motorista_nome, motorista_id, viaturas:viatura_id(matricula)')
+        .select(
+          'id, numero_contrato, data_inicio, duracao_meses, motorista_nome, motorista_id, viaturas:viatura_id(matricula)'
+        )
         .eq('status', 'ativo')
         .not('data_inicio', 'is', null);
 
       const now = new Date();
-      const contratosRenovar = (contratosAtivos || []).filter((ct: any) => {
-        const renovacao = addMonths(new Date(ct.data_inicio), ct.duracao_meses ?? 12);
-        const diffDays = (renovacao.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-        return diffDays >= -30 && diffDays <= 60;
-      }).sort((a: any, b: any) => {
-        const ra = addMonths(new Date(a.data_inicio), a.duracao_meses ?? 12);
-        const rb = addMonths(new Date(b.data_inicio), b.duracao_meses ?? 12);
-        return ra.getTime() - rb.getTime();
-      });
+      const contratosRenovar = (contratosAtivos || [])
+        .filter((ct: any) => {
+          const renovacao = addMonths(new Date(ct.data_inicio), ct.duracao_meses ?? 12);
+          const diffDays = (renovacao.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+          return diffDays >= -30 && diffDays <= 60;
+        })
+        .sort((a: any, b: any) => {
+          const ra = addMonths(new Date(a.data_inicio), a.duracao_meses ?? 12);
+          const rb = addMonths(new Date(b.data_inicio), b.duracao_meses ?? 12);
+          return ra.getTime() - rb.getTime();
+        });
 
       setContratosAPrazo(contratosRenovar);
 
@@ -246,16 +282,18 @@ const Dashboard = () => {
         .lte('data_inicio', toStr);
       if (filtrarGestor) qAtividade = qAtividade.eq('criado_por', gestorFiltro);
       const { data: rawEventosAtividade } = await qAtividade;
-        
+
       const eventosAtividade = rawEventosAtividade || [];
 
       // Mapeamos os eventos de calendário com a respetiva viatura (para captar o valor de renda)
-      const atividadeComRenda = eventosAtividade.map(ev => {
+      const atividadeComRenda = eventosAtividade.map((ev) => {
         const matNorm = ev.titulo ? ev.titulo.replace(/[-\s]/g, '').toUpperCase() : '';
-        const vMatch = (viaturas || []).find(v => v.matricula && v.matricula.replace(/[-\s]/g, '').toUpperCase() === matNorm);
+        const vMatch = (viaturas || []).find(
+          (v) => v.matricula && v.matricula.replace(/[-\s]/g, '').toUpperCase() === matNorm
+        );
         return {
           ...ev,
-          valor_aluguer: Number(vMatch?.valor_aluguer || 0)
+          valor_aluguer: Number(vMatch?.valor_aluguer || 0),
         };
       });
 
@@ -281,7 +319,10 @@ const Dashboard = () => {
       for (const event of upgradeEvents || []) {
         if (event.matricula_devolver) {
           const matAntigaNormalized = event.matricula_devolver.replace(/[-\s]/g, '').toUpperCase();
-          const vAntiga = viaturasCompletas.find(v => v.matricula && v.matricula.replace(/[-\s]/g, '').toUpperCase() === matAntigaNormalized);
+          const vAntiga = viaturasCompletas.find(
+            (v) =>
+              v.matricula && v.matricula.replace(/[-\s]/g, '').toUpperCase() === matAntigaNormalized
+          );
           if (vAntiga) {
             rendaAnterior += Number(vAntiga.valor_aluguer || 0);
           }
@@ -289,7 +330,10 @@ const Dashboard = () => {
 
         if (event.titulo) {
           const matNovaNormalized = event.titulo.replace(/[-\s]/g, '').toUpperCase();
-          const vNova = viaturasCompletas.find(v => v.matricula && v.matricula.replace(/[-\s]/g, '').toUpperCase() === matNovaNormalized);
+          const vNova = viaturasCompletas.find(
+            (v) =>
+              v.matricula && v.matricula.replace(/[-\s]/g, '').toUpperCase() === matNovaNormalized
+          );
           if (vNova) {
             rendaAtual += Number(vNova.valor_aluguer || 0);
           }
@@ -313,7 +357,6 @@ const Dashboard = () => {
       const { count: trocas } = await qTrocas;
 
       setTrocasCount(trocas || 0);
-
     } catch (error: any) {
       console.error('Erro ao carregar dashboard:', error);
       toast({
@@ -338,21 +381,28 @@ const Dashboard = () => {
   ): AtividadePoint[] {
     const diffDays = (r.to.getTime() - r.from.getTime()) / (1000 * 60 * 60 * 24);
 
-    const calcBucket = (bucketStart: Date, bucketEnd: Date, label: string, periodo: string): AtividadePoint => {
+    const calcBucket = (
+      bucketStart: Date,
+      bucketEnd: Date,
+      label: string,
+      periodo: string
+    ): AtividadePoint => {
       const bStartStr = bucketStart.toISOString().split('T')[0];
       const bEndStr = bucketEnd.toISOString().split('T')[0];
 
-      const eventosBucket = eventos.filter(ev => {
+      const eventosBucket = eventos.filter((ev) => {
         const evDate = ev.data_inicio.split('T')[0];
         return evDate >= bStartStr && evDate <= bEndStr;
       });
 
       // Alugadas correspondentes a novas Entregas
-      const entregas = eventosBucket.filter(ev => ev.tipo === 'entrega');
+      const entregas = eventosBucket.filter((ev) => ev.tipo === 'entrega');
       const alugadas = entregas.length;
 
       // Devolvidas correspondentes a Recolhas/Devoluções
-      const devolvidas = eventosBucket.filter(ev => ev.tipo === 'devolucao' || ev.tipo === 'recolha').length;
+      const devolvidas = eventosBucket.filter(
+        (ev) => ev.tipo === 'devolucao' || ev.tipo === 'recolha'
+      ).length;
 
       // Rentabilidade contabiliza apenas as novas Entregas (geraram nova renda garantida)
       const rentabilidade = entregas.reduce((sum, ev) => sum + ev.valor_aluguer, 0);
@@ -365,19 +415,21 @@ const Dashboard = () => {
       return weeks.map((weekStart, i) => {
         const weekEnd = i + 1 < weeks.length ? new Date(weeks[i + 1].getTime() - 1) : r.to;
         return calcBucket(
-          weekStart, weekEnd,
+          weekStart,
+          weekEnd,
           `Semana ${format(weekStart, 'dd MMM', { locale: pt })}`,
-          format(weekStart, 'dd/MM', { locale: pt }),
+          format(weekStart, 'dd/MM', { locale: pt })
         );
       });
     } else {
       const months = eachMonthOfInterval({ start: r.from, end: r.to });
-      return months.map(monthStart => {
+      return months.map((monthStart) => {
         const monthEnd = endOfMonth(monthStart);
         return calcBucket(
-          monthStart, monthEnd,
+          monthStart,
+          monthEnd,
           format(monthStart, 'MMMM yyyy', { locale: pt }),
-          format(monthStart, 'MMM yy', { locale: pt }),
+          format(monthStart, 'MMM yy', { locale: pt })
         );
       });
     }
@@ -395,7 +447,7 @@ const Dashboard = () => {
 
   const CustomTooltipAtividade = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
-    const point = atividadeData.find(p => p.periodo === label);
+    const point = atividadeData.find((p) => p.periodo === label);
     return (
       <div className="bg-popover border border-border rounded-lg p-3 shadow-lg text-sm space-y-1">
         <p className="font-medium text-foreground mb-1">{point?.label || label}</p>
@@ -421,10 +473,10 @@ const Dashboard = () => {
     <div className="space-y-6">
       <StickyPageHeader
         title="Dashboard"
-        description={`Visão geral da operação — ${format(range.from, "dd MMM", { locale: pt })} a ${format(range.to, "dd MMM yyyy", { locale: pt })}`}
+        description={`Visão geral da operação — ${format(range.from, 'dd MMM', { locale: pt })} a ${format(range.to, 'dd MMM yyyy', { locale: pt })}`}
         icon={LayoutDashboard}
       >
-        {(Object.keys(PRESET_LABELS) as PeriodPreset[]).map(p => (
+        {(Object.keys(PRESET_LABELS) as PeriodPreset[]).map((p) => (
           <Button
             key={p}
             variant={preset === p ? 'default' : 'outline'}
@@ -442,8 +494,10 @@ const Dashboard = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os Gestores</SelectItem>
-            {gestores.map(g => (
-              <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
+            {gestores.map((g) => (
+              <SelectItem key={g.id} value={g.id}>
+                {g.nome}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -474,7 +528,9 @@ const Dashboard = () => {
             >
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Disponíveis</span>
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Disponíveis
+                  </span>
                   <Car className="h-4 w-4 text-green-500" />
                 </div>
                 <div className="text-3xl font-bold text-green-500">{fleet.disponiveis}</div>
@@ -489,7 +545,9 @@ const Dashboard = () => {
             >
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ocupadas</span>
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Ocupadas
+                  </span>
                   <Car className="h-4 w-4 text-blue-500" />
                 </div>
                 <div className="text-3xl font-bold text-blue-500">{fleet.ocupadas}</div>
@@ -504,7 +562,9 @@ const Dashboard = () => {
             >
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Em Reparação</span>
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Em Reparação
+                  </span>
                   <Wrench className="h-4 w-4 text-amber-500" />
                 </div>
                 <div className="text-3xl font-bold text-amber-500">{fleet.manutencao}</div>
@@ -519,13 +579,17 @@ const Dashboard = () => {
             >
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Candidatos</span>
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Candidatos
+                  </span>
                   <ClipboardCheck className="h-4 w-4 text-violet-500" />
                 </div>
                 <div className="text-3xl font-bold text-violet-500">{candidaturasPendentes}</div>
                 <div className="flex items-center gap-1 mt-1">
                   {candidaturasPendentes > 0 ? (
-                    <Badge variant="destructive" className="text-xs px-1.5 py-0">Pendentes</Badge>
+                    <Badge variant="destructive" className="text-xs px-1.5 py-0">
+                      Pendentes
+                    </Badge>
                   ) : (
                     <p className="text-xs text-muted-foreground">sem pendentes</p>
                   )}
@@ -542,16 +606,24 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <CardTitle className="text-base">Atividade & Rentabilidade</CardTitle>
-                    <CardDescription>Evolução de novas entregas de viaturas no período</CardDescription>
+                    <CardDescription>
+                      Evolução de novas entregas de viaturas no período
+                    </CardDescription>
                   </div>
                   <div className="flex gap-4 text-sm">
                     <div className="text-right">
-                      <div className="text-lg font-bold text-primary">{formatCurrency(totalRentabilidade)}</div>
+                      <div className="text-lg font-bold text-primary">
+                        {formatCurrency(totalRentabilidade)}
+                      </div>
                       <p className="text-xs text-muted-foreground">nova renda contratada</p>
                     </div>
                     <div className="flex flex-col items-end text-xs text-muted-foreground">
-                      <span>Alugadas <strong className="text-foreground">{totalAlugadas}</strong></span>
-                      <span>Devolvidas <strong className="text-foreground">{totalDevolvidas}</strong></span>
+                      <span>
+                        Alugadas <strong className="text-foreground">{totalAlugadas}</strong>
+                      </span>
+                      <span>
+                        Devolvidas <strong className="text-foreground">{totalDevolvidas}</strong>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -564,18 +636,60 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height={220}>
-                    <ComposedChart data={atividadeData} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+                    <ComposedChart
+                      data={atividadeData}
+                      margin={{ top: 4, right: 8, left: -10, bottom: 0 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="periodo" tick={{ fontSize: 11 }} />
-                      <YAxis yAxisId="euro" tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                      <YAxis yAxisId="count" orientation="right" tick={{ fontSize: 11 }} allowDecimals={false} />
-                      <Tooltip content={<CustomTooltipAtividade />} />
-                      <Legend wrapperStyle={{ fontSize: 12 }}
-                        formatter={v => v === 'rentabilidade' ? 'Renda (€)' : v === 'alugadas' ? 'Alugadas' : 'Devolvidas'}
+                      <YAxis
+                        yAxisId="euro"
+                        tick={{ fontSize: 11 }}
+                        tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
                       />
-                      <Bar yAxisId="euro" dataKey="rentabilidade" fill={COLORS.rentabilidade} radius={[4, 4, 0, 0]} name="rentabilidade" opacity={0.85} />
-                      <Line yAxisId="count" type="monotone" dataKey="alugadas" stroke={COLORS.alugadas} strokeWidth={2} dot={{ r: 3 }} name="alugadas" />
-                      <Line yAxisId="count" type="monotone" dataKey="devolvidas" stroke={COLORS.devolvidas} strokeWidth={2} dot={{ r: 3 }} name="devolvidas" />
+                      <YAxis
+                        yAxisId="count"
+                        orientation="right"
+                        tick={{ fontSize: 11 }}
+                        allowDecimals={false}
+                      />
+                      <Tooltip content={<CustomTooltipAtividade />} />
+                      <Legend
+                        wrapperStyle={{ fontSize: 12 }}
+                        formatter={(v) =>
+                          v === 'rentabilidade'
+                            ? 'Renda (€)'
+                            : v === 'alugadas'
+                              ? 'Alugadas'
+                              : 'Devolvidas'
+                        }
+                      />
+                      <Bar
+                        yAxisId="euro"
+                        dataKey="rentabilidade"
+                        fill={COLORS.rentabilidade}
+                        radius={[4, 4, 0, 0]}
+                        name="rentabilidade"
+                        opacity={0.85}
+                      />
+                      <Line
+                        yAxisId="count"
+                        type="monotone"
+                        dataKey="alugadas"
+                        stroke={COLORS.alugadas}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                        name="alugadas"
+                      />
+                      <Line
+                        yAxisId="count"
+                        type="monotone"
+                        dataKey="devolvidas"
+                        stroke={COLORS.devolvidas}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                        name="devolvidas"
+                      />
                     </ComposedChart>
                   </ResponsiveContainer>
                 )}
@@ -593,7 +707,10 @@ const Dashboard = () => {
                     </CardTitle>
                     <CardDescription>Expiração nos próximos 15 dias</CardDescription>
                   </div>
-                  <Badge variant="outline" className="font-mono text-orange-500 border-orange-500/20 bg-orange-500/10">
+                  <Badge
+                    variant="outline"
+                    className="font-mono text-orange-500 border-orange-500/20 bg-orange-500/10"
+                  >
                     {extintoresAPrazo.length} Pendentes
                   </Badge>
                 </div>
@@ -606,20 +723,36 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="space-y-3 mt-1 max-h-[200px] overflow-y-auto pr-1">
-                    {extintoresAPrazo.map(ext => {
+                    {extintoresAPrazo.map((ext) => {
                       const isExpired = new Date(ext.extintor_validade) < new Date();
                       return (
-                        <div key={ext.id} className="flex flex-col p-2.5 rounded-lg border border-border bg-muted/40 transition-colors hover:bg-muted">
+                        <div
+                          key={ext.id}
+                          className="flex flex-col p-2.5 rounded-lg border border-border bg-muted/40 transition-colors hover:bg-muted"
+                        >
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="font-semibold text-sm tracking-tight">{ext.matricula}</span>
-                            <Badge variant={isExpired ? "destructive" : "outline"} className={!isExpired ? "text-orange-500 border-orange-500/30 bg-orange-500/10 text-[10px]" : "text-[10px]"}>
+                            <span className="font-semibold text-sm tracking-tight">
+                              {ext.matricula}
+                            </span>
+                            <Badge
+                              variant={isExpired ? 'destructive' : 'outline'}
+                              className={
+                                !isExpired
+                                  ? 'text-orange-500 border-orange-500/30 bg-orange-500/10 text-[10px]'
+                                  : 'text-[10px]'
+                              }
+                            >
                               {format(new Date(ext.extintor_validade), 'dd MMM', { locale: pt })}
                             </Badge>
                           </div>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <span className="truncate pr-2">👤 {ext.motorista_nome}</span>
-                            <span className={isExpired ? "text-destructive font-medium shrink-0" : "shrink-0"}>
-                              {isExpired ? "Expirado" : "A expirar"}
+                            <span
+                              className={
+                                isExpired ? 'text-destructive font-medium shrink-0' : 'shrink-0'
+                              }
+                            >
+                              {isExpired ? 'Expirado' : 'A expirar'}
                             </span>
                           </div>
                         </div>
@@ -641,7 +774,10 @@ const Dashboard = () => {
                     </CardTitle>
                     <CardDescription>Renovação nos próximos 60 dias</CardDescription>
                   </div>
-                  <Badge variant="outline" className="font-mono text-blue-500 border-blue-500/20 bg-blue-500/10">
+                  <Badge
+                    variant="outline"
+                    className="font-mono text-blue-500 border-blue-500/20 bg-blue-500/10"
+                  >
                     {contratosAPrazo.length} Pendentes
                   </Badge>
                 </div>
@@ -660,7 +796,10 @@ const Dashboard = () => {
                       const viaturaStr = ct.viaturas?.matricula || '—';
 
                       return (
-                        <div key={ct.id} className="flex flex-col p-2.5 rounded-lg border border-border bg-muted/40 transition-colors hover:bg-muted">
+                        <div
+                          key={ct.id}
+                          className="flex flex-col p-2.5 rounded-lg border border-border bg-muted/40 transition-colors hover:bg-muted"
+                        >
                           <div className="flex items-center justify-between mb-1.5">
                             <div className="flex items-center gap-2">
                               {ct.numero_contrato != null && (
@@ -668,16 +807,29 @@ const Dashboard = () => {
                                   CT-{String(ct.numero_contrato).padStart(4, '0')}
                                 </span>
                               )}
-                              <span className="font-semibold text-sm tracking-tight truncate">{ct.motorista_nome}</span>
+                              <span className="font-semibold text-sm tracking-tight truncate">
+                                {ct.motorista_nome}
+                              </span>
                             </div>
-                            <Badge variant={isExpired ? "destructive" : "outline"} className={!isExpired ? "text-blue-500 border-blue-500/30 bg-blue-500/10 text-[10px] shrink-0" : "text-[10px] shrink-0"}>
+                            <Badge
+                              variant={isExpired ? 'destructive' : 'outline'}
+                              className={
+                                !isExpired
+                                  ? 'text-blue-500 border-blue-500/30 bg-blue-500/10 text-[10px] shrink-0'
+                                  : 'text-[10px] shrink-0'
+                              }
+                            >
                               {format(renovacao, 'dd MMM yyyy', { locale: pt })}
                             </Badge>
                           </div>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <span className="truncate pr-2">🚗 {viaturaStr}</span>
-                            <span className={isExpired ? "text-destructive font-medium shrink-0" : "shrink-0"}>
-                              {isExpired ? "Expirado" : "A renovar"}
+                            <span
+                              className={
+                                isExpired ? 'text-destructive font-medium shrink-0' : 'shrink-0'
+                              }
+                            >
+                              {isExpired ? 'Expirado' : 'A renovar'}
                             </span>
                           </div>
                         </div>
@@ -691,7 +843,6 @@ const Dashboard = () => {
 
           {/* ── Linha 4: Upgrade/Downgrade + Trocas ──────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
             {/* Upgrade / Downgrade */}
             <Card>
               <CardHeader className="pb-3">
@@ -713,16 +864,22 @@ const Dashboard = () => {
 
                 {/* Comparação de renda */}
                 <div className="rounded-lg bg-muted/50 p-4 space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Renda de Viaturas</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Renda de Viaturas
+                  </p>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-0.5">
                       <p className="text-xs text-muted-foreground">Período Anterior</p>
-                      <p className="text-lg font-bold text-foreground">{formatCurrency(upgradeData.rendaAnterior)}</p>
+                      <p className="text-lg font-bold text-foreground">
+                        {formatCurrency(upgradeData.rendaAnterior)}
+                      </p>
                     </div>
                     <div className="space-y-0.5">
                       <p className="text-xs text-muted-foreground">Período Atual</p>
-                      <p className="text-lg font-bold text-foreground">{formatCurrency(upgradeData.rendaAtual)}</p>
+                      <p className="text-lg font-bold text-foreground">
+                        {formatCurrency(upgradeData.rendaAtual)}
+                      </p>
                     </div>
                   </div>
 
@@ -734,16 +891,24 @@ const Dashboard = () => {
                         ) : (
                           <TrendingDown className="h-4 w-4 text-red-500" />
                         )}
-                        <span className={`text-sm font-semibold ${rendaDiff.up ? 'text-green-500' : 'text-red-500'}`}>
-                          {rendaDiff.up ? '+' : '-'}{rendaDiff.pct.toFixed(1)}%
+                        <span
+                          className={`text-sm font-semibold ${rendaDiff.up ? 'text-green-500' : 'text-red-500'}`}
+                        >
+                          {rendaDiff.up ? '+' : '-'}
+                          {rendaDiff.pct.toFixed(1)}%
                         </span>
                         <span className="text-xs text-muted-foreground">vs período anterior</span>
-                        <span className={`text-sm font-medium ml-auto ${rendaDiff.up ? 'text-green-500' : 'text-red-500'}`}>
-                          {rendaDiff.up ? '+' : ''}{formatCurrency(upgradeData.rendaAtual - upgradeData.rendaAnterior)}
+                        <span
+                          className={`text-sm font-medium ml-auto ${rendaDiff.up ? 'text-green-500' : 'text-red-500'}`}
+                        >
+                          {rendaDiff.up ? '+' : ''}
+                          {formatCurrency(upgradeData.rendaAtual - upgradeData.rendaAnterior)}
                         </span>
                       </>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Sem dados do período anterior</span>
+                      <span className="text-xs text-muted-foreground">
+                        Sem dados do período anterior
+                      </span>
                     )}
                   </div>
                 </div>
@@ -771,7 +936,9 @@ const Dashboard = () => {
 
                 {/* Métricas complementares */}
                 <div className="rounded-lg bg-muted/50 p-4 space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Atividade da Frota</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Atividade da Frota
+                  </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-0.5">
                       <p className="text-xs text-muted-foreground">Alugadas</p>
@@ -785,8 +952,11 @@ const Dashboard = () => {
                   <div className="pt-1 border-t border-border">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Saldo líquido</span>
-                      <span className={`font-semibold ${totalAlugadas - totalDevolvidas >= 0 ? 'text-blue-500' : 'text-red-500'}`}>
-                        {totalAlugadas - totalDevolvidas >= 0 ? '+' : ''}{totalAlugadas - totalDevolvidas} viaturas
+                      <span
+                        className={`font-semibold ${totalAlugadas - totalDevolvidas >= 0 ? 'text-blue-500' : 'text-red-500'}`}
+                      >
+                        {totalAlugadas - totalDevolvidas >= 0 ? '+' : ''}
+                        {totalAlugadas - totalDevolvidas} viaturas
                       </span>
                     </div>
                   </div>

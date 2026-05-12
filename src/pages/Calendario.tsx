@@ -56,17 +56,15 @@ const Calendario: React.FC = () => {
   useEffect(() => {
     const channel = supabase
       .channel('calendario-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'calendario_eventos' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['calendario-eventos'] });
-          queryClient.invalidateQueries({ queryKey: ['lista-espera-count'] });
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'calendario_eventos' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['calendario-eventos'] });
+        queryClient.invalidateQueries({ queryKey: ['lista-espera-count'] });
+      })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [queryClient]);
 
   const { data: recolhasPendentes = [] } = useQuery({
@@ -113,8 +111,15 @@ const Calendario: React.FC = () => {
     queryKey: ['calendario-eventos', currentMonth.getFullYear(), currentMonth.getMonth()],
     queryFn: async () => {
       const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59);
-      
+      const endOfMonth = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth() + 1,
+        0,
+        23,
+        59,
+        59
+      );
+
       // Extend range to cover visible days from adjacent months
       startOfMonth.setDate(startOfMonth.getDate() - 7);
       endOfMonth.setDate(endOfMonth.getDate() + 7);
@@ -129,7 +134,7 @@ const Calendario: React.FC = () => {
       if (error) throw error;
 
       // Buscar nomes dos criadores em separado
-      const criadorIds = [...new Set((data || []).map(e => e.criado_por))];
+      const criadorIds = [...new Set((data || []).map((e) => e.criado_por))];
       let profilesMap: Record<string, string> = {};
       if (criadorIds.length > 0) {
         const { data: profiles } = await supabase
@@ -137,11 +142,11 @@ const Calendario: React.FC = () => {
           .select('id, nome')
           .in('id', criadorIds);
         if (profiles) {
-          profilesMap = Object.fromEntries(profiles.map(p => [p.id, p.nome || '']));
+          profilesMap = Object.fromEntries(profiles.map((p) => [p.id, p.nome || '']));
         }
       }
 
-      return (data || []).map(e => ({
+      return (data || []).map((e) => ({
         ...e,
         profiles: profilesMap[e.criado_por] ? { nome: profilesMap[e.criado_por] } : null,
       })) as CalendarioEvento[];
@@ -181,10 +186,7 @@ const Calendario: React.FC = () => {
             .eq('id', contrato.viatura_id);
 
           if (contrato.status === 'ativo') {
-            await supabase
-              .from('contratos')
-              .update({ status: 'encerrado' })
-              .eq('id', contrato.id);
+            await supabase.from('contratos').update({ status: 'encerrado' }).eq('id', contrato.id);
           }
         } else if (evento.motorista_id) {
           // Orphan case: old flow created motorista_viaturas without a contrato
@@ -238,127 +240,140 @@ const Calendario: React.FC = () => {
 
   return (
     <>
-    <ListaEsperaDrawer
-      open={listaEsperaOpen}
-      onOpenChange={setListaEsperaOpen}
-      canManage={canManageListaEspera}
-    />
-    <RecolhasPendentesDrawer
-      open={recolhasPendentesOpen}
-      onOpenChange={setRecolhasPendentesOpen}
-      userId={user?.id || ''}
-    />
-    <CheckOutPendentesDrawer
-      open={checkoutPendentesOpen}
-      onOpenChange={setCheckoutPendentesOpen}
-      userId={user?.id || ''}
-    />
-    {novoEventoOpen && (
-      <NovoEventoPage
-        userId={user?.id || ''}
-        defaultDate={selectedDay || undefined}
-        onClose={() => setNovoEventoOpen(false)}
+      <ListaEsperaDrawer
+        open={listaEsperaOpen}
+        onOpenChange={setListaEsperaOpen}
+        canManage={canManageListaEspera}
       />
-    )}
-    {editingEvento && (
-      <EventoDialog
-        evento={editingEvento}
+      <RecolhasPendentesDrawer
+        open={recolhasPendentesOpen}
+        onOpenChange={setRecolhasPendentesOpen}
         userId={user?.id || ''}
-        onClose={() => setEditingEvento(null)}
       />
-    )}
-    <div className="space-y-6">
-      <StickyPageHeader
-        title="Calendário"
-        description="Agendamento de entregas, devoluções e manutenções"
-        icon={CalendarDays}
-      >
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setListaEsperaOpen(true)}
-            className="relative gap-2"
-          >
-            <Clock className="h-4 w-4 text-pink-500" />
-            <span className="hidden sm:inline">Lista de Espera</span>
-            {listaEsperaCount > 0 && (
-              <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-pink-500 text-white border-0">
-                {listaEsperaCount}
-              </Badge>
+      <CheckOutPendentesDrawer
+        open={checkoutPendentesOpen}
+        onOpenChange={setCheckoutPendentesOpen}
+        userId={user?.id || ''}
+      />
+      {novoEventoOpen && (
+        <NovoEventoPage
+          userId={user?.id || ''}
+          defaultDate={selectedDay || undefined}
+          onClose={() => setNovoEventoOpen(false)}
+        />
+      )}
+      {editingEvento && (
+        <EventoDialog
+          evento={editingEvento}
+          userId={user?.id || ''}
+          onClose={() => setEditingEvento(null)}
+        />
+      )}
+      <div className="space-y-6">
+        <StickyPageHeader
+          title="Calendário"
+          description="Agendamento de entregas, devoluções e manutenções"
+          icon={CalendarDays}
+        >
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setListaEsperaOpen(true)}
+              className="relative gap-2"
+            >
+              <Clock className="h-4 w-4 text-pink-500" />
+              <span className="hidden sm:inline">Lista de Espera</span>
+              {listaEsperaCount > 0 && (
+                <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-pink-500 text-white border-0">
+                  {listaEsperaCount}
+                </Badge>
+              )}
+            </Button>
+            {hasPermission('calendario_exportar') && (
+              <Button variant="outline" size="icon" onClick={() => setRelatorioOpen(true)}>
+                <FileDown className="h-4 w-4" />
+              </Button>
             )}
-          </Button>
-          {hasPermission('calendario_exportar') && (
-            <Button variant="outline" size="icon" onClick={() => setRelatorioOpen(true)}>
-              <FileDown className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={() => setConfigOpen(true)}>
+              <Settings className="h-4 w-4" />
             </Button>
-          )}
-          <Button variant="outline" size="icon" onClick={() => setConfigOpen(true)}>
-            <Settings className="h-4 w-4" />
-          </Button>
-          {hasPermission('calendario_recolhas') && (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => setCheckoutPendentesOpen(true)}
-                className="relative gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Check Out</span>
-                {checkoutPendentes.length > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-green-600 text-white border-0">
-                    {checkoutPendentes.length}
-                  </Badge>
-                )}
+            {hasPermission('calendario_recolhas') && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setCheckoutPendentesOpen(true)}
+                  className="relative gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">Check Out</span>
+                  {checkoutPendentes.length > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-green-600 text-white border-0">
+                      {checkoutPendentes.length}
+                    </Badge>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setRecolhasPendentesOpen(true)}
+                  className="relative gap-2"
+                >
+                  <PackageCheck className="h-4 w-4" />
+                  <span className="hidden sm:inline">Check In</span>
+                  {recolhasPendentes.length > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-orange-500 text-white border-0">
+                      {recolhasPendentes.length}
+                    </Badge>
+                  )}
+                </Button>
+              </>
+            )}
+            {hasPermission('calendario_criar') && (
+              <Button onClick={handleNew} className="gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Novo Evento</span>
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setRecolhasPendentesOpen(true)}
-                className="relative gap-2"
-              >
-                <PackageCheck className="h-4 w-4" />
-                <span className="hidden sm:inline">Check In</span>
-                {recolhasPendentes.length > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-orange-500 text-white border-0">
-                    {recolhasPendentes.length}
-                  </Badge>
-                )}
-              </Button>
-            </>
-          )}
-          {hasPermission('calendario_criar') && (
-            <Button onClick={handleNew} className="gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Novo Evento</span>
-            </Button>
-          )}
-        </div>
-      </StickyPageHeader>
+            )}
+          </div>
+        </StickyPageHeader>
 
-      <CalendarioGrid
-        eventos={eventos}
-        currentMonth={currentMonth}
-        onMonthChange={setCurrentMonth}
-        onEventClick={(hasPermission('calendario_editar') || hasPermission('calendario_gerir_todos'))
-          ? (ev) => { if (ev.tipo === 'lista_espera' && !canManageListaEspera) return; handleEdit(ev); }
-          : undefined}
-        onDeleteEvent={(hasPermission('calendario_eliminar') || hasPermission('calendario_gerir_todos')) ? (id) => deleteMutation.mutate(id) : undefined}
-        onEventDetails={handleDetails}
-        onDaySelect={setSelectedDay}
-        isLoading={isLoading}
-        currentUserId={user?.id}
-        canEditAll={hasPermission('calendario_gerir_todos')}
-      />
+        <CalendarioGrid
+          eventos={eventos}
+          currentMonth={currentMonth}
+          onMonthChange={setCurrentMonth}
+          onEventClick={
+            hasPermission('calendario_editar') || hasPermission('calendario_gerir_todos')
+              ? (ev) => {
+                  if (ev.tipo === 'lista_espera' && !canManageListaEspera) return;
+                  handleEdit(ev);
+                }
+              : undefined
+          }
+          onDeleteEvent={
+            hasPermission('calendario_eliminar') || hasPermission('calendario_gerir_todos')
+              ? (id) => deleteMutation.mutate(id)
+              : undefined
+          }
+          onEventDetails={handleDetails}
+          onDaySelect={setSelectedDay}
+          isLoading={isLoading}
+          currentUserId={user?.id}
+          canEditAll={hasPermission('calendario_gerir_todos')}
+        />
 
-<EventoHistoricoDialog
-        open={historicoOpen}
-        onOpenChange={setHistoricoOpen}
-        evento={detailsEvento}
-      />
+        <EventoHistoricoDialog
+          open={historicoOpen}
+          onOpenChange={setHistoricoOpen}
+          evento={detailsEvento}
+        />
 
-      <CalendarioConfig open={configOpen} onOpenChange={setConfigOpen} userId={user?.id || ''} />
+        <CalendarioConfig open={configOpen} onOpenChange={setConfigOpen} userId={user?.id || ''} />
 
-      <RelatorioDialog open={relatorioOpen} onOpenChange={setRelatorioOpen} currentMonth={currentMonth} />
-    </div>
+        <RelatorioDialog
+          open={relatorioOpen}
+          onOpenChange={setRelatorioOpen}
+          currentMonth={currentMonth}
+        />
+      </div>
     </>
   );
 };

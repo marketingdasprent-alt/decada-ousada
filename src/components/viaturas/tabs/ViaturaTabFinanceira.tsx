@@ -21,7 +21,24 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Loader2, Wallet, Building2, Calendar, Coins, History, Tag, Check, X, Minus, FileBarChart, ExternalLink, Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import {
+  Save,
+  Loader2,
+  Wallet,
+  Building2,
+  Calendar,
+  Coins,
+  History,
+  Tag,
+  Check,
+  X,
+  Minus,
+  FileBarChart,
+  ExternalLink,
+  Plus,
+  TrendingUp,
+  TrendingDown,
+} from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,19 +51,29 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ViaturaFinanceiraResumoCards } from './ViaturaFinanceiraResumoCards';
-import { ViaturaFinanceiraReceitas, ViaturaFinanceiraDespesas } from './ViaturaFinanceiraMovimentos';
+import {
+  ViaturaFinanceiraReceitas,
+  ViaturaFinanceiraDespesas,
+} from './ViaturaFinanceiraMovimentos';
 import type { ReceitasData } from './ViaturaFinanceiraMovimentos';
 
 const financeiraSchema = z.object({
   tipo_frota: z.string().optional(),
   tipo_financiamento: z.string().optional(),
-  
+
   // Custos
   custo_viatura: z.string().optional(),
   custos_operacionais: z.string().optional(),
@@ -54,7 +81,7 @@ const financeiraSchema = z.object({
   impostos_aquisicao: z.string().optional(),
   total_viatura: z.string().optional(),
   iva_tipo: z.string().optional(),
-  
+
   // Plano de Financiamento
   data_primeiro_pagamento: z.string().optional(),
   num_prestacoes: z.string().optional(),
@@ -62,11 +89,11 @@ const financeiraSchema = z.object({
   valor_residual: z.string().optional(),
   limite_kms: z.string().optional(),
   custo_km_adicional: z.string().optional(),
-  
+
   // Datas
   data_aquisicao: z.string().optional(),
   data_validade_financeira: z.string().optional(),
-  
+
   // Depreciação
   metodo_depreciacao: z.string().optional(),
   vida_util_anos: z.string().optional(),
@@ -113,7 +140,6 @@ interface ViaturaTabFinanceiraProps {
   onUpdate: () => void;
 }
 
-
 export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceiraProps) {
   const [saving, setSaving] = useState(false);
   const [showChecklistModal, setShowChecklistModal] = useState(false);
@@ -124,7 +150,7 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
     danos: 0,
     outros: 0,
     reembolsos: 0,
-    loading: false
+    loading: false,
   });
   const [checklist, setChecklist] = useState<Record<string, 'check' | 'x' | 'minus'>>({
     'Antena Exterior': 'minus',
@@ -132,7 +158,7 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
     'Pneu Suplente': 'minus',
     'Triangulo Sinalização': 'minus',
     'Colete Refletor': 'minus',
-    'Buzina': 'minus',
+    Buzina: 'minus',
     'Fugas de Fluidos/Oleo Visiveis': 'minus',
     'Estado das Jantas': 'minus',
     'Funcionamento Sensores de Estacionamento': 'minus',
@@ -211,7 +237,9 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
           tipo_frota: data.tipo_frota,
           tipo_financiamento: data.tipo_financiamento,
           custo_viatura: data.custo_viatura ? parseFloat(data.custo_viatura) : null,
-          custos_operacionais: data.custos_operacionais ? parseFloat(data.custos_operacionais) : null,
+          custos_operacionais: data.custos_operacionais
+            ? parseFloat(data.custos_operacionais)
+            : null,
           custos_adicionais: data.custos_adicionais ? parseFloat(data.custos_adicionais) : null,
           impostos_aquisicao: data.impostos_aquisicao ? parseFloat(data.impostos_aquisicao) : null,
           total_viatura: data.total_viatura ? parseFloat(data.total_viatura) : null,
@@ -227,7 +255,11 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
           metodo_depreciacao: data.metodo_depreciacao,
           vida_util_anos: data.vida_util_anos ? parseInt(data.vida_util_anos) : 5,
           is_vendida: data.is_vendida,
-          status: data.is_vendida ? 'vendida' : (viatura.status === 'vendida' ? 'disponivel' : viatura.status),
+          status: data.is_vendida
+            ? 'vendida'
+            : viatura.status === 'vendida'
+              ? 'disponivel'
+              : viatura.status,
           data_venda: data.data_venda || null,
           valor_venda: data.valor_venda ? parseFloat(data.valor_venda) : null,
           venda_observacoes: data.venda_observacoes || null,
@@ -240,7 +272,9 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
       onUpdate();
     } catch (error) {
       console.error('Erro ao atualizar ficha financeira:', error);
-      toast.error('Erro ao atualizar dados financeiros. Verifique se as colunas existem na base de dados.');
+      toast.error(
+        'Erro ao atualizar dados financeiros. Verifique se as colunas existem na base de dados.'
+      );
     } finally {
       setSaving(false);
     }
@@ -259,8 +293,14 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
   const showPlanoFinanciamento = form.watch('tipo_financiamento') !== 'sem_financiamento';
 
   // Cálculo automático do Total
-  const watchedFields = form.watch(['custo_viatura', 'custos_operacionais', 'custos_adicionais', 'impostos_aquisicao', 'iva_tipo']);
-  
+  const watchedFields = form.watch([
+    'custo_viatura',
+    'custos_operacionais',
+    'custos_adicionais',
+    'impostos_aquisicao',
+    'iva_tipo',
+  ]);
+
   useEffect(() => {
     const cv = parseFloat(watchedFields[0]) || 0;
     const co = parseFloat(watchedFields[1]) || 0;
@@ -270,19 +310,19 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
 
     const subtotal = cv + co + ca + im;
     let taxMultiplier = 1;
-    
+
     if (iva === '23%') taxMultiplier = 1.23;
     else if (iva === '16%') taxMultiplier = 1.16;
     else if (iva === '6%') taxMultiplier = 1.06;
-    
+
     const total = subtotal * taxMultiplier;
     form.setValue('total_viatura', total.toFixed(2), { shouldDirty: true });
   }, [watchedFields, form]);
 
   const loadReceitas = async () => {
     if (!viatura?.id) return;
-    
-    setReceitas(prev => ({ ...prev, loading: true }));
+
+    setReceitas((prev) => ({ ...prev, loading: true }));
     try {
       // 1. Obter todas as associações de motoristas com esta viatura
       const { data: associacoes, error: assocError } = await supabase
@@ -299,7 +339,7 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
       let totalReembolsos = 0;
 
       if (associacoes && associacoes.length > 0) {
-        const motoristaIds = associacoes.map(a => a.motorista_id);
+        const motoristaIds = associacoes.map((a) => a.motorista_id);
 
         // A. Contratos (renda_viatura) e Outros
         const { data: finData } = await supabase
@@ -315,9 +355,18 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
 
         // C. Combustível
         const [bpRes, repsolRes, edpRes] = await Promise.all([
-          supabase.from('bp_transacoes').select('amount, transaction_date, motorista_id').in('motorista_id', motoristaIds),
-          supabase.from('repsol_transacoes').select('amount, transaction_date, motorista_id').in('motorista_id', motoristaIds),
-          supabase.from('edp_transacoes').select('amount, transaction_date, motorista_id').in('motorista_id', motoristaIds)
+          supabase
+            .from('bp_transacoes')
+            .select('amount, transaction_date, motorista_id')
+            .in('motorista_id', motoristaIds),
+          supabase
+            .from('repsol_transacoes')
+            .select('amount, transaction_date, motorista_id')
+            .in('motorista_id', motoristaIds),
+          supabase
+            .from('edp_transacoes')
+            .select('amount, transaction_date, motorista_id')
+            .in('motorista_id', motoristaIds),
         ]);
 
         // Agregar dados respeitando os períodos de associação
@@ -326,32 +375,32 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
           const fim = assoc.data_fim ? new Date(assoc.data_fim) : new Date();
 
           // Filtrar financeiro
-          const finFiltrado = (finData || []).filter(f => {
+          const finFiltrado = (finData || []).filter((f) => {
             const d = new Date(f.data_movimento);
             return f.motorista_id === assoc.motorista_id && d >= inicio && d <= fim;
           });
-          
+
           totalContratos += finFiltrado
-            .filter(f => f.categoria === 'renda_viatura')
+            .filter((f) => f.categoria === 'renda_viatura')
             .reduce((acc, curr) => {
               const val = Number(curr.valor) || 0;
               return acc + (curr.tipo === 'debito' ? val : -val);
             }, 0);
-          
+
           totalOutros += finFiltrado
-            .filter(f => f.categoria === 'outro')
+            .filter((f) => f.categoria === 'outro')
             .reduce((acc, curr) => {
               const val = Number(curr.valor) || 0;
               return acc + (curr.tipo === 'debito' ? val : -val);
             }, 0);
-          
+
           totalReembolsos += finFiltrado
-            .filter(f => f.tipo === 'credito')
+            .filter((f) => f.tipo === 'credito')
             .reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0);
 
           // Filtrar portagens
           totalPortagens += (boltData || [])
-            .filter(b => {
+            .filter((b) => {
               if (b.motorista_id !== assoc.motorista_id) return false;
               const pInicio = b.periodo_inicio ? new Date(b.periodo_inicio) : null;
               const pFim = b.periodo_fim ? new Date(b.periodo_fim) : null;
@@ -365,8 +414,8 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
           const fuelItems = [
             ...(bpRes.data || []),
             ...(repsolRes.data || []),
-            ...(edpRes.data || [])
-          ].filter(f => {
+            ...(edpRes.data || []),
+          ].filter((f) => {
             const d = new Date(f.transaction_date || f.data_movimento);
             return f.motorista_id === assoc.motorista_id && d >= inicio && d <= fim;
           });
@@ -380,8 +429,11 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
         .from('viatura_reparacoes')
         .select('custo')
         .eq('viatura_id', viatura.id);
-      
-      const totalDanos = (reparacoesData || []).reduce((acc, curr) => acc + (Number(curr.custo) || 0), 0);
+
+      const totalDanos = (reparacoesData || []).reduce(
+        (acc, curr) => acc + (Number(curr.custo) || 0),
+        0
+      );
 
       setReceitas({
         contratos: totalContratos,
@@ -390,12 +442,12 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
         danos: totalDanos,
         outros: totalOutros,
         reembolsos: totalReembolsos,
-        loading: false
+        loading: false,
       });
     } catch (error) {
       console.error('Erro ao carregar receitas:', error);
       toast.error('Erro ao carregar dados de receitas.');
-      setReceitas(prev => ({ ...prev, loading: false }));
+      setReceitas((prev) => ({ ...prev, loading: false }));
     }
   };
 
@@ -404,12 +456,12 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
     const cost = parseFloat(form.watch('total_viatura') || '0');
     const years = parseInt(form.watch('vida_util_anos') || '5');
     const method = form.watch('metodo_depreciacao') || 'linear';
-    
+
     if (cost <= 0 || years <= 0) return [];
-    
+
     const schedule = [];
     let currentBookValue = cost;
-    
+
     if (method === 'linear') {
       const annualDepreciation = cost / years;
       for (let i = 1; i <= years; i++) {
@@ -417,18 +469,18 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
         schedule.push({
           ano: i,
           depreciacaoAnual: annualDepreciation,
-          valorContabil: Math.max(0, currentBookValue)
+          valorContabil: Math.max(0, currentBookValue),
         });
       }
     } else if (method === 'reducao_dupla') {
-      const rate = (2 / years);
+      const rate = 2 / years;
       for (let i = 1; i <= years; i++) {
         const annualDepreciation = currentBookValue * rate;
         currentBookValue -= annualDepreciation;
         schedule.push({
           ano: i,
           depreciacaoAnual: annualDepreciation,
-          valorContabil: Math.max(0, currentBookValue)
+          valorContabil: Math.max(0, currentBookValue),
         });
       }
     } else if (method === 'soma_digitos') {
@@ -440,11 +492,11 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
         schedule.push({
           ano: i,
           depreciacaoAnual: annualDepreciation,
-          valorContabil: Math.max(0, currentBookValue)
+          valorContabil: Math.max(0, currentBookValue),
         });
       }
     }
-    
+
     return schedule;
   };
 
@@ -464,8 +516,8 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
         totalReceitasVal,
         totalDespesasVal,
         lucroOperacional,
-        rentabilidadePerc
-      }
+        rentabilidadePerc,
+      },
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -483,23 +535,27 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
   // Cálculos de Resumo para os Cards Superiores
   const totalAquisicaoVal = parseFloat(form.watch('total_viatura') || '0');
   const totalReceitasVal = (receitas.contratos || 0) + (receitas.outros || 0);
-  const totalDespesasVal = (receitas.combustivel || 0) + (receitas.portagens || 0) + (receitas.danos || 0);
+  const totalDespesasVal =
+    (receitas.combustivel || 0) + (receitas.portagens || 0) + (receitas.danos || 0);
   const lucroOperacional = totalReceitasVal - totalDespesasVal;
-  const rentabilidadePerc = totalAquisicaoVal > 0 ? (lucroOperacional / totalAquisicaoVal) * 100 : 0;
+  const rentabilidadePerc =
+    totalAquisicaoVal > 0 ? (lucroOperacional / totalAquisicaoVal) * 100 : 0;
 
   const calculateRestanteFinanciamento = () => {
     const tipo = form.watch('tipo_financiamento');
     if (tipo === 'sem_financiamento' || !tipo) return 'N/A';
-    
+
     const dataInicioStr = form.watch('data_primeiro_pagamento');
     const totalPrestacoes = parseInt(form.watch('num_prestacoes') || '0');
-    
+
     if (!dataInicioStr || totalPrestacoes === 0) return '0';
-    
+
     const dataInicio = new Date(dataInicioStr);
     const hoje = new Date();
-    
-    const diffMeses = (hoje.getFullYear() - dataInicio.getFullYear()) * 12 + (hoje.getMonth() - dataInicio.getMonth());
+
+    const diffMeses =
+      (hoje.getFullYear() - dataInicio.getFullYear()) * 12 +
+      (hoje.getMonth() - dataInicio.getMonth());
     const restante = Math.max(0, totalPrestacoes - diffMeses);
     return restante.toString();
   };
@@ -666,15 +722,17 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
                       name="total_viatura"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="font-bold text-primary">Total da Viatura (€)</FormLabel>
+                          <FormLabel className="font-bold text-primary">
+                            Total da Viatura (€)
+                          </FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              step="0.01" 
-                              placeholder="0.00" 
-                              className="border-primary/50 font-bold bg-primary/5 cursor-not-allowed" 
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              className="border-primary/50 font-bold bg-primary/5 cursor-not-allowed"
                               readOnly
-                              {...field} 
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -878,13 +936,16 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="linear">
-                                <span className="font-bold">Linear</span>: Distribui o custo de forma igual ao longo dos anos.
+                                <span className="font-bold">Linear</span>: Distribui o custo de
+                                forma igual ao longo dos anos.
                               </SelectItem>
                               <SelectItem value="reducao_dupla">
-                                <span className="font-bold">Redução Dupla</span>: Aplica uma taxa de depreciação que é o dobro da linear.
+                                <span className="font-bold">Redução Dupla</span>: Aplica uma taxa de
+                                depreciação que é o dobro da linear.
                               </SelectItem>
                               <SelectItem value="soma_digitos">
-                                <span className="font-bold">Soma dos Dígitos dos Anos</span>: Abordagem acelerada baseada na soma dos dígitos da vida útil.
+                                <span className="font-bold">Soma dos Dígitos dos Anos</span>:
+                                Abordagem acelerada baseada na soma dos dígitos da vida útil.
                               </SelectItem>
                             </SelectContent>
                           </Select>
@@ -957,10 +1018,18 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
                         <tr key={item.ano} className="border-b hover:bg-muted/30">
                           <td className="p-3 font-medium">{item.ano}º Ano</td>
                           <td className="p-3 text-right font-bold text-red-600">
-                            €{item.depreciacaoAnual.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            €
+                            {item.depreciacaoAnual.toLocaleString('pt-PT', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
                           </td>
                           <td className="p-3 text-right font-bold">
-                            €{item.valorContabil.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            €
+                            {item.valorContabil.toLocaleString('pt-PT', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
                           </td>
                         </tr>
                       ))}
@@ -979,7 +1048,9 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
                 <div className="flex items-center gap-4 p-4 border rounded-xl bg-muted/30">
                   <div className="space-y-0.5">
                     <Label className="text-base">Viatura Vendida</Label>
-                    <p className="text-sm text-muted-foreground">Marque aqui se a viatura foi vendida</p>
+                    <p className="text-sm text-muted-foreground">
+                      Marque aqui se a viatura foi vendida
+                    </p>
                   </div>
                   <FormField
                     control={form.control}
@@ -987,10 +1058,7 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
                         </FormControl>
                       </FormItem>
                     )}
@@ -1009,7 +1077,7 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
                       <DialogHeader>
                         <DialogTitle>Relatório de Saída - Checklist</DialogTitle>
                       </DialogHeader>
-                      
+
                       {/* Legendas */}
                       <div className="flex items-center gap-6 p-3 bg-muted/50 rounded-lg border text-sm justify-center mb-2">
                         <div className="flex items-center gap-2 text-green-600 font-medium">
@@ -1028,15 +1096,24 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
 
                       <div className="grid gap-3 py-2 max-h-[60vh] overflow-y-auto pr-2">
                         {Object.entries(checklist).map(([item, state]) => (
-                          <div key={item} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/20 transition-colors">
+                          <div
+                            key={item}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/20 transition-colors"
+                          >
                             <span className="font-medium text-sm">{item}</span>
                             <div className="flex items-center gap-2">
                               <Button
                                 type="button"
                                 size="sm"
                                 variant={state === 'check' ? 'default' : 'outline'}
-                                className={state === 'check' ? 'bg-green-600 hover:bg-green-700 w-10 h-10' : 'w-10 h-10'}
-                                onClick={() => setChecklist(prev => ({ ...prev, [item]: 'check' }))}
+                                className={
+                                  state === 'check'
+                                    ? 'bg-green-600 hover:bg-green-700 w-10 h-10'
+                                    : 'w-10 h-10'
+                                }
+                                onClick={() =>
+                                  setChecklist((prev) => ({ ...prev, [item]: 'check' }))
+                                }
                               >
                                 <Check className="h-4 w-4" />
                               </Button>
@@ -1044,8 +1121,12 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
                                 type="button"
                                 size="sm"
                                 variant={state === 'x' ? 'destructive' : 'outline'}
-                                className={state === 'x' ? 'bg-red-600 hover:bg-red-700 w-10 h-10' : 'w-10 h-10'}
-                                onClick={() => setChecklist(prev => ({ ...prev, [item]: 'x' }))}
+                                className={
+                                  state === 'x'
+                                    ? 'bg-red-600 hover:bg-red-700 w-10 h-10'
+                                    : 'w-10 h-10'
+                                }
+                                onClick={() => setChecklist((prev) => ({ ...prev, [item]: 'x' }))}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -1053,8 +1134,14 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
                                 type="button"
                                 size="sm"
                                 variant={state === 'minus' ? 'secondary' : 'outline'}
-                                className={state === 'minus' ? 'bg-slate-500 text-white hover:bg-slate-600 w-10 h-10' : 'w-10 h-10'}
-                                onClick={() => setChecklist(prev => ({ ...prev, [item]: 'minus' }))}
+                                className={
+                                  state === 'minus'
+                                    ? 'bg-slate-500 text-white hover:bg-slate-600 w-10 h-10'
+                                    : 'w-10 h-10'
+                                }
+                                onClick={() =>
+                                  setChecklist((prev) => ({ ...prev, [item]: 'minus' }))
+                                }
                               >
                                 <Minus className="h-4 w-4" />
                               </Button>
@@ -1063,16 +1150,28 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
                         ))}
                       </div>
                       <DialogFooter>
-                        <Button onClick={() => setShowChecklistModal(false)}>Confirmar Checklist</Button>
+                        <Button onClick={() => setShowChecklistModal(false)}>
+                          Confirmar Checklist
+                        </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                  
-                  <Button type="button" variant="outline" onClick={handleCreateInvoice} className="flex items-center gap-2">
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCreateInvoice}
+                    className="flex items-center gap-2"
+                  >
                     <Plus className="h-4 w-4" />
                     Criar Fatura
                   </Button>
-                  <Button type="button" variant="outline" onClick={handleExportData} className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleExportData}
+                    className="flex items-center gap-2"
+                  >
                     <ExternalLink className="h-4 w-4" />
                     Exportar
                   </Button>
