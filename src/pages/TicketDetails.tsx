@@ -8,7 +8,6 @@ import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import {
   ArrowLeft,
-  ArrowRight,
   Wrench,
   Car,
   User,
@@ -28,9 +27,6 @@ import {
   ParkingSquare,
   Search,
   Wallet,
-  ChevronLeft,
-  ChevronRight,
-  Play,
   PlayCircle,
   UserPlus,
   Users,
@@ -42,6 +38,9 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { AssistenciaMultimediaUpload } from '@/components/assistencia/AssistenciaMultimediaUpload';
+import { TicketMediaLightbox } from '@/components/assistencia/TicketMediaLightbox';
+import { TicketGalleryDialog } from '@/components/assistencia/TicketGalleryDialog';
+import { TicketAccessPanel, type TicketAccessPanelRef } from '@/components/assistencia/TicketAccessPanel';
 import {
   Dialog,
   DialogContent,
@@ -66,56 +65,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-interface Ticket {
-  id: string;
-  numero: number;
-  titulo: string;
-  descricao: string | null;
-  prioridade: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  data_estimada: string | null;
-  data_resolucao: string | null;
-  viatura_id: string;
-  motorista_id: string | null;
-  categoria_id: string | null;
-  criado_por: string | null;
-  atribuido_a: string | null;
-  km_inicio: number | null;
-  km_fim: number | null;
-  combustivel_inicio: string | null;
-  combustivel_fim: string | null;
-  valor_reparacao: number | null;
-  cobrar_motorista: boolean;
-  viatura_substituta_id: string | null;
-}
-
-interface Mensagem {
-  id: string;
-  mensagem: string;
-  tipo: string;
-  created_at: string;
-  autor: {
-    id: string;
-    nome: string;
-    cargo?: string;
-    grupo?: { nome: string };
-  } | null;
-  anexos?: Anexo[];
-}
-
-interface Anexo {
-  id: string;
-  nome_ficheiro: string;
-  ficheiro_url: string;
-  tipo_ficheiro: string | null;
-  tamanho: number | null;
-  created_at: string;
-  mensagem_id: string | null;
-  tipo_inspecao?: string | null;
-  legenda?: string | null;
-}
+import type { TicketRaw as Ticket, TicketMensagem as Mensagem, TicketAnexo as Anexo, TicketCategoria as Categoria } from '@/types/ticket';
 
 interface Viatura {
   id: string;
@@ -131,11 +81,6 @@ interface Motorista {
   telefone: string | null;
 }
 
-interface Categoria {
-  id: string;
-  nome: string;
-  cor: string;
-}
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pendente:     { label: 'Pendente de Aprovação', color: 'bg-purple-600', icon: <Clock className="h-4 w-4" /> },
@@ -180,12 +125,8 @@ const TicketDetails = () => {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [currentMediaList, setCurrentMediaList] = useState<any[]>([]);
   const [acessos, setAcessos] = useState<any[]>([]);
-  const [showAddAccessDialog, setShowAddAccessDialog] = useState(false);
-  const [showAllAccessDialog, setShowAllAccessDialog] = useState(false);
+  const accessPanelRef = useRef<TicketAccessPanelRef>(null);
   const [showGalleryDialog, setShowGalleryDialog] = useState(false);
-  const [searchUser, setSearchUser] = useState('');
-  const [allProfiles, setAllProfiles] = useState<any[]>([]);
-  const [addingUser, setAddingUser] = useState(false);
   const [editingLegenda, setEditingLegenda] = useState<{ id: string, legenda: string } | null>(null);
   const [updatingLegenda, setUpdatingLegenda] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -373,7 +314,7 @@ const TicketDetails = () => {
       
       // Separar a lógica de mensagens para poder atualizar em tempo real
       await fetchMensagensAndAnexos(ticketData.id);
-      await fetchAcessos(ticketData.id);
+      await accessPanelRef.current?.fetchAcessos(ticketData.id);
 
     } catch (error: any) {
       console.error('Erro ao carregar ticket:', error);
@@ -497,54 +438,6 @@ const TicketDetails = () => {
     }
   };
 
-  const fetchAcessos = async (ticketIdOverride?: string) => {
-    const targetId = ticketIdOverride || id;
-    if (!targetId) return;
-    try {
-      const GESTOR_ASSISTENCIA_CARGO_IDS = ['d8680e20-5025-47c1-bcc0-ae432f8afb96'];
-
-      const [accessRes, ticketRes, adminsRes, gestoresByIdRes, gestoresByNomeRes] = await Promise.all([
-        supabase
-          .from('assistencia_ticket_acessos')
-          .select(`profile_id, profiles!profile_id (id, nome, cargo, is_admin, cargo_id)`)
-          .eq('ticket_id', targetId),
-        supabase.from('assistencia_tickets').select('criado_por').eq('id', targetId).single(),
-        supabase.from('profiles').select('id, nome, cargo, is_admin, cargo_id').eq('is_admin', true),
-        supabase.from('profiles').select('id, nome, cargo, is_admin, cargo_id').in('cargo_id', GESTOR_ASSISTENCIA_CARGO_IDS),
-        supabase.from('profiles').select('id, nome, cargo, is_admin, cargo_id').ilike('cargo', '%Gestor%Assist%'),
-      ]);
-
-      const peopleMap = new Map<string, any>();
-
-      // Admins e Gestores de Assistência têm sempre acesso (grupo)
-      adminsRes.data?.forEach(p => peopleMap.set(p.id, p));
-      gestoresByIdRes.data?.forEach(p => peopleMap.set(p.id, p));
-      gestoresByNomeRes.data?.forEach(p => peopleMap.set(p.id, p));
-      
-      // Criador do ticket também tem acesso
-      if (ticketRes.data?.criado_por) {
-        const { data: creator } = await supabase
-          .from('profiles')
-          .select('id, nome, cargo, is_admin, grupo:cargo_id(nome)')
-          .eq('id', ticketRes.data.criado_por)
-          .single();
-        if (creator) peopleMap.set(creator.id, creator);
-      }
-
-      // Adicionar utilizadores com acesso explícito
-      accessRes.data?.forEach((acc: any) => {
-        if (acc.profiles) {
-          peopleMap.set(acc.profiles.id, acc.profiles);
-        }
-      });
-
-      const finalList = Array.from(peopleMap.values());
-      setAcessos(finalList);
-    } catch (error) {
-      console.error('Erro ao buscar acessos:', error);
-    }
-  };
-
   const handleUpdateLegenda = async () => {
     if (!editingLegenda) return;
     
@@ -564,103 +457,6 @@ const TicketDetails = () => {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } finally {
       setUpdatingLegenda(false);
-    }
-  };
-
-  const fetchAcessosFallback = async () => {
-    if (!id) return;
-    const { data: ticketData } = await supabase.from('assistencia_tickets').select('criado_por, atribuido_a').eq('id', id).single();
-    if (ticketData) {
-      const ids = [ticketData.criado_por, ticketData.atribuido_a].filter(Boolean) as string[];
-      const { data: profs } = await supabase.from('profiles').select('id, nome, cargo, is_admin, grupo:cargo_id(nome)').in('id', ids);
-      setAcessos(profs || []);
-    }
-  };
-
-  const fetchAllProfiles = async () => {
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, nome, is_admin, cargo, created_at')
-        .or('is_admin.eq.true,cargo.neq.null')
-        .not('cargo', 'ilike', '%motorista%')
-        .not('cargo', 'ilike', '%condutor%')
-        .order('nome')
-        .limit(100);
-      
-      const seenNames = new Set();
-      const filtered = (data || []).filter(p => {
-        if (!p.nome) return false;
-        const isStaff = p.is_admin || (p.cargo && p.cargo.length > 2);
-        if (!isStaff) return false;
-        
-        if (seenNames.has(p.nome)) return false;
-        seenNames.add(p.nome);
-        return true;
-      });
-      
-      setAllProfiles(filtered);
-    } catch (error) {
-      console.error('Erro ao buscar perfis:', error);
-    }
-  };
-
-  const handleAddAccess = async (profileId: string) => {
-    try {
-      setAddingUser(true);
-      
-      // 1. Tentar inserir na tabela de acessos
-      const { error } = await supabase
-        .from('assistencia_ticket_acessos')
-        .insert({
-          ticket_id: id,
-          profile_id: profileId
-        });
-
-      if (error) {
-        console.error('Erro ao adicionar acesso:', error);
-        // Se a tabela não existir (42P01), fazemos o fallback para o atribuido_a (campo antigo)
-        if (error.code === '42P01') {
-          console.log('Tabela assistencia_ticket_acessos não existe. Usando fallback...');
-          const { error: fallbackError } = await supabase
-            .from('assistencia_tickets')
-            .update({ atribuido_a: profileId })
-            .eq('id', id);
-          
-          if (fallbackError) throw fallbackError;
-        } else {
-          throw error;
-        }
-      }
-      
-      toast({ title: 'Acesso concedido', description: 'O utilizador foi adicionado ao ticket.' });
-      setShowAddAccessDialog(false);
-      fetchAcessos();
-    } catch (error: any) {
-      if (error.code === '23505') {
-        toast({ title: 'Aviso', description: 'Este utilizador já tem acesso ao ticket.' });
-      } else {
-        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-      }
-    } finally {
-      setAddingUser(false);
-    }
-  };
-
-  const handleRemoveAccess = async (profileId: string) => {
-    try {
-      const { error } = await supabase
-        .from('assistencia_ticket_acessos')
-        .delete()
-        .eq('ticket_id', id)
-        .eq('profile_id', profileId);
-
-      if (error) throw error;
-      
-      toast({ title: 'Acesso removido' });
-      fetchAcessos();
-    } catch (error: any) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -1506,20 +1302,17 @@ const TicketDetails = () => {
             variant="outline" 
             size="sm" 
             className="h-8 px-2 text-xs gap-1"
-            onClick={() => setShowAllAccessDialog(true)}
+            onClick={() => accessPanelRef.current?.openAllDialog()}
           >
             <Users className="h-3.5 w-3.5" />
             <span className="hidden xs:inline">Acessos</span>
           </Button>
           {canManageAccess && (
-            <Button 
-              variant="outline" 
-              size="icon" 
+            <Button
+              variant="outline"
+              size="icon"
               className="h-8 w-8 text-primary shadow-sm hover:bg-primary/5"
-              onClick={() => {
-                fetchAllProfiles();
-                setShowAddAccessDialog(true);
-              }}
+              onClick={() => accessPanelRef.current?.openAddDialog()}
             >
               <UserPlus className="h-3.5 w-3.5" />
             </Button>
@@ -1932,91 +1725,13 @@ const TicketDetails = () => {
         </div>
       </div>
 
-      {/* Modal Adicionar Acesso */}
-      <Dialog open={showAddAccessDialog} onOpenChange={setShowAddAccessDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Conceder Acesso ao Ticket</DialogTitle>
-            <DialogDescription className="sr-only">Pesquise e selecione utilizadores para dar acesso a este ticket.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Pesquisar utilizador..." 
-                className="pl-9"
-                value={searchUser}
-                onChange={(e) => setSearchUser(e.target.value)}
-              />
-            </div>
-            <ScrollArea className="h-[300px]">
-              <div className="space-y-2">
-                {allProfiles
-                  .filter(p => p.nome?.toLowerCase().includes(searchUser.toLowerCase()))
-                  .map(profile => (
-                    <button
-                      key={profile.id}
-                      onClick={() => handleAddAccess(profile.id)}
-                      disabled={addingUser}
-                      className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-muted transition-colors text-left"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xs">
-                          {profile.nome?.substring(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">{profile.nome}</p>
-                          <p className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-2">
-                            <span>{profile.is_admin ? 'Administrador' : (profile.cargo || 'Sem Cargo')}</span>
-                            {profile.created_at && (
-                              <span className="opacity-50 font-normal">Criado em: {new Date(profile.created_at).toLocaleDateString()}</span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      {addingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4 text-muted-foreground" />}
-                    </button>
-                  ))}
-              </div>
-            </ScrollArea>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Modal Ver Todos os Acessos */}
-      <Dialog open={showAllAccessDialog} onOpenChange={setShowAllAccessDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Pessoas com Acesso</DialogTitle>
-            <DialogDescription className="sr-only">Lista de todos os utilizadores que têm acesso a este ticket.</DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-4">
-              {acessos.map(user => (
-                <div key={user.id} className="flex items-center gap-3 p-2 rounded-lg border bg-muted/30">
-                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center font-bold">
-                    {user.nome?.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{user.nome}</p>
-                    <p className="text-xs text-muted-foreground uppercase">{user.cargo || 'Colaborador'}</p>
-                  </div>
-                  {canManageAccess && user.id !== ticket?.criado_por && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => handleRemoveAccess(user.id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      <TicketAccessPanel
+        ref={accessPanelRef}
+        ticketId={id!}
+        criadoPor={ticket.criado_por}
+        canManageAccess={canManageAccess}
+        onAcessosChange={setAcessos}
+      />
 
       {/* Modal de seleção de viatura substituta */}
       <Dialog open={showSubstituteModal} onOpenChange={setShowSubstituteModal}>
@@ -2066,95 +1781,15 @@ const TicketDetails = () => {
           </div>
         </DialogContent>
       </Dialog>
-      {/* Lightbox Galeria */}
-      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 bg-black/95 border-none flex flex-col items-center justify-center overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Visualização de Multimédia</DialogTitle>
-            <DialogDescription>Visualização em ecrã inteiro de fotos e vídeos do ticket.</DialogDescription>
-          </DialogHeader>
-          <div className="absolute top-4 right-4 z-50 flex gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-white hover:bg-white/20 rounded-full"
-              onClick={() => downloadMedia(currentMediaList[currentMediaIndex]?.ficheiro_url, currentMediaList[currentMediaIndex]?.nome_ficheiro)}
-            >
-              <Download className="h-5 w-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-white hover:bg-white/20 rounded-full"
-              onClick={() => setLightboxOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-
-          <div className="relative w-full h-full flex items-center justify-center p-4 sm:p-12">
-            {currentMediaList.length > 1 && (
-              <>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute left-2 sm:left-6 z-40 text-white hover:bg-white/20 rounded-full h-12 w-12"
-                  onClick={prevMedia}
-                >
-                  <ChevronLeft className="h-8 w-8" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-2 sm:right-6 z-40 text-white hover:bg-white/20 rounded-full h-12 w-12"
-                  onClick={nextMedia}
-                >
-                  <ChevronRight className="h-8 w-8" />
-                </Button>
-              </>
-            )}
-
-            <div className="max-w-full max-h-full flex flex-col items-center gap-4">
-              {currentMediaList[currentMediaIndex]?.tipo_ficheiro === 'video' || currentMediaList[currentMediaIndex]?.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i) ? (
-                <video 
-                  src={currentMediaList[currentMediaIndex]?.ficheiro_url} 
-                  controls 
-                  autoPlay 
-                  className="max-w-full max-h-[75vh] rounded-lg shadow-2xl"
-                />
-              ) : (
-                <img 
-                  src={currentMediaList[currentMediaIndex]?.ficheiro_url} 
-                  alt="Preview" 
-                  className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
-                />
-              )}
-              
-              <div className="text-white text-center space-y-3 bg-black/60 p-4 rounded-xl backdrop-blur-md max-w-xl border border-white/10 shadow-2xl">
-                {currentMediaList[currentMediaIndex]?.legenda ? (
-                  <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Legenda</p>
-                    <p className="text-lg text-green-400 font-semibold leading-tight">
-                      {currentMediaList[currentMediaIndex]?.legenda}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-xs text-white/30 italic">Sem legenda definida</p>
-                )}
-                
-                <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-4">
-                  <p className="text-[10px] text-white/40 truncate max-w-[200px]">
-                    {currentMediaList[currentMediaIndex]?.nome_ficheiro}
-                  </p>
-                  <p className="text-[10px] font-mono text-white/40 whitespace-nowrap">
-                    {currentMediaIndex + 1} / {currentMediaList.length}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <TicketMediaLightbox
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+        mediaList={currentMediaList}
+        currentIndex={currentMediaIndex}
+        onNext={nextMedia}
+        onPrev={prevMedia}
+        onDownload={downloadMedia}
+      />
 
       {/* Modal Editar Legenda */}
       <Dialog open={!!editingLegenda} onOpenChange={(open) => !open && setEditingLegenda(null)}>
@@ -2414,88 +2049,13 @@ const TicketDetails = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de Galeria Completa */}
-      <Dialog open={showGalleryDialog} onOpenChange={setShowGalleryDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Image className="h-5 w-5 text-primary" />
-              Galeria de Multimédia - Ticket #{String(ticket.numero).padStart(4, '0')}
-            </DialogTitle>
-            <DialogDescription>
-              Visualize todas as fotos e vídeos registados nesta assistência.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <ScrollArea className="flex-1 mt-4">
-            <div className="space-y-8 p-1">
-              {/* Check-in Group */}
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2 border-b pb-2">
-                  <ArrowRight className="h-4 w-4 text-blue-500" /> Check-in de Entrada
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {anexos.filter(a => !a.tipo_inspecao || a.tipo_inspecao === 'checkin' || a.tipo_inspecao === 'entrada').length === 0 ? (
-                    <p className="col-span-full text-sm text-muted-foreground italic py-4 text-center">Nenhuma média de entrada registada.</p>
-                  ) : (
-                    anexos.filter(a => !a.tipo_inspecao || a.tipo_inspecao === 'checkin' || a.tipo_inspecao === 'entrada').map((anexo) => {
-                      const isVideo = anexo.tipo_ficheiro === 'video' || anexo.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i);
-                      return (
-                        <div key={anexo.id} className="group relative aspect-square rounded-lg border overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}>
-                          {isVideo ? (
-                            <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                              <PlayCircle className="h-10 w-10 text-white/70" />
-                            </div>
-                          ) : (
-                            <img src={anexo.ficheiro_url} className="w-full h-full object-cover" alt="" />
-                          )}
-                          {anexo.legenda && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] p-1 truncate">
-                              {anexo.legenda}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-
-              {/* Check-out Group */}
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2 border-b pb-2">
-                  <ArrowLeft className="h-4 w-4 text-green-500" /> Check-out de Saída
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {anexos.filter(a => a.tipo_inspecao === 'checkout' || a.tipo_inspecao === 'saida').length === 0 ? (
-                    <p className="col-span-full text-sm text-muted-foreground italic py-4 text-center">Nenhuma média de saída registada.</p>
-                  ) : (
-                    anexos.filter(a => a.tipo_inspecao === 'checkout' || a.tipo_inspecao === 'saida').map((anexo) => {
-                      const isVideo = anexo.tipo_ficheiro === 'video' || anexo.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i);
-                      return (
-                        <div key={anexo.id} className="group relative aspect-square rounded-lg border overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => openLightbox(anexos, anexos.indexOf(anexo))}>
-                          {isVideo ? (
-                            <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                              <PlayCircle className="h-10 w-10 text-white/70" />
-                            </div>
-                          ) : (
-                            <img src={anexo.ficheiro_url} className="w-full h-full object-cover" alt="" />
-                          )}
-                          {anexo.legenda && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] p-1 truncate">
-                              {anexo.legenda}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      <TicketGalleryDialog
+        open={showGalleryDialog}
+        onOpenChange={setShowGalleryDialog}
+        anexos={anexos}
+        ticketNumero={ticket.numero}
+        onOpenLightbox={openLightbox}
+      />
     </div>
   );
 };

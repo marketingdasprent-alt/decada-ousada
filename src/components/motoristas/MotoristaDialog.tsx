@@ -43,7 +43,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Motorista } from "@/pages/Motoristas";
 import { PhoneInput } from "@/components/ui/phone-input";
-import { DocumentUploader } from "@/components/motorista/DocumentUploader";
+import { DocumentUploader } from "@/components/motorista-portal/DocumentUploader";
 import { Loader2, X, Check, ChevronsUpDown } from "lucide-react";
 
 // Validar que o ano da data está entre 1900 e 2100

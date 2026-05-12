@@ -187,27 +187,26 @@ const Dashboard = () => {
 
       setExtintoresAPrazo(extintoresComMotorista);
 
-      // ── Contratos a expirar (15 dias) ──────────────────────────────────────
-      // Expiry = assinatura + 12 meses; queremos expiry <= hoje + 15 dias
-      // => assinatura <= hoje + 15 dias - 12 meses
-      const upperContrato = addMonths(addDays(new Date(), 15), -12);
-      const lowerContrato = addMonths(subDays(new Date(), 30), -12);
-
-      const { data: contratosData } = await supabase
-        .from('motorista_viaturas')
-        .select(`
-          id,
-          contrato_prestacao_assinatura,
-          motoristas_ativos ( nome ),
-          viaturas ( matricula )
-        `)
+      // ── Contratos a renovar (60 dias) — tabela contratos ──────────────────
+      // Renovação = data_inicio + duracao_meses meses; alerta 60 dias antes
+      const { data: contratosAtivos } = await supabase
+        .from('contratos')
+        .select('id, numero_contrato, data_inicio, duracao_meses, motorista_nome, motorista_id, viaturas:viatura_id(matricula)')
         .eq('status', 'ativo')
-        .not('contrato_prestacao_assinatura', 'is', null)
-        .gte('contrato_prestacao_assinatura', lowerContrato.toISOString().split('T')[0])
-        .lte('contrato_prestacao_assinatura', upperContrato.toISOString().split('T')[0])
-        .order('contrato_prestacao_assinatura', { ascending: true });
+        .not('data_inicio', 'is', null);
 
-      setContratosAPrazo(contratosData || []);
+      const now = new Date();
+      const contratosRenovar = (contratosAtivos || []).filter((ct: any) => {
+        const renovacao = addMonths(new Date(ct.data_inicio), ct.duracao_meses ?? 12);
+        const diffDays = (renovacao.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+        return diffDays >= -30 && diffDays <= 60;
+      }).sort((a: any, b: any) => {
+        const ra = addMonths(new Date(a.data_inicio), a.duracao_meses ?? 12);
+        const rb = addMonths(new Date(b.data_inicio), b.duracao_meses ?? 12);
+        return ra.getTime() - rb.getTime();
+      });
+
+      setContratosAPrazo(contratosRenovar);
 
       // ── 2. Candidaturas pendentes ────────────────────────────────────
       const { count: pendentes } = await supabase
@@ -592,16 +591,16 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Contratos a Expirar */}
+            {/* Contratos a Renovar */}
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
                       <ClipboardList className="h-4 w-4 text-blue-500" />
-                      Contratos a Expirar
+                      Contratos a Renovar
                     </CardTitle>
-                    <CardDescription>Expiração nos próximos 15 dias</CardDescription>
+                    <CardDescription>Renovação nos próximos 60 dias</CardDescription>
                   </div>
                   <Badge variant="outline" className="font-mono text-blue-500 border-blue-500/20 bg-blue-500/10">
                     {contratosAPrazo.length} Pendentes
@@ -612,28 +611,34 @@ const Dashboard = () => {
                 {contratosAPrazo.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
                     <AlertCircle className="h-10 w-10 mb-2 opacity-20 text-green-500" />
-                    <p className="text-sm">Sem contratos a expirar em breve</p>
+                    <p className="text-sm">Sem contratos a renovar em breve</p>
                   </div>
                 ) : (
                   <div className="space-y-3 mt-1 max-h-[200px] overflow-y-auto pr-1">
-                    {contratosAPrazo.map(ct => {
-                      const motoristaStr = (ct.motoristas_ativos as any)?.nome || 'Sem motorista';
-                      const viaturaStr = (ct.viaturas as any)?.matricula || 'Sem viatura';
-                      const expiryDate = addMonths(new Date(ct.contrato_prestacao_assinatura), 12);
-                      const isExpired = expiryDate < new Date();
+                    {contratosAPrazo.map((ct: any) => {
+                      const renovacao = addMonths(new Date(ct.data_inicio), ct.duracao_meses ?? 12);
+                      const isExpired = renovacao < new Date();
+                      const viaturaStr = ct.viaturas?.matricula || '—';
 
                       return (
                         <div key={ct.id} className="flex flex-col p-2.5 rounded-lg border border-border bg-muted/40 transition-colors hover:bg-muted">
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="font-semibold text-sm tracking-tight">{viaturaStr}</span>
-                            <Badge variant={isExpired ? "destructive" : "outline"} className={!isExpired ? "text-blue-500 border-blue-500/30 bg-blue-500/10 text-[10px]" : "text-[10px]"}>
-                              {format(expiryDate, 'dd MMM', { locale: pt })}
+                            <div className="flex items-center gap-2">
+                              {ct.numero_contrato != null && (
+                                <span className="font-mono text-[10px] text-muted-foreground">
+                                  CT-{String(ct.numero_contrato).padStart(4, '0')}
+                                </span>
+                              )}
+                              <span className="font-semibold text-sm tracking-tight truncate">{ct.motorista_nome}</span>
+                            </div>
+                            <Badge variant={isExpired ? "destructive" : "outline"} className={!isExpired ? "text-blue-500 border-blue-500/30 bg-blue-500/10 text-[10px] shrink-0" : "text-[10px] shrink-0"}>
+                              {format(renovacao, 'dd MMM yyyy', { locale: pt })}
                             </Badge>
                           </div>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="truncate pr-2">👤 {motoristaStr}</span>
+                            <span className="truncate pr-2">🚗 {viaturaStr}</span>
                             <span className={isExpired ? "text-destructive font-medium shrink-0" : "shrink-0"}>
-                              {isExpired ? "Expirado" : "A expirar"}
+                              {isExpired ? "Expirado" : "A renovar"}
                             </span>
                           </div>
                         </div>

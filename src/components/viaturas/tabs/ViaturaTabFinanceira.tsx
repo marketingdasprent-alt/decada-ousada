@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Loader2, Wallet, Building2, Calendar, Coins, History, Tag, Check, X, Minus, FileBarChart, ExternalLink, Plus, TrendingUp, Zap, Fuel, Activity, FileText, RefreshCw, TrendingDown } from 'lucide-react';
+import { Save, Loader2, Wallet, Building2, Calendar, Coins, History, Tag, Check, X, Minus, FileBarChart, ExternalLink, Plus, TrendingUp, TrendingDown } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,6 +39,9 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { ViaturaFinanceiraResumoCards } from './ViaturaFinanceiraResumoCards';
+import { ViaturaFinanceiraReceitas, ViaturaFinanceiraDespesas } from './ViaturaFinanceiraMovimentos';
+import type { ReceitasData } from './ViaturaFinanceiraMovimentos';
 
 const financeiraSchema = z.object({
   tipo_frota: z.string().optional(),
@@ -110,15 +113,6 @@ interface ViaturaTabFinanceiraProps {
   onUpdate: () => void;
 }
 
-interface ReceitasData {
-  contratos: number;
-  portagens: number;
-  combustivel: number;
-  danos: number;
-  outros: number;
-  reembolsos: number;
-  loading: boolean;
-}
 
 export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceiraProps) {
   const [saving, setSaving] = useState(false);
@@ -514,66 +508,13 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
 
   return (
     <div className="space-y-6">
-      {/* Financial Summary Cards - New Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="bg-background border-border shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Custo Aquisição</p>
-              <Coins className="h-4 w-4 text-primary" />
-            </div>
-            <div className="text-xl font-bold">€{totalAquisicaoVal.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-background border-border shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Restante Financiamento</p>
-              <Calendar className="h-4 w-4 text-blue-500" />
-            </div>
-            <div className="text-xl font-bold">{restanteMeses} {restanteMeses !== 'N/A' ? 'meses' : ''}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-background border-border shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Receitas Totais</p>
-              <TrendingUp className="h-4 w-4 text-green-500" />
-            </div>
-            <div className="text-xl font-bold text-green-600 dark:text-green-400">€{totalReceitasVal.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-background border-border shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Despesas Totais</p>
-              <TrendingDown className="h-4 w-4 text-red-500" />
-            </div>
-            <div className="text-xl font-bold text-red-600 dark:text-red-400">€{totalDespesasVal.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-          </CardContent>
-        </Card>
-
-        <Card className={cn(
-          "border-border shadow-sm",
-          rentabilidadePerc >= 0 ? "bg-green-50/50 dark:bg-green-950/20" : "bg-red-50/50 dark:bg-red-950/20"
-        )}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Rentabilidade</p>
-              <Activity className="h-4 w-4 text-primary" />
-            </div>
-            <div className={cn(
-              "text-xl font-bold",
-              rentabilidadePerc >= 0 ? "text-primary" : "text-red-500"
-            )}>
-              {rentabilidadePerc.toFixed(2)}%
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <ViaturaFinanceiraResumoCards
+        totalAquisicaoVal={totalAquisicaoVal}
+        restanteMeses={restanteMeses}
+        totalReceitasVal={totalReceitasVal}
+        totalDespesasVal={totalDespesasVal}
+        rentabilidadePerc={rentabilidadePerc}
+      />
 
       <Tabs defaultValue="aquisicao" className="w-full">
         <TabsList className="grid w-full grid-cols-1 md:w-auto md:inline-flex">
@@ -1231,188 +1172,11 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
         </TabsContent>
 
         <TabsContent value="receitas" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Coins className="h-4 w-4 text-green-500" />
-                  Contratos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {receitas.loading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                ) : (
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    €{receitas.contratos.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">Total de rendas recebidas</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-purple-500/10 to-violet-500/5 border-purple-500/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-purple-500" />
-                  Outros Ganhos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {receitas.loading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                ) : (
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    €{receitas.outros.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">Ajustes e extras</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 flex flex-col justify-center">
-              <CardContent className="pt-6">
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm font-medium text-muted-foreground">Balanço Operacional</p>
-                  <p className={cn(
-                    "text-3xl font-black",
-                    ((receitas.contratos || 0) + (receitas.outros || 0) - (receitas.portagens || 0) - (receitas.combustivel || 0) - (receitas.danos || 0)) >= 0 
-                      ? "text-primary" 
-                      : "text-red-500"
-                  )}>
-                    €{((receitas.contratos || 0) + (receitas.outros || 0) - (receitas.portagens || 0) - (receitas.combustivel || 0) - (receitas.danos || 0)).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                  <Button variant="ghost" size="sm" onClick={loadReceitas} className="w-fit h-7 px-2 text-[10px] uppercase tracking-wider font-bold">
-                    <RefreshCw className="h-3 w-3 mr-1" /> Atualizar Dados
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="mt-8 p-4 bg-muted/30 rounded-xl border border-dashed text-center">
-            <p className="text-sm text-muted-foreground">
-              Os dados acima são calculados automaticamente com base nas associações temporais dos motoristas a esta viatura e nos registos financeiros correspondentes.
-            </p>
-          </div>
+          <ViaturaFinanceiraReceitas receitas={receitas} loadReceitas={loadReceitas} />
         </TabsContent>
 
         <TabsContent value="despesas" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-gradient-to-br from-red-500/10 to-rose-500/5 border-red-500/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4 text-red-500" />
-                  Total de Despesas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {receitas.loading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                ) : (
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                    €{(receitas.combustivel + receitas.portagens + receitas.danos).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">Soma de todos os custos</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border-orange-500/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <RefreshCw className="h-4 w-4 text-orange-500" />
-                  Reembolsos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {receitas.loading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                ) : (
-                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                    €{receitas.reembolsos.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">Total de créditos/devoluções</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border-blue-500/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-blue-500" />
-                  Portagens
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {receitas.loading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                ) : (
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    €{receitas.portagens.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">Custos de via verde/passagens</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-slate-500/10 to-slate-500/5 border-slate-500/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-slate-500" />
-                  Portagens Operacionais
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {receitas.loading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                ) : (
-                  <p className="text-2xl font-bold text-slate-600 dark:text-slate-400">
-                    €0,00
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">Custos operacionais de estrutura</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/5 border-orange-500/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Fuel className="h-4 w-4 text-orange-500" />
-                  Combustível
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {receitas.loading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                ) : (
-                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                    €{receitas.combustivel.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">Gasto total em abastecimentos</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-red-500/10 to-rose-500/5 border-red-500/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-red-500" />
-                  Danos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {receitas.loading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                ) : (
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                    €{receitas.danos.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">Gasto total em reparações</p>
-              </CardContent>
-            </Card>
-          </div>
+          <ViaturaFinanceiraDespesas receitas={receitas} />
         </TabsContent>
       </Tabs>
     </div>

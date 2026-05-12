@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, addWeeks, isBefore, isEqual } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import {
   Table,
@@ -34,7 +34,6 @@ import {
   X,
   Loader2,
   Receipt,
-  FileText,
   TrendingUp,
   TrendingDown,
   Wallet,
@@ -81,14 +80,42 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
   const podeAdicionarRecibo = isAdmin || hasAccessToResource(RECURSOS.RECIBOS_VERDES_ADICIONAR);
 
   const [recibos, setRecibos] = useState<Recibo[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
 
   const [dialogAberto, setDialogAberto] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [novoRecibo, setNovoRecibo] = useState({ descricao: '', valor: '' });
+  const [novoRecibo, setNovoRecibo] = useState({ valor: '' });
   const [ficheiroSelecionado, setFicheiroSelecionado] = useState<File | null>(null);
+  const [semanaSeleccionada, setSemanaSeleccionada] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const semanasDisponiveis = useMemo(() => {
+    const dataBase = motorista?.data_contratacao
+      ? new Date(motorista.data_contratacao)
+      : addWeeks(new Date(), -12);
+
+    const semanas: { value: string; label: string; jaTemRecibo: boolean }[] = [];
+    const semanasComRecibo = new Set(
+      recibos.filter(r => r.semana_referencia_inicio).map(r => r.semana_referencia_inicio)
+    );
+
+    let inicio = startOfWeek(dataBase, { weekStartsOn: 1 });
+    const hoje = new Date();
+    const limite = addWeeks(startOfWeek(hoje, { weekStartsOn: 1 }), 1);
+
+    while (isBefore(inicio, limite) || isEqual(inicio, startOfWeek(hoje, { weekStartsOn: 1 }))) {
+      const fim = addDays(inicio, 6);
+      const valor = format(inicio, 'yyyy-MM-dd');
+      semanas.push({
+        value: valor,
+        label: `${format(inicio, 'dd MMM', { locale: pt })} – ${format(fim, 'dd MMM yyyy', { locale: pt })}`,
+        jaTemRecibo: semanasComRecibo.has(valor),
+      });
+      inicio = addWeeks(inicio, 1);
+    }
+
+    return semanas.reverse();
+  }, [motorista, recibos]);
   
   // Resumo Financeiro Real-time
   const [resumoSemanal, setResumoSemanal] = useState({
@@ -109,12 +136,10 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
   }, [motoristaId, selectedWeek]);
 
   const loadData = async () => {
-    setLoading(true);
     await Promise.all([
       loadRecibos(),
       loadResumoSemanal()
     ]);
-    setLoading(false);
   };
 
   const loadRecibos = async () => {
@@ -335,7 +360,12 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
 
   const handleSubmeterRecibo = async () => {
     if (!ficheiroSelecionado) { toast.error('Seleciona um ficheiro'); return; }
-    if (!novoRecibo.descricao.trim()) { toast.error('Preenche a descrição'); return; }
+    if (!semanaSeleccionada) { toast.error('Seleciona a semana de referência'); return; }
+
+    const semanaInicio = new Date(semanaSeleccionada);
+    const semanaFim = addDays(semanaInicio, 6);
+    const periodoLabel = semanasDisponiveis.find(s => s.value === semanaSeleccionada)?.label
+      ?? `${format(semanaInicio, 'dd/MM')} – ${format(semanaFim, 'dd/MM/yyyy')}`;
 
     setUploading(true);
     try {
@@ -361,20 +391,21 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
         .insert({
           motorista_id: motoristaId,
           user_id: user?.id,
-          descricao: novoRecibo.descricao.trim(),
+          descricao: `Recibo Verde – ${periodoLabel}`,
           valor_total: novoRecibo.valor ? parseFloat(novoRecibo.valor) : null,
           ficheiro_url: filePath,
           nome_ficheiro: ficheiroSelecionado.name,
           status: 'submetido',
           codigo: (maxCodigo?.codigo ?? 0) + 1,
-          semana_referencia_inicio: format(weekStart, 'yyyy-MM-dd'),
-          periodo_referencia: `Semana ${format(weekStart, 'dd/MM')} - ${format(weekEnd, 'dd/MM/yyyy')}`,
+          semana_referencia_inicio: semanaSeleccionada,
+          periodo_referencia: periodoLabel,
         });
       if (insertError) throw insertError;
 
       toast.success('Recibo adicionado com sucesso');
       setDialogAberto(false);
-      setNovoRecibo({ descricao: '', valor: '' });
+      setNovoRecibo({ valor: '' });
+      setSemanaSeleccionada('');
       setFicheiroSelecionado(null);
       loadRecibos();
     } catch (error: any) {
@@ -491,7 +522,7 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
           </h3>
           <div className="flex items-center gap-2">
             {podeAdicionarRecibo && (
-              <Button size="sm" className="gap-1.5 h-8" onClick={() => setDialogAberto(true)}>
+              <Button size="sm" className="gap-1.5 h-8" onClick={() => { setSemanaSeleccionada(format(weekStart, 'yyyy-MM-dd')); setDialogAberto(true); }}>
                 <Plus className="h-3.5 w-3.5" />
                 Adicionar Recibo
               </Button>
@@ -586,6 +617,27 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
+            {/* Semana de referência */}
+            <div className="space-y-1.5">
+              <Label>Semana de referência *</Label>
+              <Select value={semanaSeleccionada} onValueChange={setSemanaSeleccionada}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Seleciona a semana…" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {semanasDisponiveis.filter(s => !s.jaTemRecibo).map((semana) => (
+                    <SelectItem
+                      key={semana.value}
+                      value={semana.value}
+                    >
+                      {semana.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Ficheiro */}
             <div className="space-y-1.5">
               <Label>Ficheiro (PDF ou imagem) *</Label>
               <div
@@ -610,16 +662,7 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="descricao">Descrição *</Label>
-              <Input
-                id="descricao"
-                placeholder="Ex: Recibo semana 19-25 maio"
-                value={novoRecibo.descricao}
-                onChange={(e) => setNovoRecibo(prev => ({ ...prev, descricao: e.target.value }))}
-              />
-            </div>
-
+            {/* Valor */}
             <div className="space-y-1.5">
               <Label htmlFor="valor">Valor (€) — opcional</Label>
               <Input

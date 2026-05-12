@@ -7,16 +7,16 @@ const corsHeaders = {
 };
 
 const TIPO_LABELS: Record<string, string> = {
-  entrega: 'Entrega',
-  recolha: 'Recolha',
-  devolucao: 'Devolução',
-  troca: 'Troca',
-  upgrade: 'Upgrade',
+  entrega: "Entrega",
+  recolha: "Recolha",
+  devolucao: "Devolucao",
+  troca: "Troca",
+  upgrade: "Upgrade",
 };
 
 function formatMatricula(val: string): string {
-  const clean = val.replace(/[-\s]/g, '').toUpperCase();
-  return clean.match(/.{1,2}/g)?.join('-') || clean;
+  const clean = val.replace(/[-\s]/g, "").toUpperCase();
+  return clean.match(/.{1,2}/g)?.join("-") || clean;
 }
 
 serve(async (req: Request) => {
@@ -35,68 +35,116 @@ serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Buscar TODOS os email_cc da tabela calendario_config
-    const { data: configs, error: configError } = await supabase
-      .from('calendario_config')
-      .select('email_cc')
-      .not('email_cc', 'is', null);
+    // 1. Buscar todos os perfis que NAO sao motoristas (ou seja, gestores/colaboradores)
+    const { data: gestorProfiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, nome")
+      .neq("tipo_utilizador", "motorista");
 
-    if (configError) throw configError;
+    if (profilesError) {
+      console.warn("Erro ao buscar perfis de gestores:", profilesError.message);
+    }
 
-    const ccEmails = (configs || [])
+    const gestorIds = (gestorProfiles || []).map((p: any) => p.id);
+    const gestorEmails: string[] = [];
+
+    if (gestorIds.length > 0) {
+      // Obter emails via admin API
+      const { data: usersData, error: usersError } =
+        await supabase.auth.admin.listUsers({ perPage: 1000 });
+
+      if (usersError) {
+        console.warn("Erro ao listar utilizadores:", usersError.message);
+      } else {
+        const gestorIdSet = new Set(gestorIds);
+        for (const u of usersData.users) {
+          if (gestorIdSet.has(u.id) && u.email) {
+            gestorEmails.push(u.email);
+          }
+        }
+      }
+    }
+
+    // 2. Buscar CCs extras configurados manualmente em calendario_config
+    const { data: configs } = await supabase
+      .from("calendario_config")
+      .select("email_cc")
+      .not("email_cc", "is", null);
+
+    const extraCcEmails = (configs || [])
       .map((c: any) => c.email_cc)
-      .filter((e: string) => e && e.includes('@'));
+      .filter((e: string) => e && e.includes("@"));
 
-    if (ccEmails.length === 0) {
-      console.log('Nenhum email CC configurado');
+    // 3. Unir e deduplicar todos os emails
+    const allEmails = [...new Set([...gestorEmails, ...extraCcEmails])];
+
+    if (allEmails.length === 0) {
+      console.log("Nenhum email de gestor encontrado para notificar");
       return new Response(JSON.stringify({ success: true, sent: 0 }), {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
+    console.log(
+      `A enviar notificacao para ${allEmails.length} gestor(es):`,
+      allEmails
+    );
+
     const dataEvento = new Date(data_inicio);
-    const dataFormatada = dataEvento.toLocaleDateString('pt-PT', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    const dataFormatada = dataEvento.toLocaleDateString("pt-PT", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
-    const horaFormatada = dia_todo ? 'Dia inteiro' : dataEvento.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+    const horaFormatada = dia_todo
+      ? "Dia inteiro"
+      : dataEvento.toLocaleTimeString("pt-PT", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
     const matriculaFormatada = formatMatricula(matricula);
-    const cidadeFormatada = cidade ? cidade.toUpperCase() : '';
+    const cidadeFormatada = cidade ? cidade.toUpperCase() : "";
     const tipoLabel = TIPO_LABELS[tipo] || tipo;
 
-    const subject = `📅 Novo evento: ${tipoLabel} - ${matriculaFormatada}${cidadeFormatada ? ' ' + cidadeFormatada : ''}`;
+    const subject = `Novo evento: ${tipoLabel} - ${matriculaFormatada}${
+      cidadeFormatada ? " " + cidadeFormatada : ""
+    }`;
 
     const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head><meta charset="utf-8"></head>
-      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: #1a1a2e; padding: 24px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
-          <h1 style="color: #fff; margin: 0; font-size: 22px;">📅 Novo Evento no Calendário</h1>
-        </div>
-        <div style="background: #f9f9f9; padding: 24px; border-radius: 10px;">
-          <h2 style="margin-top: 0;">${matriculaFormatada}${cidadeFormatada ? ' - ' + cidadeFormatada : ''}</h2>
-          <p><strong>Tipo:</strong> ${tipoLabel}</p>
-          <p><strong>Data:</strong> ${dataFormatada}</p>
-          <p><strong>Hora:</strong> ${horaFormatada}</p>
-        </div>
-        <p style="color: #666; font-size: 12px; text-align: center; margin-top: 20px;">
-          © ${new Date().getFullYear()} Década Ousada. Email automático.
-        </p>
-      </body>
-      </html>
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: #1a1a2e; padding: 24px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: #fff; margin: 0; font-size: 22px;">Novo Evento no Calendario</h1>
+  </div>
+  <div style="background: #f9f9f9; padding: 24px; border-radius: 10px;">
+    <h2 style="margin-top: 0;">${matriculaFormatada}${
+      cidadeFormatada ? " - " + cidadeFormatada : ""
+    }</h2>
+    <p><strong>Tipo:</strong> ${tipoLabel}</p>
+    <p><strong>Data:</strong> ${dataFormatada}</p>
+    <p><strong>Hora:</strong> ${horaFormatada}</p>
+  </div>
+  <p style="color: #666; font-size: 12px; text-align: center; margin-top: 20px;">
+    Decada Ousada - Email automatico gerado pelo sistema WeGest.
+  </p>
+</body>
+</html>
     `;
 
     let totalSent = 0;
-    for (const email of ccEmails) {
-      const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
+    for (const email of allEmails) {
+      const resp = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
         headers: {
-          'accept': 'application/json',
-          'api-key': brevoApiKey,
-          'content-type': 'application/json',
+          accept: "application/json",
+          "api-key": brevoApiKey,
+          "content-type": "application/json",
         },
         body: JSON.stringify({
-          sender: { name: "Década Ousada", email: "noreply@dasprent.pt" },
+          sender: { name: "Decada Ousada", email: "noreply@dasprent.pt" },
           to: [{ email }],
           subject,
           htmlContent,
@@ -107,7 +155,7 @@ serve(async (req: Request) => {
         const errData = await resp.json();
         console.error(`Erro Brevo para ${email}:`, errData);
       } else {
-        console.log(`Notificação enviada para ${email}`);
+        console.log(`Notificacao enviada para ${email}`);
         totalSent++;
       }
     }
@@ -116,7 +164,7 @@ serve(async (req: Request) => {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
-    console.error("Erro na notificação:", error);
+    console.error("Erro na notificacao:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },

@@ -59,7 +59,7 @@ import {
 } from "lucide-react";
 import { Motorista } from "@/pages/Motoristas";
 import { PhoneInput } from "@/components/ui/phone-input";
-import { DocumentUploader } from "@/components/motorista/DocumentUploader";
+import { DocumentUploader } from "@/components/motorista-portal/DocumentUploader";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useEmpresas } from '@/hooks/useEmpresas';
 import { ContratoEntregaStep } from './ContratoEntregaStep';
 import { RecolhaCheckinStep } from './RecolhaCheckinStep';
 import { TrocaCheckinStep } from './TrocaCheckinStep';
@@ -243,6 +244,9 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
   // For entrega/recolha/devolucao: collect form data and show step BEFORE creating anything
   const [pendingEventoData, setPendingEventoData] = useState<PendingEventoData | null>(null);
   const [pendingTrocaData, setPendingTrocaData] = useState<PendingTrocaData | null>(null);
+  const [fazerDepois, setFazerDepois] = useState(false);
+
+  const { empresas } = useEmpresas();
 
   // ── Load all vehicles (non-sold) ────────────────────────────────────────────
   const { data: viaturas = [], isLoading: loadingViaturas } = useQuery({
@@ -326,6 +330,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
     setViaturaId('');
     setAutoViatura(null);
     setEstacaoId('');
+    setFazerDepois(false);
   }, [tipo]);
 
   // ── Vehicle lists by tipo ───────────────────────────────────────────────────
@@ -473,12 +478,123 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
     onError: (e: any) => toast.error(e.message || 'Erro ao criar evento'),
   });
 
+  // ── Fazer depois mutation (entrega / devolucao sem checkin/checkout imediato) ─
+  const mutationFazerDepois = useMutation({
+    mutationFn: async () => {
+      const viatura = viaturas.find(v => v.id === viaturaId);
+      if (!viatura) throw new Error('Selecione uma viatura válida');
+      const motorista = motoristas.find(m => m.id === motoristaId);
+      const dataISO = diaTodo
+        ? new Date(`${data}T00:00:00`).toISOString()
+        : new Date(`${data}T${hora}:00`).toISOString();
+
+      const eventoPayload: Record<string, any> = {
+        titulo: viatura.matricula.replace(/[-\s]/g, '').toUpperCase(),
+        tipo,
+        data_inicio: dataISO,
+        data_fim: null,
+        dia_todo: diaTodo,
+        cidade: selectedEstacao?.nome || null,
+        descricao: observacoes.trim() || null,
+        criado_por: userId,
+      };
+      if (motoristaId) eventoPayload.motorista_id = motoristaId;
+
+      let evResult = await supabase.from('calendario_eventos').insert(eventoPayload).select('id').single();
+      if (evResult.error) {
+        const { motorista_id: _, ...fallback } = eventoPayload;
+        evResult = await supabase.from('calendario_eventos').insert(fallback).select('id').single();
+        if (evResult.error) throw evResult.error;
+      }
+      const eventoId = evResult.data.id;
+
+      if (tipo === 'entrega') {
+        const empresaId = empresas[0]?.id;
+        if (!empresaId) throw new Error('Nenhuma empresa configurada');
+
+        await supabase.from('motorista_viaturas').insert({
+          motorista_id: motoristaId,
+          viatura_id: viaturaId,
+          data_inicio: data,
+          status: 'ativo',
+          observacoes: observacoes.trim() || null,
+        });
+
+        await supabase.from('viaturas')
+          .update({ status: 'em_uso', estacao_id: estacaoId || null })
+          .eq('id', viaturaId);
+
+        await supabase.from('contratos').insert({
+          motorista_id: motoristaId,
+          empresa_id: empresaId,
+          motorista_nome: motorista?.nome || '',
+          data_assinatura: data,
+          data_inicio: data,
+          cidade_assinatura: selectedEstacao?.nome || '',
+          status: 'ativo',
+          versao: 1,
+          duracao_meses: 12,
+          viatura_id: viaturaId,
+          calendario_evento_id: eventoId,
+          checkout_pendente: true,
+        });
+      } else if (tipo === 'devolucao') {
+        if (motoristaId) {
+          await supabase.from('motorista_viaturas')
+            .update({ status: 'encerrado', data_fim: data })
+            .eq('motorista_id', motoristaId)
+            .eq('viatura_id', viaturaId)
+            .eq('status', 'ativo');
+        } else {
+          await supabase.from('motorista_viaturas')
+            .update({ status: 'encerrado', data_fim: data })
+            .eq('viatura_id', viaturaId)
+            .eq('status', 'ativo');
+        }
+
+        await supabase.from('viaturas')
+          .update({ status: 'em_recolha', estacao_id: null })
+          .eq('id', viaturaId);
+
+        await supabase.from('contratos')
+          .update({ checkin_pendente: true })
+          .eq('viatura_id', viaturaId)
+          .eq('status', 'ativo');
+      }
+
+      try {
+        await supabase.functions.invoke('send-calendar-notification', {
+          body: { matricula: eventoPayload.titulo, cidade: eventoPayload.cidade, tipo, data_inicio: dataISO, dia_todo: diaTodo },
+        });
+      } catch { /* non-critical */ }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendario-eventos'] });
+      queryClient.invalidateQueries({ queryKey: ['viaturas-calendario'] });
+      queryClient.invalidateQueries({ queryKey: ['viaturas-pendentes-recolha'] });
+      queryClient.invalidateQueries({ queryKey: ['motorista-viaturas'] });
+      queryClient.invalidateQueries({ queryKey: ['contratos-checkout-pendentes'] });
+      toast.success(
+        tipo === 'entrega'
+          ? 'Entrega registada — check-out pendente'
+          : 'Devolução registada — check-in pendente',
+      );
+      onClose();
+    },
+    onError: (e: any) => toast.error(e.message || 'Erro ao criar evento'),
+  });
+
   const tipoInfo = TIPOS.find(t => t.value === tipo);
 
   // ── For entrega/devolucao: show step; recolha: mutation (em_recolha) ───────
   const handleGuardar = () => {
-    if (!estacaoId) {
+    const fazerDepoisAtivo = fazerDepois && (tipo === 'entrega' || tipo === 'devolucao');
+    if (!estacaoId && !fazerDepoisAtivo) {
       toast.error('Estação é obrigatória');
+      return;
+    }
+    if (fazerDepoisAtivo) {
+      mutationFazerDepois.mutate();
       return;
     }
     if (tipo === 'entrega' || tipo === 'devolucao') {
@@ -582,11 +698,13 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
         </div>
         <Button
           onClick={handleGuardar}
-          disabled={!canSave || mutation.isPending}
+          disabled={!canSave || mutation.isPending || mutationFazerDepois.isPending}
           className="shrink-0"
         >
-          {mutation.isPending
+          {mutation.isPending || mutationFazerDepois.isPending
             ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...</>
+            : fazerDepois && (tipo === 'entrega' || tipo === 'devolucao')
+            ? 'Registar (depois)'
             : 'Guardar'}
         </Button>
       </div>
@@ -818,6 +936,33 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
               rows={3}
             />
           </div>
+
+          {/* ── Fazer Check-in / Check-out depois ── */}
+          {(tipo === 'entrega' || tipo === 'devolucao') && (
+            <label className={cn(
+              'flex items-start gap-3 cursor-pointer p-3 rounded-lg border transition-colors',
+              fazerDepois
+                ? 'border-primary/40 bg-primary/5'
+                : 'border-dashed border-border hover:bg-muted/30',
+            )}>
+              <input
+                type="checkbox"
+                checked={fazerDepois}
+                onChange={e => setFazerDepois(e.target.checked)}
+                className="mt-0.5 rounded"
+              />
+              <div>
+                <p className="text-sm font-medium">
+                  Fazer {tipo === 'entrega' ? 'Check-out' : 'Check-in'} depois
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {tipo === 'entrega'
+                    ? 'Regista a entrega agora e preenche o km, combustível e danos mais tarde. A estação é opcional.'
+                    : 'Regista a devolução agora e preenche o km, combustível e danos mais tarde. A estação é opcional.'}
+                </p>
+              </div>
+            </label>
+          )}
 
           {/* ── Info contextual ── */}
           <div className={cn(

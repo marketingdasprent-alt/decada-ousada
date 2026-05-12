@@ -223,6 +223,64 @@ html[data-native-app="true"] .native-bottom {
   .auth-secondary-button {
     @apply h-12 rounded-xl border-border/50 bg-secondary/20 text-foreground font-medium backdrop-blur-sm transition-all hover:bg-secondary/40 hover:border-border;
   }
+
+  /* Login da equipa/colaborador — fundo verde */
+  .login-colaborador .auth-screen__background {
+    background:
+      radial-gradient(ellipse at 15% 15%, hsl(142 72% 55% / 0.35) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 85%, hsl(142 65% 25% / 0.5) 0%, transparent 55%),
+      linear-gradient(155deg, hsl(142 65% 10%) 0%, hsl(142 60% 18%) 60%, hsl(142 55% 22%) 100%);
+  }
+
+  .login-colaborador .auth-screen__pattern {
+    background-image: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.07) 1px, transparent 0);
+  }
+
+  .login-colaborador .auth-panel {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  .login-colaborador .auth-panel * {
+    --tw-text-opacity: 1;
+  }
+
+  .login-colaborador .auth-input {
+    @apply bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:border-white/50 focus-visible:ring-white/30;
+  }
+
+  .login-colaborador .auth-link {
+    @apply text-green-300 hover:text-green-200;
+  }
+
+  .login-colaborador .auth-primary-button {
+    @apply bg-white text-green-900 hover:bg-white/90 shadow-white/20;
+  }
+
+  .login-colaborador .auth-secondary-button {
+    @apply border-white/30 bg-white/10 text-white hover:bg-white/20;
+  }
+
+  .login-colaborador [class*="CardTitle"],
+  .login-colaborador [class*="CardDescription"],
+  .login-colaborador label,
+  .login-colaborador .text-card-foreground,
+  .login-colaborador .text-foreground,
+  .login-colaborador .text-muted-foreground {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .login-colaborador .text-muted-foreground {
+    color: rgba(255, 255, 255, 0.65) !important;
+  }
+
+  .login-colaborador [class*="border-t"] {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  .login-colaborador span.bg-card {
+    background: transparent !important;
+  }
 }
 
 /* Estilos de Impressão Globais */

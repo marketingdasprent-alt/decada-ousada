@@ -14,6 +14,9 @@ import {
   Pencil,
   Save,
   X,
+  Camera,
+  Film,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +31,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { SectionCard } from "@/components/ui/section-card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -49,6 +58,17 @@ interface Contrato {
   documento_url: string | null;
   template_id: string | null;
   criado_em: string;
+  numero_contrato: number | null;
+  viatura_id: string | null;
+  viaturas: { matricula: string; marca: string; modelo: string } | null;
+}
+
+interface ContratoMedia {
+  id: string;
+  tipo: 'checkout' | 'checkin';
+  url: string;
+  nome_ficheiro: string | null;
+  tipo_ficheiro: string | null;
 }
 
 interface MotoristaTabContratosProps {
@@ -65,6 +85,10 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [editingContratual, setEditingContratual] = useState(false);
   const [dataContratacao, setDataContratacao] = useState(motorista.data_contratacao || "");
+  const [mediaDialogContrato, setMediaDialogContrato] = useState<Contrato | null>(null);
+  const [mediaItems, setMediaItems] = useState<ContratoMedia[]>([]);
+  const [loadingMedia, setLoadingMedia] = useState(false);
+  const [mediaSignedUrls, setMediaSignedUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadContratos();
@@ -80,17 +104,50 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
       setLoading(true);
       const { data, error } = await supabase
         .from("contratos")
-        .select("*")
+        .select("*, viaturas:viatura_id(matricula, marca, modelo)")
         .eq("motorista_id", motorista.id)
-        .order("criado_em", { ascending: false });
+        .order("numero_contrato", { ascending: false });
 
       if (error) throw error;
-      setContratos(data || []);
+      setContratos((data || []) as Contrato[]);
     } catch (error) {
       console.error("Erro ao carregar contratos:", error);
       toast.error("Erro ao carregar contratos");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMedia = async (contrato: Contrato) => {
+    setMediaDialogContrato(contrato);
+    setMediaItems([]);
+    setMediaSignedUrls({});
+    setLoadingMedia(true);
+    try {
+      const { data, error } = await supabase
+        .from("contrato_media")
+        .select("id, tipo, url, nome_ficheiro, tipo_ficheiro")
+        .eq("contrato_id", contrato.id)
+        .order("created_at");
+      if (error) throw error;
+      const items = (data || []) as ContratoMedia[];
+      setMediaItems(items);
+
+      // Generate signed URLs for all items
+      const urls: Record<string, string> = {};
+      await Promise.all(
+        items.map(async (item) => {
+          const { data: signed } = await supabase.storage
+            .from("contrato-media")
+            .createSignedUrl(item.url, 3600);
+          if (signed?.signedUrl) urls[item.id] = signed.signedUrl;
+        })
+      );
+      setMediaSignedUrls(urls);
+    } catch {
+      toast.error("Erro ao carregar fotos");
+    } finally {
+      setLoadingMedia(false);
     }
   };
 
@@ -106,6 +163,8 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
         return <Badge variant="secondary">Substituído</Badge>;
       case "cancelado":
         return <Badge variant="destructive">Cancelado</Badge>;
+      case "encerrado":
+        return <Badge variant="outline" className="text-muted-foreground">Encerrado</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -346,11 +405,10 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Empresa</TableHead>
+              <TableHead className="w-28">Nº</TableHead>
+              <TableHead>Empresa / Viatura</TableHead>
               <TableHead>Data Assinatura</TableHead>
               <TableHead>Data Início</TableHead>
-              <TableHead>Cidade</TableHead>
-              <TableHead>Versão</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -358,22 +416,39 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
           <TableBody>
             {contratos.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
+                <TableCell colSpan={6} className="text-center py-8">
                   <FileSignature className="h-12 w-12 mx-auto mb-2 text-muted-foreground opacity-30" />
                   <p className="text-muted-foreground">Nenhum contrato gerado.</p>
                 </TableCell>
               </TableRow>
             ) : (
               contratos.map((contrato) => (
-                <TableRow key={contrato.id} className={contrato.status === "substituido" ? "opacity-50" : ""}>
-                  <TableCell className="font-medium">{getEmpresaNome(contrato.empresa_id)}</TableCell>
+                <TableRow key={contrato.id} className={(contrato.status === "substituido" || contrato.status === "encerrado") ? "opacity-60" : ""}>
+                  <TableCell>
+                    {contrato.numero_contrato != null ? (
+                      <Badge variant="outline" className="font-mono text-xs">
+                        CT-{String(contrato.numero_contrato).padStart(4, '0')}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium text-sm">{getEmpresaNome(contrato.empresa_id)}</div>
+                    {contrato.viaturas && (
+                      <div className="text-xs text-muted-foreground">
+                        {contrato.viaturas.matricula.replace(/[-\s]/g, '').replace(/.{2}/g, '$& ').trim()} — {contrato.viaturas.marca} {contrato.viaturas.modelo}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>{format(new Date(contrato.data_assinatura), "dd/MM/yyyy")}</TableCell>
                   <TableCell>{format(new Date(contrato.data_inicio), "dd/MM/yyyy")}</TableCell>
-                  <TableCell>{contrato.cidade_assinatura}</TableCell>
-                  <TableCell><Badge variant="outline">v{contrato.versao}</Badge></TableCell>
                   <TableCell>{getStatusBadge(contrato.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => loadMedia(contrato)} title="Ver fotos">
+                        <Camera className="h-4 w-4" />
+                      </Button>
                       {contrato.documento_url && (
                         <>
                           <Button variant="ghost" size="icon" onClick={() => handleView(contrato)} title="Visualizar">
@@ -397,6 +472,70 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
           </TableBody>
         </Table>
       </SectionCard>
+
+      {/* Media dialog */}
+      <Dialog open={!!mediaDialogContrato} onOpenChange={(open) => { if (!open) setMediaDialogContrato(null); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Fotos do Contrato{" "}
+              {mediaDialogContrato?.numero_contrato != null && (
+                <Badge variant="outline" className="font-mono ml-2">
+                  CT-{String(mediaDialogContrato.numero_contrato).padStart(4, '0')}
+                </Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          {loadingMedia ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : mediaItems.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Camera className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">Nenhuma foto ou vídeo registado neste contrato.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {(['checkout', 'checkin'] as const).map(tipo => {
+                const items = mediaItems.filter(m => m.tipo === tipo);
+                if (items.length === 0) return null;
+                return (
+                  <div key={tipo}>
+                    <p className="text-sm font-medium text-muted-foreground capitalize mb-2">{tipo}</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                      {items.map(item => {
+                        const signedUrl = mediaSignedUrls[item.id];
+                        const isVideo = item.tipo_ficheiro?.startsWith('video/');
+                        return (
+                          <a
+                            key={item.id}
+                            href={signedUrl || '#'}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted block"
+                          >
+                            {signedUrl && !isVideo ? (
+                              <img src={signedUrl} alt={item.nome_ficheiro || ''} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
+                                <Film className="h-6 w-6 text-muted-foreground" />
+                                <span className="text-[10px] text-muted-foreground text-center leading-tight truncate w-full">
+                                  {item.nome_ficheiro}
+                                </span>
+                              </div>
+                            )}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog para gerar documentos */}
       <GenerateDocumentsDialog

@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
-import { CandidaturaFormulario } from '@/components/motorista/CandidaturaFormulario';
-import { CandidaturaEmAnalise } from '@/components/motorista/CandidaturaEmAnalise';
-import { CandidaturaRejeitada } from '@/components/motorista/CandidaturaRejeitada';
-import { MotoristaDashboard } from '@/components/motorista/MotoristaDashboard';
-import { MotoristaLayout } from '@/components/motorista/MotoristaLayout';
+import { CandidaturaFormulario } from '@/components/motorista-portal/CandidaturaFormulario';
+import { CandidaturaEmAnalise } from '@/components/motorista-portal/CandidaturaEmAnalise';
+import { CandidaturaRejeitada } from '@/components/motorista-portal/CandidaturaRejeitada';
+import { MotoristaDashboard } from '@/components/motorista-portal/MotoristaDashboard';
+import { MotoristaLayout } from '@/components/motorista-portal/MotoristaLayout';
 
 interface MotoristaData {
   id: string;

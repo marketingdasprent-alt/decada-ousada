@@ -11,9 +11,10 @@ import { CalendarioConfig } from '@/components/calendario/CalendarioConfig';
 import { RelatorioDialog } from '@/components/calendario/RelatorioDialog';
 import { NovoEventoPage } from '@/components/calendario/NovoEventoPage';
 import { RecolhasPendentesDrawer } from '@/components/calendario/RecolhasPendentesDrawer';
+import { CheckOutPendentesDrawer } from '@/components/calendario/CheckOutPendentesDrawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Settings, CalendarDays, FileDown, PackageCheck } from 'lucide-react';
+import { Plus, Settings, CalendarDays, FileDown, PackageCheck, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import { format } from 'date-fns';
@@ -43,6 +44,7 @@ const Calendario: React.FC = () => {
   const [historicoOpen, setHistoricoOpen] = useState(false);
   const [relatorioOpen, setRelatorioOpen] = useState(false);
   const [recolhasPendentesOpen, setRecolhasPendentesOpen] = useState(false);
+  const [checkoutPendentesOpen, setCheckoutPendentesOpen] = useState(false);
   const [editingEvento, setEditingEvento] = useState<CalendarioEvento | null>(null);
   const [detailsEvento, setDetailsEvento] = useState<CalendarioEvento | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -72,6 +74,19 @@ const Calendario: React.FC = () => {
         .select('id, matricula, marca, modelo, categoria')
         .eq('status', 'em_recolha')
         .order('matricula');
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: checkoutPendentes = [] } = useQuery({
+    queryKey: ['contratos-checkout-pendentes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contratos')
+        .select('id')
+        .eq('checkout_pendente', true)
+        .eq('status', 'ativo');
       if (error) throw error;
       return data || [];
     },
@@ -211,6 +226,11 @@ const Calendario: React.FC = () => {
       onOpenChange={setRecolhasPendentesOpen}
       userId={user?.id || ''}
     />
+    <CheckOutPendentesDrawer
+      open={checkoutPendentesOpen}
+      onOpenChange={setCheckoutPendentesOpen}
+      userId={user?.id || ''}
+    />
     {novoEventoOpen && (
       <NovoEventoPage
         userId={user?.id || ''}
@@ -241,19 +261,34 @@ const Calendario: React.FC = () => {
             <Settings className="h-4 w-4" />
           </Button>
           {hasPermission('calendario_recolhas') && (
-            <Button
-              variant="outline"
-              onClick={() => setRecolhasPendentesOpen(true)}
-              className="relative gap-2"
-            >
-              <PackageCheck className="h-4 w-4" />
-              <span className="hidden sm:inline">Recolhas</span>
-              {recolhasPendentes.length > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-orange-500 text-white border-0">
-                  {recolhasPendentes.length}
-                </Badge>
-              )}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setCheckoutPendentesOpen(true)}
+                className="relative gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Check Out</span>
+                {checkoutPendentes.length > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-green-600 text-white border-0">
+                    {checkoutPendentes.length}
+                  </Badge>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setRecolhasPendentesOpen(true)}
+                className="relative gap-2"
+              >
+                <PackageCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">Check In</span>
+                {recolhasPendentes.length > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-orange-500 text-white border-0">
+                    {recolhasPendentes.length}
+                  </Badge>
+                )}
+              </Button>
+            </>
           )}
           {hasPermission('calendario_criar') && (
             <Button onClick={handleNew} className="gap-2">

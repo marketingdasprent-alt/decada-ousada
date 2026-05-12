@@ -410,22 +410,13 @@ export function MotoristaRecibosCard({ motoristaId, userId, dataContratacao }: M
                       <SelectValue placeholder="Seleccione a semana..." />
                     </SelectTrigger>
                     <SelectContent className="max-h-[300px] rounded-xl border-border shadow-xl bg-background">
-                      {semanasDisponiveis.map((semana) => (
-                        <SelectItem 
-                          key={semana.value} 
+                      {semanasDisponiveis.filter(s => !s.jaTemRecibo).map((semana) => (
+                        <SelectItem
+                          key={semana.value}
                           value={semana.value}
-                          disabled={semana.jaTemRecibo}
-                          className="flex items-center justify-between rounded-lg"
+                          className="rounded-lg"
                         >
-                          <span className="flex items-center gap-2 font-medium">
-                            {semana.jaTemRecibo && (
-                              <Check className="w-4 h-4 text-green-600" />
-                            )}
-                            {semana.label}
-                            {semana.jaTemRecibo && (
-                              <span className="text-[10px] text-muted-foreground font-black uppercase">(já submetido)</span>
-                            )}
-                          </span>
+                          <span className="font-medium">{semana.label}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>

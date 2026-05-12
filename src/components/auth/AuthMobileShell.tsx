@@ -21,13 +21,12 @@ export function AuthMobileShell({
 }: AuthMobileShellProps) {
   const location = useLocation();
   const isMotoristaRoute = location.pathname === '/motorista' || location.pathname.startsWith('/motorista/');
-  
-  const logoSrc = isMotoristaRoute 
-    ? '/Logo.png'
-    : '/Logo.png';
+  const isColaboradorRoute = location.pathname === '/equipa';
+
+  const logoSrc = '/Logo.png';
 
   return (
-    <div className={`auth-screen auth-screen-safe ${isMotoristaRoute ? 'rota-liquida' : ''}`}>
+    <div className={`auth-screen auth-screen-safe ${isMotoristaRoute ? 'rota-liquida' : ''} ${isColaboradorRoute ? 'login-colaborador' : ''}`}>
       <div className="auth-screen__background" aria-hidden="true" />
       <div className="auth-screen__pattern" aria-hidden="true" />
 

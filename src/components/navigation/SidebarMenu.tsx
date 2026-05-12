@@ -173,17 +173,19 @@ export const SidebarMenu: React.FC = () => {
         </div>
 
         {/* Admin Section Separator */}
-        {hasAdminAccess && (
-          <div className="mt-8 mb-4">
-            <div className="px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
-              SISTEMA
-            </div>
-            <div className="space-y-1">
-              <NavItem item={{ label: 'Administração', url: '/admin/settings', icon: Settings }} />
-              <ThemeToggle variant="full" />
-            </div>
-          </div>
-        )}
+        <div className="mt-8 mb-4">
+          {hasAdminAccess && (
+            <>
+              <div className="px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
+                SISTEMA
+              </div>
+              <div className="space-y-1 mb-2">
+                <NavItem item={{ label: 'Administração', url: '/admin/settings', icon: Settings }} />
+              </div>
+            </>
+          )}
+          <ThemeToggle variant="full" />
+        </div>
       </ScrollArea>
 
       {/* User Footer */}
