@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Printer, Edit } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Printer, Edit } from 'lucide-react';
 
 interface ContractHistoryDialogProps {
   contratoId: string;
@@ -30,7 +30,11 @@ interface Edicao {
   nomeUsuario?: string;
 }
 
-export function ContractHistoryDialog({ contratoId, open, onOpenChange }: ContractHistoryDialogProps) {
+export function ContractHistoryDialog({
+  contratoId,
+  open,
+  onOpenChange,
+}: ContractHistoryDialogProps) {
   const [reimpressoes, setReimpressoes] = useState<Reimpressao[]>([]);
   const [edicoes, setEdicoes] = useState<Edicao[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,8 +69,8 @@ export function ContractHistoryDialog({ contratoId, open, onOpenChange }: Contra
 
       // Buscar nomes dos usuários
       const userIds = [
-        ...(reimpData?.map(r => r.reimpresso_por).filter(Boolean) || []),
-        ...(edicoesData?.map(e => e.editado_por).filter(Boolean) || [])
+        ...(reimpData?.map((r) => r.reimpresso_por).filter(Boolean) || []),
+        ...(edicoesData?.map((e) => e.editado_por).filter(Boolean) || []),
       ];
 
       const { data: profiles } = await supabase
@@ -74,18 +78,20 @@ export function ContractHistoryDialog({ contratoId, open, onOpenChange }: Contra
         .select('id, nome')
         .in('id', userIds);
 
-      const profileMap = new Map(profiles?.map(p => [p.id, p.nome]) || []);
+      const profileMap = new Map(profiles?.map((p) => [p.id, p.nome]) || []);
 
       // Adicionar nomes dos usuários
-      const reimpressoesComNomes = reimpData?.map(r => ({
-        ...r,
-        nomeUsuario: r.reimpresso_por ? profileMap.get(r.reimpresso_por) : null
-      })) || [];
+      const reimpressoesComNomes =
+        reimpData?.map((r) => ({
+          ...r,
+          nomeUsuario: r.reimpresso_por ? profileMap.get(r.reimpresso_por) : null,
+        })) || [];
 
-      const edicoesComNomes = edicoesData?.map(e => ({
-        ...e,
-        nomeUsuario: e.editado_por ? profileMap.get(e.editado_por) : null
-      })) || [];
+      const edicoesComNomes =
+        edicoesData?.map((e) => ({
+          ...e,
+          nomeUsuario: e.editado_por ? profileMap.get(e.editado_por) : null,
+        })) || [];
 
       setReimpressoes(reimpressoesComNomes);
       setEdicoes(edicoesComNomes);
@@ -125,7 +131,9 @@ export function ContractHistoryDialog({ contratoId, open, onOpenChange }: Contra
                             {reimp.nomeUsuario || 'Usuário desconhecido'}
                           </span>
                           <span className="text-sm text-muted-foreground">
-                            {format(new Date(reimp.reimpresso_em), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                            {format(new Date(reimp.reimpresso_em), "dd/MM/yyyy 'às' HH:mm", {
+                              locale: ptBR,
+                            })}
                           </span>
                         </div>
                         {reimp.motivo && (
@@ -156,12 +164,20 @@ export function ContractHistoryDialog({ contratoId, open, onOpenChange }: Contra
                             {edicao.nomeUsuario || 'Usuário desconhecido'}
                           </span>
                           <span className="text-sm text-muted-foreground">
-                            {format(new Date(edicao.editado_em), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                            {format(new Date(edicao.editado_em), "dd/MM/yyyy 'às' HH:mm", {
+                              locale: ptBR,
+                            })}
                           </span>
                         </div>
                         <div className="space-y-2 mt-3">
-                          {edicao.campos_alterados && typeof edicao.campos_alterados === 'object' && 
-                            Object.entries(edicao.campos_alterados as Record<string, { antes: string; depois: string }>).map(([campo, valores]) => (
+                          {edicao.campos_alterados &&
+                            typeof edicao.campos_alterados === 'object' &&
+                            Object.entries(
+                              edicao.campos_alterados as Record<
+                                string,
+                                { antes: string; depois: string }
+                              >
+                            ).map(([campo, valores]) => (
                               <div key={campo} className="text-sm">
                                 <span className="font-medium">{campo}:</span>
                                 <div className="ml-4 text-muted-foreground">
@@ -170,11 +186,12 @@ export function ContractHistoryDialog({ contratoId, open, onOpenChange }: Contra
                                   <span className="text-foreground">{valores.depois}</span>
                                 </div>
                               </div>
-                            ))
-                          }
+                            ))}
                         </div>
                         {edicao.observacoes && (
-                          <p className="text-sm text-muted-foreground mt-2 italic">{edicao.observacoes}</p>
+                          <p className="text-sm text-muted-foreground mt-2 italic">
+                            {edicao.observacoes}
+                          </p>
                         )}
                       </div>
                     ))}

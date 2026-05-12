@@ -3,12 +3,25 @@ import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Loader2, Network, Save } from 'lucide-react';
 import { VIA_VERDE_DEFAULT_FORM_VALUES, ViaVerdeConta, ViaVerdeContaFormValues } from './types';
 import { ViaVerdeLogoUpload } from './ViaVerdeLogoUpload';
@@ -43,7 +56,8 @@ interface ViaVerdeContaDialogProps {
   onSuccess: () => void;
 }
 
-const getValidationMessage = (error: z.ZodError) => error.issues[0]?.message ?? 'Verifique os dados introduzidos.';
+const getValidationMessage = (error: z.ZodError) =>
+  error.issues[0]?.message ?? 'Verifique os dados introduzidos.';
 
 const getInvokeErrorMessage = (error: unknown) => {
   if (!(error instanceof Error)) {
@@ -101,7 +115,9 @@ const getTestFeedback = (data: TestResponse) => {
 
   return {
     title: 'Falha no teste de ligação',
-    description: [ftpMessage, portalMessage, data.error].filter(Boolean).join(' • ') || 'Não foi possível validar a ligação.',
+    description:
+      [ftpMessage, portalMessage, data.error].filter(Boolean).join(' • ') ||
+      'Não foi possível validar a ligação.',
     variant: 'destructive' as const,
   };
 };
@@ -144,7 +160,10 @@ export const ViaVerdeContaDialog: React.FC<ViaVerdeContaDialogProps> = ({
     }
   }, [conta, open]);
 
-  const updateField = <K extends keyof ViaVerdeContaFormValues>(field: K, value: ViaVerdeContaFormValues[K]) => {
+  const updateField = <K extends keyof ViaVerdeContaFormValues>(
+    field: K,
+    value: ViaVerdeContaFormValues[K]
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -155,9 +174,12 @@ export const ViaVerdeContaDialog: React.FC<ViaVerdeContaDialogProps> = ({
       const payload = getPayload();
       setTesting(true);
 
-      const { data, error } = await supabase.functions.invoke<TestResponse>('via-verde-test-connection', {
-        body: payload,
-      });
+      const { data, error } = await supabase.functions.invoke<TestResponse>(
+        'via-verde-test-connection',
+        {
+          body: payload,
+        }
+      );
 
       if (error) throw error;
 
@@ -165,9 +187,7 @@ export const ViaVerdeContaDialog: React.FC<ViaVerdeContaDialogProps> = ({
       toast(feedback);
     } catch (error) {
       const message =
-        error instanceof z.ZodError
-          ? getValidationMessage(error)
-          : getInvokeErrorMessage(error);
+        error instanceof z.ZodError ? getValidationMessage(error) : getInvokeErrorMessage(error);
 
       toast({ title: 'Erro', description: message, variant: 'destructive' });
     } finally {
@@ -194,11 +214,19 @@ export const ViaVerdeContaDialog: React.FC<ViaVerdeContaDialogProps> = ({
       const { error } = await query;
       if (error) throw error;
 
-      toast({ title: conta ? 'Conta actualizada' : 'Conta criada', description: 'Os dados da Via Verde foram guardados.' });
+      toast({
+        title: conta ? 'Conta actualizada' : 'Conta criada',
+        description: 'Os dados da Via Verde foram guardados.',
+      });
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      const message = error instanceof z.ZodError ? getValidationMessage(error) : error instanceof Error ? error.message : 'Não foi possível guardar a conta.';
+      const message =
+        error instanceof z.ZodError
+          ? getValidationMessage(error)
+          : error instanceof Error
+            ? error.message
+            : 'Não foi possível guardar a conta.';
       toast({ title: 'Erro', description: message, variant: 'destructive' });
     } finally {
       setSaving(false);
@@ -218,13 +246,25 @@ export const ViaVerdeContaDialog: React.FC<ViaVerdeContaDialogProps> = ({
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="nome_conta">Nome da Conta</Label>
-            <Input id="nome_conta" value={formData.nome_conta} onChange={(e) => updateField('nome_conta', e.target.value)} />
+            <Input
+              id="nome_conta"
+              value={formData.nome_conta}
+              onChange={(e) => updateField('nome_conta', e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="codigo_rac">Código RAC</Label>
-            <Input id="codigo_rac" value={formData.codigo_rac} onChange={(e) => updateField('codigo_rac', e.target.value)} />
+            <Input
+              id="codigo_rac"
+              value={formData.codigo_rac}
+              onChange={(e) => updateField('codigo_rac', e.target.value)}
+            />
           </div>
-          <ViaVerdeLogoUpload contaId={conta?.id ?? null} logoUrl={logoUrl} onLogoChange={setLogoUrl} />
+          <ViaVerdeLogoUpload
+            contaId={conta?.id ?? null}
+            logoUrl={logoUrl}
+            onLogoChange={setLogoUrl}
+          />
         </div>
 
         <Tabs defaultValue="ftp" className="w-full">
@@ -237,15 +277,27 @@ export const ViaVerdeContaDialog: React.FC<ViaVerdeContaDialogProps> = ({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="ftp_host">Endereço do Servidor</Label>
-                <Input id="ftp_host" value={formData.ftp_host} onChange={(e) => updateField('ftp_host', e.target.value)} />
+                <Input
+                  id="ftp_host"
+                  value={formData.ftp_host}
+                  onChange={(e) => updateField('ftp_host', e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ftp_porta">Porta</Label>
-                <Input id="ftp_porta" type="number" value={formData.ftp_porta} onChange={(e) => updateField('ftp_porta', e.target.value)} />
+                <Input
+                  id="ftp_porta"
+                  type="number"
+                  value={formData.ftp_porta}
+                  onChange={(e) => updateField('ftp_porta', e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Protocolo</Label>
-                <Select value={formData.ftp_protocolo} onValueChange={(value: 'ftp' | 'sftp') => updateField('ftp_protocolo', value)}>
+                <Select
+                  value={formData.ftp_protocolo}
+                  onValueChange={(value: 'ftp' | 'sftp') => updateField('ftp_protocolo', value)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -257,11 +309,20 @@ export const ViaVerdeContaDialog: React.FC<ViaVerdeContaDialogProps> = ({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ftp_utilizador">Utilizador</Label>
-                <Input id="ftp_utilizador" value={formData.ftp_utilizador} onChange={(e) => updateField('ftp_utilizador', e.target.value)} />
+                <Input
+                  id="ftp_utilizador"
+                  value={formData.ftp_utilizador}
+                  onChange={(e) => updateField('ftp_utilizador', e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ftp_password">Password</Label>
-                <Input id="ftp_password" type="password" value={formData.ftp_password} onChange={(e) => updateField('ftp_password', e.target.value)} />
+                <Input
+                  id="ftp_password"
+                  type="password"
+                  value={formData.ftp_password}
+                  onChange={(e) => updateField('ftp_password', e.target.value)}
+                />
               </div>
             </div>
 
@@ -270,22 +331,34 @@ export const ViaVerdeContaDialog: React.FC<ViaVerdeContaDialogProps> = ({
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium">Modo passivo</p>
-                    <p className="text-xs text-muted-foreground">Aplicado no teste e ligação FTP.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Aplicado no teste e ligação FTP.
+                    </p>
                   </div>
-                  <Switch checked={formData.ftp_modo_passivo} onCheckedChange={(checked) => updateField('ftp_modo_passivo', checked)} />
+                  <Switch
+                    checked={formData.ftp_modo_passivo}
+                    onCheckedChange={(checked) => updateField('ftp_modo_passivo', checked)}
+                  />
                 </div>
               ) : (
                 <div className="rounded-md border border-dashed border-border bg-muted/30 p-3">
                   <p className="text-sm font-medium">Modo passivo indisponível</p>
-                  <p className="text-xs text-muted-foreground">Este parâmetro só se aplica a ligações FTP.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Este parâmetro só se aplica a ligações FTP.
+                  </p>
                 </div>
               )}
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium">Conta FTP activa</p>
-                  <p className="text-xs text-muted-foreground">Mantém esta conta disponível para sincronizações.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Mantém esta conta disponível para sincronizações.
+                  </p>
                 </div>
-                <Switch checked={formData.ftp_ativo} onCheckedChange={(checked) => updateField('ftp_ativo', checked)} />
+                <Switch
+                  checked={formData.ftp_ativo}
+                  onCheckedChange={(checked) => updateField('ftp_ativo', checked)}
+                />
               </div>
             </div>
           </TabsContent>
@@ -294,20 +367,34 @@ export const ViaVerdeContaDialog: React.FC<ViaVerdeContaDialogProps> = ({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="sync_email">Email / Utilizador</Label>
-                <Input id="sync_email" value={formData.sync_email} onChange={(e) => updateField('sync_email', e.target.value)} />
+                <Input
+                  id="sync_email"
+                  value={formData.sync_email}
+                  onChange={(e) => updateField('sync_email', e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="sync_password">Password</Label>
-                <Input id="sync_password" type="password" value={formData.sync_password} onChange={(e) => updateField('sync_password', e.target.value)} />
+                <Input
+                  id="sync_password"
+                  type="password"
+                  value={formData.sync_password}
+                  onChange={(e) => updateField('sync_password', e.target.value)}
+                />
               </div>
             </div>
 
             <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
               <div>
                 <p className="text-sm font-medium">Sincronização activa</p>
-                <p className="text-xs text-muted-foreground">Permite utilizar estas credenciais para o portal Via Verde.</p>
+                <p className="text-xs text-muted-foreground">
+                  Permite utilizar estas credenciais para o portal Via Verde.
+                </p>
               </div>
-              <Switch checked={formData.sync_ativo} onCheckedChange={(checked) => updateField('sync_ativo', checked)} />
+              <Switch
+                checked={formData.sync_ativo}
+                onCheckedChange={(checked) => updateField('sync_ativo', checked)}
+              />
             </div>
           </TabsContent>
         </Tabs>
@@ -318,11 +405,19 @@ export const ViaVerdeContaDialog: React.FC<ViaVerdeContaDialogProps> = ({
           </Button>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button variant="outline" onClick={handleTest} disabled={testing || saving}>
-              {testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Network className="mr-2 h-4 w-4" />}
+              {testing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Network className="mr-2 h-4 w-4" />
+              )}
               Testar ligação
             </Button>
             <Button onClick={handleSave} disabled={saving || testing}>
-              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
               Guardar conta
             </Button>
           </div>

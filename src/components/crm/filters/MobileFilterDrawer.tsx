@@ -17,7 +17,7 @@ export const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
   filters,
   onFilterChange,
   statusColumns,
-  availableTags
+  availableTags,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
 

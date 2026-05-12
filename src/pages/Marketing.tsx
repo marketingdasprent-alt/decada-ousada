@@ -22,23 +22,38 @@ const Marketing = () => {
         className="pb-0"
       >
         <TabsList className="bg-transparent border-b rounded-none h-auto p-0 gap-6">
-          <TabsTrigger value="campanhas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
+          <TabsTrigger
+            value="campanhas"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+          >
             <Mail className="h-4 w-4" />
             Campanhas
           </TabsTrigger>
-          <TabsTrigger value="listas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
+          <TabsTrigger
+            value="listas"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+          >
             <Users className="h-4 w-4" />
             Listas
           </TabsTrigger>
-          <TabsTrigger value="assinaturas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
+          <TabsTrigger
+            value="assinaturas"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+          >
             <PenTool className="h-4 w-4" />
             Assinaturas
           </TabsTrigger>
-          <TabsTrigger value="estatisticas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
+          <TabsTrigger
+            value="estatisticas"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+          >
             <BarChart3 className="h-4 w-4" />
             Estatísticas
           </TabsTrigger>
-          <TabsTrigger value="importar" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
+          <TabsTrigger
+            value="importar"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+          >
             <Upload className="h-4 w-4" />
             Importar
           </TabsTrigger>
@@ -64,6 +79,6 @@ const Marketing = () => {
       </div>
     </Tabs>
   );
-}
+};
 
 export default Marketing;

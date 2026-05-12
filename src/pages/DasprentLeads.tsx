@@ -3,8 +3,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Car, Calendar, MapPin, User, Phone, Mail, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -27,10 +40,14 @@ interface Lead {
 const statusOptions = [
   { value: 'novo', label: 'Novo', color: 'bg-blue-500/20 text-blue-400' },
   { value: 'contactado', label: 'Contactado', color: 'bg-primary/20 text-primary' },
-  { value: 'proposta_enviada', label: 'Proposta Enviada', color: 'bg-purple-500/20 text-purple-400' },
+  {
+    value: 'proposta_enviada',
+    label: 'Proposta Enviada',
+    color: 'bg-purple-500/20 text-purple-400',
+  },
   { value: 'negociacao', label: 'Negociação', color: 'bg-orange-500/20 text-orange-400' },
   { value: 'fechado', label: 'Fechado', color: 'bg-green-500/20 text-green-400' },
-  { value: 'perdido', label: 'Perdido', color: 'bg-red-500/20 text-red-400' }
+  { value: 'perdido', label: 'Perdido', color: 'bg-red-500/20 text-red-400' },
 ];
 
 const DasprentLeads = () => {
@@ -54,9 +71,9 @@ const DasprentLeads = () => {
       setLeads(data || []);
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: "Erro ao carregar leads: " + error.message,
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Erro ao carregar leads: ' + error.message,
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -72,42 +89,39 @@ const DasprentLeads = () => {
 
       if (error) throw error;
 
-      setLeads(leads.map(lead => 
-        lead.id === leadId ? { ...lead, status: newStatus } : lead
-      ));
+      setLeads(leads.map((lead) => (lead.id === leadId ? { ...lead, status: newStatus } : lead)));
 
       toast({
-        title: "Sucesso",
-        description: "Status do lead atualizado com sucesso!",
+        title: 'Sucesso',
+        description: 'Status do lead atualizado com sucesso!',
       });
     } catch (error: any) {
       toast({
-        title: "Erro",
+        title: 'Erro',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     }
   };
 
   const getStatusStyle = (status: string) => {
-    const statusOption = statusOptions.find(option => option.value === status);
+    const statusOption = statusOptions.find((option) => option.value === status);
     return statusOption ? statusOption.color : 'bg-gray-500/20 text-gray-400';
   };
 
   const getStatusLabel = (status: string) => {
-    const statusOption = statusOptions.find(option => option.value === status);
+    const statusOption = statusOptions.find((option) => option.value === status);
     return statusOption ? statusOption.label : status;
   };
 
-  const filteredLeads = filterStatus === 'all' 
-    ? leads 
-    : leads.filter(lead => lead.status === filterStatus);
+  const filteredLeads =
+    filterStatus === 'all' ? leads : leads.filter((lead) => lead.status === filterStatus);
 
   const stats = {
     total: leads.length,
-    novos: leads.filter(l => l.status === 'novo').length,
-    contactados: leads.filter(l => l.status === 'contactado').length,
-    fechados: leads.filter(l => l.status === 'fechado').length,
+    novos: leads.filter((l) => l.status === 'novo').length,
+    contactados: leads.filter((l) => l.status === 'contactado').length,
+    fechados: leads.filter((l) => l.status === 'fechado').length,
   };
 
   if (loading) {
@@ -124,7 +138,7 @@ const DasprentLeads = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
       <DasprentNavigation />
-      
+
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
@@ -147,7 +161,7 @@ const DasprentLeads = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-gray-800/50 border-gray-700">
               <CardContent className="p-6">
                 <div className="flex items-center">
@@ -161,7 +175,7 @@ const DasprentLeads = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-gray-800/50 border-gray-700">
               <CardContent className="p-6">
                 <div className="flex items-center">
@@ -175,7 +189,7 @@ const DasprentLeads = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-gray-800/50 border-gray-700">
               <CardContent className="p-6">
                 <div className="flex items-center">
@@ -201,8 +215,10 @@ const DasprentLeads = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-600">
-                    <SelectItem value="all" className="text-white">Todos</SelectItem>
-                    {statusOptions.map(option => (
+                    <SelectItem value="all" className="text-white">
+                      Todos
+                    </SelectItem>
+                    {statusOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value} className="text-white">
                         {option.label}
                       </SelectItem>
@@ -262,19 +278,27 @@ const DasprentLeads = () => {
                         </TableCell>
                         <TableCell className="text-gray-300">{lead.tipo_viatura}</TableCell>
                         <TableCell className="text-gray-300">
-                          {lead.data_aluguer ? format(new Date(lead.data_aluguer), 'dd/MM/yyyy', { locale: pt }) : '-'}
+                          {lead.data_aluguer
+                            ? format(new Date(lead.data_aluguer), 'dd/MM/yyyy', { locale: pt })
+                            : '-'}
                         </TableCell>
                         <TableCell>
-                          <Select 
-                            value={lead.status} 
+                          <Select
+                            value={lead.status}
                             onValueChange={(value) => updateLeadStatus(lead.id, value)}
                           >
-                            <SelectTrigger className={`w-36 text-xs ${getStatusStyle(lead.status)}`}>
+                            <SelectTrigger
+                              className={`w-36 text-xs ${getStatusStyle(lead.status)}`}
+                            >
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-gray-800 border-gray-600">
-                              {statusOptions.map(option => (
-                                <SelectItem key={option.value} value={option.value} className="text-white">
+                              {statusOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                  className="text-white"
+                                >
                                   {option.label}
                                 </SelectItem>
                               ))}

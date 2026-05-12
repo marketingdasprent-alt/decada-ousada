@@ -4,12 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -17,8 +12,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Eye, EyeOff, Clock, ArrowRight, ArrowLeft, Check, ChevronRight } from 'lucide-react';
-import { UBER_DEFAULTS, BOLT_DEFAULTS, BP_DEFAULTS, REPSOL_DEFAULTS, EDP_DEFAULTS, type PlataformaOperacional } from './integracoes/types';
+import {
+  Loader2,
+  Eye,
+  EyeOff,
+  Clock,
+  ArrowRight,
+  ArrowLeft,
+  Check,
+  ChevronRight,
+} from 'lucide-react';
+import {
+  UBER_DEFAULTS,
+  BOLT_DEFAULTS,
+  BP_DEFAULTS,
+  REPSOL_DEFAULTS,
+  EDP_DEFAULTS,
+  type PlataformaOperacional,
+} from './integracoes/types';
 import { presetToCronExpression } from '@/lib/cronPresets';
 import { cn } from '@/lib/utils';
 
@@ -51,9 +62,7 @@ function Stepper({ currentStep }: { currentStep: number }) {
               <div
                 className={cn(
                   'flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-colors',
-                  isActive
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-muted text-muted-foreground'
+                  isActive ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'
                 )}
               >
                 {stepNum < currentStep ? <Check className="h-4 w-4" /> : stepNum}
@@ -124,12 +133,15 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
   const isBp = formData.plataforma === 'bp';
   const isRepsol = formData.plataforma === 'repsol';
   const isEdp = formData.plataforma === 'edp';
-  const defaults = 
-    isBolt ? BOLT_DEFAULTS : 
-    isBp ? BP_DEFAULTS : 
-    isRepsol ? REPSOL_DEFAULTS :
-    isEdp ? EDP_DEFAULTS :
-    UBER_DEFAULTS;
+  const defaults = isBolt
+    ? BOLT_DEFAULTS
+    : isBp
+      ? BP_DEFAULTS
+      : isRepsol
+        ? REPSOL_DEFAULTS
+        : isEdp
+          ? EDP_DEFAULTS
+          : UBER_DEFAULTS;
   const needsLoginPassword = isUber || isBolt || isBp || isRepsol || isEdp;
   const selectedPlatform = PLATFORMS.find((p) => p.id === formData.plataforma);
 
@@ -159,7 +171,11 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
 
   const handleSave = async () => {
     if (!formData.nome) {
-      toast({ title: 'Erro', description: 'Preencha o nome da integração', variant: 'destructive' });
+      toast({
+        title: 'Erro',
+        description: 'Preencha o nome da integração',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -223,7 +239,10 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
         }
       }
 
-      toast({ title: 'Sucesso', description: `Integração ${selectedPlatform?.name} criada com sucesso` });
+      toast({
+        title: 'Sucesso',
+        description: `Integração ${selectedPlatform?.name} criada com sucesso`,
+      });
       handleClose(false);
       onSuccess();
     } catch (error: any) {
@@ -259,9 +278,7 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
                   <button
                     key={platform.id}
                     type="button"
-                    onClick={() =>
-                      setFormData((prev) => ({ ...prev, plataforma: platform.id }))
-                    }
+                    onClick={() => setFormData((prev) => ({ ...prev, plataforma: platform.id }))}
                     className={cn(
                       'flex flex-col items-center justify-center gap-3 rounded-xl border-2 p-6 transition-all hover:shadow-md cursor-pointer bg-card',
                       isSelected
@@ -274,9 +291,7 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
                       alt={platform.name}
                       className="h-16 w-16 object-contain"
                     />
-                    <span className="text-sm font-semibold text-foreground">
-                      {platform.name}
-                    </span>
+                    <span className="text-sm font-semibold text-foreground">{platform.name}</span>
                     {isSelected && (
                       <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500">
                         <Check className="h-3 w-3 text-white" />
@@ -316,9 +331,7 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
                   type="email"
                   placeholder="email@empresa.com"
                   value={formData.login}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, login: e.target.value }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, login: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
@@ -329,9 +342,7 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={formData.password}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, password: e.target.value }))
-                    }
+                    onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                   />
                   <Button
                     type="button"
@@ -340,11 +351,7 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
                     className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
               </div>
@@ -365,9 +372,7 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
               <div>
                 <p className="font-semibold text-foreground">{selectedPlatform.name}</p>
                 {formData.login && (
-                  <p className="text-sm text-muted-foreground">
-                    {maskEmail(formData.login)}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{maskEmail(formData.login)}</p>
                 )}
               </div>
               <div className="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10">
@@ -382,9 +387,7 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
                 id="nome"
                 placeholder={`Ex: ${selectedPlatform.name} WeGest`}
                 value={formData.nome}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, nome: e.target.value }))
-                }
+                onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
               />
             </div>
 
@@ -457,8 +460,7 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
               <Button onClick={handleSave} disabled={saving || !formData.nome}>
                 {saving ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    A criar...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />A criar...
                   </>
                 ) : (
                   'Criar Integração'

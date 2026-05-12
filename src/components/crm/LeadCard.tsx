@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -39,8 +38,12 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, customTags = [] }) => 
   const isFormDataJSON = (text: string): boolean => {
     try {
       const parsed = JSON.parse(text);
-      return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) && 
-             Object.keys(parsed).some(key => key.startsWith('field_'));
+      return (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        !Array.isArray(parsed) &&
+        Object.keys(parsed).some((key) => key.startsWith('field_'))
+      );
     } catch {
       return false;
     }
@@ -57,31 +60,49 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, customTags = [] }) => 
     if (lead.observacoes) {
       try {
         const observacoesData = JSON.parse(lead.observacoes);
-        
+
         if (typeof observacoesData === 'object' && observacoesData !== null) {
           // Novo formato com labels
           Object.entries(observacoesData).forEach(([key, fieldData]: [string, any]) => {
             if (fieldData && typeof fieldData === 'object' && fieldData.label) {
               const labelLower = fieldData.label.toLowerCase();
               const value = String(fieldData.value || '').trim();
-              
+
               if (!value) return;
-              
-              if (labelLower.includes('nome') && !labelLower.includes('sobre') && (!displayData.nome || displayData.nome === 'Nome não fornecido')) {
+
+              if (
+                labelLower.includes('nome') &&
+                !labelLower.includes('sobre') &&
+                (!displayData.nome || displayData.nome === 'Nome não fornecido')
+              ) {
                 displayData.nome = value;
-              } else if ((labelLower.includes('email') || labelLower.includes('e-mail')) && (!displayData.email || displayData.email === 'email@naoidentificado.com')) {
+              } else if (
+                (labelLower.includes('email') || labelLower.includes('e-mail')) &&
+                (!displayData.email || displayData.email === 'email@naoidentificado.com')
+              ) {
                 displayData.email = value;
-              } else if ((labelLower.includes('telefone') || labelLower.includes('whatsapp') || labelLower.includes('telemóvel')) && !displayData.telefone) {
+              } else if (
+                (labelLower.includes('telefone') ||
+                  labelLower.includes('whatsapp') ||
+                  labelLower.includes('telemóvel')) &&
+                !displayData.telefone
+              ) {
                 displayData.telefone = value;
               }
             } else if (typeof fieldData === 'string') {
               // Formato antigo (fallback)
               const value = fieldData.trim();
               if (!value) return;
-              
-              if (value.includes('@') && (!displayData.email || displayData.email === 'email@naoidentificado.com')) {
+
+              if (
+                value.includes('@') &&
+                (!displayData.email || displayData.email === 'email@naoidentificado.com')
+              ) {
                 displayData.email = value;
-              } else if (/^\+?\d{9,}$/.test(value.replace(/[\s()-]/g, '')) && !displayData.telefone) {
+              } else if (
+                /^\+?\d{9,}$/.test(value.replace(/[\s()-]/g, '')) &&
+                !displayData.telefone
+              ) {
                 displayData.telefone = value;
               }
             }
@@ -96,18 +117,11 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, customTags = [] }) => 
   };
 
   // Tags são recebidas via props (otimização de performance)
-  
+
   // Obter dados para exibição (campos principais ou extraídos das observações)
   const displayData = getLeadDisplayData(lead);
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: lead.id,
     data: {
       type: 'lead',
@@ -134,14 +148,14 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, customTags = [] }) => 
       'bg-purple-500/20 text-purple-600 dark:text-purple-300 border-purple-500/30',
       'bg-orange-500/20 text-orange-600 dark:text-orange-300 border-orange-500/30',
       'bg-pink-500/20 text-pink-600 dark:text-pink-300 border-pink-500/30',
-      'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border-cyan-500/30'
+      'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border-cyan-500/30',
     ];
-    
+
     const hash = tag.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
+      a = (a << 5) - a + b.charCodeAt(0);
       return a & a;
     }, 0);
-    
+
     return colors[Math.abs(hash) % colors.length];
   };
 
@@ -152,9 +166,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, customTags = [] }) => 
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ scale: isDragging ? 1 : 1.02 }}
-      className={`transition-all duration-200 ${
-        isDragging ? 'opacity-50 z-50' : ''
-      }`}
+      className={`transition-all duration-200 ${isDragging ? 'opacity-50 z-50' : ''}`}
     >
       <Card
         className={`bg-gradient-to-br from-card/90 to-card backdrop-blur-sm border-border/50 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 ${
@@ -168,7 +180,9 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, customTags = [] }) => 
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <div className="min-w-0 flex-1">
-                <h4 className="font-semibold text-foreground text-sm leading-tight truncate">{displayData.nome || 'Lead sem nome'}</h4>
+                <h4 className="font-semibold text-foreground text-sm leading-tight truncate">
+                  {displayData.nome || 'Lead sem nome'}
+                </h4>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -193,18 +207,15 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, customTags = [] }) => 
           )}
 
           {/* Campaign Tags */}
-          {(lead.campaign_tags && lead.campaign_tags.length > 0) && (
+          {lead.campaign_tags && lead.campaign_tags.length > 0 && (
             <div className="mb-3">
               <div className="flex items-center gap-1 mb-2">
-              <Tag className="h-3 w-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Campanhas</span>
+                <Tag className="h-3 w-3 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Campanhas</span>
               </div>
               <div className="flex flex-wrap gap-1">
                 {lead.campaign_tags.slice(0, 2).map((tag) => (
-                  <Badge
-                    key={tag}
-                    className={`${getTagColor(tag)} px-1.5 py-0.5 text-xs border`}
-                  >
+                  <Badge key={tag} className={`${getTagColor(tag)} px-1.5 py-0.5 text-xs border`}>
                     {tag}
                   </Badge>
                 ))}

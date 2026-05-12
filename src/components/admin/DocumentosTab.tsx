@@ -65,17 +65,15 @@ export const DocumentosTab = () => {
 
   const handleDuplicate = async (template: DocumentTemplate) => {
     try {
-      const { error } = await supabase
-        .from('document_templates')
-        .insert({
-          nome: `${template.nome} (Cópia)`,
-          tipo: template.tipo,
-          empresa_id: template.empresa_id,
-          template_data: template.template_data,
-          campos_dinamicos: template.campos_dinamicos,
-          ativo: false,
-          versao: 1,
-        });
+      const { error } = await supabase.from('document_templates').insert({
+        nome: `${template.nome} (Cópia)`,
+        tipo: template.tipo,
+        empresa_id: template.empresa_id,
+        template_data: template.template_data,
+        campos_dinamicos: template.campos_dinamicos,
+        ativo: false,
+        versao: 1,
+      });
 
       if (error) throw error;
       toast.success('Template duplicado com sucesso');
@@ -125,8 +123,8 @@ export const DocumentosTab = () => {
         <>
           <div className="flex items-center justify-between">
             <div>
-            <h2 className="text-2xl font-bold text-foreground">Templates de Documentos</h2>
-            <p className="text-muted-foreground mt-1">
+              <h2 className="text-2xl font-bold text-foreground">Templates de Documentos</h2>
+              <p className="text-muted-foreground mt-1">
                 Gerir templates de contratos e outros documentos
               </p>
             </div>

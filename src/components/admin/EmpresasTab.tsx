@@ -7,11 +7,21 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Building2, Plus, Pencil, Trash2, Loader2, RefreshCw } from 'lucide-react';
 
@@ -65,16 +75,16 @@ export const EmpresasTab: React.FC = () => {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('empresas')
-      .select('*')
-      .order('nome');
-    if (error) { toast.error('Erro ao carregar empresas'); }
-    else setEmpresas((data ?? []) as Empresa[]);
+    const { data, error } = await supabase.from('empresas').select('*').order('nome');
+    if (error) {
+      toast.error('Erro ao carregar empresas');
+    } else setEmpresas((data ?? []) as Empresa[]);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const openNew = () => {
     setEditingId(null);
@@ -120,16 +130,11 @@ export const EmpresasTab: React.FC = () => {
       };
 
       if (editingId) {
-        const { error } = await supabase
-          .from('empresas')
-          .update(payload)
-          .eq('id', editingId);
+        const { error } = await supabase.from('empresas').update(payload).eq('id', editingId);
         if (error) throw error;
         toast.success('Empresa atualizada');
       } else {
-        const { error } = await supabase
-          .from('empresas')
-          .insert(payload);
+        const { error } = await supabase.from('empresas').insert(payload);
         if (error) throw error;
         toast.success('Empresa criada');
       }
@@ -147,7 +152,10 @@ export const EmpresasTab: React.FC = () => {
     if (!deleteId) return;
     const { error } = await supabase.from('empresas').delete().eq('id', deleteId);
     if (error) toast.error(error.message);
-    else { toast.success('Empresa removida'); load(); }
+    else {
+      toast.success('Empresa removida');
+      load();
+    }
     setDeleteId(null);
   };
 
@@ -250,12 +258,15 @@ export const EmpresasTab: React.FC = () => {
       )}
 
       {/* Create / Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(o) => { if (!saving) setDialogOpen(o); }}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(o) => {
+          if (!saving) setDialogOpen(o);
+        }}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {editingId ? 'Editar Empresa' : 'Nova Empresa'}
-            </DialogTitle>
+            <DialogTitle>{editingId ? 'Editar Empresa' : 'Nova Empresa'}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
@@ -294,7 +305,9 @@ export const EmpresasTab: React.FC = () => {
               </div>
             </div>
 
-            {field('Nome Completo (para contratos)', 'nome_completo', { placeholder: 'Ex: WeGest, Lda.' })}
+            {field('Nome Completo (para contratos)', 'nome_completo', {
+              placeholder: 'Ex: WeGest, Lda.',
+            })}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {field('NIF', 'nif', { placeholder: '515127850' })}
@@ -302,13 +315,17 @@ export const EmpresasTab: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {field('Cargo do Representante', 'cargo_representante', { placeholder: 'gerente com poderes para o ato' })}
+              {field('Cargo do Representante', 'cargo_representante', {
+                placeholder: 'gerente com poderes para o ato',
+              })}
               {field('Licença TVDE', 'licenca_tvde', { placeholder: '87314/2021' })}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {field('Validade da Licença', 'licenca_validade', { placeholder: '26/12/2028' })}
-              {field('Papel Timbrado (URL imagem)', 'papel_timbrado', { placeholder: '/images/papel-timbrado.png' })}
+              {field('Papel Timbrado (URL imagem)', 'papel_timbrado', {
+                placeholder: '/images/papel-timbrado.png',
+              })}
             </div>
 
             {field('Sede (morada completa)', 'sede', {
@@ -323,7 +340,9 @@ export const EmpresasTab: React.FC = () => {
                 onChange={(e) => setForm((prev) => ({ ...prev, ativo: e.target.checked }))}
                 className="h-4 w-4 rounded border-gray-300"
               />
-              <Label htmlFor="ativo" className="cursor-pointer">Empresa ativa</Label>
+              <Label htmlFor="ativo" className="cursor-pointer">
+                Empresa ativa
+              </Label>
             </div>
           </div>
 
@@ -340,7 +359,12 @@ export const EmpresasTab: React.FC = () => {
       </Dialog>
 
       {/* Delete Confirm */}
-      <AlertDialog open={!!deleteId} onOpenChange={(o) => { if (!o) setDeleteId(null); }}>
+      <AlertDialog
+        open={!!deleteId}
+        onOpenChange={(o) => {
+          if (!o) setDeleteId(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remover empresa?</AlertDialogTitle>
@@ -351,7 +375,10 @@ export const EmpresasTab: React.FC = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Remover
             </AlertDialogAction>
           </AlertDialogFooter>

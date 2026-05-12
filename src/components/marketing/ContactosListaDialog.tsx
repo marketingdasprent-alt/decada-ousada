@@ -4,7 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Plus, Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -23,7 +30,7 @@ const ContactosListaDialog = ({ open, onOpenChange, lista }: Props) => {
 
   const toggleSort = (field: 'nome' | 'email') => {
     if (sortField === field) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortField(field);
       setSortDirection('asc');
@@ -55,7 +62,9 @@ const ContactosListaDialog = ({ open, onOpenChange, lista }: Props) => {
 
   const addMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from('marketing_contactos').insert({ lista_id: lista.id, nome, email });
+      const { error } = await supabase
+        .from('marketing_contactos')
+        .insert({ lista_id: lista.id, nome, email });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -65,7 +74,10 @@ const ContactosListaDialog = ({ open, onOpenChange, lista }: Props) => {
       setEmail('');
       toast.success('Contacto adicionado');
     },
-    onError: (err: any) => toast.error(err.message?.includes('duplicate') ? 'Email já existe nesta lista' : 'Erro ao adicionar'),
+    onError: (err: any) =>
+      toast.error(
+        err.message?.includes('duplicate') ? 'Email já existe nesta lista' : 'Erro ao adicionar'
+      ),
   });
 
   const deleteMutation = useMutation({
@@ -92,32 +104,74 @@ const ContactosListaDialog = ({ open, onOpenChange, lista }: Props) => {
             <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome" />
           </div>
           <div className="flex-1">
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+            />
           </div>
-          <Button onClick={() => addMutation.mutate()} disabled={!nome || !email || addMutation.isPending} size="sm" className="gap-1">
-            {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          <Button
+            onClick={() => addMutation.mutate()}
+            disabled={!nome || !email || addMutation.isPending}
+            size="sm"
+            className="gap-1"
+          >
+            {addMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
             Adicionar
           </Button>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
         ) : !contactos?.length ? (
           <p className="text-center text-muted-foreground py-8">Nenhum contacto nesta lista.</p>
         ) : (
           <Table>
             <TableHeader>
-            <TableRow>
+              <TableRow>
                 <TableHead>
-                  <Button variant="ghost" size="sm" className="gap-1 -ml-2" onClick={() => toggleSort('nome')}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 -ml-2"
+                    onClick={() => toggleSort('nome')}
+                  >
                     Nome
-                    {sortField === 'nome' ? (sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-muted-foreground" />}
+                    {sortField === 'nome' ? (
+                      sortDirection === 'asc' ? (
+                        <ArrowUp className="h-3 w-3" />
+                      ) : (
+                        <ArrowDown className="h-3 w-3" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                    )}
                   </Button>
                 </TableHead>
                 <TableHead>
-                  <Button variant="ghost" size="sm" className="gap-1 -ml-2" onClick={() => toggleSort('email')}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 -ml-2"
+                    onClick={() => toggleSort('email')}
+                  >
                     Email
-                    {sortField === 'email' ? (sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-muted-foreground" />}
+                    {sortField === 'email' ? (
+                      sortDirection === 'asc' ? (
+                        <ArrowUp className="h-3 w-3" />
+                      ) : (
+                        <ArrowDown className="h-3 w-3" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                    )}
                   </Button>
                 </TableHead>
                 <TableHead className="w-10" />
@@ -139,7 +193,9 @@ const ContactosListaDialog = ({ open, onOpenChange, lista }: Props) => {
           </Table>
         )}
 
-        <p className="text-xs text-muted-foreground">{contactos?.length || 0} contacto(s) nesta lista</p>
+        <p className="text-xs text-muted-foreground">
+          {contactos?.length || 0} contacto(s) nesta lista
+        </p>
       </DialogContent>
     </Dialog>
   );

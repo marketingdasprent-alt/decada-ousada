@@ -1,10 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, FileText, CheckCircle2, Search, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,8 +55,8 @@ interface DocumentTemplate {
 interface GenerateDocumentsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  motorista?: Motorista | null;  // Agora opcional
-  onSuccess?: () => void;  // Callback quando documentos são gerados
+  motorista?: Motorista | null; // Agora opcional
+  onSuccess?: () => void; // Callback quando documentos são gerados
 }
 
 export const GenerateDocumentsDialog = ({
@@ -100,10 +113,11 @@ export const GenerateDocumentsDialog = ({
     if (searchTerm.trim() === '') {
       setFilteredMotoristas(motoristas);
     } else {
-      const filtered = motoristas.filter(m =>
-        m.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (m.email && m.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (m.nif && m.nif.includes(searchTerm))
+      const filtered = motoristas.filter(
+        (m) =>
+          m.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (m.email && m.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (m.nif && m.nif.includes(searchTerm))
       );
       setFilteredMotoristas(filtered);
     }
@@ -112,13 +126,13 @@ export const GenerateDocumentsDialog = ({
   // Limpar seleções de templates que não pertencem à empresa selecionada
   useEffect(() => {
     if (templates.length > 0 && selectedEmpresa) {
-      setSelectedTemplates(prev => {
+      setSelectedTemplates((prev) => {
         const filteredIds = templates
-          .filter(t => t.empresa_id === selectedEmpresa)
-          .map(t => t.id);
-        
+          .filter((t) => t.empresa_id === selectedEmpresa)
+          .map((t) => t.id);
+
         const newSet = new Set<string>();
-        prev.forEach(id => {
+        prev.forEach((id) => {
           if (filteredIds.includes(id)) {
             newSet.add(id);
           }
@@ -152,7 +166,7 @@ export const GenerateDocumentsDialog = ({
     try {
       setLoadingTemplates(true);
       setSelectedEmpresa(defaultEmpresaId);
-      
+
       const { data, error } = await supabase
         .from('document_templates')
         .select('id, nome, tipo, empresa_id')
@@ -164,8 +178,8 @@ export const GenerateDocumentsDialog = ({
 
       // Pré-selecionar templates do tipo contrato_tvde APENAS da empresa padrão
       const contratoIds = (data || [])
-        .filter(t => t.tipo === 'contrato_tvde' && t.empresa_id === defaultEmpresaId)
-        .map(t => t.id);
+        .filter((t) => t.tipo === 'contrato_tvde' && t.empresa_id === defaultEmpresaId)
+        .map((t) => t.id);
       setSelectedTemplates(new Set(contratoIds));
     } catch (error: any) {
       console.error('Erro ao carregar templates:', error);
@@ -176,7 +190,7 @@ export const GenerateDocumentsDialog = ({
   };
 
   const toggleTemplate = (templateId: string) => {
-    setSelectedTemplates(prev => {
+    setSelectedTemplates((prev) => {
       const next = new Set(prev);
       if (next.has(templateId)) {
         next.delete(templateId);
@@ -187,12 +201,12 @@ export const GenerateDocumentsDialog = ({
     });
   };
 
-  const filteredTemplates = templates.filter(t => 
-    !selectedEmpresa || t.empresa_id === selectedEmpresa
+  const filteredTemplates = templates.filter(
+    (t) => !selectedEmpresa || t.empresa_id === selectedEmpresa
   );
 
   // Contador de templates visíveis e selecionados
-  const visibleSelectedCount = filteredTemplates.filter(t => selectedTemplates.has(t.id)).length;
+  const visibleSelectedCount = filteredTemplates.filter((t) => selectedTemplates.has(t.id)).length;
 
   const handleGenerate = async (action: 'print' | 'download') => {
     if (!activeMotorista) {
@@ -209,7 +223,7 @@ export const GenerateDocumentsDialog = ({
       setIsGenerating(true);
       setGeneratedTemplates(new Set());
 
-      const templatesToGenerate = filteredTemplates.filter(t => selectedTemplates.has(t.id));
+      const templatesToGenerate = filteredTemplates.filter((t) => selectedTemplates.has(t.id));
       const { data: user } = await supabase.auth.getUser();
       const today = new Date().toISOString().split('T')[0];
 
@@ -232,8 +246,12 @@ export const GenerateDocumentsDialog = ({
       const empresa = getById(selectedEmpresa);
 
       // Separar templates por tipo
-      const contratoTemplates = templatesToGenerate.filter(t => t.tipo === 'contrato_tvde' || t.tipo === 'contrato');
-      const otherTemplates = templatesToGenerate.filter(t => t.tipo !== 'contrato_tvde' && t.tipo !== 'contrato');
+      const contratoTemplates = templatesToGenerate.filter(
+        (t) => t.tipo === 'contrato_tvde' || t.tipo === 'contrato'
+      );
+      const otherTemplates = templatesToGenerate.filter(
+        (t) => t.tipo !== 'contrato_tvde' && t.tipo !== 'contrato'
+      );
 
       let successCount = 0;
 
@@ -242,8 +260,9 @@ export const GenerateDocumentsDialog = ({
         setCurrentGenerating(template.id);
         try {
           // Usar a função atômica do Supabase para criar/verificar contrato
-          const { data: contratoResult, error: contratoError } = await supabase
-            .rpc('gerar_contrato_atomico', {
+          const { data: contratoResult, error: contratoError } = await supabase.rpc(
+            'gerar_contrato_atomico',
+            {
               p_motorista_id: activeMotorista.id,
               p_empresa_id: selectedEmpresa,
               p_motorista_nome: activeMotorista.nome,
@@ -258,8 +277,9 @@ export const GenerateDocumentsDialog = ({
               p_data_inicio: activeMotorista.data_contratacao || today,
               p_duracao_meses: 12,
               p_criado_por: user?.user?.id || null,
-              p_force_new_version: false // Não forçar nova versão se já existir
-            });
+              p_force_new_version: false, // Não forçar nova versão se já existir
+            }
+          );
 
           if (contratoError) {
             console.error('Erro ao criar/verificar contrato:', contratoError);
@@ -271,13 +291,13 @@ export const GenerateDocumentsDialog = ({
 
           // Registrar no histórico de reimpressões
           if (contratoData?.id) {
-            await supabase
-              .from('contratos_reimpressoes')
-              .insert({
-                contrato_id: contratoData.id,
-                reimpresso_por: user?.user?.id,
-                motivo: isExisting ? 'Reimpressão de contrato existente' : 'Geração inicial do documento',
-              });
+            await supabase.from('contratos_reimpressoes').insert({
+              contrato_id: contratoData.id,
+              reimpresso_por: user?.user?.id,
+              motivo: isExisting
+                ? 'Reimpressão de contrato existente'
+                : 'Geração inicial do documento',
+            });
           }
 
           // Gerar o documento
@@ -289,20 +309,22 @@ export const GenerateDocumentsDialog = ({
               data_assinatura: activeMotorista.data_contratacao || today,
               cidade_assinatura: cidadeAssinatura,
               duracao_meses: 12,
-              empresaData: empresa ? {
-                nomeCompleto: empresa.nomeCompleto,
-                nif: empresa.nif,
-                sede: empresa.sede,
-                licencaTVDE: empresa.licencaTVDE,
-                licencaValidade: empresa.licencaValidade,
-                representante: empresa.representante,
-                cargoRepresentante: empresa.cargoRepresentante,
-              } : undefined,
+              empresaData: empresa
+                ? {
+                    nomeCompleto: empresa.nomeCompleto,
+                    nif: empresa.nif,
+                    sede: empresa.sede,
+                    licencaTVDE: empresa.licencaTVDE,
+                    licencaValidade: empresa.licencaValidade,
+                    representante: empresa.representante,
+                    cargoRepresentante: empresa.cargoRepresentante,
+                  }
+                : undefined,
             },
             action,
           });
 
-          setGeneratedTemplates(prev => new Set(prev).add(template.id));
+          setGeneratedTemplates((prev) => new Set(prev).add(template.id));
           successCount++;
         } catch (err: any) {
           console.error(`Erro ao gerar ${template.nome}:`, err);
@@ -322,20 +344,22 @@ export const GenerateDocumentsDialog = ({
               data_assinatura: activeMotorista.data_contratacao || today,
               cidade_assinatura: cidadeAssinatura,
               duracao_meses: 12,
-              empresaData: empresa ? {
-                nomeCompleto: empresa.nomeCompleto,
-                nif: empresa.nif,
-                sede: empresa.sede,
-                licencaTVDE: empresa.licencaTVDE,
-                licencaValidade: empresa.licencaValidade,
-                representante: empresa.representante,
-                cargoRepresentante: empresa.cargoRepresentante,
-              } : undefined,
+              empresaData: empresa
+                ? {
+                    nomeCompleto: empresa.nomeCompleto,
+                    nif: empresa.nif,
+                    sede: empresa.sede,
+                    licencaTVDE: empresa.licencaTVDE,
+                    licencaValidade: empresa.licencaValidade,
+                    representante: empresa.representante,
+                    cargoRepresentante: empresa.cargoRepresentante,
+                  }
+                : undefined,
             },
             action,
           });
 
-          setGeneratedTemplates(prev => new Set(prev).add(template.id));
+          setGeneratedTemplates((prev) => new Set(prev).add(template.id));
           successCount++;
         } catch (err: any) {
           console.error(`Erro ao gerar ${template.nome}:`, err);
@@ -348,7 +372,7 @@ export const GenerateDocumentsDialog = ({
       if (action === 'print' && successCount > 0) {
         toast.info('Os documentos foram abertos em novas abas para impressão');
       }
-      
+
       // Chamar callback de sucesso se existir
       onSuccess?.();
     } catch (error: any) {
@@ -396,7 +420,7 @@ export const GenerateDocumentsDialog = ({
                     className="pl-9"
                   />
                 </div>
-                
+
                 {!selectedMotorista && (
                   <ScrollArea className="h-[180px] border rounded-md">
                     {filteredMotoristas.length === 0 ? (
@@ -434,11 +458,7 @@ export const GenerateDocumentsDialog = ({
                         {selectedMotorista.email || selectedMotorista.telefone}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedMotorista(null)}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedMotorista(null)}>
                       Alterar
                     </Button>
                   </div>
@@ -456,7 +476,7 @@ export const GenerateDocumentsDialog = ({
                 <div>
                   <p className="text-xs text-muted-foreground">Data Contratação</p>
                   <p className="font-medium">
-                    {motorista.data_contratacao 
+                    {motorista.data_contratacao
                       ? new Date(motorista.data_contratacao).toLocaleDateString('pt-PT')
                       : 'Não definida'}
                   </p>
@@ -464,76 +484,78 @@ export const GenerateDocumentsDialog = ({
               </div>
             )}
 
-          {/* Mostrar campos apenas quando há um motorista ativo */}
-          {activeMotorista && (
-            <>
-              {/* Cidade de Assinatura e Empresa */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cidadeAssinatura">Cidade de Assinatura</Label>
-                  <Input
-                    id="cidadeAssinatura"
-                    value={cidadeAssinatura}
-                    onChange={(e) => setCidadeAssinatura(e.target.value)}
-                    placeholder="Ex: Lisboa"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="empresa">Empresa</Label>
-                  <Select value={selectedEmpresa} onValueChange={setSelectedEmpresa}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a empresa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {empresas.map((e) => (
-                        <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Lista de Templates para Seleção */}
-              <div className="space-y-2">
-                <Label>Documentos a Gerar</Label>
-                <ScrollArea className="h-[180px] border rounded-md p-3">
-                  {templates.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Nenhum template disponível para esta empresa
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {templates
-                        .filter(t => t.empresa_id === selectedEmpresa)
-                        .map((template) => (
-                          <div
-                            key={template.id}
-                            className="flex items-center space-x-3 p-2 hover:bg-muted/50 rounded-md cursor-pointer"
-                            onClick={() => toggleTemplate(template.id)}
-                          >
-                            <Checkbox
-                              id={template.id}
-                              checked={selectedTemplates.has(template.id)}
-                              onCheckedChange={() => toggleTemplate(template.id)}
-                            />
-                            <label
-                              htmlFor={template.id}
-                              className="text-sm font-medium leading-none cursor-pointer flex-1"
-                            >
-                              {template.nome}
-                            </label>
-                          </div>
+            {/* Mostrar campos apenas quando há um motorista ativo */}
+            {activeMotorista && (
+              <>
+                {/* Cidade de Assinatura e Empresa */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cidadeAssinatura">Cidade de Assinatura</Label>
+                    <Input
+                      id="cidadeAssinatura"
+                      value={cidadeAssinatura}
+                      onChange={(e) => setCidadeAssinatura(e.target.value)}
+                      placeholder="Ex: Lisboa"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="empresa">Empresa</Label>
+                    <Select value={selectedEmpresa} onValueChange={setSelectedEmpresa}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a empresa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {empresas.map((e) => (
+                          <SelectItem key={e.id} value={e.id}>
+                            {e.nome}
+                          </SelectItem>
                         ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </div>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-              <p className="text-xs text-muted-foreground text-center">
-                {visibleSelectedCount} documento(s) selecionado(s)
-              </p>
-            </>
-          )}
+                {/* Lista de Templates para Seleção */}
+                <div className="space-y-2">
+                  <Label>Documentos a Gerar</Label>
+                  <ScrollArea className="h-[180px] border rounded-md p-3">
+                    {templates.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Nenhum template disponível para esta empresa
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {templates
+                          .filter((t) => t.empresa_id === selectedEmpresa)
+                          .map((template) => (
+                            <div
+                              key={template.id}
+                              className="flex items-center space-x-3 p-2 hover:bg-muted/50 rounded-md cursor-pointer"
+                              onClick={() => toggleTemplate(template.id)}
+                            >
+                              <Checkbox
+                                id={template.id}
+                                checked={selectedTemplates.has(template.id)}
+                                onCheckedChange={() => toggleTemplate(template.id)}
+                              />
+                              <label
+                                htmlFor={template.id}
+                                className="text-sm font-medium leading-none cursor-pointer flex-1"
+                              >
+                                {template.nome}
+                              </label>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
+
+                <p className="text-xs text-muted-foreground text-center">
+                  {visibleSelectedCount} documento(s) selecionado(s)
+                </p>
+              </>
+            )}
           </div>
         )}
 
@@ -548,8 +570,7 @@ export const GenerateDocumentsDialog = ({
           >
             {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                A gerar...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A gerar...
               </>
             ) : (
               'Download'
@@ -561,8 +582,7 @@ export const GenerateDocumentsDialog = ({
           >
             {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                A gerar...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A gerar...
               </>
             ) : (
               'Imprimir'

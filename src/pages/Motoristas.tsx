@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, ChevronUp, ChevronDown, Plus, Check } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MotoristaDialog } from "@/components/motoristas/MotoristaDialog";
-import { GenerateDocumentsDialog } from "@/components/motoristas/GenerateDocumentsDialog";
-import { MotoristaCard } from "@/components/motoristas/MotoristaCard";
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Search, ChevronUp, ChevronDown, Plus, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { MotoristaDialog } from '@/components/motoristas/MotoristaDialog';
+import { GenerateDocumentsDialog } from '@/components/motoristas/GenerateDocumentsDialog';
+import { MotoristaCard } from '@/components/motoristas/MotoristaCard';
 import {
   Table,
   TableBody,
@@ -14,25 +14,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { MotoristaDetailsDrawer } from "@/components/motoristas/MotoristaDetailsDrawer";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { cn, normalizeString } from "@/lib/utils";
+} from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { MotoristaDetailsDrawer } from '@/components/motoristas/MotoristaDetailsDrawer';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn, normalizeString } from '@/lib/utils';
 
 export type Motorista = {
   id: string;
@@ -79,26 +74,34 @@ export type Motorista = {
   updated_at: string;
 };
 
-type SortColumn = "codigo" | "nome" | "telefone" | "gestor_responsavel" | "cidade" | "status_ativo" | "bolt_id" | "uber_uuid";
+type SortColumn =
+  | 'codigo'
+  | 'nome'
+  | 'telefone'
+  | 'gestor_responsavel'
+  | 'cidade'
+  | 'status_ativo'
+  | 'bolt_id'
+  | 'uber_uuid';
 
 export default function Motoristas() {
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // 1. O URL é o ÚNICO dono da verdade
   const [searchParams, setSearchParams] = useSearchParams();
-  
-  const searchTerm = searchParams.get("search") || "";
-  const statusFilter = searchParams.get("status") || "todos";
-  const cidadeFilter = searchParams.get("cidade") || "todas";
-  const gestorFilter = searchParams.get("gestor") || "todos";
-  const sortColumn = (searchParams.get("sort") as SortColumn) || "codigo";
-  const sortDirection = (searchParams.get("dir") as "asc" | "desc") || "asc";
+
+  const searchTerm = searchParams.get('search') || '';
+  const statusFilter = searchParams.get('status') || 'todos';
+  const cidadeFilter = searchParams.get('cidade') || 'todas';
+  const gestorFilter = searchParams.get('gestor') || 'todos';
+  const sortColumn = (searchParams.get('sort') as SortColumn) || 'codigo';
+  const sortDirection = (searchParams.get('dir') as 'asc' | 'desc') || 'asc';
 
   const updateFilters = (updates: Record<string, string>) => {
     const newParams = new URLSearchParams(searchParams);
     Object.entries(updates).forEach(([key, value]) => {
-      if (value && value !== "" && value !== "todos" && value !== "todas") {
+      if (value && value !== '' && value !== 'todos' && value !== 'todas') {
         newParams.set(key, value);
       } else {
         newParams.delete(key);
@@ -108,7 +111,7 @@ export default function Motoristas() {
   };
 
   const handleSort = (column: SortColumn) => {
-    const newDir = sortColumn === column && sortDirection === "asc" ? "desc" : "asc";
+    const newDir = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
     updateFilters({ sort: column, dir: newDir });
   };
 
@@ -122,7 +125,9 @@ export default function Motoristas() {
   const isMobile = useIsMobile();
   const [isMappingDialogOpen, setIsMappingDialogOpen] = useState(false);
   const [mappingTarget, setMappingTarget] = useState<Motorista | null>(null);
-  const [unmappedBoltDrivers, setUnmappedBoltDrivers] = useState<{name: string, id: string}[]>([]);
+  const [unmappedBoltDrivers, setUnmappedBoltDrivers] = useState<{ name: string; id: string }[]>(
+    []
+  );
   const [isMappingLoading, setIsMappingLoading] = useState(false);
 
   useEffect(() => {
@@ -133,18 +138,18 @@ export default function Motoristas() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from("motoristas_ativos")
-        .select("*")
-        .order("codigo", { ascending: true });
+        .from('motoristas_ativos')
+        .select('*')
+        .order('codigo', { ascending: true });
 
       if (error) throw error;
       setMotoristas(data || []);
     } catch (error: any) {
-      console.error("Erro ao carregar motoristas:", error);
+      console.error('Erro ao carregar motoristas:', error);
       toast({
-        title: "Erro ao carregar motoristas",
+        title: 'Erro ao carregar motoristas',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -153,39 +158,37 @@ export default function Motoristas() {
 
   // Get unique cities for filter
   const availableCities = useMemo(() => {
-    const cities = motoristas
-      .map((m) => m.cidade)
-      .filter((c): c is string => !!c);
+    const cities = motoristas.map((m) => m.cidade).filter((c): c is string => !!c);
     return [...new Set(cities)].sort();
   }, [motoristas]);
 
   // Get unique gestores for filter
   const availableGestores = useMemo(() => {
-    const gestores = motoristas
-      .map((m) => m.gestor_responsavel)
-      .filter((g): g is string => !!g);
+    const gestores = motoristas.map((m) => m.gestor_responsavel).filter((g): g is string => !!g);
     return [...new Set(gestores)].sort();
   }, [motoristas]);
 
-
   // Sortable header component
-  const SortableHeader = ({ 
-    column, 
-    label, 
-    className 
-  }: { 
-    column: SortColumn; 
-    label: string; 
+  const SortableHeader = ({
+    column,
+    label,
+    className,
+  }: {
+    column: SortColumn;
+    label: string;
     className?: string;
   }) => (
-    <TableHead 
-      className={cn("h-10 cursor-pointer select-none hover:bg-muted/50 transition-colors", className)}
+    <TableHead
+      className={cn(
+        'h-10 cursor-pointer select-none hover:bg-muted/50 transition-colors',
+        className
+      )}
       onClick={() => handleSort(column)}
     >
       <div className="flex items-center gap-1">
         {label}
         {sortColumn === column ? (
-          sortDirection === "asc" ? (
+          sortDirection === 'asc' ? (
             <ChevronUp className="h-4 w-4" />
           ) : (
             <ChevronDown className="h-4 w-4" />
@@ -204,7 +207,7 @@ export default function Motoristas() {
     let result = motoristas.filter((m) => {
       // Text search (code, name, NIF, phone)
       const matchesSearch =
-        searchTerm.trim() === "" ||
+        searchTerm.trim() === '' ||
         m.codigo.toString().includes(searchTerm) ||
         normalizeString(m.nome).includes(searchNormalized) ||
         (m.nif && m.nif.includes(searchTerm)) ||
@@ -214,17 +217,15 @@ export default function Motoristas() {
 
       // Status filter
       const matchesStatus =
-        statusFilter === "todos" ||
-        (statusFilter === "ativo" && m.status_ativo) ||
-        (statusFilter === "inativo" && !m.status_ativo);
+        statusFilter === 'todos' ||
+        (statusFilter === 'ativo' && m.status_ativo) ||
+        (statusFilter === 'inativo' && !m.status_ativo);
 
       // City filter
-      const matchesCidade =
-        cidadeFilter === "todas" || m.cidade === cidadeFilter;
+      const matchesCidade = cidadeFilter === 'todas' || m.cidade === cidadeFilter;
 
       // Gestor filter
-      const matchesGestor =
-        gestorFilter === "todos" || m.gestor_responsavel === gestorFilter;
+      const matchesGestor = gestorFilter === 'todos' || m.gestor_responsavel === gestorFilter;
 
       return matchesSearch && matchesStatus && matchesCidade && matchesGestor;
     });
@@ -235,25 +236,25 @@ export default function Motoristas() {
       let bValue = b[sortColumn];
 
       // Handle nulls
-      if (aValue === null || aValue === undefined) aValue = "";
-      if (bValue === null || bValue === undefined) bValue = "";
+      if (aValue === null || aValue === undefined) aValue = '';
+      if (bValue === null || bValue === undefined) bValue = '';
 
       // Number comparison (codigo)
-      if (typeof aValue === "number" && typeof bValue === "number") {
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
         const comparison = aValue - bValue;
-        return sortDirection === "asc" ? comparison : -comparison;
+        return sortDirection === 'asc' ? comparison : -comparison;
       }
 
       // Boolean comparison (status_ativo)
-      if (typeof aValue === "boolean" && typeof bValue === "boolean") {
+      if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
         const comparison = aValue === bValue ? 0 : aValue ? -1 : 1;
-        return sortDirection === "asc" ? comparison : -comparison;
+        return sortDirection === 'asc' ? comparison : -comparison;
       }
 
       // String comparison
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        const comparison = aValue.localeCompare(bValue, "pt");
-        return sortDirection === "asc" ? comparison : -comparison;
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        const comparison = aValue.localeCompare(bValue, 'pt');
+        return sortDirection === 'asc' ? comparison : -comparison;
       }
 
       return 0;
@@ -288,12 +289,12 @@ export default function Motoristas() {
   const normalizeStr = (str: string): string => {
     if (!str) return '';
     return str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
       .toLowerCase()
-      .replace(/[^a-z0-9 ]/g, " ") // Remove pontuação
+      .replace(/[^a-z0-9 ]/g, ' ') // Remove pontuação
       .trim()
-      .replace(/\s+/g, " "); // Normaliza espaços
+      .replace(/\s+/g, ' '); // Normaliza espaços
   };
 
   const handleOpenMapping = async (motorista: Motorista) => {
@@ -303,16 +304,16 @@ export default function Motoristas() {
     try {
       // Buscar todos os nomes únicos da Bolt que não estão mapeados
       const { data, error } = await supabase
-        .from("bolt_resumos_semanais")
-        .select("motorista_nome, identificador_motorista")
-        .is("motorista_id", null)
-        .not("identificador_motorista", "is", null);
+        .from('bolt_resumos_semanais')
+        .select('motorista_nome, identificador_motorista')
+        .is('motorista_id', null)
+        .not('identificador_motorista', 'is', null);
 
       if (error) throw error;
 
       // Deduplicar por identificador
       const unique = data.reduce((acc: any[], current) => {
-        if (!acc.find(i => i.id === current.identificador_motorista)) {
+        if (!acc.find((i) => i.id === current.identificador_motorista)) {
           acc.push({ name: current.motorista_nome, id: current.identificador_motorista });
         }
         return acc;
@@ -320,7 +321,7 @@ export default function Motoristas() {
 
       setUnmappedBoltDrivers(unique);
     } catch (error) {
-      console.error("Erro ao carregar motoristas Bolt:", error);
+      console.error('Erro ao carregar motoristas Bolt:', error);
     } finally {
       setIsMappingLoading(false);
     }
@@ -331,23 +332,23 @@ export default function Motoristas() {
     try {
       setLoading(true);
       const { error } = await supabase
-        .from("motoristas_ativos")
+        .from('motoristas_ativos')
         .update({ bolt_id: boltId })
-        .eq("id", mappingTarget.id);
+        .eq('id', mappingTarget.id);
 
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: "Motorista mapeado com sucesso!",
+        title: 'Sucesso',
+        description: 'Motorista mapeado com sucesso!',
       });
       setIsMappingDialogOpen(false);
       loadMotoristas();
     } catch (error: any) {
       toast({
-        title: "Erro",
+        title: 'Erro',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -358,42 +359,42 @@ export default function Motoristas() {
     try {
       setLoading(true);
       toast({
-        title: "A iniciar sincronização v2.0",
-        description: "A aplicar lógica de comparação avançada...",
+        title: 'A iniciar sincronização v2.0',
+        description: 'A aplicar lógica de comparação avançada...',
       });
 
       // 1. Buscar todos os motoristas
       const { data: currentMotoristas, error: motError } = await supabase
-        .from("motoristas_ativos")
-        .select("id, nome, email, telefone, bolt_id, uber_uuid");
+        .from('motoristas_ativos')
+        .select('id, nome, email, telefone, bolt_id, uber_uuid');
 
       if (motError) throw motError;
 
       // 2. Buscar resumos Bolt com IDs
       const { data: resumos, error: resError } = await supabase
-        .from("bolt_resumos_semanais")
-        .select("motorista_nome, identificador_motorista, telefone, email, motorista_id")
-        .not("identificador_motorista", "is", null);
+        .from('bolt_resumos_semanais')
+        .select('motorista_nome, identificador_motorista, telefone, email, motorista_id')
+        .not('identificador_motorista', 'is', null);
 
       if (resError) throw resError;
 
       // 3. Buscar Uber Drivers mapeados
       const { data: uberDrivers, error: uberError } = await supabase
-        .from("uber_drivers")
-        .select("full_name, uber_driver_id, motorista_id")
-        .not("uber_driver_id", "is", null);
+        .from('uber_drivers')
+        .select('full_name, uber_driver_id, motorista_id')
+        .not('uber_driver_id', 'is', null);
 
       if (uberError) throw uberError;
 
       let totalMapped = 0;
       const updates = [];
-      const particles = ["de", "da", "do", "das", "dos", "e"];
+      const particles = ['de', 'da', 'do', 'das', 'dos', 'e'];
 
       for (const m of currentMotoristas) {
         if (m.bolt_id && m.uber_uuid) continue;
 
         const mClean = normalizeStr(m.nome);
-        const mWords = mClean.split(' ').filter(w => w.length > 2 && !particles.includes(w));
+        const mWords = mClean.split(' ').filter((w) => w.length > 2 && !particles.includes(w));
         const mPhone = m.telefone ? m.telefone.replace(/\D/g, '').slice(-9) : null;
         const mEmail = m.email?.toLowerCase().trim();
 
@@ -402,9 +403,9 @@ export default function Motoristas() {
 
         // Tentar encontrar na Bolt
         if (!m.bolt_id || !m.email || !m.telefone) {
-          const match = resumos.find(r => {
+          const match = resumos.find((r) => {
             const rClean = normalizeStr(r.motorista_nome || '');
-            const rWords = rClean.split(' ').filter(w => w.length > 2 && !particles.includes(w));
+            const rWords = rClean.split(' ').filter((w) => w.length > 2 && !particles.includes(w));
             const rPhone = r.telefone ? r.telefone.replace(/\D/g, '').slice(-9) : null;
             const rEmail = r.email?.toLowerCase().trim();
 
@@ -418,8 +419,8 @@ export default function Motoristas() {
               const mFirstLast = `${mWords[0]} ${mWords[mWords.length - 1]}`;
               const rFirstLast = `${rWords[0]} ${rWords[rWords.length - 1]}`;
               if (mFirstLast === rFirstLast) return true;
-              
-              const intersection = mWords.filter(w => rWords.includes(w));
+
+              const intersection = mWords.filter((w) => rWords.includes(w));
               const score = intersection.length / Math.min(mWords.length, rWords.length);
               if (score >= 0.8) return true; // Confiança alta para enriquecer dados
             }
@@ -447,14 +448,14 @@ export default function Motoristas() {
 
         // Tentar encontrar na Uber
         if (!m.uber_uuid) {
-          const matchUber = uberDrivers.find(u => {
+          const matchUber = uberDrivers.find((u) => {
             const uClean = normalizeStr(u.full_name || '');
-            const uWords = uClean.split(' ').filter(w => w.length > 2 && !particles.includes(w));
-            
+            const uWords = uClean.split(' ').filter((w) => w.length > 2 && !particles.includes(w));
+
             if (uClean === mClean) return true;
-            
+
             if (mWords.length >= 2 && uWords.length >= 2) {
-              const intersection = mWords.filter(w => uWords.includes(w));
+              const intersection = mWords.filter((w) => uWords.includes(w));
               const score = intersection.length / Math.min(mWords.length, uWords.length);
               if (score >= 0.8) return true;
             }
@@ -468,12 +469,7 @@ export default function Motoristas() {
         }
 
         if (needsUpdate) {
-          updates.push(
-            supabase
-              .from("motoristas_ativos")
-              .update(updatedData)
-              .eq("id", m.id)
-          );
+          updates.push(supabase.from('motoristas_ativos').update(updatedData).eq('id', m.id));
           totalMapped++;
         }
       }
@@ -484,18 +480,18 @@ export default function Motoristas() {
           await Promise.all(updates.slice(i, i + 10));
         }
       }
-      
+
       toast({
-        title: "Sincronização concluída",
+        title: 'Sincronização concluída',
         description: `${totalMapped} motoristas mapeados com sucesso!`,
       });
       loadMotoristas();
     } catch (error: any) {
-      console.error("Erro ao sincronizar IDs:", error);
+      console.error('Erro ao sincronizar IDs:', error);
       toast({
-        title: "Erro na sincronização",
+        title: 'Erro na sincronização',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -515,7 +511,8 @@ export default function Motoristas() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Motoristas Ativos</h1>
           <p className="text-muted-foreground text-sm">
-            {filteredMotoristas.length} motorista{filteredMotoristas.length !== 1 ? "s" : ""} encontrado{filteredMotoristas.length !== 1 ? "s" : ""}
+            {filteredMotoristas.length} motorista{filteredMotoristas.length !== 1 ? 's' : ''}{' '}
+            encontrado{filteredMotoristas.length !== 1 ? 's' : ''}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
@@ -544,7 +541,7 @@ export default function Motoristas() {
               />
             </div>
           </div>
-          
+
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Estado</label>
@@ -599,14 +596,15 @@ export default function Motoristas() {
 
       {/* Content - Mobile Cards or Desktop Table */}
       {loading ? (
-        <div className="text-center py-12 text-muted-foreground">
-          A carregar...
-        </div>
+        <div className="text-center py-12 text-muted-foreground">A carregar...</div>
       ) : filteredMotoristas.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          {searchTerm || statusFilter !== "todos" || cidadeFilter !== "todas" || gestorFilter !== "todos"
-            ? "Nenhum motorista encontrado com os filtros aplicados"
-            : "Nenhum motorista cadastrado"}
+          {searchTerm ||
+          statusFilter !== 'todos' ||
+          cidadeFilter !== 'todas' ||
+          gestorFilter !== 'todos'
+            ? 'Nenhum motorista encontrado com os filtros aplicados'
+            : 'Nenhum motorista cadastrado'}
         </div>
       ) : isMobile ? (
         /* Mobile: Card Grid */
@@ -628,9 +626,21 @@ export default function Motoristas() {
                 <SortableHeader column="codigo" label="Cód." className="w-[70px]" />
                 <SortableHeader column="nome" label="Nome" />
                 <SortableHeader column="telefone" label="Telefone" className="w-[130px]" />
-                <SortableHeader column="gestor_responsavel" label="Gestor" className="w-[140px] hidden md:table-cell" />
-                <SortableHeader column="bolt_id" label="ID Bolt" className="w-[120px] hidden xl:table-cell" />
-                <SortableHeader column="cidade" label="Cidade" className="w-[120px] hidden lg:table-cell" />
+                <SortableHeader
+                  column="gestor_responsavel"
+                  label="Gestor"
+                  className="w-[140px] hidden md:table-cell"
+                />
+                <SortableHeader
+                  column="bolt_id"
+                  label="ID Bolt"
+                  className="w-[120px] hidden xl:table-cell"
+                />
+                <SortableHeader
+                  column="cidade"
+                  label="Cidade"
+                  className="w-[120px] hidden lg:table-cell"
+                />
                 <SortableHeader column="status_ativo" label="Status" className="w-[80px]" />
               </TableRow>
             </TableHeader>
@@ -641,11 +651,15 @@ export default function Motoristas() {
                   className="cursor-pointer h-10"
                   onClick={() => handleRowClick(motorista)}
                 >
-                  <TableCell className="py-2 font-mono text-sm text-muted-foreground">{motorista.codigo}</TableCell>
+                  <TableCell className="py-2 font-mono text-sm text-muted-foreground">
+                    {motorista.codigo}
+                  </TableCell>
                   <TableCell className="py-2 font-medium">{motorista.nome}</TableCell>
-                  <TableCell className="py-2 text-muted-foreground">{motorista.telefone || "-"}</TableCell>
+                  <TableCell className="py-2 text-muted-foreground">
+                    {motorista.telefone || '-'}
+                  </TableCell>
                   <TableCell className="py-2 text-muted-foreground hidden md:table-cell">
-                    {motorista.gestor_responsavel || "-"}
+                    {motorista.gestor_responsavel || '-'}
                   </TableCell>
                   <TableCell className="py-2 text-xs font-mono hidden xl:table-cell">
                     {motorista.bolt_id ? (
@@ -653,9 +667,9 @@ export default function Motoristas() {
                         <Check className="h-3 w-3" /> {motorista.bolt_id}
                       </span>
                     ) : (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-7 px-2 text-muted-foreground opacity-50 hover:opacity-100"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -667,14 +681,14 @@ export default function Motoristas() {
                     )}
                   </TableCell>
                   <TableCell className="py-2 text-muted-foreground hidden lg:table-cell">
-                    {motorista.cidade || "-"}
+                    {motorista.cidade || '-'}
                   </TableCell>
                   <TableCell className="py-2 text-center">
                     <Badge
-                      variant={motorista.status_ativo ? "default" : "secondary"}
+                      variant={motorista.status_ativo ? 'default' : 'secondary'}
                       className="text-xs"
                     >
-                      {motorista.status_ativo ? "Ativo" : "Inativo"}
+                      {motorista.status_ativo ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </TableCell>
                 </TableRow>
@@ -683,8 +697,6 @@ export default function Motoristas() {
           </Table>
         </div>
       )}
-
-
 
       {/* Dialog para Adicionar Motorista */}
       <MotoristaDialog
@@ -709,14 +721,15 @@ export default function Motoristas() {
           </DialogHeader>
           <div className="py-4 space-y-4">
             <p className="text-sm text-muted-foreground">
-              Selecione o nome correspondente que aparece nos relatórios da Bolt para <strong>{mappingTarget?.nome}</strong>.
+              Selecione o nome correspondente que aparece nos relatórios da Bolt para{' '}
+              <strong>{mappingTarget?.nome}</strong>.
             </p>
-            
+
             <div className="max-h-[300px] overflow-y-auto border rounded-md">
               {isMappingLoading ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">
-                  <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
-                  A carregar motoristas Bolt...
+                  <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />A carregar motoristas
+                  Bolt...
                 </div>
               ) : unmappedBoltDrivers.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">
@@ -725,10 +738,12 @@ export default function Motoristas() {
               ) : (
                 <div className="grid divide-y">
                   {unmappedBoltDrivers
-                    .filter(d => {
+                    .filter((d) => {
                       const mNorm = normalizeStr(mappingTarget?.nome || '');
                       const dNorm = normalizeStr(d.name || '');
-                      return dNorm.includes(mNorm.split(' ')[0]) || mNorm.includes(dNorm.split(' ')[0]);
+                      return (
+                        dNorm.includes(mNorm.split(' ')[0]) || mNorm.includes(dNorm.split(' ')[0])
+                      );
                     })
                     .map((driver) => (
                       <button
@@ -737,7 +752,9 @@ export default function Motoristas() {
                         onClick={() => handleConfirmMapping(driver.id)}
                       >
                         <span className="text-sm font-medium">{driver.name}</span>
-                        <span className="text-[10px] font-mono text-muted-foreground bg-muted-foreground/10 px-1 rounded">{driver.id}</span>
+                        <span className="text-[10px] font-mono text-muted-foreground bg-muted-foreground/10 px-1 rounded">
+                          {driver.id}
+                        </span>
                       </button>
                     ))}
                   {/* Option to show all if no results */}

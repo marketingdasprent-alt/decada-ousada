@@ -1,14 +1,9 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Download, ExternalLink } from "lucide-react";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Download, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ReciboPreviewDialogProps {
   open: boolean;
@@ -24,11 +19,7 @@ interface ReciboPreviewDialogProps {
   } | null;
 }
 
-export function ReciboPreviewDialog({
-  open,
-  onOpenChange,
-  recibo,
-}: ReciboPreviewDialogProps) {
+export function ReciboPreviewDialog({ open, onOpenChange, recibo }: ReciboPreviewDialogProps) {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -42,18 +33,18 @@ export function ReciboPreviewDialog({
 
   async function loadSignedUrl() {
     if (!recibo?.ficheiro_url) return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase.storage
-        .from("motorista-recibos")
+        .from('motorista-recibos')
         .createSignedUrl(recibo.ficheiro_url, 3600);
 
       if (error) throw error;
       setSignedUrl(data.signedUrl);
     } catch (error) {
-      console.error("Erro ao carregar ficheiro:", error);
-      toast.error("Erro ao carregar ficheiro");
+      console.error('Erro ao carregar ficheiro:', error);
+      toast.error('Erro ao carregar ficheiro');
     } finally {
       setLoading(false);
     }
@@ -61,45 +52,45 @@ export function ReciboPreviewDialog({
 
   async function handleDownload() {
     if (!signedUrl) return;
-    
+
     try {
       const response = await fetch(signedUrl);
       const blob = await response.blob();
       const objectUrl = URL.createObjectURL(blob);
-      
+
       const link = document.createElement('a');
       link.href = objectUrl;
       link.download = recibo?.nome_ficheiro || `recibo-${recibo?.codigo}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     } catch (error) {
-      console.error("Erro ao descarregar:", error);
-      toast.error("Erro ao descarregar ficheiro");
+      console.error('Erro ao descarregar:', error);
+      toast.error('Erro ao descarregar ficheiro');
     }
   }
 
   async function handleOpenExternal() {
     if (!signedUrl) return;
-    
+
     try {
       const response = await fetch(signedUrl);
       const blob = await response.blob();
       const objectUrl = URL.createObjectURL(blob);
-      
+
       const link = document.createElement('a');
       link.href = objectUrl;
       link.target = '_blank';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     } catch (error) {
-      console.error("Erro ao abrir:", error);
-      toast.error("Erro ao abrir ficheiro");
+      console.error('Erro ao abrir:', error);
+      toast.error('Erro ao abrir ficheiro');
     }
   }
 
@@ -107,7 +98,7 @@ export function ReciboPreviewDialog({
     new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
 
   const formatWeek = (dateStr: string | null | undefined) => {
-    if (!dateStr) return "N/A";
+    if (!dateStr) return 'N/A';
     const date = new Date(dateStr);
     const endDate = new Date(date);
     endDate.setDate(endDate.getDate() + 6);
@@ -131,9 +122,7 @@ export function ReciboPreviewDialog({
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground pb-2 border-b">
           <span>Semana: {formatWeek(recibo?.semana_referencia_inicio)}</span>
-          {recibo?.valor_total && (
-            <span>Valor: {formatCurrency(recibo.valor_total)}</span>
-          )}
+          {recibo?.valor_total && <span>Valor: {formatCurrency(recibo.valor_total)}</span>}
         </div>
 
         <div className="flex-1 min-h-0 overflow-auto">

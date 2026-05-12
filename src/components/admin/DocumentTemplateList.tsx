@@ -91,18 +91,10 @@ export const DocumentTemplateList = ({
                   <Edit className="mr-2 h-4 w-4" />
                   Editar
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onDuplicate(template)}
-                >
+                <Button variant="outline" size="sm" onClick={() => onDuplicate(template)}>
                   <Copy className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onToggleStatus(template)}
-                >
+                <Button variant="outline" size="sm" onClick={() => onToggleStatus(template)}>
                   <Power className="h-4 w-4" />
                 </Button>
               </div>

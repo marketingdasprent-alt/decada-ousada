@@ -9,14 +9,35 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import {
-  Loader2, Search, Car, TrendingUp, Users, Euro, X, CalendarIcon,
-  StopCircle, AlertCircle, CheckCircle2, Upload, Route, Clock,
+  Loader2,
+  Search,
+  Car,
+  TrendingUp,
+  Users,
+  Euro,
+  X,
+  CalendarIcon,
+  StopCircle,
+  AlertCircle,
+  CheckCircle2,
+  Upload,
+  Route,
+  Clock,
   RefreshCcw,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
@@ -66,11 +87,17 @@ const extractDriverNameFromRaw = (raw: Record<string, any> | null): string | nul
         if (name) return name;
       }
     }
-  } catch { /* fallback */ }
+  } catch {
+    /* fallback */
+  }
   return null;
 };
 
-const getDriverName = (t: UberTransaction, nameMap?: Map<string, string>, dbMap?: Map<string, string>): { name: string; resolved: boolean } => {
+const getDriverName = (
+  t: UberTransaction,
+  nameMap?: Map<string, string>,
+  dbMap?: Map<string, string>
+): { name: string; resolved: boolean } => {
   const fromRaw = extractDriverNameFromRaw(t.raw_transaction);
   if (fromRaw) return { name: fromRaw, resolved: true };
   if (nameMap && t.uber_driver_id && nameMap.has(t.uber_driver_id)) {
@@ -148,7 +175,9 @@ export const UberDataTab: React.FC = () => {
   };
 
   useEffect(() => {
-    return () => { loadRequestIdRef.current++; };
+    return () => {
+      loadRequestIdRef.current++;
+    };
   }, []);
 
   const fetchUberDrivers = async () => {
@@ -209,10 +238,12 @@ export const UberDataTab: React.FC = () => {
   const buildQuery = (rangeStart: number, rangeEnd: number) => {
     let query = supabase
       .from('uber_transactions')
-      .select(`
+      .select(
+        `
         *,
         integracao:plataformas_configuracao!uber_transactions_integracao_id_fkey (nome)
-      `)
+      `
+      )
       .gte('occurred_at', `${format(startDate, 'yyyy-MM-dd')}T00:00:00`)
       .lte('occurred_at', `${format(endDate, 'yyyy-MM-dd')}T23:59:59`)
       .order('occurred_at', { ascending: false })
@@ -256,7 +287,7 @@ export const UberDataTab: React.FC = () => {
 
         if (newData.length < BATCH_SIZE) break;
         offset += BATCH_SIZE;
-        await new Promise(r => setTimeout(r, 0));
+        await new Promise((r) => setTimeout(r, 0));
       }
 
       if (currentRequestId === loadRequestIdRef.current) {
@@ -265,7 +296,11 @@ export const UberDataTab: React.FC = () => {
     } catch (error: any) {
       if (currentRequestId === loadRequestIdRef.current) {
         console.error('Erro ao carregar transacções Uber:', error);
-        toast({ title: "Erro", description: "Não foi possível carregar as transacções Uber.", variant: "destructive" });
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível carregar as transacções Uber.',
+          variant: 'destructive',
+        });
       }
     } finally {
       if (currentRequestId === loadRequestIdRef.current) {
@@ -287,40 +322,53 @@ export const UberDataTab: React.FC = () => {
 
       if (configError) throw configError;
 
-      const uberConfigs = configs?.filter(c => 
-        c.plataforma === 'uber' || 
-        c.robot_target_platform === 'uber' || 
-        c.nome.toLowerCase().includes('uber')
+      const uberConfigs = configs?.filter(
+        (c) =>
+          c.plataforma === 'uber' ||
+          c.robot_target_platform === 'uber' ||
+          c.nome.toLowerCase().includes('uber')
       );
 
       if (!uberConfigs || uberConfigs.length === 0) {
-        toast({ title: "Configurações não encontradas", description: "Certifique-se de que as suas integrações Uber-Robot estão ativas no painel de configurações.", variant: "destructive" });
+        toast({
+          title: 'Configurações não encontradas',
+          description:
+            'Certifique-se de que as suas integrações Uber-Robot estão ativas no painel de configurações.',
+          variant: 'destructive',
+        });
         return;
       }
 
-      toast({ title: "Resgatando da Uber", description: `Iniciando resgate para ${uberConfigs.length} conta(s) Uber no Apify...` });
+      toast({
+        title: 'Resgatando da Uber',
+        description: `Iniciando resgate para ${uberConfigs.length} conta(s) Uber no Apify...`,
+      });
 
       let successCount = 0;
       for (const config of uberConfigs) {
         console.log(`Rescuing Uber for: ${config.nome}`);
         const { data, error } = await supabase.functions.invoke('uber-rescue-apify', {
-          body: { integracao_id: config.id }
+          body: { integracao_id: config.id },
         });
-        
+
         if (!error && data?.success) successCount++;
       }
 
-      toast({ 
-        title: "Resgate concluído!", 
+      toast({
+        title: 'Resgate concluído!',
         description: `Processadas ${successCount} de ${uberConfigs.length} integrações Uber com sucesso.`,
       });
-      
+
       fetchAllTransactions();
       fetchLastImport();
       fetchUberDrivers();
     } catch (error: any) {
       console.error('Erro no resgate Uber:', error);
-      toast({ title: "Erro no Resgate", description: error.message || "Falha técnica ao falar com o servidor de resgate.", variant: "destructive" });
+      toast({
+        title: 'Erro no Resgate',
+        description: error.message || 'Falha técnica ao falar com o servidor de resgate.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -334,61 +382,76 @@ export const UberDataTab: React.FC = () => {
     try {
       const integracaoId = selectedIntegracao === 'all' ? integracoes[0].id : selectedIntegracao;
       const text = await file.text();
-      const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-      
-      if (lines.length < 2) throw new Error("Ficheiro CSV vazio ou inválido.");
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+
+      if (lines.length < 2) throw new Error('Ficheiro CSV vazio ou inválido.');
 
       const separator = lines[0].includes(';') ? ';' : ',';
-      const headers = lines[0].split(separator).map(h => h.trim().toLowerCase().replace(/['"]/g, ""));
-      
-      const idxUuid = headers.findIndex(h => h.includes('uuid do motorista') || h.includes('uber_driver_id'));
-      const idxFirst = headers.findIndex(h => h.includes('nome próprio') || h.includes('nome proprio') || h.includes('first_name'));
-      const idxLast = headers.findIndex(h => h.includes('apelido') || h.includes('last_name'));
+      const headers = lines[0]
+        .split(separator)
+        .map((h) => h.trim().toLowerCase().replace(/['"]/g, ''));
+
+      const idxUuid = headers.findIndex(
+        (h) => h.includes('uuid do motorista') || h.includes('uber_driver_id')
+      );
+      const idxFirst = headers.findIndex(
+        (h) => h.includes('nome próprio') || h.includes('nome proprio') || h.includes('first_name')
+      );
+      const idxLast = headers.findIndex((h) => h.includes('apelido') || h.includes('last_name'));
 
       if (idxUuid === -1 || idxFirst === -1) {
-        throw new Error("Não foi possível encontrar as colunas de UUID ou Nome no CSV. Verifique o formato.");
+        throw new Error(
+          'Não foi possível encontrar as colunas de UUID ou Nome no CSV. Verifique o formato.'
+        );
       }
 
-      toast({ title: "Processando", description: `Lendo ${lines.length - 1} linhas do CSV...` });
+      toast({ title: 'Processando', description: `Lendo ${lines.length - 1} linhas do CSV...` });
 
       // 1. Carregar motoristas ativos para matching
       const { data: motoristas, error: mError } = await supabase
         .from('motoristas_ativos')
         .select('id, nome');
-      
+
       if (mError) throw mError;
 
-      const normalize = (s: string) => s?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " ") || "";
-      
+      const normalize = (s: string) =>
+        s
+          ?.toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .trim()
+          .replace(/\s+/g, ' ') || '';
+
       let fixedCount = 0;
       let driverUpserted = 0;
 
       for (let i = 1; i < lines.length; i++) {
-        const cells = lines[i].split(separator).map(c => c.trim().replace(/['"]/g, ""));
+        const cells = lines[i].split(separator).map((c) => c.trim().replace(/['"]/g, ''));
         const uuid = cells[idxUuid];
-        const firstName = cells[idxFirst] || "";
-        const lastName = idxLast !== -1 ? cells[idxLast] : "";
+        const firstName = cells[idxFirst] || '';
+        const lastName = idxLast !== -1 ? cells[idxLast] : '';
         const fullName = `${firstName} ${lastName}`.trim();
 
         if (!uuid || uuid.length < 10) continue;
 
         // A. Garantir que o motorista Uber existe na tabela uber_drivers
-        const { error: udError } = await supabase
-          .from('uber_drivers')
-          .upsert({
+        const { error: udError } = await supabase.from('uber_drivers').upsert(
+          {
             uber_driver_id: uuid,
             first_name: firstName,
             last_name: lastName,
             full_name: fullName,
             integracao_id: integracaoId,
-            flow_type: 'emergency_fix'
-          }, { onConflict: 'uber_driver_id,integracao_id' });
+            flow_type: 'emergency_fix',
+          },
+          { onConflict: 'uber_driver_id,integracao_id' }
+        );
 
         if (!udError) driverUpserted++;
 
         // B. Tentar encontrar matching agressivo (ignora nomes do meio e acentos)
         const normFullName = normalize(fullName);
-        const match = motoristas.find(m => {
+        const match = motoristas.find((m) => {
           const normM = normalize(m.nome);
           // Match se o nome administrativo estiver contido no nome do Uber ou vice-versa
           return normM.length > 3 && (normFullName.includes(normM) || normM.includes(normFullName));
@@ -396,23 +459,29 @@ export const UberDataTab: React.FC = () => {
 
         if (match) {
           // C. Ligar os dois
-          await supabase.from('uber_drivers').update({ motorista_id: match.id }).eq('uber_driver_id', uuid);
+          await supabase
+            .from('uber_drivers')
+            .update({ motorista_id: match.id })
+            .eq('uber_driver_id', uuid);
           await supabase.from('motoristas').update({ uber_uuid: uuid }).eq('id', match.id);
           fixedCount++;
         }
       }
 
-      toast({ 
-        title: "Reparação Concluída", 
-        description: `Processados ${driverUpserted} motoristas Uber. ${fixedCount} associações feitas com sucesso!` 
+      toast({
+        title: 'Reparação Concluída',
+        description: `Processados ${driverUpserted} motoristas Uber. ${fixedCount} associações feitas com sucesso!`,
       });
-      
+
       fetchUberDrivers();
       fetchAllTransactions();
-
     } catch (error: any) {
       console.error('Erro na reparação Uber:', error);
-      toast({ title: "Erro", description: error.message || "Falha na reparação.", variant: "destructive" });
+      toast({
+        title: 'Erro',
+        description: error.message || 'Falha na reparação.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
       // Reset input
@@ -422,17 +491,18 @@ export const UberDataTab: React.FC = () => {
   };
 
   const handleStopLoading = () => {
-
-
     loadRequestIdRef.current++;
     setLoadingAll(false);
     setLoading(false);
-    toast({ title: "Carregamento interrompido", description: `${transactions.length} transacções carregadas.` });
+    toast({
+      title: 'Carregamento interrompido',
+      description: `${transactions.length} transacções carregadas.`,
+    });
   };
 
   const driverNameMap = useMemo(() => {
     const map = new Map<string, string>();
-    transactions.forEach(t => {
+    transactions.forEach((t) => {
       const name = extractDriverNameFromRaw(t.raw_transaction);
       if (name && t.uber_driver_id) {
         map.set(t.uber_driver_id, name);
@@ -478,7 +548,10 @@ export const UberDataTab: React.FC = () => {
     setEndDate(new Date());
   };
 
-  const statusTranslations: Record<string, { label: string; variant: 'success' | 'destructive' | 'warning' | 'secondary' }> = {
+  const statusTranslations: Record<
+    string,
+    { label: string; variant: 'success' | 'destructive' | 'warning' | 'secondary' }
+  > = {
     settled: { label: 'Liquidada', variant: 'success' },
     completed: { label: 'Concluída', variant: 'success' },
     pending: { label: 'Pendente', variant: 'warning' },
@@ -499,21 +572,18 @@ export const UberDataTab: React.FC = () => {
         secondary: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
       };
 
-      return (
-        <Badge className={variantClasses[translation.variant]}>
-          {translation.label}
-        </Badge>
-      );
+      return <Badge className={variantClasses[translation.variant]}>{translation.label}</Badge>;
     }
 
-    const formatted = status
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase());
+    const formatted = status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
     return <Badge variant="secondary">{formatted}</Badge>;
   };
 
-  const hasActiveFilters = searchTerm || selectedIntegracao !== 'all' || selectedStatus !== 'all' ||
+  const hasActiveFilters =
+    searchTerm ||
+    selectedIntegracao !== 'all' ||
+    selectedStatus !== 'all' ||
     format(startDate, 'yyyy-MM-dd') !== format(subDays(new Date(), 30), 'yyyy-MM-dd') ||
     format(endDate, 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd');
 
@@ -542,14 +612,14 @@ export const UberDataTab: React.FC = () => {
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-[260px] justify-start text-left font-normal",
-                    !startDate && "text-muted-foreground"
+                    'w-[260px] justify-start text-left font-normal',
+                    !startDate && 'text-muted-foreground'
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {startDate && endDate ? (
                     <>
-                      {format(startDate, "dd/MM/yyyy")} → {format(endDate, "dd/MM/yyyy")}
+                      {format(startDate, 'dd/MM/yyyy')} → {format(endDate, 'dd/MM/yyyy')}
                     </>
                   ) : (
                     <span>Selecionar período</span>
@@ -596,7 +666,9 @@ export const UberDataTab: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 {statusOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -626,19 +698,28 @@ export const UberDataTab: React.FC = () => {
               <span className="text-muted-foreground">
                 Dados recebidos via webhook
                 {lastImport && lastImport.date && (
-                  <> · Última importação CSV: {format(new Date(lastImport.date), "dd/MM/yy HH:mm", { locale: pt })} ({lastImport.count} transacções)</>
+                  <>
+                    {' '}
+                    · Última importação CSV:{' '}
+                    {format(new Date(lastImport.date), 'dd/MM/yy HH:mm', { locale: pt })} (
+                    {lastImport.count} transacções)
+                  </>
                 )}
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleFetchFromApify}
                 disabled={loading}
                 className="text-xs text-muted-foreground hidden md:flex items-center gap-1"
               >
-                {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Clock className="h-3 w-3" />}
+                {loading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Clock className="h-3 w-3" />
+                )}
                 Resgatar do Apify
               </Button>
               <input
@@ -648,29 +729,36 @@ export const UberDataTab: React.FC = () => {
                 accept=".csv"
                 onChange={handleEmergencyFix}
               />
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => document.getElementById('emergency-fix-input')?.click()}
                 disabled={loading}
                 className="text-xs text-orange-500 hover:text-orange-600 hidden md:flex items-center gap-1"
                 title="Use isto se houver motoristas sem UUID após a importação regular"
               >
-                {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldAlert className="h-3 w-3" />}
+                {loading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <ShieldAlert className="h-3 w-3" />
+                )}
                 Reparar Associação
               </Button>
 
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleAutoMap}
                 disabled={loading}
                 className="text-xs text-muted-foreground hidden md:flex items-center gap-1"
               >
-                {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCcw className="h-3 w-3" />}
+                {loading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <RefreshCcw className="h-3 w-3" />
+                )}
                 Auto-Mapear
               </Button>
-
 
               <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
                 <Upload className="h-4 w-4 mr-2" />
@@ -702,7 +790,15 @@ export const UberDataTab: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold"><p className="text-2xl font-bold">€{stats.totalValor.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></p>
+              <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold">
+                  €
+                  {stats.totalValor.toLocaleString('pt-PT', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
+              </p>
             </CardContent>
           </Card>
 
@@ -714,7 +810,15 @@ export const UberDataTab: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-green-400"><p className="text-2xl font-bold text-green-400">€{stats.totalEarnings.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></p>
+              <p className="text-2xl font-bold text-green-400">
+                <p className="text-2xl font-bold text-green-400">
+                  €
+                  {stats.totalEarnings.toLocaleString('pt-PT', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -724,8 +828,8 @@ export const UberDataTab: React.FC = () => {
           <span>
             {loadingAll ? (
               <>
-                <Loader2 className="h-4 w-4 inline-block mr-2 animate-spin" />
-                A carregar {transactions.length} de {totalCount} transacções...
+                <Loader2 className="h-4 w-4 inline-block mr-2 animate-spin" />A carregar{' '}
+                {transactions.length} de {totalCount} transacções...
               </>
             ) : (
               <>
@@ -746,7 +850,8 @@ export const UberDataTab: React.FC = () => {
         {totalCount > 10000 && !loading && (
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-600 dark:text-yellow-400">
             <AlertCircle className="h-4 w-4 inline-block mr-2" />
-            Este período contém {totalCount.toLocaleString()} transacções. O carregamento pode ser lento em dispositivos móveis.
+            Este período contém {totalCount.toLocaleString()} transacções. O carregamento pode ser
+            lento em dispositivos móveis.
           </div>
         )}
 
@@ -790,9 +895,13 @@ export const UberDataTab: React.FC = () => {
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       {(() => {
-                        const periodo = (t.raw_transaction as Record<string, unknown>)?.periodo as string | undefined;
+                        const periodo = (t.raw_transaction as Record<string, unknown>)?.periodo as
+                          | string
+                          | undefined;
                         if (periodo) {
-                          const match = periodo.match(/(\d{4})(\d{2})(\d{2})-(\d{4})(\d{2})(\d{2})/);
+                          const match = periodo.match(
+                            /(\d{4})(\d{2})(\d{2})-(\d{4})(\d{2})(\d{2})/
+                          );
                           if (match) {
                             return `${match[3]}/${match[2]} → ${match[6]}/${match[5]}`;
                           }
@@ -827,23 +936,25 @@ export const UberDataTab: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       {t.occurred_at
-                        ? format(new Date(t.occurred_at), "dd/MM/yy HH:mm", { locale: pt })
+                        ? format(new Date(t.occurred_at), 'dd/MM/yy HH:mm', { locale: pt })
                         : '-'}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{t.transaction_type || '-'}</Badge>
                     </TableCell>
-                    <TableCell className={cn(
-                      "text-right font-medium",
-                      t.status === 'settled' && t.gross_amount && "text-green-400"
-                    )}>
-                      {t.gross_amount != null
-                        ? `€${t.gross_amount.toFixed(2)}`
-                        : <span className="text-muted-foreground">-</span>}
+                    <TableCell
+                      className={cn(
+                        'text-right font-medium',
+                        t.status === 'settled' && t.gross_amount && 'text-green-400'
+                      )}
+                    >
+                      {t.gross_amount != null ? (
+                        `€${t.gross_amount.toFixed(2)}`
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
-                    <TableCell className="text-center">
-                      {getStatusBadge(t.status)}
-                    </TableCell>
+                    <TableCell className="text-center">{getStatusBadge(t.status)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -1,14 +1,21 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
-import { SectionCard } from "@/components/ui/section-card";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import {
+  validarNIF,
+  validarCodigoPostal,
+  validarIBAN,
+  validarCartaConducao,
+  validarTelefone,
+} from '@/lib/pt-validators';
+import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
+import { SectionCard } from '@/components/ui/section-card';
 import {
   Form,
   FormControl,
@@ -16,7 +23,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 import {
   Command,
   CommandEmpty,
@@ -24,29 +31,29 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useState, useEffect } from "react";
-import { 
-  Search, 
-  Plus, 
-  X, 
-  User, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Briefcase, 
-  Settings, 
-  Check, 
+} from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
+import {
+  Search,
+  Plus,
+  X,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Briefcase,
+  Settings,
+  Check,
   ChevronsUpDown,
   CreditCard,
   Car,
@@ -55,19 +62,19 @@ import {
   Fuel,
   PlusCircle,
   Smartphone,
-  Zap
-} from "lucide-react";
-import { Motorista } from "@/pages/Motoristas";
-import { PhoneInput } from "@/components/ui/phone-input";
-import { DocumentUploader } from "@/components/motorista/DocumentUploader";
+  Zap,
+} from 'lucide-react';
+import { Motorista } from '@/pages/Motoristas';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { DocumentUploader } from '@/components/motorista/DocumentUploader';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
-const CARTA_CATEGORIAS = ["AM", "A1", "A2", "A", "B1", "B", "BE", "C1", "C", "CE", "D1", "D", "DE"];
+const CARTA_CATEGORIAS = ['AM', 'A1', 'A2', 'A', 'B1', 'B', 'BE', 'C1', 'C', 'CE', 'D1', 'D', 'DE'];
 
 const validateDateYear = (date: string | undefined): boolean => {
   if (!date) return true;
@@ -76,40 +83,70 @@ const validateDateYear = (date: string | undefined): boolean => {
 };
 
 const formSchema = z.object({
-  nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  nif: z.string().optional(),
-  email: z.string().email("Email inválido").optional().or(z.literal("")),
-  telefone: z.string().optional(),
+  nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  nif: z
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || validarNIF(v).valid,
+      (v) => ({ message: validarNIF(v ?? '').message ?? 'NIF inválido' })
+    ),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  telefone: z
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || validarTelefone(v).valid,
+      (v) => ({ message: validarTelefone(v || '').message ?? 'Telefone inválido' })
+    ),
   morada: z.string().optional(),
-  codigo_postal: z.string().optional(),
+  codigo_postal: z
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || validarCodigoPostal(v).valid,
+      (v) => ({ message: validarCodigoPostal(v ?? '').message ?? 'Código Postal inválido' })
+    ),
   cidade: z.string().optional(),
   documento_tipo: z.string().optional(),
   documento_numero: z.string().optional(),
   documento_validade: z.string().optional().refine(validateDateYear, {
-    message: "Ano deve estar entre 1900 e 2100",
+    message: 'Ano deve estar entre 1900 e 2100',
   }),
-  carta_conducao: z.string().optional(),
+  carta_conducao: z
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || validarCartaConducao(v).valid,
+      (v) => ({ message: validarCartaConducao(v || '').message ?? 'Inválido' })
+    ),
   carta_categorias: z.array(z.string()).optional(),
   carta_validade: z.string().optional().refine(validateDateYear, {
-    message: "Ano deve estar entre 1900 e 2100",
+    message: 'Ano deve estar entre 1900 e 2100',
   }),
   licenca_tvde_numero: z.string().optional(),
   licenca_tvde_validade: z.string().optional().refine(validateDateYear, {
-    message: "Ano deve estar entre 1900 e 2100",
+    message: 'Ano deve estar entre 1900 e 2100',
   }),
   cartao_frota: z.string().optional(),
   cartao_bp: z.string().optional(),
   cartao_repsol: z.string().optional(),
   cartao_edp: z.string().optional(),
   data_contratacao: z.string().optional().refine(validateDateYear, {
-    message: "Ano deve estar entre 1900 e 2100",
+    message: 'Ano deve estar entre 1900 e 2100',
   }),
   recibo_verde: z.boolean().default(true),
   is_slot: z.boolean().default(false),
   slot_valor_semanal: z.number().optional().nullable(),
   status_ativo: z.boolean().default(true),
   observacoes: z.string().optional(),
-  iban: z.string().optional(),
+  iban: z
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || validarIBAN(v).valid,
+      (v) => ({ message: validarIBAN(v || '').message ?? 'IBAN inválido' })
+    ),
   gestor_responsavel: z.string().optional().nullable(),
   bolt_id: z.string().optional().nullable(),
   uber_uuid: z.string().optional().nullable(),
@@ -146,17 +183,17 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
           .not('nome', 'is', null)
           .ilike('cargo', '%Gestor%TVDE%')
           .order('nome');
-          
+
         if (error) throw error;
-        
+
         // Remover duplicados por nome
         const uniqueGestores = (data || []).reduce((acc: { nome: string }[], current) => {
-          if (!acc.find(item => item.nome === current.nome)) {
+          if (!acc.find((item) => item.nome === current.nome)) {
             acc.push({ nome: current.nome });
           }
           return acc;
         }, []);
-        
+
         setGestores(uniqueGestores);
       } catch (error) {
         console.error('Erro ao buscar gestores:', error);
@@ -168,94 +205,94 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nome: "",
-      nif: "",
-      email: "",
-      telefone: "",
-      morada: "",
-      codigo_postal: "",
-      cidade: "",
-      documento_tipo: "",
-      documento_numero: "",
-      documento_validade: "",
-      carta_conducao: "",
+      nome: '',
+      nif: '',
+      email: '',
+      telefone: '',
+      morada: '',
+      codigo_postal: '',
+      cidade: '',
+      documento_tipo: '',
+      documento_numero: '',
+      documento_validade: '',
+      carta_conducao: '',
       carta_categorias: [],
-      carta_validade: "",
-      licenca_tvde_numero: "",
-      licenca_tvde_validade: "",
-      cartao_frota: "",
-      cartao_bp: "",
-      cartao_repsol: "",
-      cartao_edp: "",
-      data_contratacao: "",
+      carta_validade: '',
+      licenca_tvde_numero: '',
+      licenca_tvde_validade: '',
+      cartao_frota: '',
+      cartao_bp: '',
+      cartao_repsol: '',
+      cartao_edp: '',
+      data_contratacao: '',
       recibo_verde: true,
       is_slot: false,
       slot_valor_semanal: null,
       status_ativo: true,
-      observacoes: "",
-      iban: "",
-      gestor_responsavel: "",
-      bolt_id: "",
-      uber_uuid: "",
-      documento_ficheiro_url: "",
-      documento_identificacao_verso_url: "",
-      carta_ficheiro_url: "",
-      carta_conducao_verso_url: "",
-      licenca_tvde_ficheiro_url: "",
-      registo_criminal_url: "",
-      comprovativo_morada_url: "",
-      comprovativo_iban_url: "",
+      observacoes: '',
+      iban: '',
+      gestor_responsavel: '',
+      bolt_id: '',
+      uber_uuid: '',
+      documento_ficheiro_url: '',
+      documento_identificacao_verso_url: '',
+      carta_ficheiro_url: '',
+      carta_conducao_verso_url: '',
+      licenca_tvde_ficheiro_url: '',
+      registo_criminal_url: '',
+      comprovativo_morada_url: '',
+      comprovativo_iban_url: '',
     },
   });
 
   useEffect(() => {
     if (motorista) {
       form.reset({
-        nome: motorista.nome || "",
-        nif: motorista.nif || "",
-        email: motorista.email || "",
-        telefone: motorista.telefone || "",
-        morada: motorista.morada || "",
-        codigo_postal: motorista.codigo_postal || "",
-        cidade: motorista.cidade || "",
-        documento_tipo: motorista.documento_tipo || "",
-        documento_numero: motorista.documento_numero || "",
+        nome: motorista.nome || '',
+        nif: motorista.nif || '',
+        email: motorista.email || '',
+        telefone: motorista.telefone || '',
+        morada: motorista.morada || '',
+        codigo_postal: motorista.codigo_postal || '',
+        cidade: motorista.cidade || '',
+        documento_tipo: motorista.documento_tipo || '',
+        documento_numero: motorista.documento_numero || '',
         documento_validade: motorista.documento_validade
-          ? format(new Date(motorista.documento_validade), "yyyy-MM-dd")
-          : "",
-        carta_conducao: motorista.carta_conducao || "",
+          ? format(new Date(motorista.documento_validade), 'yyyy-MM-dd')
+          : '',
+        carta_conducao: motorista.carta_conducao || '',
         carta_categorias: motorista.carta_categorias || [],
         carta_validade: motorista.carta_validade
-          ? format(new Date(motorista.carta_validade), "yyyy-MM-dd")
-          : "",
-        licenca_tvde_numero: motorista.licenca_tvde_numero || "",
+          ? format(new Date(motorista.carta_validade), 'yyyy-MM-dd')
+          : '',
+        licenca_tvde_numero: motorista.licenca_tvde_numero || '',
         licenca_tvde_validade: motorista.licenca_tvde_validade
-          ? format(new Date(motorista.licenca_tvde_validade), "yyyy-MM-dd")
-          : "",
-        cartao_frota: motorista.cartao_frota || "",
-        cartao_bp: motorista.cartao_bp || "",
-        cartao_repsol: motorista.cartao_repsol || "",
-        cartao_edp: motorista.cartao_edp || "",
+          ? format(new Date(motorista.licenca_tvde_validade), 'yyyy-MM-dd')
+          : '',
+        cartao_frota: motorista.cartao_frota || '',
+        cartao_bp: motorista.cartao_bp || '',
+        cartao_repsol: motorista.cartao_repsol || '',
+        cartao_edp: motorista.cartao_edp || '',
         data_contratacao: motorista.data_contratacao
-          ? format(new Date(motorista.data_contratacao), "yyyy-MM-dd")
-          : "",
+          ? format(new Date(motorista.data_contratacao), 'yyyy-MM-dd')
+          : '',
         recibo_verde: motorista.recibo_verde ?? true,
         is_slot: motorista.is_slot ?? false,
         slot_valor_semanal: motorista.slot_valor_semanal ?? null,
         status_ativo: motorista.status_ativo ?? true,
-        observacoes: motorista.observacoes || "",
-        iban: motorista.iban || "",
-        gestor_responsavel: motorista.gestor_responsavel || "",
-        uber_uuid: motorista.uber_uuid || "",
-        bolt_id: motorista.bolt_id || "",
-        documento_ficheiro_url: motorista.documento_ficheiro_url || "",
-        documento_identificacao_verso_url: motorista.documento_identificacao_verso_url || "",
-        carta_ficheiro_url: motorista.carta_ficheiro_url || "",
-        carta_conducao_verso_url: motorista.carta_conducao_verso_url || "",
-        licenca_tvde_ficheiro_url: motorista.licenca_tvde_ficheiro_url || "",
-        registo_criminal_url: motorista.registo_criminal_url || "",
-        comprovativo_morada_url: motorista.comprovativo_morada_url || "",
-        comprovativo_iban_url: motorista.comprovativo_iban_url || "",
+        observacoes: motorista.observacoes || '',
+        iban: motorista.iban || '',
+        gestor_responsavel: motorista.gestor_responsavel || '',
+        uber_uuid: motorista.uber_uuid || '',
+        bolt_id: motorista.bolt_id || '',
+        documento_ficheiro_url: motorista.documento_ficheiro_url || '',
+        documento_identificacao_verso_url: motorista.documento_identificacao_verso_url || '',
+        carta_ficheiro_url: motorista.carta_ficheiro_url || '',
+        carta_conducao_verso_url: motorista.carta_conducao_verso_url || '',
+        licenca_tvde_ficheiro_url: motorista.licenca_tvde_ficheiro_url || '',
+        registo_criminal_url: motorista.registo_criminal_url || '',
+        comprovativo_morada_url: motorista.comprovativo_morada_url || '',
+        comprovativo_iban_url: motorista.comprovativo_iban_url || '',
       });
     }
   }, [motorista, form]);
@@ -290,7 +327,8 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
         status_ativo: data.status_ativo,
         observacoes: data.observacoes || null,
         iban: data.iban || null,
-        gestor_responsavel: data.gestor_responsavel === "none" ? null : (data.gestor_responsavel || null),
+        gestor_responsavel:
+          data.gestor_responsavel === 'none' ? null : data.gestor_responsavel || null,
         uber_uuid: data.uber_uuid || null,
         bolt_id: data.bolt_id || null,
         documento_ficheiro_url: data.documento_ficheiro_url || null,
@@ -304,17 +342,17 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
       };
 
       const { error } = await supabase
-        .from("motoristas_ativos")
+        .from('motoristas_ativos')
         .update(updateData)
-        .eq("id", motorista.id);
+        .eq('id', motorista.id);
 
       if (error) throw error;
 
-      toast.success("Motorista atualizado com sucesso!");
+      toast.success('Motorista atualizado com sucesso!');
       onSave();
     } catch (error) {
-      console.error("Erro ao atualizar motorista:", error);
-      toast.error("Erro ao atualizar motorista");
+      console.error('Erro ao atualizar motorista:', error);
+      toast.error('Erro ao atualizar motorista');
     } finally {
       setIsSubmitting(false);
     }
@@ -324,7 +362,6 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
           {/* Dados Pessoais */}
           <SectionCard
             icon={<User className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
@@ -341,25 +378,33 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                       <Briefcase className="h-4 w-4 text-primary" />
                       Gestor Responsável
                     </FormLabel>
-                    <Popover open={gestorPopoverOpen} onOpenChange={setGestorPopoverOpen} modal={true}>
+                    <Popover
+                      open={gestorPopoverOpen}
+                      onOpenChange={setGestorPopoverOpen}
+                      modal={true}
+                    >
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant="outline"
                             role="combobox"
                             className={cn(
-                              "w-full justify-between bg-yellow-50/50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900/30",
-                              !field.value && "text-muted-foreground"
+                              'w-full justify-between bg-yellow-50/50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900/30',
+                              !field.value && 'text-muted-foreground'
                             )}
                           >
-                            {field.value && field.value !== "none"
-                              ? gestores.find((gestor) => gestor.nome === field.value)?.nome || field.value
-                              : "Selecione um gestor..."}
+                            {field.value && field.value !== 'none'
+                              ? gestores.find((gestor) => gestor.nome === field.value)?.nome ||
+                                field.value
+                              : 'Selecione um gestor...'}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[200]" align="start">
+                      <PopoverContent
+                        className="w-[var(--radix-popover-trigger-width)] p-0 z-[200]"
+                        align="start"
+                      >
                         <Command>
                           <CommandInput placeholder="Pesquisar gestor..." className="h-9" />
                           <CommandList>
@@ -368,14 +413,14 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                               <CommandItem
                                 value="none"
                                 onSelect={() => {
-                                  form.setValue("gestor_responsavel", "none");
+                                  form.setValue('gestor_responsavel', 'none');
                                   setGestorPopoverOpen(false);
                                 }}
                               >
                                 <Check
                                   className={cn(
-                                    "mr-2 h-4 w-4",
-                                    field.value === "none" ? "opacity-100" : "opacity-0"
+                                    'mr-2 h-4 w-4',
+                                    field.value === 'none' ? 'opacity-100' : 'opacity-0'
                                   )}
                                 />
                                 Nenhum
@@ -385,14 +430,14 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                                   key={gestor.nome}
                                   value={gestor.nome}
                                   onSelect={() => {
-                                    form.setValue("gestor_responsavel", gestor.nome);
+                                    form.setValue('gestor_responsavel', gestor.nome);
                                     setGestorPopoverOpen(false);
                                   }}
                                 >
                                   <Check
                                     className={cn(
-                                      "mr-2 h-4 w-4",
-                                      field.value === gestor.nome ? "opacity-100" : "opacity-0"
+                                      'mr-2 h-4 w-4',
+                                      field.value === gestor.nome ? 'opacity-100' : 'opacity-0'
                                     )}
                                   />
                                   {gestor.nome}
@@ -412,7 +457,9 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                 name="nome"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel>Nome Completo *</FormLabel>
+                    <FormLabel>
+                      Nome Completo <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -433,7 +480,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                   </FormItem>
                 )}
               />
-               <FormField
+              <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
@@ -467,7 +514,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                     <FormLabel>Telefone</FormLabel>
                     <FormControl>
                       <PhoneInput
-                        value={field.value || ""}
+                        value={field.value || ''}
                         onChange={field.onChange}
                         defaultCountry="PT"
                       />
@@ -592,7 +639,12 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                     <FormItem>
                       <FormLabel className="text-xs">Frente do Documento</FormLabel>
                       <FormControl>
-                        <DocumentUploader folder="documentos" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                        <DocumentUploader
+                          folder="documentos"
+                          motoristaId={motorista.id}
+                          currentUrl={field.value}
+                          onUpload={field.onChange}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -605,7 +657,12 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                     <FormItem>
                       <FormLabel className="text-xs">Verso do Documento</FormLabel>
                       <FormControl>
-                        <DocumentUploader folder="documentos" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                        <DocumentUploader
+                          folder="documentos"
+                          motoristaId={motorista.id}
+                          currentUrl={field.value}
+                          onUpload={field.onChange}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -656,7 +713,12 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                     <FormItem>
                       <FormLabel className="text-xs">Frente da Carta</FormLabel>
                       <FormControl>
-                        <DocumentUploader folder="cartas" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                        <DocumentUploader
+                          folder="cartas"
+                          motoristaId={motorista.id}
+                          currentUrl={field.value}
+                          onUpload={field.onChange}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -669,7 +731,12 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                     <FormItem>
                       <FormLabel className="text-xs">Verso da Carta</FormLabel>
                       <FormControl>
-                        <DocumentUploader folder="cartas" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                        <DocumentUploader
+                          folder="cartas"
+                          motoristaId={motorista.id}
+                          currentUrl={field.value}
+                          onUpload={field.onChange}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -759,7 +826,12 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                     <FormItem>
                       <FormLabel className="text-xs">Ficheiro da Licença TVDE</FormLabel>
                       <FormControl>
-                        <DocumentUploader folder="tvde" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                        <DocumentUploader
+                          folder="tvde"
+                          motoristaId={motorista.id}
+                          currentUrl={field.value}
+                          onUpload={field.onChange}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -783,7 +855,12 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                   <FormItem>
                     <FormLabel className="text-xs">Registo Criminal</FormLabel>
                     <FormControl>
-                      <DocumentUploader folder="documentos" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                      <DocumentUploader
+                        folder="documentos"
+                        motoristaId={motorista.id}
+                        currentUrl={field.value}
+                        onUpload={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -796,7 +873,12 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                   <FormItem>
                     <FormLabel className="text-xs">Comprovativo Morada</FormLabel>
                     <FormControl>
-                      <DocumentUploader folder="documentos" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                      <DocumentUploader
+                        folder="documentos"
+                        motoristaId={motorista.id}
+                        currentUrl={field.value}
+                        onUpload={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -809,7 +891,12 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                   <FormItem>
                     <FormLabel className="text-xs">Comprovativo IBAN</FormLabel>
                     <FormControl>
-                      <DocumentUploader folder="documentos" motoristaId={motorista.id} currentUrl={field.value} onUpload={field.onChange} />
+                      <DocumentUploader
+                        folder="documentos"
+                        motoristaId={motorista.id}
+                        currentUrl={field.value}
+                        onUpload={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -828,10 +915,10 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
               <div className="flex flex-wrap gap-2 mb-4 p-3 bg-muted/20 rounded-lg border border-dashed">
                 <p className="text-xs text-muted-foreground w-full mb-1">Adicionar novo cartão:</p>
                 {!form.watch('cartao_bp') && (
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     className="h-7 text-xs border-green-600/30 text-green-700 hover:bg-green-600 hover:text-white"
                     onClick={() => form.setValue('cartao_bp', ' ')}
                   >
@@ -839,10 +926,10 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                   </Button>
                 )}
                 {!form.watch('cartao_repsol') && (
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     className="h-7 text-xs border-orange-600/30 text-orange-700 hover:bg-orange-600 hover:text-white"
                     onClick={() => form.setValue('cartao_repsol', ' ')}
                   >
@@ -850,10 +937,10 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                   </Button>
                 )}
                 {!form.watch('cartao_edp') && (
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     className="h-7 text-xs border-red-600/30 text-red-700 hover:bg-red-600 hover:text-white"
                     onClick={() => form.setValue('cartao_edp', ' ')}
                   >
@@ -862,7 +949,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                 )}
               </div>
 
-              {(form.watch('cartao_bp') !== null && form.watch('cartao_bp') !== "") && (
+              {form.watch('cartao_bp') !== null && form.watch('cartao_bp') !== '' && (
                 <FormField
                   control={form.control}
                   name="cartao_bp"
@@ -873,18 +960,22 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                           <span className="w-2 h-2 rounded-full bg-green-500" />
                           Cartão BP
                         </FormLabel>
-                        <Button 
+                        <Button
                           type="button"
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6 text-muted-foreground hover:text-red-600" 
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-red-600"
                           onClick={() => form.setValue('cartao_bp', '')}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                       <FormControl>
-                        <Input placeholder="Número do cartão BP" {...field} value={field.value || ""} />
+                        <Input
+                          placeholder="Número do cartão BP"
+                          {...field}
+                          value={field.value || ''}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -893,7 +984,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
               )}
 
               {/* REPSOL */}
-              {(form.watch('cartao_repsol') !== null && form.watch('cartao_repsol') !== "") && (
+              {form.watch('cartao_repsol') !== null && form.watch('cartao_repsol') !== '' && (
                 <FormField
                   control={form.control}
                   name="cartao_repsol"
@@ -904,18 +995,22 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                           <span className="w-2 h-2 rounded-full bg-orange-500" />
                           Cartão REPSOL
                         </FormLabel>
-                        <Button 
+                        <Button
                           type="button"
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6 text-muted-foreground hover:text-red-600" 
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-red-600"
                           onClick={() => form.setValue('cartao_repsol', '')}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                       <FormControl>
-                        <Input placeholder="Número do cartão REPSOL" {...field} value={field.value || ""} />
+                        <Input
+                          placeholder="Número do cartão REPSOL"
+                          {...field}
+                          value={field.value || ''}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -924,7 +1019,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
               )}
 
               {/* EDP */}
-              {(form.watch('cartao_edp') !== null && form.watch('cartao_edp') !== "") && (
+              {form.watch('cartao_edp') !== null && form.watch('cartao_edp') !== '' && (
                 <FormField
                   control={form.control}
                   name="cartao_edp"
@@ -935,18 +1030,22 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                           <span className="w-2 h-2 rounded-full bg-red-600" />
                           Cartão EDP
                         </FormLabel>
-                        <Button 
+                        <Button
                           type="button"
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6 text-muted-foreground hover:text-red-600" 
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-red-600"
                           onClick={() => form.setValue('cartao_edp', '')}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                       <FormControl>
-                        <Input placeholder="Número do cartão EDP" {...field} value={field.value || ""} />
+                        <Input
+                          placeholder="Número do cartão EDP"
+                          {...field}
+                          value={field.value || ''}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -969,10 +1068,11 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                     <FormLabel className="text-sm flex items-center gap-2">
-                      <span className={cn(
-                        "text-lg",
-                        field.value ? "text-green-600" : "text-red-600"
-                      )}>●</span>
+                      <span
+                        className={cn('text-lg', field.value ? 'text-green-600' : 'text-red-600')}
+                      >
+                        ●
+                      </span>
                       Motorista Verde
                     </FormLabel>
                     <FormControl>
@@ -1005,10 +1105,12 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                                 step="0.01"
                                 min="0"
                                 placeholder="Ex: 150.00"
-                                value={valorField.value ?? ""}
-                                onChange={(e) => valorField.onChange(
-                                  e.target.value ? parseFloat(e.target.value) : null
-                                )}
+                                value={valorField.value ?? ''}
+                                onChange={(e) =>
+                                  valorField.onChange(
+                                    e.target.value ? parseFloat(e.target.value) : null
+                                  )
+                                }
                               />
                             </FormControl>
                             <FormMessage />
@@ -1055,7 +1157,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                   <FormItem>
                     <FormLabel>Uber UUID</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. e912..." {...field} value={field.value || ""} />
+                      <Input placeholder="e.g. e912..." {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1067,17 +1169,18 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                       <Zap className="h-3 w-3 text-yellow-500" /> Bolt ID
+                      <Zap className="h-3 w-3 text-yellow-500" /> Bolt ID
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. 12345/6789" {...field} value={field.value || ""} />
+                      <Input placeholder="e.g. 12345/6789" {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <p className="text-[10px] text-muted-foreground sm:col-span-2 mt-1">
-                Estes IDs são usados para unificar automaticamente os ganhos das plataformas no Dashboard financeiro.
+                Estes IDs são usados para unificar automaticamente os ganhos das plataformas no
+                Dashboard financeiro.
               </p>
             </div>
           </SectionCard>
@@ -1110,7 +1213,7 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
         {/* Botão de salvar */}
         <div className="flex justify-end pt-4 border-t">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "A guardar..." : "Guardar Alterações"}
+            {isSubmitting ? 'A guardar...' : 'Guardar Alterações'}
           </Button>
         </div>
       </form>

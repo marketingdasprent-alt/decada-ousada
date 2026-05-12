@@ -8,8 +8,14 @@ import { toast } from 'sonner';
 import NovaListaDialog from './NovaListaDialog';
 import ContactosListaDialog from './ContactosListaDialog';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
 const ListasTab = () => {
@@ -46,14 +52,24 @@ const ListasTab = () => {
   });
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Listas de Transmissão</h2>
-        <Button onClick={() => { setEditingLista(null); setDialogOpen(true); }} className="gap-2">
+        <Button
+          onClick={() => {
+            setEditingLista(null);
+            setDialogOpen(true);
+          }}
+          className="gap-2"
+        >
           <Plus className="h-4 w-4" /> Nova Lista
         </Button>
       </div>
@@ -69,20 +85,35 @@ const ListasTab = () => {
           {listas.map((l: any) => {
             const count = l.marketing_contactos?.[0]?.count || 0;
             return (
-              <Card key={l.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setContactosLista(l)}>
+              <Card
+                key={l.id}
+                className="cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => setContactosLista(l)}
+              >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center justify-between">
                     <span>{l.nome}</span>
-                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteId(l.id); }}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteId(l.id);
+                      }}
+                    >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {l.descricao && <p className="text-sm text-muted-foreground mb-2">{l.descricao}</p>}
+                  {l.descricao && (
+                    <p className="text-sm text-muted-foreground mb-2">{l.descricao}</p>
+                  )}
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Users className="h-4 w-4" />
-                    <span>{count} contacto{count !== 1 ? 's' : ''}</span>
+                    <span>
+                      {count} contacto{count !== 1 ? 's' : ''}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -105,11 +136,15 @@ const ListasTab = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar lista?</AlertDialogTitle>
-            <AlertDialogDescription>Todos os contactos desta lista serão eliminados. Esta ação não pode ser revertida.</AlertDialogDescription>
+            <AlertDialogDescription>
+              Todos os contactos desta lista serão eliminados. Esta ação não pode ser revertida.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>Eliminar</AlertDialogAction>
+            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
+              Eliminar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -33,11 +33,18 @@ const NovaListaDialog = ({ open, onOpenChange, lista }: Props) => {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (lista?.id) {
-        const { error } = await supabase.from('marketing_listas').update({ nome, descricao }).eq('id', lista.id);
+        const { error } = await supabase
+          .from('marketing_listas')
+          .update({ nome, descricao })
+          .eq('id', lista.id);
         if (error) throw error;
       } else {
-        const { data: { user } } = await supabase.auth.getUser();
-        const { error } = await supabase.from('marketing_listas').insert({ nome, descricao, criado_por: user?.id });
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        const { error } = await supabase
+          .from('marketing_listas')
+          .insert({ nome, descricao, criado_por: user?.id });
         if (error) throw error;
       }
     },
@@ -59,15 +66,28 @@ const NovaListaDialog = ({ open, onOpenChange, lista }: Props) => {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Nome</Label>
-            <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Clientes TVDE" />
+            <Input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Ex: Clientes TVDE"
+            />
           </div>
           <div className="space-y-2">
             <Label>Descrição (opcional)</Label>
-            <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Descrição da lista" />
+            <Textarea
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder="Descrição da lista"
+            />
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={() => saveMutation.mutate()} disabled={!nome || saveMutation.isPending}>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={!nome || saveMutation.isPending}
+            >
               {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {lista ? 'Guardar' : 'Criar'}
             </Button>

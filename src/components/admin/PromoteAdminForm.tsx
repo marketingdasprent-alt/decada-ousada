@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -21,12 +20,12 @@ export const PromoteAdminForm = () => {
 
   const promoteToAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email) {
       toast({
-        title: "Erro",
-        description: "Email é obrigatório",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Email é obrigatório',
+        variant: 'destructive',
       });
       return;
     }
@@ -35,7 +34,7 @@ export const PromoteAdminForm = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('promote-admin', {
-        body: { email }
+        body: { email },
       });
 
       if (error) {
@@ -43,17 +42,17 @@ export const PromoteAdminForm = () => {
       }
 
       toast({
-        title: "Sucesso!",
-        description: "Usuário promovido a administrador com sucesso",
+        title: 'Sucesso!',
+        description: 'Usuário promovido a administrador com sucesso',
       });
-      
+
       setEmail('');
     } catch (error: any) {
       console.error('Error promoting user:', error);
       toast({
-        title: "Erro",
-        description: error.message || "Erro ao promover usuário",
-        variant: "destructive",
+        title: 'Erro',
+        description: error.message || 'Erro ao promover usuário',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -84,17 +83,17 @@ export const PromoteAdminForm = () => {
               placeholder="usuario@email.com"
             />
           </div>
-          
+
           <Button
             type="submit"
             disabled={loading}
             className="w-full bg-primary hover:bg-primary/90 text-white font-semibold"
           >
             <UserPlus className="h-4 w-4 mr-2" />
-            {loading ? "Promovendo..." : "Promover a Admin"}
+            {loading ? 'Promovendo...' : 'Promover a Admin'}
           </Button>
         </form>
-        
+
         <div className="mt-4 text-gray-400 text-sm">
           <p>• O usuário deve já estar registrado no sistema</p>
           <p>• Após promover, o usuário poderá gerar convites</p>

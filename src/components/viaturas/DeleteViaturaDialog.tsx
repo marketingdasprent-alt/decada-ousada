@@ -44,15 +44,18 @@ export function DeleteViaturaDialog({
           <AlertDialogDescription>
             {isEmUso ? (
               <span className="text-destructive">
-                Esta viatura está atualmente em uso por um motorista. 
-                Não é possível eliminar uma viatura em uso.
+                Esta viatura está atualmente em uso por um motorista. Não é possível eliminar uma
+                viatura em uso.
               </span>
             ) : (
               <>
                 Tem a certeza que deseja eliminar a viatura{' '}
-                <strong>{viatura.marca} {viatura.modelo}</strong> com matrícula{' '}
-                <strong>{viatura.matricula}</strong>?
-                <br /><br />
+                <strong>
+                  {viatura.marca} {viatura.modelo}
+                </strong>{' '}
+                com matrícula <strong>{viatura.matricula}</strong>?
+                <br />
+                <br />
                 Esta ação não pode ser desfeita.
               </>
             )}

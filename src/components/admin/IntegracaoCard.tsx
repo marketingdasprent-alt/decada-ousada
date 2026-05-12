@@ -90,7 +90,7 @@ export const IntegracaoCard: React.FC<IntegracaoCardProps> = ({
   const meta = PLATFORM_META[data.type];
 
   const lastSyncFormatted = data.ultimoSync
-    ? format(new Date(data.ultimoSync), "dd/MM/yyyy", { locale: pt })
+    ? format(new Date(data.ultimoSync), 'dd/MM/yyyy', { locale: pt })
     : null;
 
   const connectionLabel = data.ativo
@@ -101,9 +101,7 @@ export const IntegracaoCard: React.FC<IntegracaoCardProps> = ({
         : 'Upload manual'
     : 'Inactivo';
 
-  const connectionDotColor = data.ativo
-    ? 'bg-emerald-500'
-    : 'bg-muted-foreground/40';
+  const connectionDotColor = data.ativo ? 'bg-emerald-500' : 'bg-muted-foreground/40';
 
   return (
     <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:border-border transition-colors">
@@ -121,14 +119,10 @@ export const IntegracaoCard: React.FC<IntegracaoCardProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-sm">{data.nome}</span>
-                {data.ativo && (
-                  <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
-                )}
+                {data.ativo && <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />}
               </div>
               {lastSyncFormatted && (
-                <p className="text-xs text-muted-foreground">
-                  Atualizado até {lastSyncFormatted}
-                </p>
+                <p className="text-xs text-muted-foreground">Atualizado até {lastSyncFormatted}</p>
               )}
               {data.subLabel && !lastSyncFormatted && (
                 <p className="text-xs text-muted-foreground">{data.subLabel}</p>
@@ -188,7 +182,10 @@ export const IntegracaoCard: React.FC<IntegracaoCardProps> = ({
               size="icon"
               className="h-6 w-6"
               disabled={isExecuting}
-              onClick={(e) => { e.stopPropagation(); onExecute(data); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onExecute(data);
+              }}
             >
               {isExecuting ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
@@ -202,7 +199,10 @@ export const IntegracaoCard: React.FC<IntegracaoCardProps> = ({
               variant="outline"
               size="sm"
               className="ml-auto h-6 text-[10px] px-2 py-0"
-              onClick={(e) => { e.stopPropagation(); onImport(data); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onImport(data);
+              }}
             >
               <Upload className="h-3 w-3 mr-1" />
               Importar

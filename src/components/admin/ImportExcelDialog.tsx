@@ -18,15 +18,15 @@ import { toast } from 'sonner';
 // ── Column name normalisation ────────────────────────────────────────────────
 // Maps Excel header variations → internal key
 const HEADER_MAP: Record<string, string> = {
-  'observações': 'observacoes',
-  'observacoes': 'observacoes',
-  'nome': 'nome',
-  'gestor': 'gestor',
-  'marca': 'marca',
-  'modelo': 'modelo',
-  'tvde': 'tvde',
-  'matrícula': 'matricula',
-  'matricula': 'matricula',
+  observações: 'observacoes',
+  observacoes: 'observacoes',
+  nome: 'nome',
+  gestor: 'gestor',
+  marca: 'marca',
+  modelo: 'modelo',
+  tvde: 'tvde',
+  matrícula: 'matricula',
+  matricula: 'matricula',
   'cartão de combustível': 'cartao_combustivel',
   'cartao de combustivel': 'cartao_combustivel',
   'data/hora inicio': 'data_inicio',
@@ -34,16 +34,16 @@ const HEADER_MAP: Record<string, string> = {
   'data/hora saída': 'data_saida',
   'data/hora saida': 'data_saida',
   'valor viatura': 'valor_viatura',
-  'caução': 'caucao',
-  'caucao': 'caucao',
-  'km': 'km',
-  'nib': 'nib',
-  'móvel': 'movel',
-  'movel': 'movel',
-  'email': 'email',
-  'localização': 'localizacao',
-  'localizacao': 'localizacao',
-  'nif': 'nif',
+  caução: 'caucao',
+  caucao: 'caucao',
+  km: 'km',
+  nib: 'nib',
+  móvel: 'movel',
+  movel: 'movel',
+  email: 'email',
+  localização: 'localizacao',
+  localizacao: 'localizacao',
+  nif: 'nif',
 };
 
 const normaliseHeader = (h: string): string =>
@@ -102,11 +102,16 @@ export const ImportExcelDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     if (raw.length < 2) return [];
 
     const headers = (raw[0] as string[]).map(normaliseHeader);
-    return raw.slice(1).map((row) => {
-      const obj: ParsedRow = {};
-      headers.forEach((h, i) => { obj[h] = String(row[i] ?? ''); });
-      return obj;
-    }).filter((r) => Object.values(r).some((v) => v.trim() !== ''));
+    return raw
+      .slice(1)
+      .map((row) => {
+        const obj: ParsedRow = {};
+        headers.forEach((h, i) => {
+          obj[h] = String(row[i] ?? '');
+        });
+        return obj;
+      })
+      .filter((r) => Object.values(r).some((v) => v.trim() !== ''));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,7 +151,9 @@ export const ImportExcelDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     setStep('importing');
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error('Sessão inválida');
 
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
@@ -155,7 +162,7 @@ export const ImportExcelDialog: React.FC<Props> = ({ open, onOpenChange }) => {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ rows: parsedRows }),
@@ -182,9 +189,8 @@ export const ImportExcelDialog: React.FC<Props> = ({ open, onOpenChange }) => {
 
   // Preview columns to show (most relevant)
   const previewCols = ['nome', 'nif', 'matricula', 'gestor', 'valor_viatura', 'data_inicio'];
-  const availableCols = parsedRows.length > 0
-    ? previewCols.filter((c) => parsedRows[0][c] !== undefined)
-    : [];
+  const availableCols =
+    parsedRows.length > 0 ? previewCols.filter((c) => parsedRows[0][c] !== undefined) : [];
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -200,7 +206,6 @@ export const ImportExcelDialog: React.FC<Props> = ({ open, onOpenChange }) => {
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col gap-4">
-
           {/* ── Step: idle ── */}
           {step === 'idle' && (
             <div
@@ -256,7 +261,8 @@ export const ImportExcelDialog: React.FC<Props> = ({ open, onOpenChange }) => {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Pré-visualização das primeiras colunas. A importação actualiza motoristas e viaturas existentes (por NIF/matrícula) e cria novos registos quando necessário.
+                  Pré-visualização das primeiras colunas. A importação actualiza motoristas e
+                  viaturas existentes (por NIF/matrícula) e cria novos registos quando necessário.
                 </AlertDescription>
               </Alert>
 
@@ -265,9 +271,14 @@ export const ImportExcelDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50 sticky top-0">
                       <tr>
-                        <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">#</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                          #
+                        </th>
                         {availableCols.map((c) => (
-                          <th key={c} className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground capitalize whitespace-nowrap">
+                          <th
+                            key={c}
+                            className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground capitalize whitespace-nowrap"
+                          >
                             {c.replace(/_/g, ' ')}
                           </th>
                         ))}
@@ -278,7 +289,11 @@ export const ImportExcelDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                         <tr key={i} className="border-t hover:bg-muted/30">
                           <td className="px-3 py-1.5 text-muted-foreground">{i + 1}</td>
                           {availableCols.map((c) => (
-                            <td key={c} className="px-3 py-1.5 max-w-[180px] truncate" title={row[c]}>
+                            <td
+                              key={c}
+                              className="px-3 py-1.5 max-w-[180px] truncate"
+                              title={row[c]}
+                            >
                               {row[c] || <span className="text-muted-foreground/50">—</span>}
                             </td>
                           ))}
@@ -295,7 +310,9 @@ export const ImportExcelDialog: React.FC<Props> = ({ open, onOpenChange }) => {
               </ScrollArea>
 
               <div className="flex justify-between gap-3 pt-2">
-                <Button variant="outline" onClick={reset}>Cancelar</Button>
+                <Button variant="outline" onClick={reset}>
+                  Cancelar
+                </Button>
                 <Button onClick={handleImport} className="gap-2">
                   <Upload className="h-4 w-4" />
                   Importar {parsedRows.length} registos
@@ -309,7 +326,9 @@ export const ImportExcelDialog: React.FC<Props> = ({ open, onOpenChange }) => {
             <div className="flex flex-col items-center justify-center gap-4 py-16">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
               <p className="font-medium">A importar {parsedRows.length} registos...</p>
-              <p className="text-sm text-muted-foreground">Aguarda, isto pode demorar alguns segundos.</p>
+              <p className="text-sm text-muted-foreground">
+                Aguarda, isto pode demorar alguns segundos.
+              </p>
             </div>
           )}
 
@@ -334,11 +353,21 @@ export const ImportExcelDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50 sticky top-0">
                     <tr>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">#</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Nome</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Matrícula</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Estado</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Detalhe</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        #
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        Nome
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        Matrícula
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        Estado
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        Detalhe
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -348,11 +377,22 @@ export const ImportExcelDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                         <td className="px-3 py-1.5 font-medium">{r.nome}</td>
                         <td className="px-3 py-1.5">{r.matricula}</td>
                         <td className="px-3 py-1.5">
-                          {r.status === 'ok' && <Badge className="bg-green-100 text-green-700 border-green-200">OK</Badge>}
+                          {r.status === 'ok' && (
+                            <Badge className="bg-green-100 text-green-700 border-green-200">
+                              OK
+                            </Badge>
+                          )}
                           {r.status === 'erro' && <Badge variant="destructive">Erro</Badge>}
-                          {r.status === 'aviso' && <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Aviso</Badge>}
+                          {r.status === 'aviso' && (
+                            <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
+                              Aviso
+                            </Badge>
+                          )}
                         </td>
-                        <td className="px-3 py-1.5 text-xs text-muted-foreground max-w-[280px] truncate" title={r.message}>
+                        <td
+                          className="px-3 py-1.5 text-xs text-muted-foreground max-w-[280px] truncate"
+                          title={r.message}
+                        >
                           {r.message}
                         </td>
                       </tr>

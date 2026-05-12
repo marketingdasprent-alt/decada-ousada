@@ -39,7 +39,7 @@ function formatValue(campo: string, valor: string | null): string {
   if (campo === 'titulo' || campo === 'matricula_devolver') return formatMatricula(valor);
   if (campo.startsWith('data_')) {
     try {
-      return format(new Date(valor), "dd/MM/yyyy HH:mm", { locale: pt });
+      return format(new Date(valor), 'dd/MM/yyyy HH:mm', { locale: pt });
     } catch {
       return valor;
     }
@@ -61,7 +61,7 @@ export const EventoHistoricoDialog: React.FC<Props> = ({ open, onOpenChange, eve
       if (error) throw error;
 
       // Fetch editor names
-      const editorIds = [...new Set((data || []).map(h => h.editado_por))];
+      const editorIds = [...new Set((data || []).map((h) => h.editado_por))];
       let namesMap: Record<string, string> = {};
       if (editorIds.length > 0) {
         const { data: profiles } = await supabase
@@ -69,11 +69,11 @@ export const EventoHistoricoDialog: React.FC<Props> = ({ open, onOpenChange, eve
           .select('id, nome')
           .in('id', editorIds);
         if (profiles) {
-          namesMap = Object.fromEntries(profiles.map(p => [p.id, p.nome || 'Utilizador']));
+          namesMap = Object.fromEntries(profiles.map((p) => [p.id, p.nome || 'Utilizador']));
         }
       }
 
-      return (data || []).map(h => ({
+      return (data || []).map((h) => ({
         ...h,
         editor_nome: namesMap[h.editado_por] || 'Utilizador',
       }));
@@ -94,18 +94,36 @@ export const EventoHistoricoDialog: React.FC<Props> = ({ open, onOpenChange, eve
 
         <div className="space-y-3 text-sm">
           <div className="border rounded-lg p-3 bg-muted/30 space-y-1">
-            <p><span className="font-medium">{evento.tipo === 'troca' ? 'Mat. a Entregar:' : 'Matrícula:'}</span> {formatMatricula(evento.titulo)}</p>
+            <p>
+              <span className="font-medium">
+                {evento.tipo === 'troca' ? 'Mat. a Entregar:' : 'Matrícula:'}
+              </span>{' '}
+              {formatMatricula(evento.titulo)}
+            </p>
             {evento.matricula_devolver && (
-              <p><span className="font-medium">Mat. a Devolver:</span> {formatMatricula(evento.matricula_devolver)}</p>
+              <p>
+                <span className="font-medium">Mat. a Devolver:</span>{' '}
+                {formatMatricula(evento.matricula_devolver)}
+              </p>
             )}
-            {evento.cidade && <p><span className="font-medium">Cidade:</span> {evento.cidade.toUpperCase()}</p>}
-            <p><span className="font-medium">Tipo:</span> {TIPO_LABELS[evento.tipo] || evento.tipo}</p>
+            {evento.cidade && (
+              <p>
+                <span className="font-medium">Cidade:</span> {evento.cidade.toUpperCase()}
+              </p>
+            )}
+            <p>
+              <span className="font-medium">Tipo:</span> {TIPO_LABELS[evento.tipo] || evento.tipo}
+            </p>
             {evento.descricao && (
-              <p><span className="font-medium">Observações:</span> {evento.descricao}</p>
+              <p>
+                <span className="font-medium">Observações:</span> {evento.descricao}
+              </p>
             )}
             <div className="flex items-center gap-1 text-muted-foreground">
               <Clock className="h-3 w-3" />
-              <span>{format(new Date(evento.data_inicio), "dd/MM/yyyy HH:mm", { locale: pt })}</span>
+              <span>
+                {format(new Date(evento.data_inicio), 'dd/MM/yyyy HH:mm', { locale: pt })}
+              </span>
             </div>
             {evento.profiles?.nome && (
               <div className="flex items-center gap-1 text-muted-foreground">
@@ -131,11 +149,13 @@ export const EventoHistoricoDialog: React.FC<Props> = ({ open, onOpenChange, eve
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">{h.editor_nome}</span>
                     <span className="text-muted-foreground">
-                      {format(new Date(h.editado_em), "dd/MM HH:mm", { locale: pt })}
+                      {format(new Date(h.editado_em), 'dd/MM HH:mm', { locale: pt })}
                     </span>
                   </div>
                   <p className="text-muted-foreground">
-                    <span className="font-medium text-foreground">{CAMPO_LABELS[h.campo] || h.campo}:</span>{' '}
+                    <span className="font-medium text-foreground">
+                      {CAMPO_LABELS[h.campo] || h.campo}:
+                    </span>{' '}
                     <span className="line-through">{formatValue(h.campo, h.valor_anterior)}</span>
                     {' → '}
                     <span className="text-foreground">{formatValue(h.campo, h.valor_novo)}</span>

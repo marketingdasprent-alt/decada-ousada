@@ -4,12 +4,50 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Pencil, Trash2, Key, Search, ArrowUpDown, ArrowUp, ArrowDown, Plus } from 'lucide-react';
+import {
+  Loader2,
+  Pencil,
+  Trash2,
+  Key,
+  Search,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Plus,
+} from 'lucide-react';
 import type { Cargo } from '@/hooks/useRBAC';
 
 interface Profile {
@@ -28,18 +66,18 @@ export const UsersTab = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [grupos, setGrupos] = useState<Cargo[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Filtros e ordenação
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGrupo, setFilterGrupo] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<SortColumn>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  
+
   // Dialog de edição
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Dialog de criação
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -48,21 +86,21 @@ export const UsersTab = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    cargo_id: ''
+    cargo_id: '',
   });
-  
+
   // Dialog de eliminação
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   // Dialog de reset password
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [resetPasswordProfile, setResetPasswordProfile] = useState<Profile | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetting, setResetting] = useState(false);
-  
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -74,12 +112,14 @@ export const UsersTab = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select(`
+        .select(
+          `
           *,
           cargos:cargo_id (
             nome
           )
-        `)
+        `
+        )
         .or('cargo_id.neq.a0000000-0000-0000-0000-000000000001,cargo_id.is.null')
         .order('created_at', { ascending: false });
 
@@ -118,43 +158,42 @@ export const UsersTab = () => {
   // Filtros e ordenação
   const filteredAndSortedProfiles = useMemo(() => {
     let result = [...profiles];
-    
+
     // Filtro por texto
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(p => 
-        p.nome?.toLowerCase().includes(term) || 
-        p.email?.toLowerCase().includes(term)
+      result = result.filter(
+        (p) => p.nome?.toLowerCase().includes(term) || p.email?.toLowerCase().includes(term)
       );
     }
-    
+
     // Filtro por grupo
     if (filterGrupo) {
-      result = result.filter(p => p.cargo_id === filterGrupo);
+      result = result.filter((p) => p.cargo_id === filterGrupo);
     }
-    
+
     // Ordenação
     result.sort((a, b) => {
       let aVal = a[sortColumn] || '';
       let bVal = b[sortColumn] || '';
-      
+
       if (sortColumn === 'created_at') {
         aVal = new Date(aVal).getTime().toString();
         bVal = new Date(bVal).getTime().toString();
         const comparison = Number(aVal) - Number(bVal);
         return sortDirection === 'asc' ? comparison : -comparison;
       }
-      
+
       const comparison = aVal.toString().localeCompare(bVal.toString());
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-    
+
     return result;
   }, [profiles, searchTerm, filterGrupo, sortColumn, sortDirection]);
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn === column) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortColumn(column);
       setSortDirection('asc');
@@ -165,9 +204,11 @@ export const UsersTab = () => {
     if (sortColumn !== column) {
       return <ArrowUpDown className="h-4 w-4 ml-1 opacity-50" />;
     }
-    return sortDirection === 'asc' 
-      ? <ArrowUp className="h-4 w-4 ml-1" />
-      : <ArrowDown className="h-4 w-4 ml-1" />;
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1" />
+    );
   };
 
   // Criar utilizador
@@ -217,8 +258,8 @@ export const UsersTab = () => {
           nome: newUser.nome.trim(),
           email: newUser.email.trim(),
           password: newUser.password,
-          cargo_id: newUser.cargo_id || null
-        }
+          cargo_id: newUser.cargo_id || null,
+        },
       });
 
       if (error) throw error;
@@ -261,8 +302,8 @@ export const UsersTab = () => {
 
     setIsSaving(true);
     try {
-      const cargoNome = grupos.find(g => g.id === editingProfile.cargo_id)?.nome || null;
-      
+      const cargoNome = grupos.find((g) => g.id === editingProfile.cargo_id)?.nome || null;
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -298,7 +339,7 @@ export const UsersTab = () => {
     setIsDeleting(true);
     try {
       const { data, error } = await supabase.functions.invoke('delete-user', {
-        body: { userId: profileToDelete.id }
+        body: { userId: profileToDelete.id },
       });
 
       if (error) throw error;
@@ -402,7 +443,7 @@ export const UsersTab = () => {
 
   const getGrupoName = (cargoId: string | null) => {
     if (!cargoId) return 'Sem grupo';
-    const grupo = grupos.find(g => g.id === cargoId);
+    const grupo = grupos.find((g) => g.id === cargoId);
     return grupo?.nome || 'Sem grupo';
   };
 
@@ -410,7 +451,7 @@ export const UsersTab = () => {
     return new Date(dateString).toLocaleDateString('pt-PT', {
       day: '2-digit',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -427,7 +468,7 @@ export const UsersTab = () => {
       <Card className="bg-card border-border">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-foreground">Gerir Utilizadores</CardTitle>
-          <Button 
+          <Button
             onClick={() => setIsCreateDialogOpen(true)}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
@@ -467,14 +508,16 @@ export const UsersTab = () => {
 
           {/* Contador de resultados */}
           <p className="text-sm text-muted-foreground">
-            {filteredAndSortedProfiles.length} utilizador{filteredAndSortedProfiles.length !== 1 ? 'es' : ''} encontrado{filteredAndSortedProfiles.length !== 1 ? 's' : ''}
+            {filteredAndSortedProfiles.length} utilizador
+            {filteredAndSortedProfiles.length !== 1 ? 'es' : ''} encontrado
+            {filteredAndSortedProfiles.length !== 1 ? 's' : ''}
           </p>
 
           {/* Tabela */}
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-muted/50">
-                <TableHead 
+                <TableHead
                   className="text-muted-foreground cursor-pointer select-none"
                   onClick={() => handleSort('nome')}
                 >
@@ -483,7 +526,7 @@ export const UsersTab = () => {
                     {getSortIcon('nome')}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="text-muted-foreground cursor-pointer select-none"
                   onClick={() => handleSort('email')}
                 >
@@ -493,7 +536,7 @@ export const UsersTab = () => {
                   </div>
                 </TableHead>
                 <TableHead className="text-muted-foreground">Grupo</TableHead>
-                <TableHead 
+                <TableHead
                   className="text-muted-foreground cursor-pointer select-none"
                   onClick={() => handleSort('created_at')}
                 >
@@ -576,53 +619,65 @@ export const UsersTab = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="create-name" className="text-foreground">Nome</Label>
+              <Label htmlFor="create-name" className="text-foreground">
+                Nome
+              </Label>
               <Input
                 id="create-name"
                 value={newUser.nome}
-                onChange={(e) => setNewUser(prev => ({ ...prev, nome: e.target.value }))}
+                onChange={(e) => setNewUser((prev) => ({ ...prev, nome: e.target.value }))}
                 placeholder="Nome completo"
                 className="bg-background border-border"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-email" className="text-foreground">Email</Label>
+              <Label htmlFor="create-email" className="text-foreground">
+                Email
+              </Label>
               <Input
                 id="create-email"
                 type="email"
                 value={newUser.email}
-                onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                onChange={(e) => setNewUser((prev) => ({ ...prev, email: e.target.value }))}
                 placeholder="email@exemplo.com"
                 className="bg-background border-border"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-password" className="text-foreground">Password</Label>
+              <Label htmlFor="create-password" className="text-foreground">
+                Password
+              </Label>
               <Input
                 id="create-password"
                 type="password"
                 value={newUser.password}
-                onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                onChange={(e) => setNewUser((prev) => ({ ...prev, password: e.target.value }))}
                 placeholder="Mínimo 6 caracteres"
                 className="bg-background border-border"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-confirm-password" className="text-foreground">Confirmar Password</Label>
+              <Label htmlFor="create-confirm-password" className="text-foreground">
+                Confirmar Password
+              </Label>
               <Input
                 id="create-confirm-password"
                 type="password"
                 value={newUser.confirmPassword}
-                onChange={(e) => setNewUser(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                onChange={(e) =>
+                  setNewUser((prev) => ({ ...prev, confirmPassword: e.target.value }))
+                }
                 placeholder="Repita a password"
                 className="bg-background border-border"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-grupo" className="text-foreground">Grupo</Label>
+              <Label htmlFor="create-grupo" className="text-foreground">
+                Grupo
+              </Label>
               <Select
                 value={newUser.cargo_id}
-                onValueChange={(value) => setNewUser(prev => ({ ...prev, cargo_id: value }))}
+                onValueChange={(value) => setNewUser((prev) => ({ ...prev, cargo_id: value }))}
               >
                 <SelectTrigger className="bg-background border-border">
                   <SelectValue placeholder="Selecionar grupo" />
@@ -642,7 +697,13 @@ export const UsersTab = () => {
               variant="outline"
               onClick={() => {
                 setIsCreateDialogOpen(false);
-                setNewUser({ nome: '', email: '', password: '', confirmPassword: '', cargo_id: '' });
+                setNewUser({
+                  nome: '',
+                  email: '',
+                  password: '',
+                  confirmPassword: '',
+                  cargo_id: '',
+                });
               }}
               disabled={isCreating}
               className="border-border"
@@ -656,8 +717,7 @@ export const UsersTab = () => {
             >
               {isCreating ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  A criar...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />A criar...
                 </>
               ) : (
                 'Criar Utilizador'
@@ -675,19 +735,27 @@ export const UsersTab = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-foreground">Nome</Label>
+              <Label htmlFor="name" className="text-foreground">
+                Nome
+              </Label>
               <Input
                 id="name"
                 value={editingProfile?.nome || ''}
-                onChange={(e) => setEditingProfile(prev => prev ? { ...prev, nome: e.target.value } : null)}
+                onChange={(e) =>
+                  setEditingProfile((prev) => (prev ? { ...prev, nome: e.target.value } : null))
+                }
                 className="bg-background border-border"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="grupo" className="text-foreground">Grupo</Label>
+              <Label htmlFor="grupo" className="text-foreground">
+                Grupo
+              </Label>
               <Select
                 value={editingProfile?.cargo_id || ''}
-                onValueChange={(value) => setEditingProfile(prev => prev ? { ...prev, cargo_id: value } : null)}
+                onValueChange={(value) =>
+                  setEditingProfile((prev) => (prev ? { ...prev, cargo_id: value } : null))
+                }
               >
                 <SelectTrigger className="bg-background border-border">
                   <SelectValue placeholder="Selecionar grupo" />
@@ -718,8 +786,7 @@ export const UsersTab = () => {
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  A guardar...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...
                 </>
               ) : (
                 'Guardar'
@@ -739,10 +806,7 @@ export const UsersTab = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel 
-              disabled={isDeleting}
-              className="border-border"
-            >
+            <AlertDialogCancel disabled={isDeleting} className="border-border">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
@@ -752,8 +816,7 @@ export const UsersTab = () => {
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  A eliminar...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />A eliminar...
                 </>
               ) : (
                 'Eliminar'
@@ -771,15 +834,13 @@ export const UsersTab = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="p-3 bg-muted rounded-md border border-border">
-              <p className="text-sm text-muted-foreground">
-                Definir nova password para:
-              </p>
-              <p className="font-medium text-foreground mt-1">
-                {resetPasswordProfile?.email}
-              </p>
+              <p className="text-sm text-muted-foreground">Definir nova password para:</p>
+              <p className="font-medium text-foreground mt-1">{resetPasswordProfile?.email}</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="newPassword" className="text-foreground">Nova Password</Label>
+              <Label htmlFor="newPassword" className="text-foreground">
+                Nova Password
+              </Label>
               <Input
                 id="newPassword"
                 type="password"
@@ -790,7 +851,9 @@ export const UsersTab = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-foreground">Confirmar Password</Label>
+              <Label htmlFor="confirmPassword" className="text-foreground">
+                Confirmar Password
+              </Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -817,8 +880,7 @@ export const UsersTab = () => {
             >
               {resetting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  A resetar...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />A resetar...
                 </>
               ) : (
                 'Resetar Password'

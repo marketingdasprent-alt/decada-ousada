@@ -1,30 +1,30 @@
-import { useState, useEffect } from "react";
-import { 
-  Plus, 
-  Trash2, 
-  Calendar, 
-  Wallet, 
-  CheckCircle2, 
-  Clock, 
+import { useState, useEffect } from 'react';
+import {
+  Plus,
+  Trash2,
+  Calendar,
+  Wallet,
+  CheckCircle2,
+  Clock,
   Loader2,
   Table as TableIcon,
   X,
   Edit2,
-  Check
-} from "lucide-react";
-import { format, startOfWeek, addWeeks, parseISO } from "date-fns";
-import { pt } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+  Check,
+} from 'lucide-react';
+import { format, startOfWeek, addWeeks, parseISO } from 'date-fns';
+import { pt } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -32,12 +32,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import type { Motorista } from "@/pages/Motoristas";
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import type { Motorista } from '@/pages/Motoristas';
 
 interface CustoAdicional {
   id: string;
@@ -63,11 +63,11 @@ export function MotoristaTabOutrosCustos({ motorista }: MotoristaTabOutrosCustos
   const [editCusto, setEditCusto] = useState<Partial<CustoAdicional>>({});
 
   // Form states
-  const [tipo, setTipo] = useState<string>("Caução");
-  const [valor, setValor] = useState<string>("");
-  const [semanas, setSemanas] = useState<string>("1");
+  const [tipo, setTipo] = useState<string>('Caução');
+  const [valor, setValor] = useState<string>('');
+  const [semanas, setSemanas] = useState<string>('1');
   const [dataInicio, setDataInicio] = useState<string>(
-    format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")
+    format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
   );
 
   useEffect(() => {
@@ -78,15 +78,15 @@ export function MotoristaTabOutrosCustos({ motorista }: MotoristaTabOutrosCustos
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from("motorista_custos_adicionais")
-        .select("*")
-        .eq("motorista_id", motorista.id)
-        .order("semana_referencia", { ascending: true });
+        .from('motorista_custos_adicionais')
+        .select('*')
+        .eq('motorista_id', motorista.id)
+        .order('semana_referencia', { ascending: true });
 
       if (error) throw error;
       setCustos(data || []);
     } catch (error: any) {
-      console.error("Erro ao carregar custos:", error);
+      console.error('Erro ao carregar custos:', error);
       // Don't toast error if table doesn't exist yet, we'll handle it nicely
     } finally {
       setLoading(false);
@@ -95,11 +95,11 @@ export function MotoristaTabOutrosCustos({ motorista }: MotoristaTabOutrosCustos
 
   async function handleGerarCustos() {
     if (!valor || Number(valor) <= 0) {
-      toast.error("Insira um valor válido.");
+      toast.error('Insira um valor válido.');
       return;
     }
     if (!semanas || Number(semanas) <= 0) {
-      toast.error("Insira o número de semanas.");
+      toast.error('Insira o número de semanas.');
       return;
     }
 
@@ -115,29 +115,27 @@ export function MotoristaTabOutrosCustos({ motorista }: MotoristaTabOutrosCustos
           motorista_id: motorista.id,
           tipo,
           valor: valorNum,
-          semana_referencia: format(currentWeek, "yyyy-MM-dd"),
-          status: "pendente",
-          descricao: `Gerado automaticamente: ${numSemanas} semanas`
+          semana_referencia: format(currentWeek, 'yyyy-MM-dd'),
+          status: 'pendente',
+          descricao: `Gerado automaticamente: ${numSemanas} semanas`,
         });
         currentWeek = addWeeks(currentWeek, 1);
       }
 
-      const { error } = await supabase
-        .from("motorista_custos_adicionais")
-        .insert(payloads);
+      const { error } = await supabase.from('motorista_custos_adicionais').insert(payloads);
 
       if (error) throw error;
 
       toast.success(`${numSemanas} lançamentos gerados com sucesso!`);
       setShowForm(false);
       loadCustos();
-      
+
       // Reset form
-      setValor("");
-      setSemanas("1");
+      setValor('');
+      setSemanas('1');
     } catch (error: any) {
-      console.error("Erro ao gerar custos:", error);
-      toast.error("Erro ao gerar custos: " + error.message);
+      console.error('Erro ao gerar custos:', error);
+      toast.error('Erro ao gerar custos: ' + error.message);
     } finally {
       setGenerating(false);
     }
@@ -145,57 +143,54 @@ export function MotoristaTabOutrosCustos({ motorista }: MotoristaTabOutrosCustos
 
   async function handleDelete(id: string) {
     try {
-      const { error } = await supabase
-        .from("motorista_custos_adicionais")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from('motorista_custos_adicionais').delete().eq('id', id);
 
       if (error) throw error;
-      toast.success("Lançamento removido.");
-      setCustos(custos.filter(c => c.id !== id));
+      toast.success('Lançamento removido.');
+      setCustos(custos.filter((c) => c.id !== id));
     } catch (error: any) {
-      toast.error("Erro ao remover: " + error.message);
+      toast.error('Erro ao remover: ' + error.message);
     }
   }
 
   async function handleUpdateStatus(id: string, newStatus: string) {
     try {
       const { error } = await supabase
-        .from("motorista_custos_adicionais")
+        .from('motorista_custos_adicionais')
         .update({ status: newStatus })
-        .eq("id", id);
+        .eq('id', id);
 
       if (error) throw error;
-      setCustos(custos.map(c => c.id === id ? { ...c, status: newStatus } : c));
-      toast.success("Status atualizado.");
+      setCustos(custos.map((c) => (c.id === id ? { ...c, status: newStatus } : c)));
+      toast.success('Status atualizado.');
     } catch (error: any) {
-      toast.error("Erro ao atualizar status.");
+      toast.error('Erro ao atualizar status.');
     }
   }
 
   async function handleSaveEdit() {
     if (!editingId || !editCusto.valor || editCusto.valor <= 0) {
-      toast.error("Insira um valor válido.");
+      toast.error('Insira um valor válido.');
       return;
     }
 
     try {
       const { error } = await supabase
-        .from("motorista_custos_adicionais")
+        .from('motorista_custos_adicionais')
         .update({
           tipo: editCusto.tipo,
           valor: editCusto.valor,
           semana_referencia: editCusto.semana_referencia,
         })
-        .eq("id", editingId);
+        .eq('id', editingId);
 
       if (error) throw error;
-      
+
       setEditingId(null);
       await loadCustos();
-      toast.success("Custo atualizado com sucesso.");
+      toast.success('Custo atualizado com sucesso.');
     } catch (error: any) {
-      toast.error("Erro ao salvar alterações.");
+      toast.error('Erro ao salvar alterações.');
     }
   }
 
@@ -209,9 +204,9 @@ export function MotoristaTabOutrosCustos({ motorista }: MotoristaTabOutrosCustos
   }
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-PT", {
-      style: "currency",
-      currency: "EUR",
+    return new Intl.NumberFormat('pt-PT', {
+      style: 'currency',
+      currency: 'EUR',
     }).format(value);
   };
 
@@ -228,7 +223,9 @@ export function MotoristaTabOutrosCustos({ motorista }: MotoristaTabOutrosCustos
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold">Gestão de Outros Custos</h3>
-          <p className="text-sm text-muted-foreground">Agende cauções, seguros e outras deduções semanais.</p>
+          <p className="text-sm text-muted-foreground">
+            Agende cauções, seguros e outras deduções semanais.
+          </p>
         </div>
         {!showForm && (
           <Button onClick={() => setShowForm(true)} className="bg-emerald-600 hover:bg-emerald-700">
@@ -267,46 +264,51 @@ export function MotoristaTabOutrosCustos({ motorista }: MotoristaTabOutrosCustos
 
               <div className="space-y-2">
                 <Label>Valor Semanal (€)</Label>
-                <Input 
-                  type="number" 
-                  placeholder="0.00" 
-                  value={valor} 
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={valor}
                   onChange={(e) => setValor(e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Nº Semanas</Label>
-                <Input 
-                  type="number" 
-                  min="1" 
-                  value={semanas} 
+                <Input
+                  type="number"
+                  min="1"
+                  value={semanas}
                   onChange={(e) => setSemanas(e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Semana de Início</Label>
-                <Input 
-                  type="date" 
-                  value={dataInicio} 
+                <Input
+                  type="date"
+                  value={dataInicio}
                   onChange={(e) => setDataInicio(e.target.value)}
                 />
               </div>
 
               <div className="md:col-start-4">
-                <Button 
-                  onClick={handleGerarCustos} 
+                <Button
+                  onClick={handleGerarCustos}
                   className="w-full bg-emerald-600 hover:bg-emerald-700"
                   disabled={generating}
                 >
-                  {generating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wallet className="h-4 w-4 mr-2" />}
+                  {generating ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Wallet className="h-4 w-4 mr-2" />
+                  )}
                   Gerar Custos
                 </Button>
               </div>
             </div>
             <p className="mt-4 text-xs text-muted-foreground italic">
-              * Ao clicar em "Gerar Custos", o sistema criará individualmente os lançamentos para as semanas seguintes, permitindo controlo granular por período.
+              * Ao clicar em "Gerar Custos", o sistema criará individualmente os lançamentos para as
+              semanas seguintes, permitindo controlo granular por período.
             </p>
           </CardContent>
         </Card>
@@ -338,26 +340,28 @@ export function MotoristaTabOutrosCustos({ motorista }: MotoristaTabOutrosCustos
                   <TableRow key={custo.id}>
                     <TableCell>
                       {isEditing ? (
-                        <Input 
-                          type="date" 
+                        <Input
+                          type="date"
                           className="h-8 py-0"
                           value={editCusto.semana_referencia}
-                          onChange={(e) => setEditCusto({...editCusto, semana_referencia: e.target.value})}
+                          onChange={(e) =>
+                            setEditCusto({ ...editCusto, semana_referencia: e.target.value })
+                          }
                         />
                       ) : (
                         <div className="flex items-center gap-2">
                           <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                           <span className="font-mono text-sm">
-                            {format(parseISO(custo.semana_referencia), "dd/MM/yyyy")}
+                            {format(parseISO(custo.semana_referencia), 'dd/MM/yyyy')}
                           </span>
                         </div>
                       )}
                     </TableCell>
                     <TableCell>
                       {isEditing ? (
-                        <Select 
-                          value={editCusto.tipo} 
-                          onValueChange={(v) => setEditCusto({...editCusto, tipo: v})}
+                        <Select
+                          value={editCusto.tipo}
+                          onValueChange={(v) => setEditCusto({ ...editCusto, tipo: v })}
                         >
                           <SelectTrigger className="h-8">
                             <SelectValue />
@@ -374,24 +378,33 @@ export function MotoristaTabOutrosCustos({ motorista }: MotoristaTabOutrosCustos
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className={cn("font-semibold text-destructive", isEditing && "py-1")}>
+                    <TableCell
+                      className={cn('font-semibold text-destructive', isEditing && 'py-1')}
+                    >
                       {isEditing ? (
-                        <Input 
-                          type="number" 
+                        <Input
+                          type="number"
                           className="h-8 py-0"
                           value={editCusto.valor}
-                          onChange={(e) => setEditCusto({...editCusto, valor: parseFloat(e.target.value)})}
+                          onChange={(e) =>
+                            setEditCusto({ ...editCusto, valor: parseFloat(e.target.value) })
+                          }
                         />
                       ) : (
-                         formatCurrency(custo.valor)
+                        formatCurrency(custo.valor)
                       )}
                     </TableCell>
                     <TableCell>
-                      <button 
-                        onClick={() => handleUpdateStatus(custo.id, custo.status === 'pendente' ? 'cobrado' : 'pendente')}
+                      <button
+                        onClick={() =>
+                          handleUpdateStatus(
+                            custo.id,
+                            custo.status === 'pendente' ? 'cobrado' : 'pendente'
+                          )
+                        }
                         className="focus:outline-none"
                       >
-                        {custo.status === "cobrado" ? (
+                        {custo.status === 'cobrado' ? (
                           <Badge className="bg-green-600 hover:bg-green-700 flex items-center gap-1">
                             <CheckCircle2 className="h-3 w-3" /> Pago
                           </Badge>
@@ -406,17 +419,17 @@ export function MotoristaTabOutrosCustos({ motorista }: MotoristaTabOutrosCustos
                       <div className="flex justify-end gap-1">
                         {isEditing ? (
                           <>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-8 w-8 text-green-600 hover:bg-green-50"
                               onClick={handleSaveEdit}
                             >
                               <Check className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-8 w-8 text-muted-foreground hover:bg-muted"
                               onClick={() => setEditingId(null)}
                             >
@@ -425,17 +438,17 @@ export function MotoristaTabOutrosCustos({ motorista }: MotoristaTabOutrosCustos
                           </>
                         ) : (
                           <>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-8 w-8 text-muted-foreground hover:bg-muted"
                               onClick={() => startEditing(custo)}
                             >
                               <Edit2 className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-8 w-8 text-destructive hover:bg-destructive/10"
                               onClick={() => handleDelete(custo.id)}
                             >

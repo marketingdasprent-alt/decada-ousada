@@ -132,7 +132,9 @@ export function ImportViaturasDialog({ onImportComplete }: ImportViaturasDialogP
       if (data?.error) throw new Error(data.error);
 
       setSummary(data.summary);
-      toast.success(`Importação concluída: ${data.summary.created} criadas, ${data.summary.updated} atualizadas.`);
+      toast.success(
+        `Importação concluída: ${data.summary.created} criadas, ${data.summary.updated} atualizadas.`
+      );
       onImportComplete();
       setOpen(false);
       resetState();
@@ -162,7 +164,8 @@ export function ImportViaturasDialog({ onImportComplete }: ImportViaturasDialogP
         <DialogHeader>
           <DialogTitle>Importar viaturas</DialogTitle>
           <DialogDescription>
-            Faz match por matrícula, atualiza as existentes e cria as novas, incluindo proprietário e data de venda.
+            Faz match por matrícula, atualiza as existentes e cria as novas, incluindo proprietário
+            e data de venda.
           </DialogDescription>
         </DialogHeader>
 
@@ -172,21 +175,44 @@ export function ImportViaturasDialog({ onImportComplete }: ImportViaturasDialogP
             <Input id="viaturas-file" type="file" accept=".xlsx,.xls" onChange={handleFileChange} />
             {file && (
               <p className="text-sm text-muted-foreground">
-                Ficheiro selecionado: <span className="font-medium text-foreground">{file.name}</span>
+                Ficheiro selecionado:{' '}
+                <span className="font-medium text-foreground">{file.name}</span>
               </p>
             )}
           </div>
 
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={analysing || importing}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={analysing || importing}
+            >
               Fechar
             </Button>
-            <Button type="button" variant="outline" onClick={handleAnalyse} disabled={!file || analysing || importing}>
-              {analysing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleAnalyse}
+              disabled={!file || analysing || importing}
+            >
+              {analysing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4 mr-2" />
+              )}
               Analisar ficheiro
             </Button>
-            <Button type="button" onClick={handleImport} disabled={!file || !summary || analysing || importing}>
-              {importing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+            <Button
+              type="button"
+              onClick={handleImport}
+              disabled={!file || !summary || analysing || importing}
+            >
+              {importing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+              )}
               Importar viaturas
             </Button>
           </div>
@@ -227,7 +253,8 @@ export function ImportViaturasDialog({ onImportComplete }: ImportViaturasDialogP
                   <AlertDescription>
                     <div className="space-y-2">
                       <p>
-                        Ignoradas: <strong>{summary.skipped}</strong> · Erros: <strong>{summary.errors}</strong>
+                        Ignoradas: <strong>{summary.skipped}</strong> · Erros:{' '}
+                        <strong>{summary.errors}</strong>
                       </p>
                       {warningPreview.length > 0 && (
                         <ul className="list-disc pl-5 space-y-1">

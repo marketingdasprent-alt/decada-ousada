@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { format, differenceInMonths, differenceInDays, addMonths } from "date-fns";
+import { useState, useEffect } from 'react';
+import { format, differenceInMonths, differenceInDays, addMonths } from 'date-fns';
 import {
   Car,
   Plus,
@@ -12,9 +12,9 @@ import {
   Pencil,
   Check,
   ChevronsUpDown,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -22,15 +22,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+} from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
   CommandEmpty,
@@ -38,8 +38,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,14 +49,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { SectionCard } from "@/components/ui/section-card";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import type { Motorista } from "@/pages/Motoristas";
+} from '@/components/ui/alert-dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { SectionCard } from '@/components/ui/section-card';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import type { Motorista } from '@/pages/Motoristas';
 
 interface Viatura {
   id: string;
@@ -96,16 +96,16 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
   const [viaturaPopoverOpen, setViaturaPopoverOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editExtintorData, setEditExtintorData] = useState({
-    extintor_numero: "",
-    extintor_validade: "",
-    contrato_prestacao_assinatura: "",
+    extintor_numero: '',
+    extintor_validade: '',
+    contrato_prestacao_assinatura: '',
   });
 
   const [formData, setFormData] = useState({
-    viatura_id: "",
-    data_inicio: format(new Date(), "yyyy-MM-dd"),
-    observacoes: "",
-    contrato_prestacao_assinatura: format(new Date(), "yyyy-MM-dd"),
+    viatura_id: '',
+    data_inicio: format(new Date(), 'yyyy-MM-dd'),
+    observacoes: '',
+    contrato_prestacao_assinatura: format(new Date(), 'yyyy-MM-dd'),
   });
 
   useEffect(() => {
@@ -117,8 +117,9 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
       setLoading(true);
 
       const { data: assocData, error: assocError } = await supabase
-        .from("motorista_viaturas")
-        .select(`
+        .from('motorista_viaturas')
+        .select(
+          `
           id,
           viatura_id,
           data_inicio,
@@ -138,28 +139,28 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
             extintor_numero,
             extintor_validade
           )
-        `)
-        .eq("motorista_id", motorista.id)
-        .order("data_inicio", { ascending: false });
+        `
+        )
+        .eq('motorista_id', motorista.id)
+        .order('data_inicio', { ascending: false });
 
       if (assocError) throw assocError;
-      
-      const typedAssocData = (assocData || []).map(item => ({
+
+      const typedAssocData = (assocData || []).map((item) => ({
         ...item,
-        viatura: item.viatura as unknown as Viatura
+        viatura: item.viatura as unknown as Viatura,
       }));
-      
+
       setAssociacoes(typedAssocData);
 
       const [viaturasRes, activeMvRes] = await Promise.all([
         supabase
-          .from("viaturas")
-          .select("id, matricula, marca, modelo, ano, cor, categoria, status, extintor_numero, extintor_validade")
-          .order("matricula"),
-        supabase
-          .from("motorista_viaturas")
-          .select("viatura_id")
-          .eq("status", "ativo"),
+          .from('viaturas')
+          .select(
+            'id, matricula, marca, modelo, ano, cor, categoria, status, extintor_numero, extintor_validade'
+          )
+          .order('matricula'),
+        supabase.from('motorista_viaturas').select('viatura_id').eq('status', 'ativo'),
       ]);
 
       if (viaturasRes.error) throw viaturasRes.error;
@@ -167,29 +168,36 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
       const activeViaturaIds = new Set((activeMvRes.data || []).map((mv) => mv.viatura_id));
 
       const disponiveis = (viaturasRes.data || []).filter((v) => {
-        const s = (v.status || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        if (s === "vendida" || s === "inativo" || s === "em_reparacao") return false;
-        if (s === "em_uso" && activeViaturaIds.has(v.id)) return false;
+        const s = (v.status || '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+        if (s === 'vendida' || s === 'inativo' || s === 'em_reparacao') return false;
+        if (s === 'em_uso' && activeViaturaIds.has(v.id)) return false;
         return true;
       });
       setViaturasDisponiveis(disponiveis);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
-      toast.error("Erro ao carregar dados de viaturas");
+      console.error('Erro ao carregar dados:', error);
+      toast.error('Erro ao carregar dados de viaturas');
     } finally {
       setLoading(false);
     }
   };
 
-  const viaturaAtual = associacoes.find((a) => a.status === "ativo");
-  const historico = associacoes.filter((a) => a.status !== "ativo");
+  const viaturaAtual = associacoes.find((a) => a.status === 'ativo');
+  const historico = associacoes.filter((a) => a.status !== 'ativo');
 
   const getValidityStatus = (date: string | null | undefined) => {
     if (!date) return null;
     const days = differenceInDays(new Date(date), new Date());
     if (days < 0) return { status: 'expired', label: 'Expirado', days } as const;
     if (days <= 30) return { status: 'expiring', label: `Expira em ${days} dia(s)`, days } as const;
-    return { status: 'valid', label: `Válido (${format(new Date(date), 'dd/MM/yyyy')})`, days } as const;
+    return {
+      status: 'valid',
+      label: `Válido (${format(new Date(date), 'dd/MM/yyyy')})`,
+      days,
+    } as const;
   };
 
   const extintorStatus = getValidityStatus(viaturaAtual?.viatura?.extintor_validade);
@@ -212,45 +220,45 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
 
   const handleAssociar = async () => {
     if (!formData.viatura_id) {
-      toast.error("Selecione uma viatura");
+      toast.error('Selecione uma viatura');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const { error: insertError } = await supabase.from("motorista_viaturas").insert({
+      const { error: insertError } = await supabase.from('motorista_viaturas').insert({
         motorista_id: motorista.id,
         viatura_id: formData.viatura_id,
         data_inicio: formData.data_inicio,
         observacoes: formData.observacoes || null,
-        status: "ativo",
+        status: 'ativo',
         contrato_prestacao_assinatura: formData.contrato_prestacao_assinatura || null,
       });
 
       if (insertError) throw insertError;
 
       const { error: updateError } = await supabase
-        .from("viaturas")
-        .update({ 
-          status: "em_uso",
+        .from('viaturas')
+        .update({
+          status: 'em_uso',
         })
-        .eq("id", formData.viatura_id);
+        .eq('id', formData.viatura_id);
 
       if (updateError) throw updateError;
 
-      toast.success("Viatura associada com sucesso!");
+      toast.success('Viatura associada com sucesso!');
       setDialogOpen(false);
       setFormData({
-        viatura_id: "",
-        data_inicio: format(new Date(), "yyyy-MM-dd"),
-        observacoes: "",
-        contrato_prestacao_assinatura: format(new Date(), "yyyy-MM-dd"),
+        viatura_id: '',
+        data_inicio: format(new Date(), 'yyyy-MM-dd'),
+        observacoes: '',
+        contrato_prestacao_assinatura: format(new Date(), 'yyyy-MM-dd'),
       });
       loadData();
     } catch (error) {
-      console.error("Erro ao associar viatura:", error);
-      toast.error("Erro ao associar viatura");
+      console.error('Erro ao associar viatura:', error);
+      toast.error('Erro ao associar viatura');
     } finally {
       setIsSubmitting(false);
     }
@@ -259,9 +267,9 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
   const openEditContrato = () => {
     if (!viaturaAtual) return;
     setEditExtintorData({
-      extintor_numero: viaturaAtual.viatura.extintor_numero || "",
-      extintor_validade: viaturaAtual.viatura.extintor_validade || "",
-      contrato_prestacao_assinatura: viaturaAtual.contrato_prestacao_assinatura || "",
+      extintor_numero: viaturaAtual.viatura.extintor_numero || '',
+      extintor_validade: viaturaAtual.viatura.extintor_validade || '',
+      contrato_prestacao_assinatura: viaturaAtual.contrato_prestacao_assinatura || '',
     });
     setEditExtintorOpen(true);
   };
@@ -272,18 +280,18 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
     try {
       // Update motorista_viaturas only for contract
       const { error } = await supabase
-        .from("motorista_viaturas")
+        .from('motorista_viaturas')
         .update({
           contrato_prestacao_assinatura: editExtintorData.contrato_prestacao_assinatura || null,
         })
-        .eq("id", viaturaAtual.id);
+        .eq('id', viaturaAtual.id);
       if (error) throw error;
-      toast.success("Dados atualizados com sucesso!");
+      toast.success('Dados atualizados com sucesso!');
       setEditExtintorOpen(false);
       loadData();
     } catch (error) {
-      console.error("Erro ao atualizar:", error);
-      toast.error("Erro ao atualizar dados");
+      console.error('Erro ao atualizar:', error);
+      toast.error('Erro ao atualizar dados');
     } finally {
       setIsSubmitting(false);
     }
@@ -296,28 +304,28 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
 
     try {
       const { error: updateAssocError } = await supabase
-        .from("motorista_viaturas")
+        .from('motorista_viaturas')
         .update({
-          status: "encerrado",
-          data_fim: new Date().toISOString().split("T")[0],
+          status: 'encerrado',
+          data_fim: new Date().toISOString().split('T')[0],
         })
-        .eq("id", viaturaAtual.id);
+        .eq('id', viaturaAtual.id);
 
       if (updateAssocError) throw updateAssocError;
 
       const { error: updateViaturaError } = await supabase
-        .from("viaturas")
-        .update({ status: "disponivel" })
-        .eq("id", viaturaAtual.viatura_id);
+        .from('viaturas')
+        .update({ status: 'disponivel' })
+        .eq('id', viaturaAtual.viatura_id);
 
       if (updateViaturaError) throw updateViaturaError;
 
-      toast.success("Viatura desassociada com sucesso!");
+      toast.success('Viatura desassociada com sucesso!');
       setDesassociarDialogOpen(false);
       loadData();
     } catch (error) {
-      console.error("Erro ao desassociar viatura:", error);
-      toast.error("Erro ao desassociar viatura");
+      console.error('Erro ao desassociar viatura:', error);
+      toast.error('Erro ao desassociar viatura');
     } finally {
       setIsSubmitting(false);
     }
@@ -325,16 +333,16 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
 
   const getCategoriaColor = (categoria: string | null) => {
     switch (categoria?.toLowerCase()) {
-      case "black":
-        return "bg-black text-white";
-      case "comfort":
-        return "bg-blue-500 text-white";
-      case "green":
-        return "bg-green-500 text-white";
-      case "x-saver":
-        return "bg-orange-500 text-white";
+      case 'black':
+        return 'bg-black text-white';
+      case 'comfort':
+        return 'bg-blue-500 text-white';
+      case 'green':
+        return 'bg-green-500 text-white';
+      case 'x-saver':
+        return 'bg-orange-500 text-white';
       default:
-        return "bg-secondary";
+        return 'bg-secondary';
     }
   };
 
@@ -386,17 +394,17 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
                 <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    Desde: {format(new Date(viaturaAtual.data_inicio), "dd/MM/yyyy")}
+                    Desde: {format(new Date(viaturaAtual.data_inicio), 'dd/MM/yyyy')}
                   </span>
-                  <span>
-                    Duração: {calcularDuracao(viaturaAtual.data_inicio, null)}
-                  </span>
+                  <span>Duração: {calcularDuracao(viaturaAtual.data_inicio, null)}</span>
                 </div>
 
                 {/* Extintor e Contrato */}
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground font-medium">Extintor &amp; Contrato</span>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      Extintor &amp; Contrato
+                    </span>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -407,52 +415,63 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
                     </Button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                    extintorStatus?.status === 'expired' ? 'bg-destructive/10 text-destructive' :
-                    extintorStatus?.status === 'expiring' ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400' :
-                    extintorStatus?.status === 'valid' ? 'bg-green-500/10 text-green-700 dark:text-green-400' :
-                    'bg-muted text-muted-foreground'
-                  }`}>
-                    <Flame className="h-4 w-4 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium leading-none">
-                        Extintor{viaturaAtual.viatura.extintor_numero ? ` #${viaturaAtual.viatura.extintor_numero}` : ''}
-                      </p>
-                      <p className="text-xs mt-0.5">
-                        {extintorStatus ? extintorStatus.label : 'Sem registo'}
-                      </p>
+                    <div
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                        extintorStatus?.status === 'expired'
+                          ? 'bg-destructive/10 text-destructive'
+                          : extintorStatus?.status === 'expiring'
+                            ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400'
+                            : extintorStatus?.status === 'valid'
+                              ? 'bg-green-500/10 text-green-700 dark:text-green-400'
+                              : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      <Flame className="h-4 w-4 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium leading-none">
+                          Extintor
+                          {viaturaAtual.viatura.extintor_numero
+                            ? ` #${viaturaAtual.viatura.extintor_numero}`
+                            : ''}
+                        </p>
+                        <p className="text-xs mt-0.5">
+                          {extintorStatus ? extintorStatus.label : 'Sem registo'}
+                        </p>
+                      </div>
+                      {(extintorStatus?.status === 'expired' ||
+                        extintorStatus?.status === 'expiring') && (
+                        <AlertTriangle className="h-4 w-4 shrink-0 ml-auto" />
+                      )}
                     </div>
-                    {(extintorStatus?.status === 'expired' || extintorStatus?.status === 'expiring') && (
-                      <AlertTriangle className="h-4 w-4 shrink-0 ml-auto" />
-                    )}
-                  </div>
 
-                  <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                    contratoStatus?.status === 'expired' ? 'bg-destructive/10 text-destructive' :
-                    contratoStatus?.status === 'expiring' ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400' :
-                    contratoStatus?.status === 'valid' ? 'bg-green-500/10 text-green-700 dark:text-green-400' :
-                    'bg-muted text-muted-foreground'
-                  }`}>
-                    <ClipboardList className="h-4 w-4 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium leading-none">Contrato Prestação</p>
-                      <p className="text-xs mt-0.5">
-                        {contratoStatus ? contratoStatus.label : 'Sem data de assinatura'}
-                      </p>
+                    <div
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                        contratoStatus?.status === 'expired'
+                          ? 'bg-destructive/10 text-destructive'
+                          : contratoStatus?.status === 'expiring'
+                            ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400'
+                            : contratoStatus?.status === 'valid'
+                              ? 'bg-green-500/10 text-green-700 dark:text-green-400'
+                              : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      <ClipboardList className="h-4 w-4 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium leading-none">Contrato Prestação</p>
+                        <p className="text-xs mt-0.5">
+                          {contratoStatus ? contratoStatus.label : 'Sem data de assinatura'}
+                        </p>
+                      </div>
+                      {(contratoStatus?.status === 'expired' ||
+                        contratoStatus?.status === 'expiring') && (
+                        <AlertTriangle className="h-4 w-4 shrink-0 ml-auto" />
+                      )}
                     </div>
-                    {(contratoStatus?.status === 'expired' || contratoStatus?.status === 'expiring') && (
-                      <AlertTriangle className="h-4 w-4 shrink-0 ml-auto" />
-                    )}
-                  </div>
                   </div>
                 </div>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDesassociarDialogOpen(true)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setDesassociarDialogOpen(true)}>
               <X className="h-4 w-4 mr-2" />
               Desassociar
             </Button>
@@ -462,9 +481,7 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
             <Car className="h-12 w-12 mx-auto mb-2 opacity-30" />
             <p>Nenhuma viatura associada</p>
             {viaturasDisponiveis.length === 0 && (
-              <p className="text-xs mt-1">
-                Não existem viaturas disponíveis para associar.
-              </p>
+              <p className="text-xs mt-1">Não existem viaturas disponíveis para associar.</p>
             )}
           </div>
         )}
@@ -502,8 +519,8 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
                     )}
                   </TableCell>
                   <TableCell>
-                    {format(new Date(item.data_inicio), "dd/MM/yyyy")}
-                    {item.data_fim && ` - ${format(new Date(item.data_fim), "dd/MM/yyyy")}`}
+                    {format(new Date(item.data_inicio), 'dd/MM/yyyy')}
+                    {item.data_fim && ` - ${format(new Date(item.data_fim), 'dd/MM/yyyy')}`}
                   </TableCell>
                   <TableCell>{calcularDuracao(item.data_inicio, item.data_fim)}</TableCell>
                 </TableRow>
@@ -525,10 +542,15 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
               {viaturasDisponiveis.length === 0 ? (
                 <div className="flex items-center gap-2 p-3 rounded-md border border-dashed border-amber-400 bg-amber-50 dark:bg-amber-950/20 text-sm text-amber-700 dark:text-amber-400">
                   <Car className="h-4 w-4 shrink-0" />
-                  Não existem viaturas com estado <strong className="mx-1">Disponível</strong> para associar. Verifique o estado das viaturas.
+                  Não existem viaturas com estado <strong className="mx-1">Disponível</strong> para
+                  associar. Verifique o estado das viaturas.
                 </div>
               ) : (
-                <Popover open={viaturaPopoverOpen} onOpenChange={setViaturaPopoverOpen} modal={true}>
+                <Popover
+                  open={viaturaPopoverOpen}
+                  onOpenChange={setViaturaPopoverOpen}
+                  modal={true}
+                >
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
@@ -540,14 +562,17 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
                         ? (() => {
                             const v = viaturasDisponiveis.find((v) => v.id === formData.viatura_id);
                             return v
-                              ? `${v.matricula} - ${v.marca} ${v.modelo}${v.categoria ? ` (${v.categoria})` : ""}`
-                              : "Selecione uma viatura...";
+                              ? `${v.matricula} - ${v.marca} ${v.modelo}${v.categoria ? ` (${v.categoria})` : ''}`
+                              : 'Selecione uma viatura...';
                           })()
-                        : "Selecione uma viatura..."}
+                        : 'Selecione uma viatura...'}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[200]" align="start">
+                  <PopoverContent
+                    className="w-[var(--radix-popover-trigger-width)] p-0 z-[200]"
+                    align="start"
+                  >
                     <Command>
                       <CommandInput placeholder="Pesquisar viatura..." className="h-9" />
                       <CommandList>
@@ -556,7 +581,7 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
                           {viaturasDisponiveis.map((viatura) => (
                             <CommandItem
                               key={viatura.id}
-                              value={`${viatura.matricula} ${viatura.marca} ${viatura.modelo} ${viatura.categoria || ""}`}
+                              value={`${viatura.matricula} ${viatura.marca} ${viatura.modelo} ${viatura.categoria || ''}`}
                               onSelect={() => {
                                 setFormData({ ...formData, viatura_id: viatura.id });
                                 setViaturaPopoverOpen(false);
@@ -565,8 +590,8 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
                             >
                               <Check
                                 className={cn(
-                                  "mr-2 h-4 w-4",
-                                  formData.viatura_id === viatura.id ? "opacity-100" : "opacity-0"
+                                  'mr-2 h-4 w-4',
+                                  formData.viatura_id === viatura.id ? 'opacity-100' : 'opacity-0'
                                 )}
                               />
                               {viatura.matricula} - {viatura.marca} {viatura.modelo}
@@ -582,19 +607,26 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
             </div>
             <div className="space-y-2">
               <Label>Data de Início</Label>
-              <Input type="date" value={formData.data_inicio} onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })} />
+              <Input
+                type="date"
+                value={formData.data_inicio}
+                onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })}
+              />
             </div>
 
             <div className="border-t pt-3 space-y-3">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <ClipboardList className="h-3.5 w-3.5 text-blue-500" /> Contrato de Prestação de Serviços
+                <ClipboardList className="h-3.5 w-3.5 text-blue-500" /> Contrato de Prestação de
+                Serviços
               </p>
               <div className="space-y-1.5">
                 <Label>Data de Assinatura</Label>
                 <Input
                   type="date"
                   value={formData.contrato_prestacao_assinatura}
-                  onChange={(e) => setFormData({ ...formData, contrato_prestacao_assinatura: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, contrato_prestacao_assinatura: e.target.value })
+                  }
                 />
                 <p className="text-xs text-muted-foreground">
                   A validade é calculada automaticamente: 12 meses a contar desta data.
@@ -604,16 +636,22 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
 
             <div className="space-y-2">
               <Label>Observações (opcional)</Label>
-              <Textarea value={formData.observacoes} onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })} placeholder="Notas sobre esta associação..." />
+              <Textarea
+                value={formData.observacoes}
+                onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                placeholder="Notas sobre esta associação..."
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancelar
+            </Button>
             <Button
               onClick={handleAssociar}
               disabled={isSubmitting || viaturasDisponiveis.length === 0 || !formData.viatura_id}
             >
-              {isSubmitting ? "A associar..." : "Associar"}
+              {isSubmitting ? 'A associar...' : 'Associar'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -628,14 +666,20 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
           <div className="space-y-4 py-4">
             <div className="space-y-3">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <ClipboardList className="h-3.5 w-3.5 text-blue-500" /> Contrato de Prestação de Serviços
+                <ClipboardList className="h-3.5 w-3.5 text-blue-500" /> Contrato de Prestação de
+                Serviços
               </p>
               <div className="space-y-1.5">
                 <Label>Data de Assinatura</Label>
                 <Input
                   type="date"
                   value={editExtintorData.contrato_prestacao_assinatura}
-                  onChange={(e) => setEditExtintorData({ ...editExtintorData, contrato_prestacao_assinatura: e.target.value })}
+                  onChange={(e) =>
+                    setEditExtintorData({
+                      ...editExtintorData,
+                      contrato_prestacao_assinatura: e.target.value,
+                    })
+                  }
                 />
                 <p className="text-xs text-muted-foreground">
                   A validade é calculada automaticamente: 12 meses a contar desta data.
@@ -644,9 +688,11 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditExtintorOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setEditExtintorOpen(false)}>
+              Cancelar
+            </Button>
             <Button onClick={handleSaveContrato} disabled={isSubmitting}>
-              {isSubmitting ? "A guardar..." : "Guardar"}
+              {isSubmitting ? 'A guardar...' : 'Guardar'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -658,15 +704,15 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Desassociar Viatura</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem a certeza que pretende desassociar a viatura{" "}
-              <strong>{viaturaAtual?.viatura.matricula}</strong> deste motorista?
-              A viatura ficará novamente disponível para outros motoristas.
+              Tem a certeza que pretende desassociar a viatura{' '}
+              <strong>{viaturaAtual?.viatura.matricula}</strong> deste motorista? A viatura ficará
+              novamente disponível para outros motoristas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDesassociar} disabled={isSubmitting}>
-              {isSubmitting ? "A processar..." : "Desassociar"}
+              {isSubmitting ? 'A processar...' : 'Desassociar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

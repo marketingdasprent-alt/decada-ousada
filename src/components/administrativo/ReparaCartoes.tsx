@@ -256,80 +256,103 @@ Waqar Ahmed	REPSOL DA 0919
 Yuri Silva	EDP 27239`;
 
 function normalizeName(name: string): string {
-    return name?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim() || "";
+  return (
+    name
+      ?.toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim() || ''
+  );
 }
 
 export function ReparaCartoes() {
-    const [running, setRunning] = useState(false);
+  const [running, setRunning] = useState(false);
 
-    const handleRun = async () => {
-        if (!confirm("Isto vai atualizar todos os cartões de motoristas na base de dados. Continuar?")) return;
-        setRunning(true);
-        try {
-            const { data: dbMotoristas } = await supabase.from('motoristas_ativos').select('id, nome, cartao_bp, cartao_repsol, cartao_edp');
-            if (!dbMotoristas) throw new Error("Erro ao carregar motoristas do DB");
+  const handleRun = async () => {
+    if (!confirm('Isto vai atualizar todos os cartões de motoristas na base de dados. Continuar?'))
+      return;
+    setRunning(true);
+    try {
+      const { data: dbMotoristas } = await supabase
+        .from('motoristas_ativos')
+        .select('id, nome, cartao_bp, cartao_repsol, cartao_edp');
+      if (!dbMotoristas) throw new Error('Erro ao carregar motoristas do DB');
 
-            const lines = RAW_DATA.split('\n').filter(l => l.trim() && !l.startsWith('Nome'));
-            let updated = 0;
+      const lines = RAW_DATA.split('\n').filter((l) => l.trim() && !l.startsWith('Nome'));
+      let updated = 0;
 
-            for (const line of lines) {
-                const parts = line.split('\t');
-                if (parts.length < 2) continue;
-                const nomeRaw = parts[0].trim();
-                const cartaoRaw = parts[1].trim();
+      for (const line of lines) {
+        const parts = line.split('\t');
+        if (parts.length < 2) continue;
+        const nomeRaw = parts[0].trim();
+        const cartaoRaw = parts[1].trim();
 
-                if (!cartaoRaw || cartaoRaw.toUpperCase() === 'N/A' || cartaoRaw.toUpperCase() === 'RODRIGO') continue;
+        if (
+          !cartaoRaw ||
+          cartaoRaw.toUpperCase() === 'N/A' ||
+          cartaoRaw.toUpperCase() === 'RODRIGO'
+        )
+          continue;
 
-                // Encontrar motorista
-                const normSearch = normalizeName(nomeRaw);
-                const match = dbMotoristas.find(m => normalizeName(m.nome).includes(normSearch) || normSearch.includes(normalizeName(m.nome)));
+        // Encontrar motorista
+        const normSearch = normalizeName(nomeRaw);
+        const match = dbMotoristas.find(
+          (m) =>
+            normalizeName(m.nome).includes(normSearch) || normSearch.includes(normalizeName(m.nome))
+        );
 
-                if (match) {
-                    // Extract cartões
-                    let bp = [];
-                    let repsol = [];
-                    let edp = [];
+        if (match) {
+          // Extract cartões
+          let bp = [];
+          let repsol = [];
+          let edp = [];
 
-                    const tokens = cartaoRaw.split('/').map(t => t.trim());
-                    for (const t of tokens) {
-                        const up = t.toUpperCase();
-                        if (up.includes('BP')) bp.push(t);
-                        else if (up.includes('REPSOL')) repsol.push(t);
-                        else if (up.includes('EDP')) edp.push(t);
-                        else {
-                            // Se não especificou bem, adivinhamos?
-                            if (up.includes('DA ') || up.includes('DO ')) repsol.push(t); // heurística
-                        }
-                    }
-
-                    const updates: any = {};
-                    if (bp.length) updates.cartao_bp = bp.join(' / ');
-                    if (repsol.length) updates.cartao_repsol = repsol.join(' / ');
-                    if (edp.length) updates.cartao_edp = edp.join(' / ');
-
-                    if (Object.keys(updates).length > 0) {
-                        console.log(`Updating ${match.nome} com:`, updates);
-                        await supabase.from('motoristas_ativos').update(updates).eq('id', match.id);
-                        updated++;
-                    }
-                } else {
-                    console.warn(`Motorista não encontrado: ${nomeRaw}`);
-                }
+          const tokens = cartaoRaw.split('/').map((t) => t.trim());
+          for (const t of tokens) {
+            const up = t.toUpperCase();
+            if (up.includes('BP')) bp.push(t);
+            else if (up.includes('REPSOL')) repsol.push(t);
+            else if (up.includes('EDP')) edp.push(t);
+            else {
+              // Se não especificou bem, adivinhamos?
+              if (up.includes('DA ') || up.includes('DO ')) repsol.push(t); // heurística
             }
+          }
 
-            toast.success(`Atualizados os cartões de ${updated} motoristas com sucesso!`);
-        } catch (e: any) {
-            console.error(e);
-            toast.error("Erro: " + e.message);
-        } finally {
-            setRunning(false);
+          const updates: any = {};
+          if (bp.length) updates.cartao_bp = bp.join(' / ');
+          if (repsol.length) updates.cartao_repsol = repsol.join(' / ');
+          if (edp.length) updates.cartao_edp = edp.join(' / ');
+
+          if (Object.keys(updates).length > 0) {
+            console.log(`Updating ${match.nome} com:`, updates);
+            await supabase.from('motoristas_ativos').update(updates).eq('id', match.id);
+            updated++;
+          }
+        } else {
+          console.warn(`Motorista não encontrado: ${nomeRaw}`);
         }
-    };
+      }
 
-    return (
-        <Button onClick={handleRun} disabled={running} variant="outline" className="text-orange-500 border-orange-500">
-            {running ? <Loader2 className="animate-spin mr-2" /> : null}
-            Corrigir Cartões Combustível
-        </Button>
-    )
+      toast.success(`Atualizados os cartões de ${updated} motoristas com sucesso!`);
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Erro: ' + e.message);
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleRun}
+      disabled={running}
+      variant="outline"
+      className="text-orange-500 border-orange-500"
+    >
+      {running ? <Loader2 className="animate-spin mr-2" /> : null}
+      Corrigir Cartões Combustível
+    </Button>
+  );
 }

@@ -2,7 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, BarChart3, Ticket, Users, Car, FileText, Wrench, Settings, Wallet, Megaphone, CalendarDays, LayoutDashboard, Eye, Pencil, Ban } from 'lucide-react';
+import {
+  Loader2,
+  BarChart3,
+  Ticket,
+  Users,
+  Car,
+  FileText,
+  Wrench,
+  Settings,
+  Wallet,
+  Megaphone,
+  CalendarDays,
+  LayoutDashboard,
+  Eye,
+  Pencil,
+  Ban,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Accordion,
@@ -37,76 +53,76 @@ interface PermissionsSelectorProps {
 // ── Módulos com ícones e ordem fixa ──────────────────────────────────────────
 
 const MODULOS = [
-  { key: 'Dashboard',     label: 'Dashboard',     icon: LayoutDashboard },
-  { key: 'CRM',           label: 'CRM',            icon: BarChart3 },
-  { key: 'Tickets',       label: 'Meus Tickets',   icon: Ticket },
-  { key: 'Motoristas',    label: 'Motoristas',     icon: Users },
-  { key: 'Viaturas',      label: 'Viaturas',       icon: Car },
-  { key: 'Contratos',     label: 'Contratos',      icon: FileText },
-  { key: 'Financeiro',    label: 'Financeiro',     icon: Wallet },
-  { key: 'Marketing',     label: 'Marketing',      icon: Megaphone },
-  { key: 'Calendário',    label: 'Calendário',     icon: CalendarDays },
-  { key: 'Assistência',   label: 'Assistência',    icon: Wrench },
-  { key: 'Administração', label: 'Administração',  icon: Settings },
+  { key: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { key: 'CRM', label: 'CRM', icon: BarChart3 },
+  { key: 'Tickets', label: 'Meus Tickets', icon: Ticket },
+  { key: 'Motoristas', label: 'Motoristas', icon: Users },
+  { key: 'Viaturas', label: 'Viaturas', icon: Car },
+  { key: 'Contratos', label: 'Contratos', icon: FileText },
+  { key: 'Financeiro', label: 'Financeiro', icon: Wallet },
+  { key: 'Marketing', label: 'Marketing', icon: Megaphone },
+  { key: 'Calendário', label: 'Calendário', icon: CalendarDays },
+  { key: 'Assistência', label: 'Assistência', icon: Wrench },
+  { key: 'Administração', label: 'Administração', icon: Settings },
 ];
 
 // Labels amigáveis para os recursos
 const RECURSO_LABELS: Record<string, string> = {
   // Dashboard
-  'dashboard_ver': 'Aceder ao Dashboard',
+  dashboard_ver: 'Aceder ao Dashboard',
   // CRM
-  'crm_ver': 'Ver leads e pipeline',
-  'crm_exportar': 'Exportar dados de leads',
-  'crm_campanhas': 'Gerir campanhas e tags',
-  'motoristas_crm': 'Gestão completa do CRM',
+  crm_ver: 'Ver leads e pipeline',
+  crm_exportar: 'Exportar dados de leads',
+  crm_campanhas: 'Gerir campanhas e tags',
+  motoristas_crm: 'Gestão completa do CRM',
   // Tickets
-  'tickets_ver': 'Ver tickets',
-  'tickets_criar': 'Criar novos tickets',
-  'tickets_gerir': 'Gerir todos os tickets',
+  tickets_ver: 'Ver tickets',
+  tickets_criar: 'Criar novos tickets',
+  tickets_gerir: 'Gerir todos os tickets',
   // Motoristas
-  'motoristas_ver': 'Ver lista de motoristas',
-  'motoristas_criar': 'Criar novos motoristas',
-  'motoristas_editar': 'Editar dados de motoristas',
-  'motoristas_eliminar': 'Eliminar motoristas',
-  'motoristas_candidaturas': 'Gerir candidaturas',
-  'motoristas_gestao': 'Gestão completa de motoristas',
-  'motoristas_contactos': 'Gestão de contactos',
-  'motorista_painel': 'Painel exclusivo do motorista',
+  motoristas_ver: 'Ver lista de motoristas',
+  motoristas_criar: 'Criar novos motoristas',
+  motoristas_editar: 'Editar dados de motoristas',
+  motoristas_eliminar: 'Eliminar motoristas',
+  motoristas_candidaturas: 'Gerir candidaturas',
+  motoristas_gestao: 'Gestão completa de motoristas',
+  motoristas_contactos: 'Gestão de contactos',
+  motorista_painel: 'Painel exclusivo do motorista',
   // Viaturas
-  'viaturas_ver': 'Ver lista de viaturas',
-  'viaturas_criar': 'Criar novas viaturas',
-  'viaturas_editar': 'Editar dados de viaturas',
-  'viaturas_eliminar': 'Eliminar viaturas',
-  'viaturas_financeiro': 'Ver dados financeiros das viaturas',
+  viaturas_ver: 'Ver lista de viaturas',
+  viaturas_criar: 'Criar novas viaturas',
+  viaturas_editar: 'Editar dados de viaturas',
+  viaturas_eliminar: 'Eliminar viaturas',
+  viaturas_financeiro: 'Ver dados financeiros das viaturas',
   // Contratos
-  'contratos_ver': 'Ver contratos',
-  'contratos_criar': 'Criar novos contratos',
-  'contratos_reimprimir': 'Reimprimir contratos',
-  'motoristas_contratos': 'Gestão completa de contratos',
+  contratos_ver: 'Ver contratos',
+  contratos_criar: 'Criar novos contratos',
+  contratos_reimprimir: 'Reimprimir contratos',
+  motoristas_contratos: 'Gestão completa de contratos',
   // Financeiro
-  'financeiro_recibos': 'Gestão de recibos verdes',
-  'recibos_verdes_adicionar': 'Adicionar recibos verdes manualmente',
+  financeiro_recibos: 'Gestão de recibos verdes',
+  recibos_verdes_adicionar: 'Adicionar recibos verdes manualmente',
   // Marketing
-  'marketing_ver': 'Aceder ao módulo de Marketing',
+  marketing_ver: 'Aceder ao módulo de Marketing',
   // Calendário
-  'calendario_ver': 'Ver eventos do calendário',
-  'calendario_criar': 'Criar novos eventos',
-  'calendario_editar': 'Editar eventos existentes',
-  'calendario_gerir_todos': 'Gerir eventos de todos os gestores',
-  'calendario_eliminar': 'Eliminar eventos',
-  'calendario_recolhas': 'Aceder ao painel de recolhas pendentes',
+  calendario_ver: 'Ver eventos do calendário',
+  calendario_criar: 'Criar novos eventos',
+  calendario_editar: 'Editar eventos existentes',
+  calendario_gerir_todos: 'Gerir eventos de todos os gestores',
+  calendario_eliminar: 'Eliminar eventos',
+  calendario_recolhas: 'Aceder ao painel de recolhas pendentes',
   // Assistência
-  'assistencia_ver': 'Ver tickets de assistência',
-  'assistencia_criar': 'Criar tickets de assistência',
-  'assistencia_categorias': 'Gerir categorias de assistência',
-  'assistencia_tickets': 'Gestão completa de assistência',
+  assistencia_ver: 'Ver tickets de assistência',
+  assistencia_criar: 'Criar tickets de assistência',
+  assistencia_categorias: 'Gerir categorias de assistência',
+  assistencia_tickets: 'Gestão completa de assistência',
   // Administração
-  'admin_utilizadores': 'Gerir utilizadores e contas',
-  'admin_grupos': 'Gerir grupos e permissões',
-  'admin_documentos': 'Gerir templates de documentos',
-  'admin_formularios': 'Gerir formulários',
-  'admin_integracoes': 'Gerir integrações externas',
-  'admin_configuracoes': 'Configurações do sistema',
+  admin_utilizadores: 'Gerir utilizadores e contas',
+  admin_grupos: 'Gerir grupos e permissões',
+  admin_documentos: 'Gerir templates de documentos',
+  admin_formularios: 'Gerir formulários',
+  admin_integracoes: 'Gerir integrações externas',
+  admin_configuracoes: 'Configurações do sistema',
 };
 
 function getLabel(nome: string): string {
@@ -123,7 +139,7 @@ interface LevelToggleProps {
 const LevelToggle: React.FC<LevelToggleProps> = ({ value, onChange }) => {
   const levels: { key: NivelAcesso; label: string; icon: React.ReactNode }[] = [
     { key: 'nenhum', label: 'Nenhum', icon: <Ban className="h-3 w-3" /> },
-    { key: 'ver',    label: 'Ver',    icon: <Eye className="h-3 w-3" /> },
+    { key: 'ver', label: 'Ver', icon: <Eye className="h-3 w-3" /> },
     { key: 'editar', label: 'Editar', icon: <Pencil className="h-3 w-3" /> },
   ];
 
@@ -141,8 +157,8 @@ const LevelToggle: React.FC<LevelToggleProps> = ({ value, onChange }) => {
               ? key === 'nenhum'
                 ? 'bg-muted text-muted-foreground'
                 : key === 'ver'
-                ? 'bg-blue-500 text-white'
-                : 'bg-green-500 text-white'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-green-500 text-white'
               : 'bg-background text-muted-foreground hover:bg-muted'
           )}
         >
@@ -172,10 +188,7 @@ function toPermission(recurso_id: string, nivel: NivelAcesso): Permission {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
-  cargoId,
-  onChange,
-}) => {
+export const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({ cargoId, onChange }) => {
   const [recursos, setRecursos] = useState<Recurso[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,7 +213,11 @@ export const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
       if (error) throw error;
       setRecursos(data || []);
     } catch (error: any) {
-      toast({ title: 'Erro ao carregar recursos', description: error.message, variant: 'destructive' });
+      toast({
+        title: 'Erro ao carregar recursos',
+        description: error.message,
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -213,11 +230,11 @@ export const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
         .select('*')
         .eq('cargo_id', id);
       if (error) throw error;
-      
+
       const mapped: Permission[] = (data || []).map((p: any) => ({
         recurso_id: p.recurso_id,
         // Tenta tem_acesso primeiro, depois pode_ver (retrocompatibilidade)
-        tem_acesso: (p.tem_acesso ?? p.pode_ver) ?? false,
+        tem_acesso: p.tem_acesso ?? p.pode_ver ?? false,
         pode_editar: p.pode_editar ?? false,
       }));
       setPermissions(mapped);
@@ -230,11 +247,11 @@ export const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
   // ── State helpers ────────────────────────────────────────────────────────
 
   const getPermission = (recursoId: string): Permission | undefined =>
-    permissions.find(p => p.recurso_id === recursoId);
+    permissions.find((p) => p.recurso_id === recursoId);
 
   const updatePermission = (recursoId: string, nivel: NivelAcesso) => {
     const updated = [
-      ...permissions.filter(p => p.recurso_id !== recursoId),
+      ...permissions.filter((p) => p.recurso_id !== recursoId),
       toPermission(recursoId, nivel),
     ];
     setPermissions(updated);
@@ -242,13 +259,14 @@ export const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
   };
 
   const getRecursosForModulo = (moduloKey: string): Recurso[] =>
-    recursos.filter(r => r.categoria === moduloKey);
+    recursos.filter((r) => r.categoria === moduloKey);
 
   // Stats por módulo
   const getModuloStats = (moduloKey: string) => {
     const moduloRecursos = getRecursosForModulo(moduloKey);
-    let editar = 0, ver = 0;
-    moduloRecursos.forEach(r => {
+    let editar = 0,
+      ver = 0;
+    moduloRecursos.forEach((r) => {
       const nivel = toNivel(getPermission(r.id));
       if (nivel === 'editar') editar++;
       else if (nivel === 'ver') ver++;
@@ -259,8 +277,8 @@ export const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
   const setAllModuloLevel = (moduloKey: string, nivel: NivelAcesso) => {
     const moduloRecursos = getRecursosForModulo(moduloKey);
     let updated = [...permissions];
-    moduloRecursos.forEach(r => {
-      updated = updated.filter(p => p.recurso_id !== r.id);
+    moduloRecursos.forEach((r) => {
+      updated = updated.filter((p) => p.recurso_id !== r.id);
       updated.push(toPermission(r.id, nivel));
     });
     setPermissions(updated);
@@ -277,7 +295,7 @@ export const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
     );
   }
 
-  const modulosComRecursos = MODULOS.filter(m => getRecursosForModulo(m.key).length > 0);
+  const modulosComRecursos = MODULOS.filter((m) => getRecursosForModulo(m.key).length > 0);
 
   return (
     <div className="space-y-1">
@@ -298,7 +316,7 @@ export const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
       </div>
 
       <Accordion type="multiple" className="w-full" defaultValue={['Motoristas', 'Viaturas']}>
-        {modulosComRecursos.map(modulo => {
+        {modulosComRecursos.map((modulo) => {
           const Icon = modulo.icon;
           const stats = getModuloStats(modulo.key);
           const moduloRecursos = getRecursosForModulo(modulo.key);
@@ -377,7 +395,7 @@ export const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
 
                   {/* Lista de recursos */}
                   <div className="space-y-1">
-                    {moduloRecursos.map(recurso => {
+                    {moduloRecursos.map((recurso) => {
                       const nivel = toNivel(getPermission(recurso.id));
                       return (
                         <div
@@ -388,10 +406,12 @@ export const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
                           )}
                         >
                           <div className="flex flex-col min-w-0 mr-3">
-                            <span className={cn(
-                              'text-sm font-medium leading-tight',
-                              nivel === 'nenhum' ? 'text-muted-foreground' : 'text-foreground'
-                            )}>
+                            <span
+                              className={cn(
+                                'text-sm font-medium leading-tight',
+                                nivel === 'nenhum' ? 'text-muted-foreground' : 'text-foreground'
+                              )}
+                            >
                               {getLabel(recurso.nome)}
                             </span>
                             {recurso.descricao && (
@@ -402,7 +422,7 @@ export const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
                           </div>
                           <LevelToggle
                             value={nivel}
-                            onChange={v => updatePermission(recurso.id, v)}
+                            onChange={(v) => updatePermission(recurso.id, v)}
                           />
                         </div>
                       );

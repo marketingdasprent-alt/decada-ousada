@@ -22,7 +22,7 @@ export const EMPRESAS: Record<string, EmpresaConfig> = {
     licencaValidade: '(informação a confirmar)',
     representante: 'Beatriz Veloso',
     cargoRepresentante: 'gerente com poderes para o ato',
-    papelTimbrado: '/images/papel-timbrado-rota-liquida.png'
+    papelTimbrado: '/images/papel-timbrado-rota-liquida.png',
   },
   distancia_arrojada: {
     id: 'distancia_arrojada',
@@ -34,8 +34,8 @@ export const EMPRESAS: Record<string, EmpresaConfig> = {
     licencaValidade: '26/12/2028',
     representante: 'Beatriz Veloso',
     cargoRepresentante: 'gerente com poderes para o ato',
-    papelTimbrado: '/images/papel-timbrado-distancia-arrojada.png'
-  }
+    papelTimbrado: '/images/papel-timbrado-distancia-arrojada.png',
+  },
 };
 
 export const getEmpresaById = (id: string): EmpresaConfig | undefined => {

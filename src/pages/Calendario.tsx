@@ -52,16 +52,14 @@ const Calendario: React.FC = () => {
   useEffect(() => {
     const channel = supabase
       .channel('calendario-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'calendario_eventos' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['calendario-eventos'] });
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'calendario_eventos' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['calendario-eventos'] });
+      })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [queryClient]);
 
   const { data: recolhasPendentes = [] } = useQuery({
@@ -81,8 +79,15 @@ const Calendario: React.FC = () => {
     queryKey: ['calendario-eventos', currentMonth.getFullYear(), currentMonth.getMonth()],
     queryFn: async () => {
       const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59);
-      
+      const endOfMonth = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth() + 1,
+        0,
+        23,
+        59,
+        59
+      );
+
       // Extend range to cover visible days from adjacent months
       startOfMonth.setDate(startOfMonth.getDate() - 7);
       endOfMonth.setDate(endOfMonth.getDate() + 7);
@@ -97,7 +102,7 @@ const Calendario: React.FC = () => {
       if (error) throw error;
 
       // Buscar nomes dos criadores em separado
-      const criadorIds = [...new Set((data || []).map(e => e.criado_por))];
+      const criadorIds = [...new Set((data || []).map((e) => e.criado_por))];
       let profilesMap: Record<string, string> = {};
       if (criadorIds.length > 0) {
         const { data: profiles } = await supabase
@@ -105,11 +110,11 @@ const Calendario: React.FC = () => {
           .select('id, nome')
           .in('id', criadorIds);
         if (profiles) {
-          profilesMap = Object.fromEntries(profiles.map(p => [p.id, p.nome || '']));
+          profilesMap = Object.fromEntries(profiles.map((p) => [p.id, p.nome || '']));
         }
       }
 
-      return (data || []).map(e => ({
+      return (data || []).map((e) => ({
         ...e,
         profiles: profilesMap[e.criado_por] ? { nome: profilesMap[e.criado_por] } : null,
       })) as CalendarioEvento[];
@@ -149,10 +154,7 @@ const Calendario: React.FC = () => {
             .eq('id', contrato.viatura_id);
 
           if (contrato.status === 'ativo') {
-            await supabase
-              .from('contratos')
-              .update({ status: 'encerrado' })
-              .eq('id', contrato.id);
+            await supabase.from('contratos').update({ status: 'encerrado' }).eq('id', contrato.id);
           }
         } else if (evento.motorista_id) {
           // Orphan case: old flow created motorista_viaturas without a contrato
@@ -206,87 +208,99 @@ const Calendario: React.FC = () => {
 
   return (
     <>
-    <RecolhasPendentesDrawer
-      open={recolhasPendentesOpen}
-      onOpenChange={setRecolhasPendentesOpen}
-      userId={user?.id || ''}
-    />
-    {novoEventoOpen && (
-      <NovoEventoPage
+      <RecolhasPendentesDrawer
+        open={recolhasPendentesOpen}
+        onOpenChange={setRecolhasPendentesOpen}
         userId={user?.id || ''}
-        defaultDate={selectedDay || undefined}
-        onClose={() => setNovoEventoOpen(false)}
       />
-    )}
-    {editingEvento && (
-      <EventoDialog
-        evento={editingEvento}
-        userId={user?.id || ''}
-        onClose={() => setEditingEvento(null)}
-      />
-    )}
-    <div className="space-y-6">
-      <StickyPageHeader
-        title="Calendário"
-        description="Agendamento de entregas, devoluções e manutenções"
-        icon={CalendarDays}
-      >
-        <div className="flex items-center gap-2">
-          {hasPermission('calendario_exportar') && (
-            <Button variant="outline" size="icon" onClick={() => setRelatorioOpen(true)}>
-              <FileDown className="h-4 w-4" />
+      {novoEventoOpen && (
+        <NovoEventoPage
+          userId={user?.id || ''}
+          defaultDate={selectedDay || undefined}
+          onClose={() => setNovoEventoOpen(false)}
+        />
+      )}
+      {editingEvento && (
+        <EventoDialog
+          evento={editingEvento}
+          userId={user?.id || ''}
+          onClose={() => setEditingEvento(null)}
+        />
+      )}
+      <div className="space-y-6">
+        <StickyPageHeader
+          title="Calendário"
+          description="Agendamento de entregas, devoluções e manutenções"
+          icon={CalendarDays}
+        >
+          <div className="flex items-center gap-2">
+            {hasPermission('calendario_exportar') && (
+              <Button variant="outline" size="icon" onClick={() => setRelatorioOpen(true)}>
+                <FileDown className="h-4 w-4" />
+              </Button>
+            )}
+            <Button variant="outline" size="icon" onClick={() => setConfigOpen(true)}>
+              <Settings className="h-4 w-4" />
             </Button>
-          )}
-          <Button variant="outline" size="icon" onClick={() => setConfigOpen(true)}>
-            <Settings className="h-4 w-4" />
-          </Button>
-          {hasPermission('calendario_recolhas') && (
-            <Button
-              variant="outline"
-              onClick={() => setRecolhasPendentesOpen(true)}
-              className="relative gap-2"
-            >
-              <PackageCheck className="h-4 w-4" />
-              <span className="hidden sm:inline">Recolhas</span>
-              {recolhasPendentes.length > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-orange-500 text-white border-0">
-                  {recolhasPendentes.length}
-                </Badge>
-              )}
-            </Button>
-          )}
-          {hasPermission('calendario_criar') && (
-            <Button onClick={handleNew} className="gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Novo Evento</span>
-            </Button>
-          )}
-        </div>
-      </StickyPageHeader>
+            {hasPermission('calendario_recolhas') && (
+              <Button
+                variant="outline"
+                onClick={() => setRecolhasPendentesOpen(true)}
+                className="relative gap-2"
+              >
+                <PackageCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">Recolhas</span>
+                {recolhasPendentes.length > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-orange-500 text-white border-0">
+                    {recolhasPendentes.length}
+                  </Badge>
+                )}
+              </Button>
+            )}
+            {hasPermission('calendario_criar') && (
+              <Button onClick={handleNew} className="gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Novo Evento</span>
+              </Button>
+            )}
+          </div>
+        </StickyPageHeader>
 
-      <CalendarioGrid
-        eventos={eventos}
-        currentMonth={currentMonth}
-        onMonthChange={setCurrentMonth}
-        onEventClick={(hasPermission('calendario_editar') || hasPermission('calendario_gerir_todos')) ? handleEdit : undefined}
-        onDeleteEvent={(hasPermission('calendario_eliminar') || hasPermission('calendario_gerir_todos')) ? (id) => deleteMutation.mutate(id) : undefined}
-        onEventDetails={handleDetails}
-        onDaySelect={setSelectedDay}
-        isLoading={isLoading}
-        currentUserId={user?.id}
-        canEditAll={hasPermission('calendario_gerir_todos')}
-      />
+        <CalendarioGrid
+          eventos={eventos}
+          currentMonth={currentMonth}
+          onMonthChange={setCurrentMonth}
+          onEventClick={
+            hasPermission('calendario_editar') || hasPermission('calendario_gerir_todos')
+              ? handleEdit
+              : undefined
+          }
+          onDeleteEvent={
+            hasPermission('calendario_eliminar') || hasPermission('calendario_gerir_todos')
+              ? (id) => deleteMutation.mutate(id)
+              : undefined
+          }
+          onEventDetails={handleDetails}
+          onDaySelect={setSelectedDay}
+          isLoading={isLoading}
+          currentUserId={user?.id}
+          canEditAll={hasPermission('calendario_gerir_todos')}
+        />
 
-<EventoHistoricoDialog
-        open={historicoOpen}
-        onOpenChange={setHistoricoOpen}
-        evento={detailsEvento}
-      />
+        <EventoHistoricoDialog
+          open={historicoOpen}
+          onOpenChange={setHistoricoOpen}
+          evento={detailsEvento}
+        />
 
-      <CalendarioConfig open={configOpen} onOpenChange={setConfigOpen} userId={user?.id || ''} />
+        <CalendarioConfig open={configOpen} onOpenChange={setConfigOpen} userId={user?.id || ''} />
 
-      <RelatorioDialog open={relatorioOpen} onOpenChange={setRelatorioOpen} currentMonth={currentMonth} />
-    </div>
+        <RelatorioDialog
+          open={relatorioOpen}
+          onOpenChange={setRelatorioOpen}
+          currentMonth={currentMonth}
+        />
+      </div>
     </>
   );
 };

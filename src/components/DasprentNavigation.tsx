@@ -1,10 +1,7 @@
 ﻿import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { 
-  Users, 
-  BarChart3
-} from 'lucide-react';
+import { Users, BarChart3 } from 'lucide-react';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { useThemedLogo } from '@/hooks/useThemedLogo';
 
@@ -20,11 +17,7 @@ const DasprentNavigation = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <img 
-              src={logoSrc}
-              alt="WeGest" 
-              className="h-10 w-auto object-contain"
-            />
+            <img src={logoSrc} alt="WeGest" className="h-10 w-auto object-contain" />
           </Link>
 
           {/* Navigation Links */}

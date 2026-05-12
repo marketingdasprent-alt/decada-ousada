@@ -1,13 +1,13 @@
-import { SimpleNavbar } from "@/components/landing/SimpleNavbar";
-import { Footer } from "@/components/landing/Footer";
-import { motion } from "framer-motion";
-import { Phone, Mail, MessageCircle, MapPin, Clock } from "lucide-react";
+import { SimpleNavbar } from '@/components/landing/SimpleNavbar';
+import { Footer } from '@/components/landing/Footer';
+import { motion } from 'framer-motion';
+import { Phone, Mail, MessageCircle, MapPin, Clock } from 'lucide-react';
 
 const Contactos = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <SimpleNavbar />
-      
+
       {/* Hero Section */}
       <section className="py-20 bg-gradient-to-b from-gray-900 to-black">
         <div className="container mx-auto px-4">
@@ -99,7 +99,7 @@ const Contactos = () => {
               className="bg-gray-800/50 rounded-xl p-8"
             >
               <h2 className="text-2xl font-bold mb-6 text-center">Informações Adicionais</h2>
-              
+
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
@@ -109,7 +109,9 @@ const Contactos = () => {
                     <h3 className="font-semibold mb-1">Horário de Atendimento</h3>
                     <p className="text-gray-400">Segunda a Sexta: 9h00 - 18h00</p>
                     <p className="text-gray-400">Sábado: 9h00 - 13h00</p>
-                    <p className="text-gray-500 text-sm mt-1">WhatsApp disponível 24/7 para emergências</p>
+                    <p className="text-gray-500 text-sm mt-1">
+                      WhatsApp disponível 24/7 para emergências
+                    </p>
                   </div>
                 </div>
 

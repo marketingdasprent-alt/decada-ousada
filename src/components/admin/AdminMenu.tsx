@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAdmin } from '@/hooks/useAdmin';
 import { Button } from '@/components/ui/button';
@@ -35,28 +34,28 @@ export const AdminMenu = () => {
         <DropdownMenuContent className="bg-gray-800 border-gray-700" align="end">
           <DropdownMenuLabel className="text-gray-300">Administração</DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-gray-700" />
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => navigate('/formularios')}
             className="text-gray-300 hover:bg-gray-700 cursor-pointer"
           >
             <FormInput className="h-4 w-4 mr-2" />
             Formulários
           </DropdownMenuItem>
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => navigate('/admin/documentos')}
             className="text-gray-300 hover:bg-gray-700 cursor-pointer"
           >
             <FileText className="h-4 w-4 mr-2" />
             Documentos
           </DropdownMenuItem>
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => navigate('/admin/invites')}
             className="text-gray-300 hover:bg-gray-700 cursor-pointer"
           >
             <UserPlus className="h-4 w-4 mr-2" />
             Convites
           </DropdownMenuItem>
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => navigate('/admin/users')}
             className="text-gray-300 hover:bg-gray-700 cursor-pointer"
           >

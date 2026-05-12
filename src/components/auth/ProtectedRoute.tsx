@@ -19,7 +19,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredResource,
 }) => {
   const { user, loading: authLoading } = useAuth();
-  const { isAdmin, hasAccessToResource, loading: permissionsLoading, cargo_id, recursos, tipoUtilizador } = usePermissions();
+  const {
+    isAdmin,
+    hasAccessToResource,
+    loading: permissionsLoading,
+    cargo_id,
+    recursos,
+    tipoUtilizador,
+  } = usePermissions();
   const navigate = useNavigate();
   const location = useLocation();
   const unauthenticatedRoute = getUnauthenticatedRoute();
@@ -56,7 +63,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (!hasAccess && defaultRoute && defaultRoute !== location.pathname) {
       navigate(defaultRoute, { replace: true });
     }
-  }, [user, loading, requiredResource, isAdmin, hasAccessToResource, navigate, defaultRoute, location.pathname]);
+  }, [
+    user,
+    loading,
+    requiredResource,
+    isAdmin,
+    hasAccessToResource,
+    navigate,
+    defaultRoute,
+    location.pathname,
+  ]);
 
   if (loading) {
     return (
@@ -86,7 +102,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           <p className="mb-4 text-muted-foreground">
             Precisa de permissões de administrador para aceder a esta página.
           </p>
-          <Button onClick={() => defaultRoute && navigate(defaultRoute)} className="auth-primary-button">
+          <Button
+            onClick={() => defaultRoute && navigate(defaultRoute)}
+            className="auth-primary-button"
+          >
             Voltar ao painel
           </Button>
         </div>

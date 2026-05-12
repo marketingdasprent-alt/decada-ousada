@@ -24,12 +24,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Save, Loader2, Upload, FileText, Eye, Download, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import {
+  Save,
+  Loader2,
+  Upload,
+  FileText,
+  Eye,
+  Download,
+  Trash2,
+  AlertCircle,
+  CheckCircle2,
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { getCategoriaBadgeClass, getStatusBadgeClass, getStatusLabel, getStatusColorClass } from '@/lib/viaturas';
+import {
+  getCategoriaBadgeClass,
+  getStatusBadgeClass,
+  getStatusLabel,
+  getStatusColorClass,
+} from '@/lib/viaturas';
 
 const viaturaSchema = z.object({
-  matricula: z.string()
+  matricula: z
+    .string()
     .min(1, 'Matrícula é obrigatória')
     .regex(/^[A-Z0-9]{2}-[A-Z0-9]{2}-[A-Z0-9]{2}$/, 'Formato inválido. Use XX-00-XX'),
   marca: z.string().min(1, 'Marca é obrigatória'),
@@ -139,9 +155,17 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
   const [viaturasTipos, setViaturasTipos] = useState<ViaturasTipo[]>([]);
 
   useEffect(() => {
-    supabase.from('estacoes').select('id, nome, cidade').eq('ativa', true).order('nome')
+    supabase
+      .from('estacoes')
+      .select('id, nome, cidade')
+      .eq('ativa', true)
+      .order('nome')
       .then(({ data }) => setEstacoes(data || []));
-    supabase.from('viatura_tipos').select('id, nome').eq('ativo', true).order('nome')
+    supabase
+      .from('viatura_tipos')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome')
       .then(({ data }) => setViaturasTipos(data || []));
   }, []);
 
@@ -199,14 +223,17 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
 
   const loadDocuments = async () => {
     if (!viatura?.id) return;
-    
+
     setLoadingDocs(true);
     try {
       const { data, error } = await supabase
         .from('viatura_documentos')
         .select('*')
         .eq('viatura_id', viatura.id)
-        .in('tipo_documento', DOCUMENTOS_VIATURA.map(d => d.tipo));
+        .in(
+          'tipo_documento',
+          DOCUMENTOS_VIATURA.map((d) => d.tipo)
+        );
 
       if (error) throw error;
       setDocuments(data || []);
@@ -261,8 +288,8 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       if (uploadError) throw uploadError;
 
       // Check if document already exists
-      const existingDoc = documents.find(d => d.tipo_documento === tipoDoc);
-      
+      const existingDoc = documents.find((d) => d.tipo_documento === tipoDoc);
+
       if (existingDoc) {
         // Update existing
         const { error } = await supabase
@@ -277,14 +304,12 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
         if (error) throw error;
       } else {
         // Insert new
-        const { error } = await supabase
-          .from('viatura_documentos')
-          .insert({
-            viatura_id: viatura.id,
-            tipo_documento: tipoDoc,
-            ficheiro_url: fileName,
-            nome_ficheiro: file.name,
-          });
+        const { error } = await supabase.from('viatura_documentos').insert({
+          viatura_id: viatura.id,
+          tipo_documento: tipoDoc,
+          ficheiro_url: fileName,
+          nome_ficheiro: file.name,
+        });
 
         if (error) throw error;
       }
@@ -315,14 +340,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
 
   const handleDeleteDocument = async (doc: ViaturaDocument) => {
     try {
-      await supabase.storage
-        .from('viatura-documentos')
-        .remove([doc.ficheiro_url]);
+      await supabase.storage.from('viatura-documentos').remove([doc.ficheiro_url]);
 
-      const { error } = await supabase
-        .from('viatura_documentos')
-        .delete()
-        .eq('id', doc.id);
+      const { error } = await supabase.from('viatura_documentos').delete().eq('id', doc.id);
 
       if (error) throw error;
       toast.success('Documento removido com sucesso!');
@@ -334,7 +354,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
   };
 
   const getDocumentByType = (tipo: string) => {
-    return documents.find(d => d.tipo_documento === tipo);
+    return documents.find((d) => d.tipo_documento === tipo);
   };
 
   return (
@@ -366,8 +386,11 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                               // Remove everything except alphanumeric, auto-insert dashes
                               const raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
                               let formatted = raw;
-                              if (raw.length > 4) formatted = raw.slice(0, 2) + '-' + raw.slice(2, 4) + '-' + raw.slice(4, 6);
-                              else if (raw.length > 2) formatted = raw.slice(0, 2) + '-' + raw.slice(2);
+                              if (raw.length > 4)
+                                formatted =
+                                  raw.slice(0, 2) + '-' + raw.slice(2, 4) + '-' + raw.slice(4, 6);
+                              else if (raw.length > 2)
+                                formatted = raw.slice(0, 2) + '-' + raw.slice(2);
                               field.onChange(formatted);
                             }}
                             onBlur={field.onBlur}
@@ -386,7 +409,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                         <FormLabel>Status</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger className={`font-bold transition-all ${getStatusColorClass(field.value)}`}>
+                            <SelectTrigger
+                              className={`font-bold transition-all ${getStatusColorClass(field.value)}`}
+                            >
                               <SelectValue placeholder="Selecionar Status" />
                             </SelectTrigger>
                           </FormControl>
@@ -494,7 +519,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                           </FormControl>
                           <SelectContent>
                             {CATEGORIAS.map((cat) => (
-                              <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                              <SelectItem key={cat.value} value={cat.value}>
+                                {cat.label}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -516,7 +543,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                           </FormControl>
                           <SelectContent>
                             {COMBUSTIVEIS.map((comb) => (
-                              <SelectItem key={comb.value} value={comb.value}>{comb.label}</SelectItem>
+                              <SelectItem key={comb.value} value={comb.value}>
+                                {comb.label}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -531,12 +560,12 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                       <FormItem>
                         <FormLabel>Valor Aluguer (€)</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
+                          <Input
+                            type="number"
                             step="0.01"
                             min="0"
                             placeholder="Ex: 250.00"
-                            {...field} 
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -561,7 +590,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                           <SelectContent>
                             <SelectItem value="none">— Sem tipo —</SelectItem>
                             {viaturasTipos.map((t) => (
-                              <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                              <SelectItem key={t.id} value={t.id}>
+                                {t.nome}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -588,7 +619,8 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                             <SelectItem value="none">— Sem estação —</SelectItem>
                             {estacoes.map((e) => (
                               <SelectItem key={e.id} value={e.id}>
-                                {e.nome}{e.cidade ? ` (${e.cidade})` : ''}
+                                {e.nome}
+                                {e.cidade ? ` (${e.cidade})` : ''}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -668,7 +700,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
 
               {/* Segurança / Extintor */}
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-4">Segurança / Extintor</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-4">
+                  Segurança / Extintor
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -763,7 +797,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                       <span className="text-sm font-medium">{doc.label}</span>
                     </div>
                     {doc.obrigatorio && !existingDoc && (
-                      <Badge variant="destructive" className="text-xs">Obrigatório</Badge>
+                      <Badge variant="destructive" className="text-xs">
+                        Obrigatório
+                      </Badge>
                     )}
                   </div>
 
@@ -773,10 +809,20 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                         {existingDoc.nome_ficheiro || 'Documento anexado'}
                       </span>
                       <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleViewDocument(existingDoc)}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => handleViewDocument(existingDoc)}
+                        >
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDeleteDocument(existingDoc)}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() => handleDeleteDocument(existingDoc)}
+                        >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>

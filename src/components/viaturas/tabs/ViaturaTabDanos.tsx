@@ -86,10 +86,26 @@ const LOCALIZACOES = [
 ];
 
 const ESTADOS = [
-  { value: 'existente', label: 'Existente', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
-  { value: 'em_reparacao', label: 'Em Reparação', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
-  { value: 'reparado', label: 'Reparado', color: 'bg-green-500/10 text-green-500 border-green-500/20' },
-  { value: 'irreparavel', label: 'Irreparável', color: 'bg-destructive/10 text-destructive border-destructive/20' },
+  {
+    value: 'existente',
+    label: 'Existente',
+    color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+  },
+  {
+    value: 'em_reparacao',
+    label: 'Em Reparação',
+    color: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  },
+  {
+    value: 'reparado',
+    label: 'Reparado',
+    color: 'bg-green-500/10 text-green-500 border-green-500/20',
+  },
+  {
+    value: 'irreparavel',
+    label: 'Irreparável',
+    color: 'bg-destructive/10 text-destructive border-destructive/20',
+  },
 ];
 
 export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) {
@@ -98,7 +114,7 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  
+
   // Form state
   const [descricao, setDescricao] = useState('');
   const [localizacao, setLocalizacao] = useState('');
@@ -108,7 +124,7 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
   const [dataOcorrencia, setDataOcorrencia] = useState('');
   const [motoristaId, setMotoristaId] = useState('');
   const [contratoId, setContratoId] = useState<string | null>(null);
-  
+
   // Fotos temporárias (antes de guardar)
   const [fotosTemp, setFotosTemp] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
@@ -123,7 +139,7 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
   // Auto-preencher contrato quando motorista é selecionado
   useEffect(() => {
     if (motoristaId) {
-      const motorista = motoristas.find(m => m.id === motoristaId);
+      const motorista = motoristas.find((m) => m.id === motoristaId);
       setContratoId(motorista?.contrato_id || null);
     } else {
       setContratoId(null);
@@ -137,31 +153,33 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
       // Buscar motoristas que têm/tiveram esta viatura atribuída
       const { data: atribuicoes, error: atribError } = await supabase
         .from('motorista_viaturas')
-        .select(`
+        .select(
+          `
           motorista_id,
           motoristas_ativos (
             id,
             nome,
             codigo
           )
-        `)
+        `
+        )
         .eq('viatura_id', viaturaId);
 
       if (atribError) throw atribError;
 
-      const motoristaIds = [...new Set(atribuicoes?.map(a => a.motorista_id) || [])];
-      
+      const motoristaIds = [...new Set(atribuicoes?.map((a) => a.motorista_id) || [])];
+
       // Buscar contratos ativos para cada motorista
       const motoristasComContrato: MotoristaOption[] = [];
-      
+
       for (const atrib of atribuicoes || []) {
         if (!atrib.motoristas_ativos) continue;
-        
+
         const motorista = atrib.motoristas_ativos as any;
-        
+
         // Verificar se já adicionamos este motorista
-        if (motoristasComContrato.some(m => m.id === motorista.id)) continue;
-        
+        if (motoristasComContrato.some((m) => m.id === motorista.id)) continue;
+
         // Buscar contrato ativo
         const { data: contrato } = await supabase
           .from('contratos')
@@ -191,14 +209,16 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
     try {
       const { data, error } = await supabase
         .from('viatura_danos')
-        .select(`
+        .select(
+          `
           *,
           motoristas_ativos (
             id,
             nome,
             codigo
           )
-        `)
+        `
+        )
         .eq('viatura_id', viaturaId)
         .order('created_at', { ascending: false });
 
@@ -220,7 +240,6 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
       }
 
       setDanos(danosComFotos);
-
     } catch (error) {
       console.error('Erro ao carregar danos:', error);
     } finally {
@@ -232,33 +251,35 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
   const handleFotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    
+
     const newFiles = Array.from(files);
-    setFotosTemp(prev => [...prev, ...newFiles]);
-    
+    setFotosTemp((prev) => [...prev, ...newFiles]);
+
     // Criar previews
-    newFiles.forEach(file => {
+    newFiles.forEach((file) => {
       const url = URL.createObjectURL(file);
-      setPreviewUrls(prev => [...prev, url]);
+      setPreviewUrls((prev) => [...prev, url]);
     });
-    
+
     // Limpar input para permitir selecionar mesma foto novamente
     e.target.value = '';
   };
 
   const removeFotoTemp = (index: number) => {
     URL.revokeObjectURL(previewUrls[index]);
-    setFotosTemp(prev => prev.filter((_, i) => i !== index));
-    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+    setFotosTemp((prev) => prev.filter((_, i) => i !== index));
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
   const uploadFotosParaDano = async (danoId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     for (const file of fotosTemp) {
       const fileExt = file.name.split('.').pop();
       const fileName = `${danoId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      
+
       const { error: uploadError } = await supabase.storage
         .from('viatura-documentos')
         .upload(fileName, file);
@@ -268,18 +289,16 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
         continue;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('viatura-documentos')
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('viatura-documentos').getPublicUrl(fileName);
 
-      await supabase
-        .from('viatura_dano_fotos')
-        .insert({
-          dano_id: danoId,
-          ficheiro_url: publicUrl,
-          nome_ficheiro: file.name,
-          uploaded_by: user?.id,
-        });
+      await supabase.from('viatura_dano_fotos').insert({
+        dano_id: danoId,
+        ficheiro_url: publicUrl,
+        nome_ficheiro: file.name,
+        uploaded_by: user?.id,
+      });
     }
   };
 
@@ -318,22 +337,22 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
 
       // Se há motorista e valor > 0, criar movimento financeiro
       if (motoristaId && valorNumerico > 0) {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        await supabase
-          .from('motorista_financeiro')
-          .insert({
-            motorista_id: motoristaId,
-            tipo: 'debito',
-            valor: valorNumerico,
-            descricao: `Dano em viatura ${matricula || ''} - ${descricao.trim().substring(0, 50)}`,
-            categoria: 'dano',
-            data_movimento: dataOcorrencia || new Date().toISOString().split('T')[0],
-            status: 'pendente',
-            referencia: novoDano.id,
-            dano_id: novoDano.id,
-            criado_por: user?.id,
-          });
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        await supabase.from('motorista_financeiro').insert({
+          motorista_id: motoristaId,
+          tipo: 'debito',
+          valor: valorNumerico,
+          descricao: `Dano em viatura ${matricula || ''} - ${descricao.trim().substring(0, 50)}`,
+          categoria: 'dano',
+          data_movimento: dataOcorrencia || new Date().toISOString().split('T')[0],
+          status: 'pendente',
+          referencia: novoDano.id,
+          dano_id: novoDano.id,
+          criado_por: user?.id,
+        });
       }
 
       toast.success('Dano registado com sucesso!');
@@ -365,20 +384,19 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
   };
 
   const handleDelete = async (danoId: string) => {
-    if (!confirm('Tem certeza que deseja eliminar este dano? O movimento financeiro associado também será afetado.')) return;
+    if (
+      !confirm(
+        'Tem certeza que deseja eliminar este dano? O movimento financeiro associado também será afetado.'
+      )
+    )
+      return;
 
     try {
       // Primeiro eliminar movimento financeiro associado
-      await supabase
-        .from('motorista_financeiro')
-        .delete()
-        .eq('dano_id', danoId);
+      await supabase.from('motorista_financeiro').delete().eq('dano_id', danoId);
 
       // Depois eliminar o dano (fotos são eliminadas em cascata)
-      const { error } = await supabase
-        .from('viatura_danos')
-        .delete()
-        .eq('id', danoId);
+      const { error } = await supabase.from('viatura_danos').delete().eq('id', danoId);
 
       if (error) throw error;
       toast.success('Dano eliminado!');
@@ -399,13 +417,13 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
     setMotoristaId('');
     setContratoId(null);
     // Limpar fotos temporárias
-    previewUrls.forEach(url => URL.revokeObjectURL(url));
+    previewUrls.forEach((url) => URL.revokeObjectURL(url));
     setFotosTemp([]);
     setPreviewUrls([]);
   };
 
   const getEstadoConfig = (estado: string) => {
-    return ESTADOS.find(e => e.value === estado) || ESTADOS[0];
+    return ESTADOS.find((e) => e.value === estado) || ESTADOS[0];
   };
 
   const formatCurrency = (value: number) => {
@@ -442,7 +460,9 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Registar Novo Dano</DialogTitle>
-              <DialogDescription className="sr-only">Preencha os detalhes para registar um novo dano na viatura.</DialogDescription>
+              <DialogDescription className="sr-only">
+                Preencha os detalhes para registar um novo dano na viatura.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-4 max-h-[70vh] overflow-y-auto">
               <div>
@@ -464,7 +484,9 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
                     </SelectTrigger>
                     <SelectContent>
                       {LOCALIZACOES.map((loc) => (
-                        <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>
+                        <SelectItem key={loc.value} value={loc.value}>
+                          {loc.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -477,7 +499,9 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
                     </SelectTrigger>
                     <SelectContent>
                       {ESTADOS.map((est) => (
-                        <SelectItem key={est.value} value={est.value}>{est.label}</SelectItem>
+                        <SelectItem key={est.value} value={est.value}>
+                          {est.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -508,9 +532,9 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
 
               <div>
                 <Label>Motorista Responsável</Label>
-                <Select 
-                  value={motoristaId || "none"} 
-                  onValueChange={(val) => setMotoristaId(val === "none" ? "" : val)}
+                <Select
+                  value={motoristaId || 'none'}
+                  onValueChange={(val) => setMotoristaId(val === 'none' ? '' : val)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecionar motorista (opcional)" />
@@ -531,9 +555,7 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
                   </p>
                 )}
                 {motoristaId && !contratoId && (
-                  <p className="text-xs text-yellow-600 mt-1">
-                    Motorista sem contrato ativo
-                  </p>
+                  <p className="text-xs text-yellow-600 mt-1">Motorista sem contrato ativo</p>
                 )}
               </div>
 
@@ -550,13 +572,20 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
               {/* Secção de Fotografias */}
               <div className="space-y-3">
                 <Label>Fotografias do Dano</Label>
-                
+
                 {/* Preview das fotos selecionadas */}
                 {previewUrls.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {previewUrls.map((url, i) => (
-                      <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border bg-muted">
-                        <img src={url} alt={`Preview ${i + 1}`} className="w-full h-full object-cover" />
+                      <div
+                        key={i}
+                        className="relative w-20 h-20 rounded-lg overflow-hidden border bg-muted"
+                      >
+                        <img
+                          src={url}
+                          alt={`Preview ${i + 1}`}
+                          className="w-full h-full object-cover"
+                        />
                         <Button
                           type="button"
                           size="icon"
@@ -570,7 +599,7 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
                     ))}
                   </div>
                 )}
-                
+
                 {/* Botões de upload */}
                 <div className="flex flex-wrap gap-2">
                   {/* Câmera (abre diretamente no mobile) */}
@@ -589,7 +618,7 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
                     className="hidden"
                     onChange={handleFotoSelect}
                   />
-                  
+
                   {/* Galeria (permite múltiplas) */}
                   <Label
                     htmlFor="foto-galeria"
@@ -607,10 +636,10 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
                     onChange={handleFotoSelect}
                   />
                 </div>
-                
+
                 <p className="text-xs text-muted-foreground">
-                  {fotosTemp.length > 0 
-                    ? `${fotosTemp.length} foto(s) selecionada(s)` 
+                  {fotosTemp.length > 0
+                    ? `${fotosTemp.length} foto(s) selecionada(s)`
                     : 'Pode adicionar fotos do dano (opcional)'}
                 </p>
               </div>
@@ -646,10 +675,12 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
             {/* Danos Registados Manualmente */}
             {danos.length > 0 && (
               <div className="space-y-4">
-                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Danos Manuais</h4>
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  Danos Manuais
+                </h4>
                 {danos.map((dano) => {
                   const estadoConfig = getEstadoConfig(dano.estado);
-                  const locLabel = LOCALIZACOES.find(l => l.value === dano.localizacao)?.label;
+                  const locLabel = LOCALIZACOES.find((l) => l.value === dano.localizacao)?.label;
                   const dataDisplay = dano.data_ocorrencia || dano.created_at;
 
                   return (
@@ -659,32 +690,49 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
                           <div className="flex items-center gap-2 mb-1">
                             <p className="font-medium">{dano.descricao}</p>
                             {dano.descricao.includes('Check-in') && (
-                              <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] h-5 px-1.5 uppercase font-bold">Entrada</Badge>
+                              <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] h-5 px-1.5 uppercase font-bold">
+                                Entrada
+                              </Badge>
                             )}
                             {dano.descricao.includes('Check-out') && (
-                              <Badge className="bg-green-600 hover:bg-green-700 text-white text-[10px] h-5 px-1.5 uppercase font-bold">Saída</Badge>
+                              <Badge className="bg-green-600 hover:bg-green-700 text-white text-[10px] h-5 px-1.5 uppercase font-bold">
+                                Saída
+                              </Badge>
                             )}
                           </div>
                           <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-muted-foreground">
                             {locLabel && <span>{locLabel}</span>}
                             {locLabel && <span>•</span>}
-                            <span>{dataDisplay ? format(new Date(dataDisplay), "d 'de' MMMM 'de' yyyy", { locale: pt }) : 'Data N/D'}</span>
+                            <span>
+                              {dataDisplay
+                                ? format(new Date(dataDisplay), "d 'de' MMMM 'de' yyyy", {
+                                    locale: pt,
+                                  })
+                                : 'Data N/D'}
+                            </span>
                             {dano.valor > 0 && (
                               <>
                                 <span>•</span>
-                                <span className="font-semibold text-destructive">{formatCurrency(dano.valor)}</span>
+                                <span className="font-semibold text-destructive">
+                                  {formatCurrency(dano.valor)}
+                                </span>
                               </>
                             )}
                           </div>
                           {dano.motorista && (
                             <div className="flex items-center gap-1 mt-1 text-sm text-primary">
                               <User className="h-3 w-3" />
-                              <span>#{dano.motorista.codigo} - {dano.motorista.nome}</span>
+                              <span>
+                                #{dano.motorista.codigo} - {dano.motorista.nome}
+                              </span>
                             </div>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Select value={dano.estado} onValueChange={(v) => handleUpdateEstado(dano.id, v)}>
+                          <Select
+                            value={dano.estado}
+                            onValueChange={(v) => handleUpdateEstado(dano.id, v)}
+                          >
                             <SelectTrigger className="w-[140px]">
                               <Badge variant="outline" className={estadoConfig.color}>
                                 {estadoConfig.label}
@@ -692,11 +740,18 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
                             </SelectTrigger>
                             <SelectContent>
                               {ESTADOS.map((est) => (
-                                <SelectItem key={est.value} value={est.value}>{est.label}</SelectItem>
+                                <SelectItem key={est.value} value={est.value}>
+                                  {est.label}
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(dano.id)}>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() => handleDelete(dano.id)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -718,7 +773,6 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
                 })}
               </div>
             )}
-
           </div>
         )}
       </CardContent>

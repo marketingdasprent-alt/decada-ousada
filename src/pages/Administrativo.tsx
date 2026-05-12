@@ -1,18 +1,18 @@
-import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FinanceiroStats } from "@/components/financeiro/FinanceiroStats";
-import { FinanceiroFilters } from "@/components/financeiro/FinanceiroFilters";
-import { RecibosTable } from "@/components/financeiro/RecibosTable";
-import { Loader2, Receipt, Zap, Car, Briefcase, Calculator, Fuel } from "lucide-react";
-import { BoltDataTab } from "@/components/administrativo/BoltDataTab";
-import { UberDataTab } from "@/components/administrativo/UberDataTab";
-import { BPDataTab } from "@/components/administrativo/BPDataTab";
-import { RepsolDataTab } from "@/components/administrativo/RepsolDataTab";
-import { EdpDataTab } from "@/components/administrativo/EdpDataTab";
-import { ContasResumoTab } from "@/components/administrativo/ContasResumoTab";
-import { StickyPageHeader } from "@/components/ui/StickyPageHeader";
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FinanceiroStats } from '@/components/financeiro/FinanceiroStats';
+import { FinanceiroFilters } from '@/components/financeiro/FinanceiroFilters';
+import { RecibosTable } from '@/components/financeiro/RecibosTable';
+import { Loader2, Receipt, Zap, Car, Briefcase, Calculator, Fuel } from 'lucide-react';
+import { BoltDataTab } from '@/components/administrativo/BoltDataTab';
+import { UberDataTab } from '@/components/administrativo/UberDataTab';
+import { BPDataTab } from '@/components/administrativo/BPDataTab';
+import { RepsolDataTab } from '@/components/administrativo/RepsolDataTab';
+import { EdpDataTab } from '@/components/administrativo/EdpDataTab';
+import { ContasResumoTab } from '@/components/administrativo/ContasResumoTab';
+import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
 interface Recibo {
   id: string;
@@ -44,22 +44,18 @@ export default function Administrativo() {
   const [loading, setLoading] = useState(true);
 
   // Filtros
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('all');
 
   useEffect(() => {
     loadData();
-    
+
     // Configurar real-time updates
     const channel = supabase
       .channel('financeiro-recibos')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'motorista_recibos' },
-        () => {
-          loadData();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'motorista_recibos' }, () => {
+        loadData();
+      })
       .subscribe();
 
     return () => {
@@ -72,32 +68,34 @@ export default function Administrativo() {
     try {
       // Carregar recibos com dados do motorista
       const { data: recibosData, error: recibosError } = await supabase
-        .from("motorista_recibos")
-        .select(`
+        .from('motorista_recibos')
+        .select(
+          `
           *,
           motoristas_ativos!motorista_recibos_motorista_id_fkey (
             id,
             codigo,
             nome
           )
-        `)
-        .order("created_at", { ascending: false });
+        `
+        )
+        .order('created_at', { ascending: false });
 
       if (recibosError) throw recibosError;
       setRecibos(recibosData || []);
 
       // Carregar lista de motoristas para o filtro
       const { data: motoristasData, error: motoristasError } = await supabase
-        .from("motoristas_ativos")
-        .select("id, codigo, nome")
-        .eq("status_ativo", true)
-        .order("nome");
+        .from('motoristas_ativos')
+        .select('id, codigo, nome')
+        .eq('status_ativo', true)
+        .order('nome');
 
       if (motoristasError) throw motoristasError;
       setMotoristas(motoristasData || []);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
-      toast.error("Erro ao carregar recibos");
+      console.error('Erro ao carregar dados:', error);
+      toast.error('Erro ao carregar recibos');
     } finally {
       setLoading(false);
     }
@@ -113,18 +111,18 @@ export default function Administrativo() {
         const codigoMotorista = String(recibo.motoristas_ativos?.codigo || '').padStart(4, '0');
         const nomeMotorista = (recibo.motoristas_ativos?.nome || '').toLowerCase();
         const valorStr = String(recibo.valor_total || 0);
-        
-        const matches = 
+
+        const matches =
           codigoRecibo.includes(term.replace('#', '')) ||
           codigoMotorista.includes(term.replace('#', '')) ||
           nomeMotorista.includes(term) ||
           valorStr.includes(term);
-        
+
         if (!matches) return false;
       }
 
       // Filtro por status
-      if (selectedStatus !== "all" && recibo.status !== selectedStatus) {
+      if (selectedStatus !== 'all' && recibo.status !== selectedStatus) {
         return false;
       }
 
@@ -133,8 +131,8 @@ export default function Administrativo() {
   }, [recibos, searchTerm, selectedStatus]);
 
   function handleClearFilters() {
-    setSearchTerm("");
-    setSelectedStatus("all");
+    setSearchTerm('');
+    setSelectedStatus('all');
   }
 
   if (loading) {
@@ -154,31 +152,52 @@ export default function Administrativo() {
         className="pb-0"
       >
         <TabsList className="flex w-full overflow-x-auto justify-start no-scrollbar border-b rounded-none bg-transparent h-auto p-0 gap-6">
-          <TabsTrigger value="recibos" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
+          <TabsTrigger
+            value="recibos"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+          >
             <Receipt className="h-4 w-4" />
             Recibos
           </TabsTrigger>
-          <TabsTrigger value="bolt" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
+          <TabsTrigger
+            value="bolt"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+          >
             <Zap className="h-4 w-4" />
             Bolt
           </TabsTrigger>
-          <TabsTrigger value="uber" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
+          <TabsTrigger
+            value="uber"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+          >
             <Car className="h-4 w-4" />
             Uber
           </TabsTrigger>
-          <TabsTrigger value="bp" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
+          <TabsTrigger
+            value="bp"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+          >
             <Fuel className="h-4 w-4 text-orange-400" />
             BP
           </TabsTrigger>
-          <TabsTrigger value="repsol" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
+          <TabsTrigger
+            value="repsol"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+          >
             <Fuel className="h-4 w-4 text-orange-500" />
             Repsol
           </TabsTrigger>
-          <TabsTrigger value="edp" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
+          <TabsTrigger
+            value="edp"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+          >
             <Zap className="h-4 w-4 text-green-500" />
             EDP
           </TabsTrigger>
-          <TabsTrigger value="contas" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs">
+          <TabsTrigger
+            value="contas"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+          >
             <Calculator className="h-4 w-4" />
             Contas
           </TabsTrigger>
@@ -200,7 +219,8 @@ export default function Administrativo() {
 
           {/* Contador de resultados */}
           <div className="text-sm text-muted-foreground">
-            {filteredRecibos.length} {filteredRecibos.length === 1 ? 'recibo' : 'recibos'} encontrado{filteredRecibos.length !== 1 && 's'}
+            {filteredRecibos.length} {filteredRecibos.length === 1 ? 'recibo' : 'recibos'}{' '}
+            encontrado{filteredRecibos.length !== 1 && 's'}
           </div>
 
           {/* Tabela de Recibos */}

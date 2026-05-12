@@ -37,8 +37,15 @@ const EntradaMotoristaNativa = () => {
           </Link>
         </Button>
 
-        <Button asChild variant="ghost" className="w-full text-muted-foreground hover:text-foreground">
-          <Link to="/motorista/login?modo=recuperar" className="inline-flex items-center justify-center gap-2">
+        <Button
+          asChild
+          variant="ghost"
+          className="w-full text-muted-foreground hover:text-foreground"
+        >
+          <Link
+            to="/motorista/login?modo=recuperar"
+            className="inline-flex items-center justify-center gap-2"
+          >
             <KeyRound className="h-4 w-4" />
             Recuperar acesso
           </Link>

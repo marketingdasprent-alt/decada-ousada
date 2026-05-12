@@ -4,7 +4,11 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { getNativeEntryRoute, getNativePanelRoute, isNativeApp } from '@/lib/native';
 
 const ROOT_EXIT_ROUTES = new Set([getNativeEntryRoute(), getNativePanelRoute(), '/']);
-const NATIVE_BACK_FALLBACK_ROUTES = new Set(['/motorista/login', '/motorista/registo', '/reset-password']);
+const NATIVE_BACK_FALLBACK_ROUTES = new Set([
+  '/motorista/login',
+  '/motorista/registo',
+  '/reset-password',
+]);
 
 export const setupNativeApp = async () => {
   if (!isNativeApp()) return;

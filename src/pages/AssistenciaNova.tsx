@@ -46,7 +46,7 @@ import {
   AlertTriangle,
   Zap,
   Flame,
-  Eraser
+  Eraser,
 } from 'lucide-react';
 import { AssistenciaMultimediaUpload } from '@/components/assistencia/AssistenciaMultimediaUpload';
 
@@ -146,7 +146,7 @@ export default function AssistenciaNova() {
     const term = searchTerm.toLowerCase();
     setFilteredViaturas(
       viaturas.filter(
-        v =>
+        (v) =>
           v.matricula.toLowerCase().includes(term) ||
           v.marca.toLowerCase().includes(term) ||
           v.modelo.toLowerCase().includes(term)
@@ -156,7 +156,7 @@ export default function AssistenciaNova() {
 
   const handleSelectViatura = async (viatura: Viatura) => {
     setSelectedViatura(viatura);
-    setFormData(prev => ({ ...prev, km_inicio: viatura.km_atual?.toString() || '' }));
+    setFormData((prev) => ({ ...prev, km_inicio: viatura.km_atual?.toString() || '' }));
 
     // Buscar motorista associado
     const { data: assoc } = await supabase
@@ -225,7 +225,9 @@ export default function AssistenciaNova() {
           combustivel_inicio: formData.combustivel_inicio,
           adblue_nivel: formData.adblue_nivel,
           gpl_qtd: formData.gpl_qtd ? parseFloat(formData.gpl_qtd) : null,
-          eletricidade_qtd: formData.eletricidade_qtd ? parseFloat(formData.eletricidade_qtd) : null,
+          eletricidade_qtd: formData.eletricidade_qtd
+            ? parseFloat(formData.eletricidade_qtd)
+            : null,
           estado_limpeza: formData.estado_limpeza,
           valor_orcamento: formData.valor_orcamento ? parseFloat(formData.valor_orcamento) : null,
           criado_por: user?.id,
@@ -237,21 +239,17 @@ export default function AssistenciaNova() {
 
       // 2. Salvar Anexos (Fotos e Vídeos) na Assistência
       if (mediaFiles.length > 0) {
-        console.log("Iniciando criação de registo de danos com", mediaFiles.length, "ficheiros");
-        
-        const anexos = mediaFiles.map(file => ({
+        const anexos = mediaFiles.map((file) => ({
           ticket_id: ticket.id,
           tipo_ficheiro: file.type === 'image' ? 'foto' : 'video',
           ficheiro_url: file.path,
           nome_ficheiro: file.path.split('/').pop() || 'anexo',
           uploaded_by: user?.id,
-          tipo_inspecao: 'checkin'
+          tipo_inspecao: 'checkin',
         }));
 
-        const { error: anexosError } = await supabase
-          .from('assistencia_anexos')
-          .insert(anexos);
-        
+        const { error: anexosError } = await supabase.from('assistencia_anexos').insert(anexos);
+
         if (anexosError) console.error('Erro ao salvar anexos:', anexosError);
 
         // 2.1 TAMBÉM salvar como "Dano" da viatura para histórico centralizado
@@ -274,49 +272,51 @@ export default function AssistenciaNova() {
         if (danoError) {
           console.error('Erro ao criar dano:', danoError);
           toast({
-            title: "Aviso",
-            description: "Não foi possível criar histórico de danos: " + danoError.message,
-            variant: "destructive"
+            title: 'Aviso',
+            description: 'Não foi possível criar histórico de danos: ' + danoError.message,
+            variant: 'destructive',
           });
         }
 
         if (!danoError && novoDano) {
-          toast({ title: "Histórico de danos criado", duration: 2000 });
-          
+          toast({ title: 'Histórico de danos criado', duration: 2000 });
+
           const fotosDano = mediaFiles
-            .filter(f => f.type === 'image')
-            .map(file => ({
+            .filter((f) => f.type === 'image')
+            .map((file) => ({
               dano_id: novoDano.id,
               ficheiro_url: file.path,
               nome_ficheiro: file.path.split('/').pop() || 'foto_checkin',
-              uploaded_by: user?.id
+              uploaded_by: user?.id,
             }));
 
           if (fotosDano.length > 0) {
-            const { error: fotosError } = await supabase.from('viatura_dano_fotos').insert(fotosDano);
+            const { error: fotosError } = await supabase
+              .from('viatura_dano_fotos')
+              .insert(fotosDano);
             if (fotosError) {
               console.error('Erro ao salvar fotos do dano:', fotosError);
-              toast({ title: "Erro ao salvar fotos no histórico", variant: "destructive" });
+              toast({ title: 'Erro ao salvar fotos no histórico', variant: 'destructive' });
             }
           }
         }
       } else {
-        console.warn("Nenhum ficheiro multimédia para criar registo de danos");
+        console.warn('Nenhum ficheiro multimédia para criar registo de danos');
       }
 
-       // 1.1 Criar mensagem inicial de log
-       await supabase.from('assistencia_mensagens').insert({
-         ticket_id: ticket.id,
-         autor_id: user?.id,
-         mensagem: `Ticket criado com check-in completo: 
+      // 1.1 Criar mensagem inicial de log
+      await supabase.from('assistencia_mensagens').insert({
+        ticket_id: ticket.id,
+        autor_id: user?.id,
+        mensagem: `Ticket criado com check-in completo: 
          - Orçamento Estimado: ${formData.valor_orcamento ? formData.valor_orcamento + '€' : 'Não definido'}
          - KM Inicial: ${formData.km_inicio}
          - Combustível: ${formData.combustivel_inicio}
          - AdBlue: ${formData.adblue_nivel}
          - Limpeza: ${formData.estado_limpeza}
          - Média: ${mediaFiles.length} ficheiros anexados`,
-         tipo: 'status_change',
-       });
+        tipo: 'status_change',
+      });
 
       // 2. Viatura original → manutencao
       const { error: viaturaError } = await supabase
@@ -335,7 +335,8 @@ export default function AssistenciaNova() {
           tipo: 'substituta',
         });
         await supabase.from('viaturas').update({ status: 'em_uso' }).eq('id', viaturaSubstituta.id);
-        await supabase.from('assistencia_tickets')
+        await supabase
+          .from('assistencia_tickets')
           .update({ viatura_substituta_id: viaturaSubstituta.id })
           .eq('id', ticket.id);
       }
@@ -347,7 +348,7 @@ export default function AssistenciaNova() {
 
         const GESTOR_ASSISTENCIA_CARGO_IDS = [
           'd8680e20-5025-47c1-bcc0-ae432f8afb96', // Gestor de Assistência
-          '0cf27801-80ff-4480-857e-e90bfb75d5a6'  // Supervisor Gestor TVDE
+          '0cf27801-80ff-4480-857e-e90bfb75d5a6', // Supervisor Gestor TVDE
         ];
 
         const [adminsRes, gestoresByIdRes, gestoresByNomeRes] = await Promise.all([
@@ -356,9 +357,9 @@ export default function AssistenciaNova() {
           supabase.from('profiles').select('id').ilike('cargo', '%Gestor%Assist%'),
         ]);
 
-        adminsRes.data?.forEach(p => userIdsSet.add(p.id));
-        gestoresByIdRes.data?.forEach(p => userIdsSet.add(p.id));
-        gestoresByNomeRes.data?.forEach(p => userIdsSet.add(p.id));
+        adminsRes.data?.forEach((p) => userIdsSet.add(p.id));
+        gestoresByIdRes.data?.forEach((p) => userIdsSet.add(p.id));
+        gestoresByNomeRes.data?.forEach((p) => userIdsSet.add(p.id));
 
         if (motoristaId) {
           const { data: motorista } = await supabase
@@ -377,7 +378,7 @@ export default function AssistenciaNova() {
           }
         }
 
-        const accessEntries = Array.from(userIdsSet).map(uid => ({
+        const accessEntries = Array.from(userIdsSet).map((uid) => ({
           ticket_id: ticket.id,
           profile_id: uid,
         }));
@@ -411,18 +412,20 @@ export default function AssistenciaNova() {
     }
   };
 
-  const isElectric = selectedViatura?.combustivel?.toLowerCase().includes('elétrico') || 
-                     selectedViatura?.combustivel?.toLowerCase().includes('híbrido');
-  const isGas = selectedViatura?.combustivel?.toLowerCase().includes('gpl') || 
-                selectedViatura?.combustivel?.toLowerCase().includes('gás');
+  const isElectric =
+    selectedViatura?.combustivel?.toLowerCase().includes('elétrico') ||
+    selectedViatura?.combustivel?.toLowerCase().includes('híbrido');
+  const isGas =
+    selectedViatura?.combustivel?.toLowerCase().includes('gpl') ||
+    selectedViatura?.combustivel?.toLowerCase().includes('gás');
 
   return (
     <div className="native-bottom container mx-auto px-3 md:px-4 py-4 md:py-8 max-w-4xl space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => {
             if (step === 1) navigate('/assistencia');
             else setStep(step - 1);
@@ -436,18 +439,21 @@ export default function AssistenciaNova() {
             <span className="truncate">Nova Entrada em Assistência</span>
           </h1>
           <p className="text-sm text-muted-foreground">
-            Passo {step} de 4: {
-              step === 1 ? 'Selecione a viatura' : 
-              step === 2 ? 'Documentação Multimédia' : 
-              step === 3 ? 'Estado da Viatura' : 'Detalhes Técnicos'
-            }
+            Passo {step} de 4:{' '}
+            {step === 1
+              ? 'Selecione a viatura'
+              : step === 2
+                ? 'Documentação Multimédia'
+                : step === 3
+                  ? 'Estado da Viatura'
+                  : 'Detalhes Técnicos'}
           </p>
         </div>
       </div>
 
       {/* Progress Bar */}
       <div className="flex gap-2 h-1.5 w-full">
-        {[1, 2, 3, 4].map(s => (
+        {[1, 2, 3, 4].map((s) => (
           <div key={s} className={`flex-1 rounded-full ${s <= step ? 'bg-primary' : 'bg-muted'}`} />
         ))}
       </div>
@@ -488,8 +494,8 @@ export default function AssistenciaNova() {
                   </TableHeader>
                   <TableBody>
                     {filteredViaturas.map((v) => (
-                      <TableRow 
-                        key={v.id} 
+                      <TableRow
+                        key={v.id}
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleSelectViatura(v)}
                       >
@@ -500,15 +506,22 @@ export default function AssistenciaNova() {
                             </div>
                             <div>
                               <p className="font-mono font-bold">{v.matricula}</p>
-                              <p className="text-xs text-muted-foreground">{v.marca} {v.modelo} ({v.combustivel || 'N/I'})</p>
+                              <p className="text-xs text-muted-foreground">
+                                {v.marca} {v.modelo} ({v.combustivel || 'N/I'})
+                              </p>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className={`text-xs px-2 py-1 rounded-full capitalize ${
-                            v.status === 'disponivel' ? 'bg-green-100 text-green-700' : 
-                            v.status === 'manutencao' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
-                          }`}>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full capitalize ${
+                              v.status === 'disponivel'
+                                ? 'bg-green-100 text-green-700'
+                                : v.status === 'manutencao'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-blue-100 text-blue-700'
+                            }`}
+                          >
                             {v.status}
                           </span>
                         </TableCell>
@@ -532,7 +545,9 @@ export default function AssistenciaNova() {
         <Card className="border-border/50">
           <CardHeader>
             <CardTitle>Documentação Multimédia</CardTitle>
-            <CardDescription>Carregue fotografias do estado atual e um vídeo de 15 segundos.</CardDescription>
+            <CardDescription>
+              Carregue fotografias do estado atual e um vídeo de 15 segundos.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <AssistenciaMultimediaUpload onComplete={handleMultimediaComplete} />
@@ -558,7 +573,9 @@ export default function AssistenciaNova() {
                     type="number"
                     placeholder="KM à entrada"
                     value={formData.km_inicio}
-                    onChange={(e) => setFormData(prev => ({ ...prev, km_inicio: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, km_inicio: e.target.value }))
+                    }
                   />
                 </div>
 
@@ -566,9 +583,9 @@ export default function AssistenciaNova() {
                   <Label htmlFor="adblue" className="flex items-center gap-2">
                     <Droplet className="h-4 w-4" /> Nível AdBlue (Obrigatório)
                   </Label>
-                  <Select 
-                    value={formData.adblue_nivel} 
-                    onValueChange={(val) => setFormData(prev => ({ ...prev, adblue_nivel: val }))}
+                  <Select
+                    value={formData.adblue_nivel}
+                    onValueChange={(val) => setFormData((prev) => ({ ...prev, adblue_nivel: val }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -586,9 +603,11 @@ export default function AssistenciaNova() {
                   <Label htmlFor="combustivel" className="flex items-center gap-2">
                     <Droplet className="h-4 w-4" /> Nível Combustível (Diesel/Gasolina)
                   </Label>
-                  <Select 
-                    value={formData.combustivel_inicio} 
-                    onValueChange={(val) => setFormData(prev => ({ ...prev, combustivel_inicio: val }))}
+                  <Select
+                    value={formData.combustivel_inicio}
+                    onValueChange={(val) =>
+                      setFormData((prev) => ({ ...prev, combustivel_inicio: val }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -610,9 +629,11 @@ export default function AssistenciaNova() {
                   <Label htmlFor="limpeza" className="flex items-center gap-2">
                     <Eraser className="h-4 w-4" /> Estado de Limpeza
                   </Label>
-                  <Select 
-                    value={formData.estado_limpeza} 
-                    onValueChange={(val) => setFormData(prev => ({ ...prev, estado_limpeza: val }))}
+                  <Select
+                    value={formData.estado_limpeza}
+                    onValueChange={(val) =>
+                      setFormData((prev) => ({ ...prev, estado_limpeza: val }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -628,7 +649,10 @@ export default function AssistenciaNova() {
 
                 {isGas && (
                   <div className="space-y-2 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-900/50">
-                    <Label htmlFor="gpl_qtd" className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                    <Label
+                      htmlFor="gpl_qtd"
+                      className="flex items-center gap-2 text-orange-700 dark:text-orange-400"
+                    >
                       <Flame className="h-4 w-4" /> Quantidade GPL (%)
                     </Label>
                     <Input
@@ -636,7 +660,9 @@ export default function AssistenciaNova() {
                       type="number"
                       placeholder="Ex: 75"
                       value={formData.gpl_qtd}
-                      onChange={(e) => setFormData(prev => ({ ...prev, gpl_qtd: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, gpl_qtd: e.target.value }))
+                      }
                       className="bg-background"
                     />
                   </div>
@@ -644,7 +670,10 @@ export default function AssistenciaNova() {
 
                 {isElectric && (
                   <div className="space-y-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900/50">
-                    <Label htmlFor="eletricidade_qtd" className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                    <Label
+                      htmlFor="eletricidade_qtd"
+                      className="flex items-center gap-2 text-blue-700 dark:text-blue-400"
+                    >
                       <Zap className="h-4 w-4" /> Carga Elétrica (%)
                     </Label>
                     <Input
@@ -652,7 +681,9 @@ export default function AssistenciaNova() {
                       type="number"
                       placeholder="Ex: 85"
                       value={formData.eletricidade_qtd}
-                      onChange={(e) => setFormData(prev => ({ ...prev, eletricidade_qtd: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, eletricidade_qtd: e.target.value }))
+                      }
                       className="bg-background"
                     />
                   </div>
@@ -661,14 +692,24 @@ export default function AssistenciaNova() {
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button variant="ghost" onClick={() => setStep(2)}>Voltar</Button>
-            <Button onClick={() => {
-              if (!formData.km_inicio) {
-                toast({ title: "Campo Obrigatório", description: "Por favor insira a quilometragem.", variant: "destructive" });
-                return;
-              }
-              setStep(4);
-            }}>Continuar</Button>
+            <Button variant="ghost" onClick={() => setStep(2)}>
+              Voltar
+            </Button>
+            <Button
+              onClick={() => {
+                if (!formData.km_inicio) {
+                  toast({
+                    title: 'Campo Obrigatório',
+                    description: 'Por favor insira a quilometragem.',
+                    variant: 'destructive',
+                  });
+                  return;
+                }
+                setStep(4);
+              }}
+            >
+              Continuar
+            </Button>
           </CardFooter>
         </Card>
       )}
@@ -689,22 +730,26 @@ export default function AssistenciaNova() {
                       id="titulo"
                       placeholder="Ex: Revisão Anual, Barulho no motor..."
                       value={formData.titulo}
-                      onChange={(e) => setFormData(prev => ({ ...prev, titulo: e.target.value }))}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, titulo: e.target.value }))}
                       required
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="categoria">Categoria</Label>
-                    <Select 
-                      value={formData.categoria_id} 
-                      onValueChange={(val) => setFormData(prev => ({ ...prev, categoria_id: val }))}
+                    <Select
+                      value={formData.categoria_id}
+                      onValueChange={(val) =>
+                        setFormData((prev) => ({ ...prev, categoria_id: val }))
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione uma categoria..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {categorias.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                        {categorias.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.nome}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -716,14 +761,16 @@ export default function AssistenciaNova() {
                       placeholder="Detalhes adicionais sobre o estado da viatura ou pedido..."
                       className="min-h-[100px]"
                       value={formData.descricao}
-                      onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, descricao: e.target.value }))
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="prioridade">Prioridade</Label>
-                    <Select 
-                      value={formData.prioridade} 
-                      onValueChange={(val) => setFormData(prev => ({ ...prev, prioridade: val }))}
+                    <Select
+                      value={formData.prioridade}
+                      onValueChange={(val) => setFormData((prev) => ({ ...prev, prioridade: val }))}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -754,10 +801,11 @@ export default function AssistenciaNova() {
                       id="data_entrada"
                       type="date"
                       value={formData.data_entrada}
-                      onChange={(e) => setFormData(prev => ({ ...prev, data_entrada: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, data_entrada: e.target.value }))
+                      }
                     />
                   </div>
-                  
 
                   {/* Viatura Substituta */}
                   {motoristaId && (
@@ -768,15 +816,27 @@ export default function AssistenciaNova() {
                       {viaturaSubstituta ? (
                         <div className="flex items-center gap-2 p-2 rounded-lg border border-amber-400 bg-amber-50 dark:bg-amber-950/20">
                           <Car className="h-4 w-4 text-amber-600 shrink-0" />
-                          <span className="flex-1 text-sm font-mono font-bold">{viaturaSubstituta.matricula}</span>
-                          <button type="button" onClick={() => setViaturaSubstituta(null)} className="ml-1 text-muted-foreground hover:text-foreground">
+                          <span className="flex-1 text-sm font-mono font-bold">
+                            {viaturaSubstituta.matricula}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setViaturaSubstituta(null)}
+                            className="ml-1 text-muted-foreground hover:text-foreground"
+                          >
                             <X className="h-4 w-4" />
                           </button>
                         </div>
                       ) : (
                         <div className="space-y-2">
                           {!showSubstituteSearch ? (
-                            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => setShowSubstituteSearch(true)}>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => setShowSubstituteSearch(true)}
+                            >
                               <Car className="h-4 w-4 mr-2" /> Atribuir substituta
                             </Button>
                           ) : (
@@ -789,12 +849,19 @@ export default function AssistenciaNova() {
                               />
                               <div className="max-h-32 overflow-y-auto space-y-1">
                                 {viaturasDisponiveis
-                                  .filter(v => v.matricula.toLowerCase().includes(substituteSearchTerm.toLowerCase()))
-                                  .map(v => (
+                                  .filter((v) =>
+                                    v.matricula
+                                      .toLowerCase()
+                                      .includes(substituteSearchTerm.toLowerCase())
+                                  )
+                                  .map((v) => (
                                     <button
                                       key={v.id}
                                       type="button"
-                                      onClick={() => { setViaturaSubstituta(v); setShowSubstituteSearch(false); }}
+                                      onClick={() => {
+                                        setViaturaSubstituta(v);
+                                        setShowSubstituteSearch(false);
+                                      }}
                                       className="w-full text-left px-2 py-1 text-xs hover:bg-muted rounded"
                                     >
                                       {v.matricula} - {v.marca}
@@ -810,7 +877,11 @@ export default function AssistenciaNova() {
                 </CardContent>
                 <CardFooter className="pt-0">
                   <Button type="submit" className="w-full" disabled={submitting}>
-                    {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Finalizar e Salvar'}
+                    {submitting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      'Finalizar e Salvar'
+                    )}
                   </Button>
                 </CardFooter>
               </Card>

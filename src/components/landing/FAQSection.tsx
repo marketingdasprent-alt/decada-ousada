@@ -1,56 +1,64 @@
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
+} from '@/components/ui/accordion';
 
 const faqs = [
   {
-    question: "Preciso ter empresa para trabalhar convosco?",
-    answer: "Não precisa de ter empresa constituída! Trabalha como trabalhador independente com a sua licença TVDE. Semanalmente, emite um recibo verde para receber os seus ganhos. Damos apoio na parte administrativa.",
+    question: 'Preciso ter empresa para trabalhar convosco?',
+    answer:
+      'Não precisa de ter empresa constituída! Trabalha como trabalhador independente com a sua licença TVDE. Semanalmente, emite um recibo verde para receber os seus ganhos. Damos apoio na parte administrativa.',
   },
   {
-    question: "Como funciona o pagamento?",
-    answer: "O pagamento é feito semanalmente, diretamente na sua conta bancária. Paga apenas um valor fixo de aluguer semanal - sem surpresas nos custos. As comissões das plataformas (Uber, Bolt) aplicam-se normalmente.",
+    question: 'Como funciona o pagamento?',
+    answer:
+      'O pagamento é feito semanalmente, diretamente na sua conta bancária. Paga apenas um valor fixo de aluguer semanal - sem surpresas nos custos. As comissões das plataformas (Uber, Bolt) aplicam-se normalmente.',
   },
   {
-    question: "Que documentos preciso para me candidatar?",
-    answer: "Precisa de: Licença TVDE válida, Carta de Condução, Documento de Identificação (CC ou Passaporte), Registo Criminal, Comprovativo de Morada e IBAN para receber os pagamentos.",
+    question: 'Que documentos preciso para me candidatar?',
+    answer:
+      'Precisa de: Licença TVDE válida, Carta de Condução, Documento de Identificação (CC ou Passaporte), Registo Criminal, Comprovativo de Morada e IBAN para receber os pagamentos.',
   },
   {
-    question: "Posso trabalhar quando quiser?",
-    answer: "Sim! Tem total flexibilidade de horários. Trabalhe quando e quanto quiser. Não há horários mínimos obrigatórios nem penalizações por dias de folga.",
+    question: 'Posso trabalhar quando quiser?',
+    answer:
+      'Sim! Tem total flexibilidade de horários. Trabalhe quando e quanto quiser. Não há horários mínimos obrigatórios nem penalizações por dias de folga.',
   },
   {
-    question: "E se não tiver licença TVDE?",
-    answer: "Infelizmente, a licença TVDE é obrigatória por lei para exercer a atividade de motorista TVDE. Sugerimos procurar um centro de formação certificado na sua zona para obter a licença.",
+    question: 'E se não tiver licença TVDE?',
+    answer:
+      'Infelizmente, a licença TVDE é obrigatória por lei para exercer a atividade de motorista TVDE. Sugerimos procurar um centro de formação certificado na sua zona para obter a licença.',
   },
   {
-    question: "Quanto tempo demora o processo de aprovação?",
-    answer: "Depois de submeter a sua candidatura e documentos, o processo de aprovação demora normalmente 24 a 48 horas úteis. A nossa equipa entra em contacto consigo rapidamente.",
+    question: 'Quanto tempo demora o processo de aprovação?',
+    answer:
+      'Depois de submeter a sua candidatura e documentos, o processo de aprovação demora normalmente 24 a 48 horas úteis. A nossa equipa entra em contacto consigo rapidamente.',
   },
   {
-    question: "Que tipo de viaturas têm disponíveis?",
-    answer: "Temos uma frota variada que inclui viaturas para todas as categorias: X Saver, Comfort, Black, Green (elétricos), X Priority e mais. Escolha a que melhor se adapta a si.",
+    question: 'Que tipo de viaturas têm disponíveis?',
+    answer:
+      'Temos uma frota variada que inclui viaturas para todas as categorias: X Saver, Comfort, Black, Green (elétricos), X Priority e mais. Escolha a que melhor se adapta a si.',
   },
   {
-    question: "Qual é a diferença entre Aluguer e Slot?",
-    answer: "No Aluguer, fornecemos a viatura e você trabalha com ela. No Slot, você já tem viatura própria e utiliza apenas a nossa estrutura e apoio para trabalhar nas plataformas.",
+    question: 'Qual é a diferença entre Aluguer e Slot?',
+    answer:
+      'No Aluguer, fornecemos a viatura e você trabalha com ela. No Slot, você já tem viatura própria e utiliza apenas a nossa estrutura e apoio para trabalhar nas plataformas.',
   },
 ];
 
 export const FAQSection = () => {
   const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": faqs.map((faq) => ({
-      "@type": "Question",
-      "name": faq.question,
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": faq.answer,
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
       },
     })),
   };
@@ -95,9 +103,7 @@ export const FAQSection = () => {
                 <AccordionTrigger className="text-left text-white hover:text-primary hover:no-underline py-5">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-gray-400 pb-5">
-                  {faq.answer}
-                </AccordionContent>
+                <AccordionContent className="text-gray-400 pb-5">{faq.answer}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, FileText } from 'lucide-react';
@@ -40,7 +39,7 @@ interface DynamicFieldEditorProps {
 
 export const DynamicFieldEditor: React.FC<DynamicFieldEditorProps> = ({
   fields,
-  onFieldsChange
+  onFieldsChange,
 }) => {
   const [editingField, setEditingField] = useState<string | null>(null);
 
@@ -60,20 +59,18 @@ export const DynamicFieldEditor: React.FC<DynamicFieldEditorProps> = ({
       id: `field_${Date.now()}`,
       type: 'text',
       label: 'Novo Campo',
-      required: false
+      required: false,
     };
     onFieldsChange([...fields, newField]);
     setEditingField(newField.id);
   };
 
   const updateField = (id: string, updates: Partial<FormField>) => {
-    onFieldsChange(fields.map(field => 
-      field.id === id ? { ...field, ...updates } : field
-    ));
+    onFieldsChange(fields.map((field) => (field.id === id ? { ...field, ...updates } : field)));
   };
 
   const removeField = (id: string) => {
-    onFieldsChange(fields.filter(field => field.id !== id));
+    onFieldsChange(fields.filter((field) => field.id !== id));
     if (editingField === id) {
       setEditingField(null);
     }
@@ -93,7 +90,7 @@ export const DynamicFieldEditor: React.FC<DynamicFieldEditorProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground">Campos do Formulário</h3>
-        <Button 
+        <Button
           onClick={addField}
           size="sm"
           className="bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -103,15 +100,8 @@ export const DynamicFieldEditor: React.FC<DynamicFieldEditorProps> = ({
         </Button>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={fields.map(f => f.id)}
-          strategy={verticalListSortingStrategy}
-        >
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-3">
             {fields.map((field) => (
               <SortableFieldCard
@@ -131,7 +121,7 @@ export const DynamicFieldEditor: React.FC<DynamicFieldEditorProps> = ({
         <div className="text-center py-8">
           <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground mb-4">Nenhum campo adicionado ainda</p>
-          <Button 
+          <Button
             onClick={addField}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >

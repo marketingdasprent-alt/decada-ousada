@@ -2,7 +2,12 @@ import React, { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Upload, Loader2, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -15,7 +20,10 @@ interface ImportUberCsvDialogProps {
 }
 
 export const ImportUberCsvDialog: React.FC<ImportUberCsvDialogProps> = ({
-  open, onOpenChange, integracaoId, onImportComplete,
+  open,
+  onOpenChange,
+  integracaoId,
+  onImportComplete,
 }) => {
   const [importing, setImporting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -51,7 +59,7 @@ export const ImportUberCsvDialog: React.FC<ImportUberCsvDialogProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           integracao_id: integracaoId,
@@ -102,7 +110,8 @@ export const ImportUberCsvDialog: React.FC<ImportUberCsvDialogProps> = ({
             Importar CSV Uber
           </DialogTitle>
           <DialogDescription>
-            Carregue um ficheiro CSV exportado do portal Uber Supplier para importar o histórico de viagens.
+            Carregue um ficheiro CSV exportado do portal Uber Supplier para importar o histórico de
+            viagens.
           </DialogDescription>
         </DialogHeader>
 
@@ -139,11 +148,13 @@ export const ImportUberCsvDialog: React.FC<ImportUberCsvDialogProps> = ({
 
           {/* Result */}
           {result && (
-            <div className={`flex items-start gap-2 p-3 rounded-lg text-sm ${
-              result.success
-                ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-                : 'bg-destructive/10 text-destructive'
-            }`}>
+            <div
+              className={`flex items-start gap-2 p-3 rounded-lg text-sm ${
+                result.success
+                  ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                  : 'bg-destructive/10 text-destructive'
+              }`}
+            >
               {result.success ? (
                 <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
               ) : (
@@ -162,8 +173,7 @@ export const ImportUberCsvDialog: React.FC<ImportUberCsvDialogProps> = ({
             <Button onClick={handleImport} disabled={!selectedFile || importing}>
               {importing ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  A importar...
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />A importar...
                 </>
               ) : (
                 <>

@@ -117,16 +117,14 @@ const PainelMotorista: React.FC = () => {
     );
   }
 
-  const displayUserName = motoristaAtivo?.nome || candidatura?.nome || user?.user_metadata?.full_name || "Motorista";
+  const displayUserName =
+    motoristaAtivo?.nome || candidatura?.nome || user?.user_metadata?.full_name || 'Motorista';
   const displayUserPhoto = motoristaAtivo?.foto_url || user?.user_metadata?.avatar_url;
 
   return (
     <div className="rota-liquida">
       {motoristaAtivo || candidatura?.status === 'aprovado' ? (
-        <MotoristaLayout 
-          userName={displayUserName} 
-          userPhoto={displayUserPhoto}
-        >
+        <MotoristaLayout userName={displayUserName} userPhoto={displayUserPhoto}>
           <MotoristaDashboard />
         </MotoristaLayout>
       ) : !candidatura || candidatura.status === 'rascunho' ? (

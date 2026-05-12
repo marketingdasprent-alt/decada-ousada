@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import {
   FileSignature,
   Download,
@@ -14,12 +14,12 @@ import {
   Pencil,
   Save,
   X,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -27,15 +27,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { SectionCard } from "@/components/ui/section-card";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useEmpresas } from "@/hooks/useEmpresas";
-import { usePermissions } from "@/hooks/usePermissions";
-import { generateDocumentFromTemplate } from "@/utils/generateDocumentFromTemplate";
-import { GenerateDocumentsDialog } from "../GenerateDocumentsDialog";
-import type { Motorista } from "@/pages/Motoristas";
+} from '@/components/ui/table';
+import { SectionCard } from '@/components/ui/section-card';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useEmpresas } from '@/hooks/useEmpresas';
+import { usePermissions } from '@/hooks/usePermissions';
+import { generateDocumentFromTemplate } from '@/utils/generateDocumentFromTemplate';
+import { GenerateDocumentsDialog } from '../GenerateDocumentsDialog';
+import type { Motorista } from '@/pages/Motoristas';
 
 interface Contrato {
   id: string;
@@ -56,7 +56,10 @@ interface MotoristaTabContratosProps {
   onMotoristaUpdated?: () => void;
 }
 
-export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: MotoristaTabContratosProps) {
+export function MotoristaTabContratos({
+  motorista,
+  onMotoristaUpdated,
+}: MotoristaTabContratosProps) {
   const { hasPermission } = usePermissions();
   const { getById: getEmpresaById } = useEmpresas();
   const [contratos, setContratos] = useState<Contrato[]>([]);
@@ -64,7 +67,7 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
   const [generating, setGenerating] = useState<string | null>(null);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [editingContratual, setEditingContratual] = useState(false);
-  const [dataContratacao, setDataContratacao] = useState(motorista.data_contratacao || "");
+  const [dataContratacao, setDataContratacao] = useState(motorista.data_contratacao || '');
 
   useEffect(() => {
     loadContratos();
@@ -79,16 +82,16 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from("contratos")
-        .select("*")
-        .eq("motorista_id", motorista.id)
-        .order("criado_em", { ascending: false });
+        .from('contratos')
+        .select('*')
+        .eq('motorista_id', motorista.id)
+        .order('criado_em', { ascending: false });
 
       if (error) throw error;
       setContratos(data || []);
     } catch (error) {
-      console.error("Erro ao carregar contratos:", error);
-      toast.error("Erro ao carregar contratos");
+      console.error('Erro ao carregar contratos:', error);
+      toast.error('Erro ao carregar contratos');
     } finally {
       setLoading(false);
     }
@@ -100,11 +103,11 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "ativo":
+      case 'ativo':
         return <Badge variant="default">Ativo</Badge>;
-      case "substituido":
+      case 'substituido':
         return <Badge variant="secondary">Substituído</Badge>;
-      case "cancelado":
+      case 'cancelado':
         return <Badge variant="destructive">Cancelado</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
@@ -113,19 +116,19 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
 
   const handleDownload = async (contrato: Contrato) => {
     if (!contrato.documento_url) {
-      toast.error("Documento não encontrado");
+      toast.error('Documento não encontrado');
       return;
     }
 
     try {
       const { data, error } = await supabase.storage
-        .from("documentos")
+        .from('documentos')
         .download(contrato.documento_url);
 
       if (error) throw error;
 
       const url = URL.createObjectURL(data);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
       a.download = `contrato_${motorista.nome}_${contrato.empresa_id}_v${contrato.versao}.pdf`;
       document.body.appendChild(a);
@@ -133,14 +136,14 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Erro ao fazer download:", error);
-      toast.error("Erro ao fazer download do contrato");
+      console.error('Erro ao fazer download:', error);
+      toast.error('Erro ao fazer download do contrato');
     }
   };
 
   const handleReimprimir = async (contrato: Contrato) => {
     if (!contrato.template_id) {
-      toast.error("Template não encontrado para reimprimir");
+      toast.error('Template não encontrado para reimprimir');
       return;
     }
 
@@ -163,11 +166,11 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
           data_inicio: contrato.data_inicio,
           cidade_assinatura: contrato.cidade_assinatura,
         },
-        action: "print",
+        action: 'print',
       });
     } catch (error) {
-      console.error("Erro ao reimprimir:", error);
-      toast.error("Erro ao reimprimir contrato");
+      console.error('Erro ao reimprimir:', error);
+      toast.error('Erro ao reimprimir contrato');
     } finally {
       setGenerating(null);
     }
@@ -175,20 +178,20 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
 
   const handleView = async (contrato: Contrato) => {
     if (!contrato.documento_url) {
-      toast.error("Documento não encontrado");
+      toast.error('Documento não encontrado');
       return;
     }
 
     try {
       const { data, error } = await supabase.storage
-        .from("documentos")
+        .from('documentos')
         .createSignedUrl(contrato.documento_url, 3600);
 
       if (error) throw error;
-      window.open(data.signedUrl, "_blank");
+      window.open(data.signedUrl, '_blank');
     } catch (error) {
-      console.error("Erro ao visualizar contrato:", error);
-      toast.error("Erro ao abrir contrato");
+      console.error('Erro ao visualizar contrato:', error);
+      toast.error('Erro ao abrir contrato');
     }
   };
 
@@ -199,45 +202,45 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
 
   // Função para garantir que a data está no formato YYYY-MM-DD para o input
   const sanitizeDate = (dateString: string | null) => {
-    if (!dateString) return "";
-    return dateString.split("T")[0];
+    if (!dateString) return '';
+    return dateString.split('T')[0];
   };
 
   const handleSaveContratual = async () => {
     try {
       const formattedDate = sanitizeDate(dataContratacao);
-      
+
       const { error } = await supabase
-        .from("motoristas_ativos")
+        .from('motoristas_ativos')
         .update({
           data_contratacao: formattedDate || null,
           cidade_assinatura: null,
         })
-        .eq("id", motorista.id);
+        .eq('id', motorista.id);
 
       if (error) throw error;
-      toast.success("Informação contratual atualizada");
+      toast.success('Informação contratual atualizada');
       setEditingContratual(false);
       onMotoristaUpdated?.();
     } catch (error) {
-      console.error("Erro ao atualizar:", error);
-      toast.error("Erro ao atualizar informação contratual");
+      console.error('Erro ao atualizar:', error);
+      toast.error('Erro ao atualizar informação contratual');
     }
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
+    if (!dateString) return '-';
     try {
-      return format(new Date(dateString), "dd/MM/yyyy");
+      return format(new Date(dateString), 'dd/MM/yyyy');
     } catch {
-      return "-";
+      return '-';
     }
   };
 
   // Stats
   const totalContratos = contratos.length;
-  const ativos = contratos.filter(c => c.status === "ativo").length;
-  const inativos = contratos.filter(c => c.status !== "ativo").length;
+  const ativos = contratos.filter((c) => c.status === 'ativo').length;
+  const inativos = contratos.filter((c) => c.status !== 'ativo').length;
 
   if (loading) {
     return (
@@ -248,9 +251,27 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
   }
 
   const statsCards = [
-    { title: "Total", value: totalContratos, icon: Files, color: "text-blue-500", bgColor: "bg-blue-500/10" },
-    { title: "Ativos", value: ativos, icon: CheckCircle, color: "text-green-500", bgColor: "bg-green-500/10" },
-    { title: "Inativos", value: inativos, icon: XCircle, color: "text-muted-foreground", bgColor: "bg-muted" },
+    {
+      title: 'Total',
+      value: totalContratos,
+      icon: Files,
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10',
+    },
+    {
+      title: 'Ativos',
+      value: ativos,
+      icon: CheckCircle,
+      color: 'text-green-500',
+      bgColor: 'bg-green-500/10',
+    },
+    {
+      title: 'Inativos',
+      value: inativos,
+      icon: XCircle,
+      color: 'text-muted-foreground',
+      bgColor: 'bg-muted',
+    },
   ];
 
   return (
@@ -274,10 +295,14 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
               </div>
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="ghost" size="sm" onClick={() => {
-                setEditingContratual(false);
-                setDataContratacao(motorista.data_contratacao || "");
-              }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setEditingContratual(false);
+                  setDataContratacao(motorista.data_contratacao || '');
+                }}
+              >
                 <X className="h-4 w-4 mr-1" /> Cancelar
               </Button>
               <Button size="sm" onClick={handleSaveContratual}>
@@ -365,28 +390,53 @@ export function MotoristaTabContratos({ motorista, onMotoristaUpdated }: Motoris
               </TableRow>
             ) : (
               contratos.map((contrato) => (
-                <TableRow key={contrato.id} className={contrato.status === "substituido" ? "opacity-50" : ""}>
-                  <TableCell className="font-medium">{getEmpresaNome(contrato.empresa_id)}</TableCell>
-                  <TableCell>{format(new Date(contrato.data_assinatura), "dd/MM/yyyy")}</TableCell>
-                  <TableCell>{format(new Date(contrato.data_inicio), "dd/MM/yyyy")}</TableCell>
+                <TableRow
+                  key={contrato.id}
+                  className={contrato.status === 'substituido' ? 'opacity-50' : ''}
+                >
+                  <TableCell className="font-medium">
+                    {getEmpresaNome(contrato.empresa_id)}
+                  </TableCell>
+                  <TableCell>{format(new Date(contrato.data_assinatura), 'dd/MM/yyyy')}</TableCell>
+                  <TableCell>{format(new Date(contrato.data_inicio), 'dd/MM/yyyy')}</TableCell>
                   <TableCell>{contrato.cidade_assinatura}</TableCell>
-                  <TableCell><Badge variant="outline">v{contrato.versao}</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant="outline">v{contrato.versao}</Badge>
+                  </TableCell>
                   <TableCell>{getStatusBadge(contrato.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {contrato.documento_url && (
                         <>
-                          <Button variant="ghost" size="icon" onClick={() => handleView(contrato)} title="Visualizar">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleView(contrato)}
+                            title="Visualizar"
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDownload(contrato)} title="Download">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDownload(contrato)}
+                            title="Download"
+                          >
                             <Download className="h-4 w-4" />
                           </Button>
                         </>
                       )}
                       {contrato.template_id && (
-                        <Button variant="ghost" size="icon" onClick={() => handleReimprimir(contrato)} disabled={generating === contrato.id} title="Reimprimir">
-                          <Printer className={`h-4 w-4 ${generating === contrato.id ? "animate-pulse" : ""}`} />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleReimprimir(contrato)}
+                          disabled={generating === contrato.id}
+                          title="Reimprimir"
+                        >
+                          <Printer
+                            className={`h-4 w-4 ${generating === contrato.id ? 'animate-pulse' : ''}`}
+                          />
                         </Button>
                       )}
                     </div>

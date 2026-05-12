@@ -189,17 +189,12 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
       };
 
       if (isEditing && viatura) {
-        const { error } = await supabase
-          .from('viaturas')
-          .update(payload)
-          .eq('id', viatura.id);
+        const { error } = await supabase.from('viaturas').update(payload).eq('id', viatura.id);
 
         if (error) throw error;
         toast.success('Viatura atualizada com sucesso!');
       } else {
-        const { error } = await supabase
-          .from('viaturas')
-          .insert(payload);
+        const { error } = await supabase.from('viaturas').insert(payload);
 
         if (error) throw error;
         toast.success('Viatura criada com sucesso!');
@@ -223,11 +218,11 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? 'Editar Viatura' : 'Nova Viatura'}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Viatura' : 'Nova Viatura'}</DialogTitle>
           <DialogDescription className="sr-only">
-            {isEditing ? 'Edite os dados da viatura selecionada.' : 'Preencha os dados para registar uma nova viatura.'}
+            {isEditing
+              ? 'Edite os dados da viatura selecionada.'
+              : 'Preencha os dados para registar uma nova viatura.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -241,11 +236,7 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
                   <FormItem>
                     <FormLabel>Matrícula *</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="AA-00-BB" 
-                        {...field} 
-                        className="uppercase"
-                      />
+                      <Input placeholder="AA-00-BB" {...field} className="uppercase" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -266,12 +257,13 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
                       </FormControl>
                       <SelectContent>
                         {STATUS_OPTIONS.map((option) => (
-                          <SelectItem 
-                            key={option.value} 
+                          <SelectItem
+                            key={option.value}
                             value={option.value}
                             disabled={option.restricted && field.value !== option.value}
                           >
-                            {option.label} {option.restricted && field.value !== option.value && option.hint}
+                            {option.label}{' '}
+                            {option.restricted && field.value !== option.value && option.hint}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -316,11 +308,7 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
                   <FormItem>
                     <FormLabel>Ano</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="2024" 
-                        {...field} 
-                      />
+                      <Input type="number" placeholder="2024" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -398,11 +386,7 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
                   <FormItem>
                     <FormLabel>Km Atual</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="0" 
-                        {...field} 
-                      />
+                      <Input type="number" placeholder="0" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -458,7 +442,11 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
                   <FormItem>
                     <FormLabel>Nº Extintor</FormLabel>
                     <FormControl>
-                      <Input placeholder="Número do extintor" {...field} value={field.value || ""} />
+                      <Input
+                        placeholder="Número do extintor"
+                        {...field}
+                        value={field.value || ''}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -472,7 +460,7 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
                   <FormItem>
                     <FormLabel>Validade Extintor</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} value={field.value || ""} />
+                      <Input type="date" {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -487,10 +475,7 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
                 <FormItem>
                   <FormLabel>Observações</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Notas adicionais sobre a viatura..."
-                      {...field}
-                    />
+                    <Textarea placeholder="Notas adicionais sobre a viatura..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -498,9 +483,9 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
             />
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={loading}
               >

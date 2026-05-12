@@ -1,17 +1,12 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { AlertTriangle, Car, ImageIcon, Eye, ChevronRight, Clock } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { pt } from "date-fns/locale";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertTriangle, Car, ImageIcon, Eye, ChevronRight, Clock } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { pt } from 'date-fns/locale';
 
 interface Dano {
   id: string;
@@ -30,7 +25,7 @@ interface Dano {
     ficheiro_url: string;
     nome_ficheiro: string | null;
   }>;
-  status_pagamento: "por_pagar" | "pago" | "sem_debito";
+  status_pagamento: 'por_pagar' | 'pago' | 'sem_debito';
 }
 
 interface MotoristaDanosCardProps {
@@ -38,17 +33,17 @@ interface MotoristaDanosCardProps {
 }
 
 const STATUS_PAGAMENTO = {
-  por_pagar: { 
-    label: "Por Pagar", 
-    color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" 
+  por_pagar: {
+    label: 'Por Pagar',
+    color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
   },
-  pago: { 
-    label: "Pago", 
-    color: "bg-green-500/10 text-green-600 border-green-500/20" 
+  pago: {
+    label: 'Pago',
+    color: 'bg-green-500/10 text-green-600 border-green-500/20',
   },
-  sem_debito: { 
-    label: "Sem Débito", 
-    color: "bg-gray-500/10 text-gray-600 border-gray-500/20" 
+  sem_debito: {
+    label: 'Sem Débito',
+    color: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
   },
 };
 
@@ -66,8 +61,9 @@ export function MotoristaDanosCard({ motoristaId }: MotoristaDanosCardProps) {
     try {
       // Buscar danos do motorista
       const { data: danosData, error: danosError } = await supabase
-        .from("viatura_danos")
-        .select(`
+        .from('viatura_danos')
+        .select(
+          `
           id,
           descricao,
           localizacao,
@@ -80,9 +76,10 @@ export function MotoristaDanosCard({ motoristaId }: MotoristaDanosCardProps) {
             marca,
             modelo
           )
-        `)
-        .eq("motorista_id", motoristaId)
-        .order("created_at", { ascending: false });
+        `
+        )
+        .eq('motorista_id', motoristaId)
+        .order('created_at', { ascending: false });
 
       if (danosError) throw danosError;
 
@@ -91,24 +88,24 @@ export function MotoristaDanosCard({ motoristaId }: MotoristaDanosCardProps) {
       for (const dano of danosData || []) {
         // Buscar fotos
         const { data: fotos } = await supabase
-          .from("viatura_dano_fotos")
-          .select("id, ficheiro_url, nome_ficheiro")
-          .eq("dano_id", dano.id);
+          .from('viatura_dano_fotos')
+          .select('id, ficheiro_url, nome_ficheiro')
+          .eq('dano_id', dano.id);
 
         // Buscar status de pagamento do movimento financeiro
         const { data: movimento } = await supabase
-          .from("motorista_financeiro")
-          .select("status")
-          .eq("dano_id", dano.id)
+          .from('motorista_financeiro')
+          .select('status')
+          .eq('dano_id', dano.id)
           .maybeSingle();
 
-        let status_pagamento: "por_pagar" | "pago" | "sem_debito";
+        let status_pagamento: 'por_pagar' | 'pago' | 'sem_debito';
         if (!movimento) {
-          status_pagamento = "sem_debito";
-        } else if (movimento.status === "pago") {
-          status_pagamento = "pago";
+          status_pagamento = 'sem_debito';
+        } else if (movimento.status === 'pago') {
+          status_pagamento = 'pago';
         } else {
-          status_pagamento = "por_pagar";
+          status_pagamento = 'por_pagar';
         }
 
         danosComFotosEStatus.push({
@@ -118,7 +115,7 @@ export function MotoristaDanosCard({ motoristaId }: MotoristaDanosCardProps) {
           data_ocorrencia: dano.data_ocorrencia,
           data_registo: dano.data_registo,
           valor: dano.valor || 0,
-          viatura: dano.viaturas as Dano["viatura"],
+          viatura: dano.viaturas as Dano['viatura'],
           fotos: fotos || [],
           status_pagamento,
         });
@@ -126,25 +123,25 @@ export function MotoristaDanosCard({ motoristaId }: MotoristaDanosCardProps) {
 
       setDanos(danosComFotosEStatus);
     } catch (error) {
-      console.error("Erro ao carregar danos:", error);
+      console.error('Erro ao carregar danos:', error);
     } finally {
       setLoading(false);
     }
   }
 
   function formatCurrency(value: number) {
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: "EUR",
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
     }).format(value);
   }
 
-  function getStatusConfig(status: Dano["status_pagamento"]) {
+  function getStatusConfig(status: Dano['status_pagamento']) {
     return STATUS_PAGAMENTO[status] || STATUS_PAGAMENTO.por_pagar;
   }
 
   const totalDanos = danos.reduce((sum, d) => sum + (d.valor || 0), 0);
-  const danosPorPagar = danos.filter(d => d.status_pagamento === "por_pagar").length;
+  const danosPorPagar = danos.filter((d) => d.status_pagamento === 'por_pagar').length;
 
   if (loading) {
     return (
@@ -178,7 +175,9 @@ export function MotoristaDanosCard({ motoristaId }: MotoristaDanosCardProps) {
             </CardTitle>
             {danos.length > 0 && (
               <div className="text-right">
-                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Total Acumulado</p>
+                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
+                  Total Acumulado
+                </p>
                 <p className="text-xl font-black text-destructive">{formatCurrency(totalDanos)}</p>
               </div>
             )}
@@ -212,20 +211,26 @@ export function MotoristaDanosCard({ motoristaId }: MotoristaDanosCardProps) {
                     onClick={() => setSelectedDano(dano)}
                   >
                     <div className="flex items-center gap-4 min-w-0">
-                      <div className={cn(
-                        "w-12 h-12 rounded-2xl flex items-center justify-center border border-border shadow-sm group-hover:border-primary/20 transition-all",
-                        dano.status_pagamento === 'pago' ? "bg-green-500/5" : "bg-destructive/5"
-                      )}>
-                        <AlertTriangle className={cn(
-                          "w-6 h-6",
-                          dano.status_pagamento === 'pago' ? "text-green-600" : "text-destructive"
-                        )} />
+                      <div
+                        className={cn(
+                          'w-12 h-12 rounded-2xl flex items-center justify-center border border-border shadow-sm group-hover:border-primary/20 transition-all',
+                          dano.status_pagamento === 'pago' ? 'bg-green-500/5' : 'bg-destructive/5'
+                        )}
+                      >
+                        <AlertTriangle
+                          className={cn(
+                            'w-6 h-6',
+                            dano.status_pagamento === 'pago' ? 'text-green-600' : 'text-destructive'
+                          )}
+                        />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-foreground group-hover:text-primary transition-colors truncate">{dano.descricao}</p>
+                        <p className="font-bold text-foreground group-hover:text-primary transition-colors truncate">
+                          {dano.descricao}
+                        </p>
                         <div className="flex items-center gap-3 mt-1">
                           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                            {format(new Date(dataDisplay), "dd MMM yyyy", { locale: pt })}
+                            {format(new Date(dataDisplay), 'dd MMM yyyy', { locale: pt })}
                           </span>
                           {dano.fotos.length > 0 && (
                             <div className="flex items-center gap-1 text-[10px] font-black text-primary uppercase">
@@ -236,16 +241,16 @@ export function MotoristaDanosCard({ motoristaId }: MotoristaDanosCardProps) {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <p className="font-black text-foreground">
-                          {formatCurrency(dano.valor)}
-                        </p>
-                        <div className={cn(
-                          "inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider mt-1 border",
-                          statusConfig.color
-                        )}>
+                        <p className="font-black text-foreground">{formatCurrency(dano.valor)}</p>
+                        <div
+                          className={cn(
+                            'inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider mt-1 border',
+                            statusConfig.color
+                          )}
+                        >
                           {statusConfig.label}
                         </div>
                       </div>
@@ -298,7 +303,7 @@ export function MotoristaDanosCard({ motoristaId }: MotoristaDanosCardProps) {
                 <div>
                   <p className="text-sm text-muted-foreground">Viatura</p>
                   <p className="font-medium">
-                    {selectedDano.viatura.matricula} - {selectedDano.viatura.marca}{" "}
+                    {selectedDano.viatura.matricula} - {selectedDano.viatura.marca}{' '}
                     {selectedDano.viatura.modelo}
                   </p>
                 </div>
@@ -323,7 +328,7 @@ export function MotoristaDanosCard({ motoristaId }: MotoristaDanosCardProps) {
                       >
                         <img
                           src={foto.ficheiro_url}
-                          alt={foto.nome_ficheiro || "Foto do dano"}
+                          alt={foto.nome_ficheiro || 'Foto do dano'}
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">

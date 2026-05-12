@@ -23,13 +23,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Loader2, 
-  Zap, 
-  RefreshCw, 
-  CheckCircle, 
-  XCircle, 
-  Settings, 
+import {
+  Loader2,
+  Zap,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  Settings,
   Users,
   Car,
   History,
@@ -89,7 +89,7 @@ export const BoltIntegrationPanel: React.FC = () => {
   const [testing, setTesting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
-  
+
   const [config, setConfig] = useState<BoltConfig | null>(null);
   const [formData, setFormData] = useState({
     client_id: '',
@@ -123,13 +123,24 @@ export const BoltIntegrationPanel: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Buscar configuração, mapeamentos, motoristas e logs em paralelo
       const [configRes, mapeamentosRes, motoristasRes, logsRes] = await Promise.all([
         supabase.from('plataformas_configuracao').select('*').limit(1).single(),
-        supabase.from('bolt_mapeamento_motoristas').select('*, motorista:motoristas_ativos(nome)').order('driver_name'),
-        supabase.from('motoristas_ativos').select('id, nome').eq('status_ativo', true).order('nome'),
-        supabase.from('bolt_sync_logs').select('*').order('created_at', { ascending: false }).limit(20),
+        supabase
+          .from('bolt_mapeamento_motoristas')
+          .select('*, motorista:motoristas_ativos(nome)')
+          .order('driver_name'),
+        supabase
+          .from('motoristas_ativos')
+          .select('id, nome')
+          .eq('status_ativo', true)
+          .order('nome'),
+        supabase
+          .from('bolt_sync_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(20),
       ]);
 
       if (configRes.data) {
@@ -147,7 +158,6 @@ export const BoltIntegrationPanel: React.FC = () => {
       setMapeamentos((mapeamentosRes.data || []) as BoltMapeamento[]);
       setMotoristas((motoristasRes.data || []) as Motorista[]);
       setLogs((logsRes.data || []) as BoltSyncLog[]);
-
     } catch (error: any) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -158,16 +168,16 @@ export const BoltIntegrationPanel: React.FC = () => {
   const handleTestConnection = async () => {
     if (!formData.client_id || !formData.client_secret) {
       toast({
-        title: "Erro",
-        description: "Preencha o Client ID e Client Secret",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Preencha o Client ID e Client Secret',
+        variant: 'destructive',
       });
       return;
     }
 
     try {
       setTesting(true);
-      
+
       const { data, error } = await supabase.functions.invoke('bolt-test-connection', {
         body: {
           client_id: formData.client_id,
@@ -180,28 +190,28 @@ export const BoltIntegrationPanel: React.FC = () => {
 
       if (data.success) {
         toast({
-          title: "Conexão bem sucedida",
-          description: data.company?.company_name 
-            ? `Ligado a: ${data.company.company_name}` 
-            : "Credenciais válidas",
+          title: 'Conexão bem sucedida',
+          description: data.company?.company_name
+            ? `Ligado a: ${data.company.company_name}`
+            : 'Credenciais válidas',
         });
 
         // Actualizar nome da empresa se disponível
         if (data.company?.company_name) {
-          setFormData(prev => ({ ...prev, company_name: data.company.company_name }));
+          setFormData((prev) => ({ ...prev, company_name: data.company.company_name }));
         }
       } else {
         toast({
-          title: "Falha na conexão",
-          description: data.error || "Verifique as credenciais",
-          variant: "destructive",
+          title: 'Falha na conexão',
+          description: data.error || 'Verifique as credenciais',
+          variant: 'destructive',
         });
       }
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: error.message || "Não foi possível testar a conexão",
-        variant: "destructive",
+        title: 'Erro',
+        description: error.message || 'Não foi possível testar a conexão',
+        variant: 'destructive',
       });
     } finally {
       setTesting(false);
@@ -211,9 +221,9 @@ export const BoltIntegrationPanel: React.FC = () => {
   const handleSaveConfig = async () => {
     if (!formData.client_id || !formData.client_secret || !formData.company_id) {
       toast({
-        title: "Erro",
-        description: "Preencha todos os campos obrigatórios",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Preencha todos os campos obrigatórios',
+        variant: 'destructive',
       });
       return;
     }
@@ -238,9 +248,7 @@ export const BoltIntegrationPanel: React.FC = () => {
           .eq('id', config.id);
         error = result.error;
       } else {
-        const result = await supabase
-          .from('plataformas_configuracao')
-          .insert(configData);
+        const result = await supabase.from('plataformas_configuracao').insert(configData);
         error = result.error;
       }
 
@@ -250,16 +258,16 @@ export const BoltIntegrationPanel: React.FC = () => {
       // No individual cron jobs needed — just save sync_automatico flag
 
       toast({
-        title: "Sucesso",
-        description: "Configuração guardada com sucesso",
+        title: 'Sucesso',
+        description: 'Configuração guardada com sucesso',
       });
 
       fetchData();
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: error.message || "Não foi possível guardar a configuração",
-        variant: "destructive",
+        title: 'Erro',
+        description: error.message || 'Não foi possível guardar a configuração',
+        variant: 'destructive',
       });
     } finally {
       setSaving(false);
@@ -269,9 +277,9 @@ export const BoltIntegrationPanel: React.FC = () => {
   const handleSync = async () => {
     if (!config?.ativo) {
       toast({
-        title: "Erro",
-        description: "A integração não está activa",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'A integração não está activa',
+        variant: 'destructive',
       });
       return;
     }
@@ -280,7 +288,7 @@ export const BoltIntegrationPanel: React.FC = () => {
       setSyncing(true);
 
       const { data: userData } = await supabase.auth.getUser();
-      
+
       const { data, error } = await supabase.functions.invoke('bolt-sync', {
         body: {
           start_date: syncDates.start,
@@ -293,22 +301,22 @@ export const BoltIntegrationPanel: React.FC = () => {
 
       if (data.success) {
         toast({
-          title: "Sincronização concluída",
+          title: 'Sincronização concluída',
           description: data.message,
         });
         fetchData();
       } else {
         toast({
-          title: "Erro na sincronização",
+          title: 'Erro na sincronização',
           description: data.error,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: error.message || "Não foi possível sincronizar",
-        variant: "destructive",
+        title: 'Erro',
+        description: error.message || 'Não foi possível sincronizar',
+        variant: 'destructive',
       });
     } finally {
       setSyncing(false);
@@ -319,7 +327,7 @@ export const BoltIntegrationPanel: React.FC = () => {
     try {
       const { error } = await supabase
         .from('bolt_mapeamento_motoristas')
-        .update({ 
+        .update({
           motorista_id: motoristaId,
           auto_mapped: false,
         })
@@ -328,16 +336,16 @@ export const BoltIntegrationPanel: React.FC = () => {
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: "Mapeamento actualizado",
+        title: 'Sucesso',
+        description: 'Mapeamento actualizado',
       });
 
       fetchData();
     } catch (error: any) {
       toast({
-        title: "Erro",
+        title: 'Erro',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     }
   };
@@ -345,16 +353,16 @@ export const BoltIntegrationPanel: React.FC = () => {
   const fetchBoltDrivers = async () => {
     if (!config?.ativo) {
       toast({
-        title: "Erro",
-        description: "A integração não está activa",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'A integração não está activa',
+        variant: 'destructive',
       });
       return;
     }
 
     try {
       setFetchingDrivers(true);
-      
+
       const { data, error } = await supabase.functions.invoke('bolt-api', {
         body: { operation: 'getDrivers' },
       });
@@ -391,10 +399,10 @@ export const BoltIntegrationPanel: React.FC = () => {
                 'bolt-auto-map-drivers',
                 { body: { integracao_id: config.id } }
               );
-              
+
               if (autoMapData?.created > 0) {
                 toast({
-                  title: "Novos motoristas criados",
+                  title: 'Novos motoristas criados',
                   description: `${autoMapData.created} motoristas criados automaticamente via email`,
                 });
               }
@@ -409,21 +417,21 @@ export const BoltIntegrationPanel: React.FC = () => {
         }
 
         toast({
-          title: "Sucesso",
+          title: 'Sucesso',
           description: `${data.total || 0} motoristas encontrados e guardados`,
         });
       } else {
         toast({
-          title: "Erro",
-          description: data.error || "Erro ao buscar motoristas",
-          variant: "destructive",
+          title: 'Erro',
+          description: data.error || 'Erro ao buscar motoristas',
+          variant: 'destructive',
         });
       }
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: error.message || "Não foi possível buscar motoristas",
-        variant: "destructive",
+        title: 'Erro',
+        description: error.message || 'Não foi possível buscar motoristas',
+        variant: 'destructive',
       });
     } finally {
       setFetchingDrivers(false);
@@ -433,16 +441,16 @@ export const BoltIntegrationPanel: React.FC = () => {
   const fetchBoltVehicles = async () => {
     if (!config?.ativo) {
       toast({
-        title: "Erro",
-        description: "A integração não está activa",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'A integração não está activa',
+        variant: 'destructive',
       });
       return;
     }
 
     try {
       setFetchingVehicles(true);
-      
+
       const { data, error } = await supabase.functions.invoke('bolt-api', {
         body: { operation: 'getVehicles' },
       });
@@ -477,21 +485,21 @@ export const BoltIntegrationPanel: React.FC = () => {
         }
 
         toast({
-          title: "Sucesso",
+          title: 'Sucesso',
           description: `${data.total || 0} viaturas encontradas e guardadas`,
         });
       } else {
         toast({
-          title: "Erro",
-          description: data.error || "Erro ao buscar viaturas",
-          variant: "destructive",
+          title: 'Erro',
+          description: data.error || 'Erro ao buscar viaturas',
+          variant: 'destructive',
         });
       }
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: error.message || "Não foi possível buscar viaturas",
-        variant: "destructive",
+        title: 'Erro',
+        description: error.message || 'Não foi possível buscar viaturas',
+        variant: 'destructive',
       });
     } finally {
       setFetchingVehicles(false);
@@ -501,11 +509,15 @@ export const BoltIntegrationPanel: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'success':
-        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Sucesso</Badge>;
+        return (
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Sucesso</Badge>
+        );
       case 'error':
         return <Badge variant="destructive">Erro</Badge>;
       case 'partial':
-        return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Parcial</Badge>;
+        return (
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Parcial</Badge>
+        );
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -549,33 +561,34 @@ export const BoltIntegrationPanel: React.FC = () => {
           </div>
           {config?.ultimo_sync && (
             <div className="text-sm text-muted-foreground">
-              Última sincronização: {format(new Date(config.ultimo_sync), "dd/MM/yyyy HH:mm", { locale: pt })}
+              Última sincronização:{' '}
+              {format(new Date(config.ultimo_sync), 'dd/MM/yyyy HH:mm', { locale: pt })}
             </div>
           )}
         </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="config" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
-            <TabsTrigger value="config" className="flex items-center gap-2">
+          <TabsList className="flex w-full overflow-x-auto mb-6 h-auto">
+            <TabsTrigger value="config" className="flex items-center gap-1.5 shrink-0">
               <Settings className="h-4 w-4" />
-              Configuração
+              <span className="hidden xs:inline">Configuração</span>
             </TabsTrigger>
-            <TabsTrigger value="sync" className="flex items-center gap-2">
+            <TabsTrigger value="sync" className="flex items-center gap-1.5 shrink-0">
               <RefreshCw className="h-4 w-4" />
-              Sincronizar
+              <span className="hidden xs:inline">Sincronizar</span>
             </TabsTrigger>
-            <TabsTrigger value="boltdata" className="flex items-center gap-2">
+            <TabsTrigger value="boltdata" className="flex items-center gap-1.5 shrink-0">
               <Database className="h-4 w-4" />
-              Dados Bolt
+              <span className="hidden xs:inline">Dados Bolt</span>
             </TabsTrigger>
-            <TabsTrigger value="mapping" className="flex items-center gap-2">
+            <TabsTrigger value="mapping" className="flex items-center gap-1.5 shrink-0">
               <Users className="h-4 w-4" />
-              Mapeamento
+              <span className="hidden xs:inline">Mapeamento</span>
             </TabsTrigger>
-            <TabsTrigger value="logs" className="flex items-center gap-2">
+            <TabsTrigger value="logs" className="flex items-center gap-1.5 shrink-0">
               <History className="h-4 w-4" />
-              Histórico
+              <span className="hidden xs:inline">Histórico</span>
             </TabsTrigger>
           </TabsList>
 
@@ -587,7 +600,7 @@ export const BoltIntegrationPanel: React.FC = () => {
                 <Input
                   id="client_id"
                   value={formData.client_id}
-                  onChange={(e) => setFormData(prev => ({ ...prev, client_id: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, client_id: e.target.value }))}
                   placeholder="Introduza o Client ID da Bolt"
                 />
               </div>
@@ -599,7 +612,9 @@ export const BoltIntegrationPanel: React.FC = () => {
                     id="client_secret"
                     type={showSecret ? 'text' : 'password'}
                     value={formData.client_secret}
-                    onChange={(e) => setFormData(prev => ({ ...prev, client_secret: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, client_secret: e.target.value }))
+                    }
                     placeholder="Introduza o Client Secret da Bolt"
                   />
                   <Button
@@ -619,11 +634,10 @@ export const BoltIntegrationPanel: React.FC = () => {
                 <Input
                   id="company_id"
                   value={formData.company_id}
-                  onChange={(e) => setFormData(prev => ({ ...prev, company_id: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, company_id: e.target.value }))}
                   placeholder="ID da empresa na Bolt"
                 />
               </div>
-
             </div>
 
             <div className="flex items-center justify-between py-4 border-t border-border/50">
@@ -632,7 +646,9 @@ export const BoltIntegrationPanel: React.FC = () => {
                   <Switch
                     id="ativo"
                     checked={formData.ativo}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, ativo: checked }))}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, ativo: checked }))
+                    }
                   />
                   <Label htmlFor="ativo">Integração Activa</Label>
                 </div>
@@ -641,7 +657,9 @@ export const BoltIntegrationPanel: React.FC = () => {
                   <Switch
                     id="sync_auto"
                     checked={formData.sync_automatico}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, sync_automatico: checked }))}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, sync_automatico: checked }))
+                    }
                   />
                   <Label htmlFor="sync_auto">Sincronização Semanal (Segundas 00:00)</Label>
                 </div>
@@ -678,7 +696,7 @@ export const BoltIntegrationPanel: React.FC = () => {
                       id="start_date"
                       type="date"
                       value={syncDates.start}
-                      onChange={(e) => setSyncDates(prev => ({ ...prev, start: e.target.value }))}
+                      onChange={(e) => setSyncDates((prev) => ({ ...prev, start: e.target.value }))}
                     />
                   </div>
                   <div className="space-y-2">
@@ -687,7 +705,7 @@ export const BoltIntegrationPanel: React.FC = () => {
                       id="end_date"
                       type="date"
                       value={syncDates.end}
-                      onChange={(e) => setSyncDates(prev => ({ ...prev, end: e.target.value }))}
+                      onChange={(e) => setSyncDates((prev) => ({ ...prev, end: e.target.value }))}
                     />
                   </div>
                   <div className="flex items-end">
@@ -703,8 +721,8 @@ export const BoltIntegrationPanel: React.FC = () => {
                 </div>
 
                 <div className="text-sm text-muted-foreground">
-                  A sincronização irá importar todas as viagens no período seleccionado.
-                  Viagens já existentes serão actualizadas.
+                  A sincronização irá importar todas as viagens no período seleccionado. Viagens já
+                  existentes serão actualizadas.
                 </div>
               </>
             )}
@@ -850,7 +868,9 @@ export const BoltIntegrationPanel: React.FC = () => {
                       <TableCell>
                         <div>
                           <p className="font-medium">{m.driver_name || 'Sem nome'}</p>
-                          <code className="text-xs text-muted-foreground">{m.driver_uuid.slice(0, 8)}...</code>
+                          <code className="text-xs text-muted-foreground">
+                            {m.driver_uuid.slice(0, 8)}...
+                          </code>
                         </div>
                       </TableCell>
                       <TableCell>{m.driver_phone || '-'}</TableCell>
@@ -921,14 +941,16 @@ export const BoltIntegrationPanel: React.FC = () => {
                   {logs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="text-sm">
-                        {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", { locale: pt })}
+                        {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: pt })}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{log.tipo}</Badge>
                       </TableCell>
                       <TableCell>{getStatusBadge(log.status)}</TableCell>
                       <TableCell className="text-green-500">{log.viagens_novas || 0}</TableCell>
-                      <TableCell className="text-blue-500">{log.viagens_atualizadas || 0}</TableCell>
+                      <TableCell className="text-blue-500">
+                        {log.viagens_atualizadas || 0}
+                      </TableCell>
                       <TableCell className="text-red-500">{log.erros || 0}</TableCell>
                       <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">
                         {log.mensagem || '-'}

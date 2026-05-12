@@ -4,7 +4,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Loader2, Pencil, Plus, RefreshCw, Settings } from 'lucide-react';
 import type { IntegracaoConfig } from '../integracoes/types';
 import { ViaVerdeContaDialog } from './ViaVerdeContaDialog';
@@ -182,7 +189,9 @@ export const ViaVerdePanel: React.FC = () => {
             <div className="py-8 text-center text-muted-foreground">
               <Settings className="mx-auto mb-4 h-12 w-12 opacity-50" />
               <p>Ainda não existem contas Via Verde configuradas.</p>
-              <p className="text-sm">Clique em &quot;Nova Conta&quot; para adicionar a primeira conta.</p>
+              <p className="text-sm">
+                Clique em &quot;Nova Conta&quot; para adicionar a primeira conta.
+              </p>
             </div>
           ) : (
             <Table>
@@ -205,13 +214,16 @@ export const ViaVerdePanel: React.FC = () => {
                       <TableCell>
                         <div>
                           <p className="font-medium">{conta.nome_conta}</p>
-                          <p className="text-sm text-muted-foreground">{conta.ftp_host}:{conta.ftp_porta}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {conta.ftp_host}:{conta.ftp_porta}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>{conta.codigo_rac}</TableCell>
                       <TableCell>
                         <Badge variant={conta.ftp_ativo ? 'default' : 'secondary'}>
-                          {conta.ftp_protocolo.toUpperCase()} · {conta.ftp_ativo ? 'Activo' : 'Inactivo'}
+                          {conta.ftp_protocolo.toUpperCase()} ·{' '}
+                          {conta.ftp_ativo ? 'Activo' : 'Inactivo'}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -225,7 +237,11 @@ export const ViaVerdePanel: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleEditAccount(conta)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditAccount(conta)}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
                       </TableCell>

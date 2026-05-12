@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { 
-  DndContext, 
-  DragEndEvent, 
-  DragOverlay, 
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
   DragStartEvent,
   closestCenter,
   rectIntersection,
   pointerWithin,
   PointerSensor,
   useSensor,
-  useSensors
+  useSensors,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,34 +47,59 @@ interface Lead {
 }
 
 const statusColumns = [
-  { id: 'novo', title: 'Novos', color: 'from-blue-500/20 to-blue-600/20 border-blue-500/50', icon: '🆕' },
-  { id: 'contactado', title: 'Contactados', color: 'from-yellow-500/20 to-yellow-600/20 border-yellow-500/50', icon: '📞' },
-  { id: 'interessado', title: 'Interessados', color: 'from-green-500/20 to-green-600/20 border-green-500/50', icon: '✅' },
-  { id: 'convertido', title: 'Convertidos', color: 'from-purple-500/20 to-purple-600/20 border-purple-500/50', icon: '🎉' },
-  { id: 'perdido', title: 'Perdidos', color: 'from-red-500/20 to-red-600/20 border-red-500/50', icon: '❌' }
+  {
+    id: 'novo',
+    title: 'Novos',
+    color: 'from-blue-500/20 to-blue-600/20 border-blue-500/50',
+    icon: '🆕',
+  },
+  {
+    id: 'contactado',
+    title: 'Contactados',
+    color: 'from-yellow-500/20 to-yellow-600/20 border-yellow-500/50',
+    icon: '📞',
+  },
+  {
+    id: 'interessado',
+    title: 'Interessados',
+    color: 'from-green-500/20 to-green-600/20 border-green-500/50',
+    icon: '✅',
+  },
+  {
+    id: 'convertido',
+    title: 'Convertidos',
+    color: 'from-purple-500/20 to-purple-600/20 border-purple-500/50',
+    icon: '🎉',
+  },
+  {
+    id: 'perdido',
+    title: 'Perdidos',
+    color: 'from-red-500/20 to-red-600/20 border-red-500/50',
+    icon: '❌',
+  },
 ];
 
 const CRM = () => {
   const isMobile = useIsMobile();
   const [realtimePayload, setRealtimePayload] = useState<any>(null);
-  
+
   // Filtro de data padrão: início do mês até hoje
-  
+
   // Memorizar o callback para evitar reconexões constantes
   const handleRealtimeEvent = useCallback((payload: any) => {
     setRealtimePayload(payload);
   }, []);
-  
-  const { 
-    leads, 
-    loading, 
-    isConnected, 
+
+  const {
+    leads,
+    loading,
+    isConnected,
     lastActivity,
-    updateLead: updateLeadHook, 
-    deleteLead: deleteLeadHook, 
-    refetchLeads
+    updateLead: updateLeadHook,
+    deleteLead: deleteLeadHook,
+    refetchLeads,
   } = useRealTimeLeads(handleRealtimeEvent);
-  
+
   const { tagsMap, getTagsForFormulario } = useFormularioTags();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'lista'>(() => {
@@ -94,7 +119,7 @@ const CRM = () => {
     customStartDate: undefined,
     customEndDate: undefined,
     campaignTags: [],
-    userId: 'todos'
+    userId: 'todos',
   });
   const [userLeadHistory, setUserLeadHistory] = useState<Record<string, string[]>>({});
   const { toast } = useToast();
@@ -113,10 +138,13 @@ const CRM = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
         if (userError || !user) {
           console.error('Erro ao obter usuário atual:', userError);
-          setFilters(prev => ({ ...prev, userId: 'todos' }));
+          setFilters((prev) => ({ ...prev, userId: 'todos' }));
           return;
         }
 
@@ -128,17 +156,16 @@ const CRM = () => {
 
         if (profileError || !profile?.nome) {
           console.error('Erro ao obter perfil do usuário:', profileError);
-          setFilters(prev => ({ ...prev, userId: 'todos' }));
+          setFilters((prev) => ({ ...prev, userId: 'todos' }));
           return;
         }
 
         setCurrentUserName(profile.nome);
         // Não aplicar filtro automático pelo usuário logado
-        setFilters(prev => ({ ...prev, userId: 'todos' }));
-        console.log(`CRM iniciado para "${profile.nome}" sem filtro de usuário`);
+        setFilters((prev) => ({ ...prev, userId: 'todos' }));
       } catch (error) {
         console.error('Erro ao configurar filtro inicial:', error);
-        setFilters(prev => ({ ...prev, userId: 'todos' }));
+        setFilters((prev) => ({ ...prev, userId: 'todos' }));
       }
     };
 
@@ -167,8 +194,8 @@ const CRM = () => {
 
       // Group lead IDs by user NAME (not ID)
       const history: Record<string, string[]> = {};
-      data?.forEach(record => {
-        const userProfile = profiles?.find(p => p.id === record.alterado_por);
+      data?.forEach((record) => {
+        const userProfile = profiles?.find((p) => p.id === record.alterado_por);
         if (userProfile?.nome) {
           const userName = userProfile.nome;
           if (!history[userName]) {
@@ -193,64 +220,58 @@ const CRM = () => {
     // Search filter
     if (filters.search) {
       const searchNormalized = normalizeString(filters.search);
-      result = result.filter(lead => 
-        normalizeString(lead.nome).includes(searchNormalized) ||
-        normalizeString(lead.email).includes(searchNormalized) ||
-        (lead.telefone && normalizeString(lead.telefone).includes(searchNormalized))
+      result = result.filter(
+        (lead) =>
+          normalizeString(lead.nome).includes(searchNormalized) ||
+          normalizeString(lead.email).includes(searchNormalized) ||
+          (lead.telefone && normalizeString(lead.telefone).includes(searchNormalized))
       );
     }
 
     // Status filter
     if (filters.status !== 'todos') {
-      result = result.filter(lead => lead.status === filters.status);
+      result = result.filter((lead) => lead.status === filters.status);
     }
 
     // Campaign tags filter
     if (filters.campaignTags.length > 0) {
-      result = result.filter(lead => {
+      result = result.filter((lead) => {
         if (!lead.campaign_tags || lead.campaign_tags.length === 0) return false;
-        return filters.campaignTags.some(filterTag => 
-          lead.campaign_tags!.includes(filterTag)
-        );
+        return filters.campaignTags.some((filterTag) => lead.campaign_tags!.includes(filterTag));
       });
     }
 
     // User filter - inclui leads atribuídos ao usuário E leads sem gestor (disponíveis)
     if (filters.userId !== 'todos') {
-      console.log(`🎯 Filtrando por usuário: "${filters.userId}"`);
-      result = result.filter(lead => 
-        lead.gestor_responsavel === filters.userId || 
-        !lead.gestor_responsavel || 
-        lead.gestor_responsavel === ''
+      result = result.filter(
+        (lead) =>
+          lead.gestor_responsavel === filters.userId ||
+          !lead.gestor_responsavel ||
+          lead.gestor_responsavel === ''
       );
     }
 
     // Date range filter
     if (filters.customStartDate || filters.customEndDate) {
-      console.log('📅 Filtrando por data:', {
-        startDate: filters.customStartDate,
-        endDate: filters.customEndDate
-      });
-      
-      result = result.filter(lead => {
+      result = result.filter((lead) => {
         const leadDate = new Date(lead.created_at);
         const { customStartDate, customEndDate } = filters;
-        
+
         if (customStartDate && customEndDate) {
           // Filtrar entre duas datas
           const startOfDay = new Date(customStartDate);
           startOfDay.setHours(0, 0, 0, 0);
           const endOfDay = new Date(customEndDate);
           endOfDay.setHours(23, 59, 59, 999);
-          
+
           const isInRange = leadDate >= startOfDay && leadDate <= endOfDay;
           console.log('🔍 Lead:', lead.nome, {
             leadDate: leadDate.toISOString(),
             startOfDay: startOfDay.toISOString(),
             endOfDay: endOfDay.toISOString(),
-            isInRange
+            isInRange,
           });
-          
+
           return isInRange;
         } else if (customStartDate) {
           // Filtrar a partir de uma data
@@ -263,31 +284,33 @@ const CRM = () => {
           endOfDay.setHours(23, 59, 59, 999);
           return leadDate <= endOfDay;
         }
-        
+
         return true;
       });
-      
+
       console.log(`✅ Leads após filtro de data: ${result.length}`);
     }
 
     return result;
   }, [leads, filters]);
 
-
   const updateLeadStatus = async (leadId: string, newStatus: string) => {
     try {
       // Buscar o lead atual para verificar se tem gestor
-      const currentLead = leads.find(lead => lead.id === leadId);
-      
-      let updateData: any = { 
-        status: newStatus, 
-        updated_at: new Date().toISOString() 
+      const currentLead = leads.find((lead) => lead.id === leadId);
+
+      let updateData: any = {
+        status: newStatus,
+        updated_at: new Date().toISOString(),
       };
 
       // Se o lead não tem gestor responsável, atribuir o usuário atual
       if (currentLead && !currentLead.gestor_responsavel) {
         try {
-          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          const {
+            data: { user },
+            error: userError,
+          } = await supabase.auth.getUser();
           if (!userError && user) {
             const { data: profile, error: profileError } = await supabase
               .from('profiles')
@@ -306,36 +329,33 @@ const CRM = () => {
         }
       }
 
-      const { error } = await supabase
-        .from('leads_dasprent')
-        .update(updateData)
-        .eq('id', leadId);
+      const { error } = await supabase.from('leads_dasprent').update(updateData).eq('id', leadId);
 
       updateLeadHook({ id: leadId, ...updateData });
 
       toast({
-        title: "Sucesso",
-        description: "Status do lead atualizado"
+        title: 'Sucesso',
+        description: 'Status do lead atualizado',
       });
     } catch (error) {
       console.error('Error updating lead status:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao atualizar status do lead",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao atualizar status do lead',
+        variant: 'destructive',
       });
     }
   };
 
   const updateLead = async (updatedLead: Partial<Lead> & { id: string }) => {
     console.log('CRM updateLead - updatedLead received:', updatedLead);
-    
+
     try {
       const { error } = await supabase
         .from('leads_dasprent')
-        .update({ 
-          ...updatedLead, 
-          updated_at: new Date().toISOString() 
+        .update({
+          ...updatedLead,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', updatedLead.id);
 
@@ -344,15 +364,15 @@ const CRM = () => {
       updateLeadHook(updatedLead);
 
       toast({
-        title: "Sucesso",
-        description: "Lead atualizado com sucesso"
+        title: 'Sucesso',
+        description: 'Lead atualizado com sucesso',
       });
     } catch (error) {
       console.error('CRM updateLead - Error updating lead:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao atualizar lead",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao atualizar lead',
+        variant: 'destructive',
       });
     }
   };
@@ -360,59 +380,55 @@ const CRM = () => {
   const assignGestorsFromHistory = async () => {
     try {
       console.log('🔄 Executando atribuição automática de gestores...');
-      
+
       const { data, error } = await supabase.rpc('execute_gestor_assignment');
-      
+
       if (error) throw error;
-      
+
       const updatedCount = data || 0;
-      
+
       if (updatedCount > 0) {
         // Recarregar a lista de leads
         await refetchLeads();
-        
+
         toast({
-          title: "✅ Atribuição Concluída",
+          title: '✅ Atribuição Concluída',
           description: `${updatedCount} leads foram atualizados com gestores baseado no histórico`,
         });
-        
+
         console.log(`🎉 ${updatedCount} leads atualizados com gestores!`);
       } else {
         toast({
-          title: "ℹ️ Nenhuma alteração",
-          description: "Todos os leads já têm gestores atribuídos ou não há histórico disponível",
+          title: 'ℹ️ Nenhuma alteração',
+          description: 'Todos os leads já têm gestores atribuídos ou não há histórico disponível',
         });
       }
-
     } catch (error) {
       console.error('❌ Erro ao executar atribuição:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao atribuir gestores baseado no histórico",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao atribuir gestores baseado no histórico',
+        variant: 'destructive',
       });
     }
   };
 
   const deleteLead = async (leadId: string) => {
     try {
-      const { error } = await supabase
-        .from('leads_dasprent')
-        .delete()
-        .eq('id', leadId);
+      const { error } = await supabase.from('leads_dasprent').delete().eq('id', leadId);
 
       deleteLeadHook(leadId);
 
       toast({
-        title: "Sucesso",
-        description: "Lead excluído com sucesso"
+        title: 'Sucesso',
+        description: 'Lead excluído com sucesso',
       });
     } catch (error) {
       console.error('Error deleting lead:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao excluir lead",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao excluir lead',
+        variant: 'destructive',
       });
     }
   };
@@ -423,13 +439,13 @@ const CRM = () => {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    console.log('Drag ended:', { 
-      active: event.active.id, 
+    console.log('Drag ended:', {
+      active: event.active.id,
       over: event.over?.id,
-      overData: event.over?.data?.current 
+      overData: event.over?.data?.current,
     });
     const { active, over } = event;
-    
+
     if (!over) {
       console.log('No drop target found');
       setActiveId(null);
@@ -439,12 +455,12 @@ const CRM = () => {
     const leadId = active.id as string;
     const overElement = over.id as string;
     const overData = over.data?.current;
-    
+
     console.log('Processing drop:', { leadId, overElement, overType: overData?.type });
-    
+
     let newStatus: string;
-    const validStatuses = statusColumns.map(col => col.id);
-    
+    const validStatuses = statusColumns.map((col) => col.id);
+
     // Prioritize column drops over lead drops
     if (overData?.type === 'column' && validStatuses.includes(overElement)) {
       // Dropped directly on a column
@@ -456,7 +472,7 @@ const CRM = () => {
       newStatus = overElement;
     } else {
       // Dropped on another lead, find which column it belongs to
-      const targetLead = filteredLeads.find(lead => lead.id === overElement);
+      const targetLead = filteredLeads.find((lead) => lead.id === overElement);
       if (targetLead) {
         console.log('Dropped on lead:', targetLead.nome, 'with status:', targetLead.status);
         newStatus = targetLead.status;
@@ -468,9 +484,11 @@ const CRM = () => {
     }
 
     // Only update if status actually changed
-    const currentLead = leads.find(lead => lead.id === leadId);
+    const currentLead = leads.find((lead) => lead.id === leadId);
     if (currentLead && currentLead.status !== newStatus) {
-      console.log(`Updating lead ${leadId} (${currentLead.nome}) from ${currentLead.status} to ${newStatus}`);
+      console.log(
+        `Updating lead ${leadId} (${currentLead.nome}) from ${currentLead.status} to ${newStatus}`
+      );
       updateLeadStatus(leadId, newStatus);
     } else {
       console.log('No status change needed or lead not found');
@@ -486,20 +504,25 @@ const CRM = () => {
       // Calculate local statistics
       const totalLeads = userLeads.length;
       const statusCounts = {
-        novo: userLeads.filter(lead => lead.status === 'novo').length,
-        contactado: userLeads.filter(lead => lead.status === 'contactado').length,
-        interessado: userLeads.filter(lead => lead.status === 'interessado').length,
-        convertido: userLeads.filter(lead => lead.status === 'convertido').length,
-        perdido: userLeads.filter(lead => lead.status === 'perdido').length,
+        novo: userLeads.filter((lead) => lead.status === 'novo').length,
+        contactado: userLeads.filter((lead) => lead.status === 'contactado').length,
+        interessado: userLeads.filter((lead) => lead.status === 'interessado').length,
+        convertido: userLeads.filter((lead) => lead.status === 'convertido').length,
+        perdido: userLeads.filter((lead) => lead.status === 'perdido').length,
       };
 
-      const conversionRate = totalLeads > 0 ? ((statusCounts.convertido / totalLeads) * 100).toFixed(1) : '0';
-      const interestRate = totalLeads > 0 ? (((statusCounts.interessado + statusCounts.convertido) / totalLeads) * 100).toFixed(1) : '0';
-      const lossRate = totalLeads > 0 ? ((statusCounts.perdido / totalLeads) * 100).toFixed(1) : '0';
+      const conversionRate =
+        totalLeads > 0 ? ((statusCounts.convertido / totalLeads) * 100).toFixed(1) : '0';
+      const interestRate =
+        totalLeads > 0
+          ? (((statusCounts.interessado + statusCounts.convertido) / totalLeads) * 100).toFixed(1)
+          : '0';
+      const lossRate =
+        totalLeads > 0 ? ((statusCounts.perdido / totalLeads) * 100).toFixed(1) : '0';
 
       // Calculate campaign tags
       const campaignTags: Record<string, number> = {};
-      userLeads.forEach(lead => {
+      userLeads.forEach((lead) => {
         if (lead.campaign_tags) {
           lead.campaign_tags.forEach((tag: string) => {
             campaignTags[tag] = (campaignTags[tag] || 0) + 1;
@@ -507,11 +530,11 @@ const CRM = () => {
         }
       });
 
-      const dateRange = `${new Date(Math.min(...userLeads.map(l => new Date(l.created_at).getTime()))).toLocaleDateString('pt-BR')} - ${new Date().toLocaleDateString('pt-BR')}`;
+      const dateRange = `${new Date(Math.min(...userLeads.map((l) => new Date(l.created_at).getTime()))).toLocaleDateString('pt-BR')} - ${new Date().toLocaleDateString('pt-BR')}`;
 
       // Create simple HTML report without external dependencies
       const reportWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes');
-      
+
       if (reportWindow) {
         reportWindow.document.write(`
           <!DOCTYPE html>
@@ -1028,7 +1051,7 @@ const CRM = () => {
           </html>
         `);
         reportWindow.document.close();
-        
+
         console.log('Report window opened successfully');
       } else {
         console.error('Failed to open report window');
@@ -1036,24 +1059,24 @@ const CRM = () => {
       }
 
       toast({
-        title: "Sucesso",
-        description: "Relatório gerado com sucesso!"
+        title: 'Sucesso',
+        description: 'Relatório gerado com sucesso!',
       });
     } catch (error) {
       console.error('Erro ao gerar relatório:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao gerar o relatório: " + (error?.message || error),
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao gerar o relatório: ' + (error?.message || error),
+        variant: 'destructive',
       });
     }
   };
 
   const getLeadsByStatus = (status: string) => {
-    return filteredLeads.filter(lead => lead.status === status);
+    return filteredLeads.filter((lead) => lead.status === status);
   };
 
-  const activeLead = activeId ? leads.find(lead => lead.id === activeId) : null;
+  const activeLead = activeId ? leads.find((lead) => lead.id === activeId) : null;
 
   if (loading) {
     return (
@@ -1075,117 +1098,115 @@ const CRM = () => {
       <div className="absolute inset-0 bg-grid-foreground/[0.02] bg-[size:60px_60px] hidden dark:block" />
 
       <div className="relative z-10 p-6">
-          <div className="max-w-7xl mx-auto">
-
-            {/* Stickable CRM Header: Stats and Filters */}
-            <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 py-4 -mt-4 mb-4 space-y-4">
-              <div className="flex justify-between items-center px-1">
-                <CRMViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-                <RealtimeStatus isConnected={isConnected} lastActivity={lastActivity} />
-              </div>
-
-              <CRMStats leads={leads} statusColumns={statusColumns} />
-
-              <CRMFilters
-                filters={filters}
-                onFilterChange={setFilters}
-                statusColumns={statusColumns}
-                totalLeads={leads.length}
-                filteredCount={filteredLeads.length}
-                availableTags={availableTags}
-                onGenerateReport={generateReport}
-                filteredLeads={filteredLeads}
-              />
+        <div className="max-w-7xl mx-auto">
+          {/* Stickable CRM Header: Stats and Filters */}
+          <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 py-4 -mt-4 mb-4 space-y-4">
+            <div className="flex justify-between items-center px-1">
+              <CRMViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+              <RealtimeStatus isConnected={isConnected} lastActivity={lastActivity} />
             </div>
 
-            {/* Kanban Board - Mobile with Tabs, Desktop with Drag & Drop */}
-            {viewMode === 'lista' ? (
-              <CRMListView
-                leads={filteredLeads}
-                statusColumns={statusColumns}
-                getTagsForFormulario={getTagsForFormulario}
-              />
-            ) : isMobile ? (
-              <Tabs defaultValue="novo" className="w-full">
-                <TabsList className="grid w-full grid-cols-5 mb-4">
-                  {statusColumns.map((column) => (
-                    <TabsTrigger key={column.id} value={column.id} className="text-xs px-2">
-                      {column.icon}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
+            <CRMStats leads={leads} statusColumns={statusColumns} />
+
+            <CRMFilters
+              filters={filters}
+              onFilterChange={setFilters}
+              statusColumns={statusColumns}
+              totalLeads={leads.length}
+              filteredCount={filteredLeads.length}
+              availableTags={availableTags}
+              onGenerateReport={generateReport}
+              filteredLeads={filteredLeads}
+            />
+          </div>
+
+          {/* Kanban Board - Mobile with Tabs, Desktop with Drag & Drop */}
+          {viewMode === 'lista' ? (
+            <CRMListView
+              leads={filteredLeads}
+              statusColumns={statusColumns}
+              getTagsForFormulario={getTagsForFormulario}
+            />
+          ) : isMobile ? (
+            <Tabs defaultValue="novo" className="w-full">
+              <TabsList className="grid w-full grid-cols-5 mb-4">
                 {statusColumns.map((column) => (
-                  <TabsContent key={column.id} value={column.id} className="mt-0">
-                    <ColumnContainer
-                      key={column.id}
-                      id={column.id}
-                      title={column.title}
-                      color={column.color}
-                      icon={column.icon}
-                      count={getLeadsByStatus(column.id).length}
-                    >
-                      <SortableContext
-                        items={getLeadsByStatus(column.id).map(lead => lead.id)}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        {getLeadsByStatus(column.id).map((lead) => (
-                          <LeadCard
-                            key={lead.id}
-                            lead={lead}
-                            customTags={getTagsForFormulario(lead.formulario_id)}
-                          />
-                        ))}
-                      </SortableContext>
-                    </ColumnContainer>
-                  </TabsContent>
+                  <TabsTrigger key={column.id} value={column.id} className="text-xs px-2">
+                    {column.icon}
+                  </TabsTrigger>
                 ))}
-              </Tabs>
-            ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={pointerWithin}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mt-8">
-                  {statusColumns.map((column) => (
-                    <ColumnContainer
-                      key={column.id}
-                      id={column.id}
-                      title={column.title}
-                      color={column.color}
-                      icon={column.icon}
-                      count={getLeadsByStatus(column.id).length}
+              </TabsList>
+              {statusColumns.map((column) => (
+                <TabsContent key={column.id} value={column.id} className="mt-0">
+                  <ColumnContainer
+                    key={column.id}
+                    id={column.id}
+                    title={column.title}
+                    color={column.color}
+                    icon={column.icon}
+                    count={getLeadsByStatus(column.id).length}
+                  >
+                    <SortableContext
+                      items={getLeadsByStatus(column.id).map((lead) => lead.id)}
+                      strategy={verticalListSortingStrategy}
                     >
-                      <SortableContext
-                        items={getLeadsByStatus(column.id).map(lead => lead.id)}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        {getLeadsByStatus(column.id).map((lead) => (
-                          <LeadCard
-                            key={lead.id}
-                            lead={lead}
-                            customTags={getTagsForFormulario(lead.formulario_id)}
-                          />
-                        ))}
-                      </SortableContext>
-                    </ColumnContainer>
-                  ))}
-                </div>
+                      {getLeadsByStatus(column.id).map((lead) => (
+                        <LeadCard
+                          key={lead.id}
+                          lead={lead}
+                          customTags={getTagsForFormulario(lead.formulario_id)}
+                        />
+                      ))}
+                    </SortableContext>
+                  </ColumnContainer>
+                </TabsContent>
+              ))}
+            </Tabs>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={pointerWithin}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mt-8">
+                {statusColumns.map((column) => (
+                  <ColumnContainer
+                    key={column.id}
+                    id={column.id}
+                    title={column.title}
+                    color={column.color}
+                    icon={column.icon}
+                    count={getLeadsByStatus(column.id).length}
+                  >
+                    <SortableContext
+                      items={getLeadsByStatus(column.id).map((lead) => lead.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {getLeadsByStatus(column.id).map((lead) => (
+                        <LeadCard
+                          key={lead.id}
+                          lead={lead}
+                          customTags={getTagsForFormulario(lead.formulario_id)}
+                        />
+                      ))}
+                    </SortableContext>
+                  </ColumnContainer>
+                ))}
+              </div>
 
-                <DragOverlay>
-                  {activeLead && (
-                    <div className="rotate-3 scale-105">
-                      <LeadCard
-                        lead={activeLead}
-                        customTags={getTagsForFormulario(activeLead.formulario_id)}
-                      />
-                    </div>
-                  )}
-                </DragOverlay>
-              </DndContext>
-            )}
-
+              <DragOverlay>
+                {activeLead && (
+                  <div className="rotate-3 scale-105">
+                    <LeadCard
+                      lead={activeLead}
+                      customTags={getTagsForFormulario(activeLead.formulario_id)}
+                    />
+                  </div>
+                )}
+              </DragOverlay>
+            </DndContext>
+          )}
         </div>
       </div>
     </div>

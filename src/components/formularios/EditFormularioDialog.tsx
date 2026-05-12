@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -35,14 +34,14 @@ export const EditFormularioDialog: React.FC<EditFormularioDialogProps> = ({
   formulario,
   isOpen,
   onClose,
-  onSave
+  onSave,
 }) => {
   const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
     ativo: true,
     campanhas: [] as string[],
-    campos: [] as FormField[]
+    campos: [] as FormField[],
   });
   const [activeTab, setActiveTab] = useState('geral');
   const { availableTags } = useCampaignTags();
@@ -54,7 +53,7 @@ export const EditFormularioDialog: React.FC<EditFormularioDialogProps> = ({
         descricao: formulario.descricao || '',
         ativo: formulario.ativo,
         campanhas: formulario.campanhas || [],
-        campos: formulario.campos || []
+        campos: formulario.campos || [],
       });
     }
   }, [formulario]);
@@ -84,36 +83,49 @@ export const EditFormularioDialog: React.FC<EditFormularioDialogProps> = ({
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-gray-800 border-gray-700">
-            <TabsTrigger value="geral" className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
+            <TabsTrigger
+              value="geral"
+              className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black"
+            >
               Informações Gerais
             </TabsTrigger>
-            <TabsTrigger value="campos" className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
+            <TabsTrigger
+              value="campos"
+              className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black"
+            >
               Campos do Formulário
             </TabsTrigger>
-            <TabsTrigger value="campanhas" className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
+            <TabsTrigger
+              value="campanhas"
+              className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black"
+            >
               Campanhas
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="geral" className="space-y-6 pt-4">
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="nome" className="text-gray-300">Nome do Formulário *</Label>
+                <Label htmlFor="nome" className="text-gray-300">
+                  Nome do Formulário *
+                </Label>
                 <Input
                   id="nome"
                   value={formData.nome}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
                   className="bg-gray-800 border-gray-600 text-white"
                   placeholder="Ex: Formulário Facebook Ads"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="descricao" className="text-gray-300">Descrição</Label>
+                <Label htmlFor="descricao" className="text-gray-300">
+                  Descrição
+                </Label>
                 <Textarea
                   id="descricao"
                   value={formData.descricao}
-                  onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
                   className="bg-gray-800 border-gray-600 text-white min-h-[80px]"
                   placeholder="Descreva o propósito deste formulário..."
                 />
@@ -128,7 +140,9 @@ export const EditFormularioDialog: React.FC<EditFormularioDialogProps> = ({
                 </div>
                 <Switch
                   checked={formData.ativo}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, ativo: checked }))}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, ativo: checked }))
+                  }
                   className="data-[state=checked]:bg-green-500"
                 />
               </div>
@@ -138,15 +152,15 @@ export const EditFormularioDialog: React.FC<EditFormularioDialogProps> = ({
           <TabsContent value="campos" className="pt-4">
             <DynamicFieldEditor
               fields={formData.campos}
-              onFieldsChange={(campos) => setFormData(prev => ({ ...prev, campos }))}
+              onFieldsChange={(campos) => setFormData((prev) => ({ ...prev, campos }))}
             />
           </TabsContent>
-          
+
           <TabsContent value="campanhas" className="pt-4">
             <div className="space-y-3">
               <CampaignTagsManager
                 tags={formData.campanhas}
-                onTagsChange={(tags) => setFormData(prev => ({ ...prev, campanhas: tags }))}
+                onTagsChange={(tags) => setFormData((prev) => ({ ...prev, campanhas: tags }))}
                 availableTags={availableTags}
                 placeholder="Adicionar campanha ao formulário..."
               />
@@ -155,7 +169,7 @@ export const EditFormularioDialog: React.FC<EditFormularioDialogProps> = ({
         </Tabs>
 
         <div className="flex gap-3 pt-4">
-          <Button 
+          <Button
             onClick={handleSave}
             disabled={!formData.nome.trim()}
             className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-medium"
@@ -163,9 +177,9 @@ export const EditFormularioDialog: React.FC<EditFormularioDialogProps> = ({
             <Save className="h-4 w-4 mr-2" />
             Salvar Alterações
           </Button>
-          <Button 
+          <Button
             onClick={onClose}
-            variant="outline" 
+            variant="outline"
             className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
           >
             <X className="h-4 w-4 mr-2" />

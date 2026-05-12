@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -8,13 +8,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
-import { Eye, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { ReciboPreviewDialog } from "./ReciboPreviewDialog";
+} from '@/components/ui/table';
+import { Card, CardContent } from '@/components/ui/card';
+import { Eye, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { ReciboPreviewDialog } from './ReciboPreviewDialog';
 
 interface Recibo {
   id: string;
@@ -45,10 +45,12 @@ export function RecibosTable({ recibos, onReciboUpdated }: RecibosTableProps) {
   const [previewRecibo, setPreviewRecibo] = useState<Recibo | null>(null);
 
   const formatCurrency = (value: number | null) =>
-    value ? new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value) : "—";
+    value
+      ? new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value)
+      : '—';
 
   const formatWeek = (dateStr: string | null) => {
-    if (!dateStr) return "N/A";
+    if (!dateStr) return 'N/A';
     const date = new Date(dateStr);
     const endDate = new Date(date);
     endDate.setDate(endDate.getDate() + 6);
@@ -56,25 +58,29 @@ export function RecibosTable({ recibos, onReciboUpdated }: RecibosTableProps) {
   };
 
   const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "—";
+    if (!dateStr) return '—';
     return new Date(dateStr).toLocaleDateString('pt-PT', {
       day: '2-digit',
       month: '2-digit',
       year: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   const getStatusBadge = (status: string | null) => {
     switch (status) {
       case 'validado':
-        return <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Validado</Badge>;
+        return (
+          <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Validado</Badge>
+        );
       case 'rejeitado':
         return <Badge className="bg-red-500/10 text-red-500 border-red-500/20">Recusado</Badge>;
       case 'submetido':
       default:
-        return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Pendente</Badge>;
+        return (
+          <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Pendente</Badge>
+        );
     }
   };
 
@@ -82,20 +88,20 @@ export function RecibosTable({ recibos, onReciboUpdated }: RecibosTableProps) {
     setLoadingAction(id + '-validar');
     try {
       const { error } = await supabase
-        .from("motorista_recibos")
-        .update({ 
+        .from('motorista_recibos')
+        .update({
           status: 'validado',
           data_validacao: new Date().toISOString(),
-          validado_por: (await supabase.auth.getUser()).data.user?.id
+          validado_por: (await supabase.auth.getUser()).data.user?.id,
         })
-        .eq("id", id);
+        .eq('id', id);
 
       if (error) throw error;
-      toast.success("Recibo validado com sucesso");
+      toast.success('Recibo validado com sucesso');
       onReciboUpdated();
     } catch (error) {
-      console.error("Erro ao validar:", error);
-      toast.error("Erro ao validar recibo");
+      console.error('Erro ao validar:', error);
+      toast.error('Erro ao validar recibo');
     } finally {
       setLoadingAction(null);
     }
@@ -105,20 +111,20 @@ export function RecibosTable({ recibos, onReciboUpdated }: RecibosTableProps) {
     setLoadingAction(id + '-rejeitar');
     try {
       const { error } = await supabase
-        .from("motorista_recibos")
-        .update({ 
+        .from('motorista_recibos')
+        .update({
           status: 'rejeitado',
           data_validacao: new Date().toISOString(),
-          validado_por: (await supabase.auth.getUser()).data.user?.id
+          validado_por: (await supabase.auth.getUser()).data.user?.id,
         })
-        .eq("id", id);
+        .eq('id', id);
 
       if (error) throw error;
-      toast.success("Recibo recusado");
+      toast.success('Recibo recusado');
       onReciboUpdated();
     } catch (error) {
-      console.error("Erro ao rejeitar:", error);
-      toast.error("Erro ao recusar recibo");
+      console.error('Erro ao rejeitar:', error);
+      toast.error('Erro ao recusar recibo');
     } finally {
       setLoadingAction(null);
     }
@@ -141,16 +147,14 @@ export function RecibosTable({ recibos, onReciboUpdated }: RecibosTableProps) {
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-medium">
-                        #{String(recibo.codigo).padStart(4, '0')}
-                      </p>
+                      <p className="font-medium">#{String(recibo.codigo).padStart(4, '0')}</p>
                       <p className="text-sm text-muted-foreground">
-                        {recibo.motoristas_ativos?.nome || "Motorista desconhecido"}
+                        {recibo.motoristas_ativos?.nome || 'Motorista desconhecido'}
                       </p>
                     </div>
                     {getStatusBadge(recibo.status)}
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <p className="text-muted-foreground">Semana</p>
@@ -218,10 +222,14 @@ export function RecibosTable({ recibos, onReciboUpdated }: RecibosTableProps) {
         <ReciboPreviewDialog
           open={!!previewRecibo}
           onOpenChange={(open) => !open && setPreviewRecibo(null)}
-          recibo={previewRecibo ? {
-            ...previewRecibo,
-            motorista_nome: previewRecibo.motoristas_ativos?.nome
-          } : null}
+          recibo={
+            previewRecibo
+              ? {
+                  ...previewRecibo,
+                  motorista_nome: previewRecibo.motoristas_ativos?.nome,
+                }
+              : null
+          }
         />
       </>
     );
@@ -258,7 +266,7 @@ export function RecibosTable({ recibos, onReciboUpdated }: RecibosTableProps) {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{recibo.motoristas_ativos?.nome || "—"}</p>
+                      <p className="font-medium">{recibo.motoristas_ativos?.nome || '—'}</p>
                       <p className="text-xs text-muted-foreground">
                         #{String(recibo.motoristas_ativos?.codigo || 0).padStart(4, '0')}
                       </p>
@@ -326,10 +334,14 @@ export function RecibosTable({ recibos, onReciboUpdated }: RecibosTableProps) {
       <ReciboPreviewDialog
         open={!!previewRecibo}
         onOpenChange={(open) => !open && setPreviewRecibo(null)}
-        recibo={previewRecibo ? {
-          ...previewRecibo,
-          motorista_nome: previewRecibo.motoristas_ativos?.nome
-        } : null}
+        recibo={
+          previewRecibo
+            ? {
+                ...previewRecibo,
+                motorista_nome: previewRecibo.motoristas_ativos?.nome,
+              }
+            : null
+        }
       />
     </>
   );

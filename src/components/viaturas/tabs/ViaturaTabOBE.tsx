@@ -21,7 +21,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Save, Loader2, Upload, FileText, Eye, Trash2, Radio, CheckCircle2, AlertTriangle } from 'lucide-react';
+import {
+  Save,
+  Loader2,
+  Upload,
+  FileText,
+  Eye,
+  Trash2,
+  Radio,
+  CheckCircle2,
+  AlertTriangle,
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -148,14 +158,12 @@ export function ViaturaTabOBE({ viatura, onUpdate }: ViaturaTabOBEProps) {
 
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('viatura_documentos')
-          .insert({
-            viatura_id: viatura.id,
-            tipo_documento: 'contrato_obe',
-            ficheiro_url: fileName,
-            nome_ficheiro: file.name,
-          });
+        const { error } = await supabase.from('viatura_documentos').insert({
+          viatura_id: viatura.id,
+          tipo_documento: 'contrato_obe',
+          ficheiro_url: fileName,
+          nome_ficheiro: file.name,
+        });
 
         if (error) throw error;
       }
@@ -190,14 +198,9 @@ export function ViaturaTabOBE({ viatura, onUpdate }: ViaturaTabOBEProps) {
     if (!contratoOBE) return;
 
     try {
-      await supabase.storage
-        .from('viatura-documentos')
-        .remove([contratoOBE.ficheiro_url]);
+      await supabase.storage.from('viatura-documentos').remove([contratoOBE.ficheiro_url]);
 
-      const { error } = await supabase
-        .from('viatura_documentos')
-        .delete()
-        .eq('id', contratoOBE.id);
+      const { error } = await supabase.from('viatura_documentos').delete().eq('id', contratoOBE.id);
 
       if (error) throw error;
       toast.success('Contrato OBE removido com sucesso!');
@@ -210,11 +213,16 @@ export function ViaturaTabOBE({ viatura, onUpdate }: ViaturaTabOBEProps) {
 
   const getEstadoColor = (estado: string | null | undefined) => {
     switch (estado) {
-      case 'ativo': return 'bg-green-500/10 text-green-500 border-green-500/20';
-      case 'inativo': return 'bg-muted text-muted-foreground border-border';
-      case 'avariado': return 'bg-destructive/10 text-destructive border-destructive/20';
-      case 'sem_obe': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
-      default: return 'bg-muted text-muted-foreground border-border';
+      case 'ativo':
+        return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'inativo':
+        return 'bg-muted text-muted-foreground border-border';
+      case 'avariado':
+        return 'bg-destructive/10 text-destructive border-destructive/20';
+      case 'sem_obe':
+        return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
+      default:
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -269,7 +277,9 @@ export function ViaturaTabOBE({ viatura, onUpdate }: ViaturaTabOBEProps) {
                       </FormControl>
                       <SelectContent>
                         {OBE_ESTADOS.map((est) => (
-                          <SelectItem key={est.value} value={est.value}>{est.label}</SelectItem>
+                          <SelectItem key={est.value} value={est.value}>
+                            {est.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -300,7 +310,7 @@ export function ViaturaTabOBE({ viatura, onUpdate }: ViaturaTabOBEProps) {
                   <p className="font-mono font-medium">{viatura.obe_numero}</p>
                 </div>
                 <Badge variant="outline" className={getEstadoColor(viatura.obe_estado)}>
-                  {OBE_ESTADOS.find(e => e.value === viatura.obe_estado)?.label || 'N/D'}
+                  {OBE_ESTADOS.find((e) => e.value === viatura.obe_estado)?.label || 'N/D'}
                 </Badge>
               </div>
             </div>
@@ -332,7 +342,12 @@ export function ViaturaTabOBE({ viatura, onUpdate }: ViaturaTabOBEProps) {
                     <Eye className="h-4 w-4 mr-2" />
                     Visualizar
                   </Button>
-                  <Button variant="outline" size="sm" className="text-destructive" onClick={handleDeleteContrato}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={handleDeleteContrato}
+                  >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Remover
                   </Button>

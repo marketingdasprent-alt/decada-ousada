@@ -42,15 +42,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Loader2, 
-  Plus, 
-  Pencil, 
-  Trash2, 
-  Webhook, 
-  Play,
-  Settings,
-} from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Webhook, Play, Settings } from 'lucide-react';
 import { IntegracaoCard, type IntegracaoCardData } from './IntegracaoCard';
 import { IntegracaoDialog } from './IntegracaoDialog';
 import { IntegracaoDetailModal } from './IntegracaoDetailModal';
@@ -73,10 +65,22 @@ interface IntegracaoWebhook {
 }
 
 const EVENTOS_DISPONIVEIS = [
-  { value: 'ticket_criado', label: 'Ticket Criado', description: 'Quando um novo ticket de assistência é criado' },
-  { value: 'ticket_atualizado', label: 'Ticket Atualizado', description: 'Quando o status de um ticket é alterado' },
+  {
+    value: 'ticket_criado',
+    label: 'Ticket Criado',
+    description: 'Quando um novo ticket de assistência é criado',
+  },
+  {
+    value: 'ticket_atualizado',
+    label: 'Ticket Atualizado',
+    description: 'Quando o status de um ticket é alterado',
+  },
   { value: 'lead_criado', label: 'Lead Criado', description: 'Quando um novo lead é registado' },
-  { value: 'motorista_aprovado', label: 'Motorista Aprovado', description: 'Quando uma candidatura é aprovada' },
+  {
+    value: 'motorista_aprovado',
+    label: 'Motorista Aprovado',
+    description: 'Quando uma candidatura é aprovada',
+  },
 ];
 
 export const IntegracoesTab: React.FC = () => {
@@ -123,17 +127,14 @@ export const IntegracoesTab: React.FC = () => {
   const fetchAll = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch all integrations in parallel
       const [plataformasRes, webhooksRes] = await Promise.all([
         supabase
           .from('plataformas_configuracao')
           .select('*')
           .order('created_at', { ascending: false }),
-        supabase
-          .from('integracoes_webhooks')
-          .select('*')
-          .order('created_at', { ascending: false }),
+        supabase.from('integracoes_webhooks').select('*').order('created_at', { ascending: false }),
       ]);
 
       if (plataformasRes.error) throw plataformasRes.error;
@@ -144,7 +145,7 @@ export const IntegracoesTab: React.FC = () => {
       setWebhooks((webhooksRes.data || []) as IntegracaoWebhook[]);
 
       // Find Via Verde integração and fetch its contas
-      const vvIntegracao = integracoes.find(i => i.plataforma === 'via_verde');
+      const vvIntegracao = integracoes.find((i) => i.plataforma === 'via_verde');
       let vvContas: ViaVerdeConta[] = [];
       if (vvIntegracao) {
         setViaVerdeIntegracaoId(vvIntegracao.id);
@@ -177,11 +178,10 @@ export const IntegracoesTab: React.FC = () => {
 
     // Bolt, Uber & Robot integrations
     integracoes
-      .filter(i => i.plataforma === 'bolt' || i.plataforma === 'uber' || i.plataforma === 'robot')
-      .forEach(i => {
-        const lastActivity = i.plataforma === 'uber'
-          ? i.last_webhook_at ?? i.ultimo_sync
-          : i.ultimo_sync;
+      .filter((i) => i.plataforma === 'bolt' || i.plataforma === 'uber' || i.plataforma === 'robot')
+      .forEach((i) => {
+        const lastActivity =
+          i.plataforma === 'uber' ? (i.last_webhook_at ?? i.ultimo_sync) : i.ultimo_sync;
 
         // Robot with known target → show as platform type in UI
         const isUberRobot = i.plataforma === 'robot' && i.robot_target_platform === 'uber';
@@ -189,8 +189,15 @@ export const IntegracoesTab: React.FC = () => {
         const isBpRobot = i.plataforma === 'robot' && i.robot_target_platform === 'bp';
         const isRepsolRobot = i.plataforma === 'robot' && i.robot_target_platform === 'repsol';
         const isEdpRobot = i.plataforma === 'robot' && i.robot_target_platform === 'edp';
-        const isSimplifiedRobot = isUberRobot || isBoltRobot || isBpRobot || isRepsolRobot || isEdpRobot;
-        const displayType = isUberRobot ? 'uber' : isBoltRobot ? 'bolt' : (isBpRobot || isRepsolRobot || isEdpRobot) ? 'combustivel' : (i.plataforma as 'bolt' | 'uber' | 'robot');
+        const isSimplifiedRobot =
+          isUberRobot || isBoltRobot || isBpRobot || isRepsolRobot || isEdpRobot;
+        const displayType = isUberRobot
+          ? 'uber'
+          : isBoltRobot
+            ? 'bolt'
+            : isBpRobot || isRepsolRobot || isEdpRobot
+              ? 'combustivel'
+              : (i.plataforma as 'bolt' | 'uber' | 'robot');
 
         result.push({
           id: i.id,
@@ -200,22 +207,36 @@ export const IntegracoesTab: React.FC = () => {
           ultimoSync: lastActivity,
           username: i.client_id,
           password: i.client_secret,
-          connectionMode: isSimplifiedRobot ? 'api' : i.plataforma === 'uber' ? 'upload' : i.plataforma === 'robot' ? 'api' : 'api',
-          subLabel: i.plataforma === 'robot' && !isSimplifiedRobot ? (i as any).apify_actor_id || undefined : i.company_name || undefined,
+          connectionMode: isSimplifiedRobot
+            ? 'api'
+            : i.plataforma === 'uber'
+              ? 'upload'
+              : i.plataforma === 'robot'
+                ? 'api'
+                : 'api',
+          subLabel:
+            i.plataforma === 'robot' && !isSimplifiedRobot
+              ? (i as any).apify_actor_id || undefined
+              : i.company_name || undefined,
           rawData: i,
-          logoUrl: i.logo_url || (
-            isUberRobot ? '/images/logo-uber.png' : 
-            isBoltRobot ? '/images/logo-bolt.png' : 
-            isBpRobot ? '/images/logo-bp.png' : 
-            isRepsolRobot ? '/images/logo-repsol.png' :
-            isEdpRobot ? '/images/logo-edp.png' :
-            null
-          ),
+          logoUrl:
+            i.logo_url ||
+            (isUberRobot
+              ? '/images/logo-uber.png'
+              : isBoltRobot
+                ? '/images/logo-bolt.png'
+                : isBpRobot
+                  ? '/images/logo-bp.png'
+                  : isRepsolRobot
+                    ? '/images/logo-repsol.png'
+                    : isEdpRobot
+                      ? '/images/logo-edp.png'
+                      : null),
         });
       });
 
     // BP / Combustivel
-    const bpIntegracao = integracoes.find(i => i.plataforma === 'combustivel');
+    const bpIntegracao = integracoes.find((i) => i.plataforma === 'combustivel');
     if (bpIntegracao) {
       result.push({
         id: bpIntegracao.id,
@@ -232,7 +253,7 @@ export const IntegracoesTab: React.FC = () => {
     }
 
     // Via Verde contas
-    vvContas.forEach(conta => {
+    vvContas.forEach((conta) => {
       const contaActiva = conta.ftp_ativo || conta.sync_ativo;
       result.push({
         id: `vv-${conta.id}`,
@@ -294,22 +315,29 @@ export const IntegracoesTab: React.FC = () => {
   const handleExecuteRobot = async (card: IntegracaoCardData) => {
     const integracao = card.rawData as IntegracaoConfig;
     const id = integracao.id;
-    setExecutingRobots(prev => new Set(prev).add(id));
+    setExecutingRobots((prev) => new Set(prev).add(id));
     try {
       const { data, error } = await supabase.functions.invoke('robot-execute', {
         body: { integracao_id: id },
       });
       if (error) {
         let msg = error.message;
-        try { const body = await error.context?.json?.(); msg = body?.error || msg; } catch {}
+        try {
+          const body = await error.context?.json?.();
+          msg = body?.error || msg;
+        } catch {}
         throw new Error(msg);
       }
       if (!data?.success) throw new Error(data?.error || 'Erro desconhecido');
       toast({ title: 'Robot iniciado', description: `Run ID: ${data.run_id}` });
     } catch (error: any) {
-      toast({ title: 'Erro ao executar robot', description: error.message, variant: 'destructive' });
+      toast({
+        title: 'Erro ao executar robot',
+        description: error.message,
+        variant: 'destructive',
+      });
     } finally {
-      setExecutingRobots(prev => {
+      setExecutingRobots((prev) => {
         const next = new Set(prev);
         next.delete(id);
         return next;
@@ -337,11 +365,17 @@ export const IntegracoesTab: React.FC = () => {
 
   const handleSaveWebhook = async () => {
     if (!webhookFormData.nome || !webhookFormData.url || !webhookFormData.evento) {
-      toast({ title: 'Erro', description: 'Preencha todos os campos obrigatórios.', variant: 'destructive' });
+      toast({
+        title: 'Erro',
+        description: 'Preencha todos os campos obrigatórios.',
+        variant: 'destructive',
+      });
       return;
     }
 
-    try { new URL(webhookFormData.url); } catch {
+    try {
+      new URL(webhookFormData.url);
+    } catch {
       toast({ title: 'Erro', description: 'URL inválida.', variant: 'destructive' });
       return;
     }
@@ -362,22 +396,24 @@ export const IntegracoesTab: React.FC = () => {
         if (error) throw error;
         toast({ title: 'Sucesso', description: 'Webhook atualizado.' });
       } else {
-        const { error } = await supabase
-          .from('integracoes_webhooks')
-          .insert({
-            nome: webhookFormData.nome,
-            descricao: webhookFormData.descricao || null,
-            url: webhookFormData.url,
-            evento: webhookFormData.evento,
-            ativo: webhookFormData.ativo,
-          });
+        const { error } = await supabase.from('integracoes_webhooks').insert({
+          nome: webhookFormData.nome,
+          descricao: webhookFormData.descricao || null,
+          url: webhookFormData.url,
+          evento: webhookFormData.evento,
+          ativo: webhookFormData.ativo,
+        });
         if (error) throw error;
         toast({ title: 'Sucesso', description: 'Webhook criado.' });
       }
       setWebhookDialogOpen(false);
       fetchAll();
     } catch (error: any) {
-      toast({ title: 'Erro', description: error.message || 'Não foi possível guardar o webhook.', variant: 'destructive' });
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível guardar o webhook.',
+        variant: 'destructive',
+      });
     } finally {
       setSavingWebhook(false);
     }
@@ -386,7 +422,10 @@ export const IntegracoesTab: React.FC = () => {
   const handleDeleteWebhook = async () => {
     if (!selectedWebhook) return;
     try {
-      const { error } = await supabase.from('integracoes_webhooks').delete().eq('id', selectedWebhook.id);
+      const { error } = await supabase
+        .from('integracoes_webhooks')
+        .delete()
+        .eq('id', selectedWebhook.id);
       if (error) throw error;
       toast({ title: 'Sucesso', description: 'Webhook eliminado.' });
       setDeleteWebhookDialogOpen(false);
@@ -404,10 +443,17 @@ export const IntegracoesTab: React.FC = () => {
         .update({ ativo: !webhook.ativo })
         .eq('id', webhook.id);
       if (error) throw error;
-      setWebhooks(prev => prev.map(w => w.id === webhook.id ? { ...w, ativo: !w.ativo } : w));
-      toast({ title: 'Sucesso', description: `Webhook ${!webhook.ativo ? 'ativado' : 'desativado'}.` });
+      setWebhooks((prev) => prev.map((w) => (w.id === webhook.id ? { ...w, ativo: !w.ativo } : w)));
+      toast({
+        title: 'Sucesso',
+        description: `Webhook ${!webhook.ativo ? 'ativado' : 'desativado'}.`,
+      });
     } catch (error: any) {
-      toast({ title: 'Erro', description: 'Não foi possível alterar o estado.', variant: 'destructive' });
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível alterar o estado.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -417,15 +463,27 @@ export const IntegracoesTab: React.FC = () => {
       const { data, error } = await supabase.functions.invoke('send-webhook', {
         body: {
           evento: webhook.evento,
-          dados: { teste: true, mensagem: 'Este é um teste do webhook', webhook_nome: webhook.nome, timestamp: new Date().toISOString() },
+          dados: {
+            teste: true,
+            mensagem: 'Este é um teste do webhook',
+            webhook_nome: webhook.nome,
+            timestamp: new Date().toISOString(),
+          },
         },
       });
       if (error) throw error;
       const resultado = data?.resultados?.find((r: any) => r.webhook === webhook.nome);
       if (resultado?.success) {
-        toast({ title: 'Teste bem sucedido', description: `O webhook "${webhook.nome}" respondeu corretamente.` });
+        toast({
+          title: 'Teste bem sucedido',
+          description: `O webhook "${webhook.nome}" respondeu corretamente.`,
+        });
       } else {
-        toast({ title: 'Teste falhou', description: resultado?.error || 'Não respondeu corretamente.', variant: 'destructive' });
+        toast({
+          title: 'Teste falhou',
+          description: resultado?.error || 'Não respondeu corretamente.',
+          variant: 'destructive',
+        });
       }
     } catch (error: any) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
@@ -434,7 +492,8 @@ export const IntegracoesTab: React.FC = () => {
     }
   };
 
-  const getEventoLabel = (evento: string) => EVENTOS_DISPONIVEIS.find(e => e.value === evento)?.label || evento;
+  const getEventoLabel = (evento: string) =>
+    EVENTOS_DISPONIVEIS.find((e) => e.value === evento)?.label || evento;
 
   if (loading) {
     return (
@@ -450,15 +509,16 @@ export const IntegracoesTab: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Integrações</h2>
-          <p className="text-sm text-muted-foreground">
-            Gerir plataformas, contas e webhooks
-          </p>
+          <p className="text-sm text-muted-foreground">Gerir plataformas, contas e webhooks</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={fetchAll}>
             <Settings className="h-4 w-4" />
           </Button>
-          <Button onClick={() => setNewIntegracaoDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button
+            onClick={() => setNewIntegracaoDialogOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Adicionar plataforma
           </Button>
@@ -538,27 +598,54 @@ export const IntegracoesTab: React.FC = () => {
                     <TableCell>
                       <div>
                         <p className="font-medium">{webhook.nome}</p>
-                        {webhook.descricao && <p className="text-sm text-muted-foreground">{webhook.descricao}</p>}
+                        {webhook.descricao && (
+                          <p className="text-sm text-muted-foreground">{webhook.descricao}</p>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{getEventoLabel(webhook.evento)}</Badge>
                     </TableCell>
                     <TableCell>
-                      <code className="text-xs bg-muted px-2 py-1 rounded max-w-[200px] truncate block">{webhook.url}</code>
+                      <code className="text-xs bg-muted px-2 py-1 rounded max-w-[200px] truncate block">
+                        {webhook.url}
+                      </code>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Switch checked={webhook.ativo} onCheckedChange={() => handleToggleWebhookActive(webhook)} />
+                      <Switch
+                        checked={webhook.ativo}
+                        onCheckedChange={() => handleToggleWebhookActive(webhook)}
+                      />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleTestWebhook(webhook)} disabled={!webhook.ativo || testingWebhook === webhook.id}>
-                          {testingWebhook === webhook.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleTestWebhook(webhook)}
+                          disabled={!webhook.ativo || testingWebhook === webhook.id}
+                        >
+                          {testingWebhook === webhook.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Play className="h-4 w-4" />
+                          )}
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenWebhookDialog(webhook)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOpenWebhookDialog(webhook)}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => { setSelectedWebhook(webhook); setDeleteWebhookDialogOpen(true); }}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedWebhook(webhook);
+                            setDeleteWebhookDialogOpen(true);
+                          }}
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -607,20 +694,46 @@ export const IntegracoesTab: React.FC = () => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="wh-nome">Nome *</Label>
-              <Input id="wh-nome" placeholder="Ex: n8n Tickets" value={webhookFormData.nome} onChange={(e) => setWebhookFormData(prev => ({ ...prev, nome: e.target.value }))} />
+              <Input
+                id="wh-nome"
+                placeholder="Ex: n8n Tickets"
+                value={webhookFormData.nome}
+                onChange={(e) => setWebhookFormData((prev) => ({ ...prev, nome: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="wh-descricao">Descrição</Label>
-              <Textarea id="wh-descricao" placeholder="Descrição opcional..." value={webhookFormData.descricao} onChange={(e) => setWebhookFormData(prev => ({ ...prev, descricao: e.target.value }))} rows={2} />
+              <Textarea
+                id="wh-descricao"
+                placeholder="Descrição opcional..."
+                value={webhookFormData.descricao}
+                onChange={(e) =>
+                  setWebhookFormData((prev) => ({ ...prev, descricao: e.target.value }))
+                }
+                rows={2}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="wh-url">URL do Webhook *</Label>
-              <Input id="wh-url" type="url" placeholder="https://..." value={webhookFormData.url} onChange={(e) => setWebhookFormData(prev => ({ ...prev, url: e.target.value }))} />
+              <Input
+                id="wh-url"
+                type="url"
+                placeholder="https://..."
+                value={webhookFormData.url}
+                onChange={(e) => setWebhookFormData((prev) => ({ ...prev, url: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="wh-evento">Evento *</Label>
-              <Select value={webhookFormData.evento} onValueChange={(value) => setWebhookFormData(prev => ({ ...prev, evento: value }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione o evento" /></SelectTrigger>
+              <Select
+                value={webhookFormData.evento}
+                onValueChange={(value) =>
+                  setWebhookFormData((prev) => ({ ...prev, evento: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o evento" />
+                </SelectTrigger>
                 <SelectContent>
                   {EVENTOS_DISPONIVEIS.map((evento) => (
                     <SelectItem key={evento.value} value={evento.value}>
@@ -635,11 +748,23 @@ export const IntegracoesTab: React.FC = () => {
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="wh-ativo">Webhook Ativo</Label>
-              <Switch id="wh-ativo" checked={webhookFormData.ativo} onCheckedChange={(checked) => setWebhookFormData(prev => ({ ...prev, ativo: checked }))} />
+              <Switch
+                id="wh-ativo"
+                checked={webhookFormData.ativo}
+                onCheckedChange={(checked) =>
+                  setWebhookFormData((prev) => ({ ...prev, ativo: checked }))
+                }
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setWebhookDialogOpen(false)} disabled={savingWebhook}>Cancelar</Button>
+            <Button
+              variant="outline"
+              onClick={() => setWebhookDialogOpen(false)}
+              disabled={savingWebhook}
+            >
+              Cancelar
+            </Button>
             <Button onClick={handleSaveWebhook} disabled={savingWebhook}>
               {savingWebhook && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {selectedWebhook ? 'Guardar' : 'Criar'}
@@ -654,12 +779,16 @@ export const IntegracoesTab: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar Webhook</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem a certeza que deseja eliminar o webhook "{selectedWebhook?.nome}"? Esta ação não pode ser desfeita.
+              Tem a certeza que deseja eliminar o webhook "{selectedWebhook?.nome}"? Esta ação não
+              pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteWebhook} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDeleteWebhook}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

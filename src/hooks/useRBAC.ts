@@ -73,14 +73,12 @@ export const useRBAC = () => {
     podeEditar: boolean = false
   ) => {
     try {
-      const { error } = await supabase
-        .from('cargo_permissoes')
-        .upsert({
-          cargo_id: cargoId,
-          recurso_id: recursoId,
-          tem_acesso: temAcesso,
-          pode_editar: podeEditar,
-        });
+      const { error } = await supabase.from('cargo_permissoes').upsert({
+        cargo_id: cargoId,
+        recurso_id: recursoId,
+        tem_acesso: temAcesso,
+        pode_editar: podeEditar,
+      });
 
       if (error) throw error;
 
@@ -92,8 +90,11 @@ export const useRBAC = () => {
     }
   };
 
-  const getPermissaoForCargoRecurso = (cargoId: string, recursoId: string): CargoPermissao | null => {
-    return permissoes.find(p => p.cargo_id === cargoId && p.recurso_id === recursoId) || null;
+  const getPermissaoForCargoRecurso = (
+    cargoId: string,
+    recursoId: string
+  ): CargoPermissao | null => {
+    return permissoes.find((p) => p.cargo_id === cargoId && p.recurso_id === recursoId) || null;
   };
 
   return {

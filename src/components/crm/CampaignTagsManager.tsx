@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,7 @@ export const CampaignTagsManager: React.FC<CampaignTagsManagerProps> = ({
   tags = [],
   onTagsChange,
   availableTags = [],
-  placeholder = "Selecionar campanha..."
+  placeholder = 'Selecionar campanha...',
 }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
@@ -39,9 +38,8 @@ export const CampaignTagsManager: React.FC<CampaignTagsManagerProps> = ({
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    onTagsChange(tags.filter(tag => tag !== tagToRemove));
+    onTagsChange(tags.filter((tag) => tag !== tagToRemove));
   };
-
 
   const getTagColor = (tag: string) => {
     const colors = [
@@ -50,14 +48,14 @@ export const CampaignTagsManager: React.FC<CampaignTagsManagerProps> = ({
       'bg-purple-500/20 text-purple-300 border-purple-500/30',
       'bg-orange-500/20 text-orange-300 border-orange-500/30',
       'bg-pink-500/20 text-pink-300 border-pink-500/30',
-      'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+      'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
     ];
-    
+
     const hash = tag.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
+      a = (a << 5) - a + b.charCodeAt(0);
       return a & a;
     }, 0);
-    
+
     return colors[Math.abs(hash) % colors.length];
   };
 
@@ -67,7 +65,7 @@ export const CampaignTagsManager: React.FC<CampaignTagsManagerProps> = ({
         <Tag className="h-4 w-4" />
         <span>Campanhas</span>
       </div>
-      
+
       <div className="flex flex-wrap gap-2">
         <AnimatePresence>
           {tags.map((tag) => (
@@ -78,7 +76,7 @@ export const CampaignTagsManager: React.FC<CampaignTagsManagerProps> = ({
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
             >
-              <Badge 
+              <Badge
                 className={`${getTagColor(tag)} px-2 py-1 text-xs border flex items-center gap-1`}
               >
                 {tag}
@@ -93,7 +91,7 @@ export const CampaignTagsManager: React.FC<CampaignTagsManagerProps> = ({
           ))}
         </AnimatePresence>
 
-        {availableTags.filter(tag => !tags.includes(tag)).length > 0 && (
+        {availableTags.filter((tag) => !tags.includes(tag)).length > 0 && (
           <Button
             size="sm"
             variant="outline"
@@ -104,7 +102,7 @@ export const CampaignTagsManager: React.FC<CampaignTagsManagerProps> = ({
             Selecionar Tag
           </Button>
         )}
-        
+
         <Button
           size="sm"
           variant="outline"
@@ -117,7 +115,7 @@ export const CampaignTagsManager: React.FC<CampaignTagsManagerProps> = ({
       </div>
 
       {showNewTagInput && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex gap-2 items-center"
@@ -146,7 +144,7 @@ export const CampaignTagsManager: React.FC<CampaignTagsManagerProps> = ({
       )}
 
       {showSuggestions && availableTags.length > 0 && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="space-y-2"
@@ -154,7 +152,7 @@ export const CampaignTagsManager: React.FC<CampaignTagsManagerProps> = ({
           <p className="text-xs text-muted-foreground">Campanhas disponíveis:</p>
           <div className="flex flex-wrap gap-1">
             {availableTags
-              .filter(tag => !tags.includes(tag))
+              .filter((tag) => !tags.includes(tag))
               .map((tag) => (
                 <button
                   key={tag}

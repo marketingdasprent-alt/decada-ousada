@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,10 +38,20 @@ interface TemplateData {
 
 // Definição dos campos de documento com metadados completos
 const DOCUMENT_FIELDS_METADATA: Record<string, DynamicField> = {
-  'data_inicio': { id: 'data_inicio', label: 'Data de Início', tipo: 'date', required: true },
-  'data_assinatura': { id: 'data_assinatura', label: 'Data de Assinatura', tipo: 'date', required: true },
-  'cidade_assinatura': { id: 'cidade_assinatura', label: 'Cidade de Assinatura', tipo: 'text', required: true },
-  'duracao_meses': { id: 'duracao_meses', label: 'Duração (meses)', tipo: 'number', required: true }
+  data_inicio: { id: 'data_inicio', label: 'Data de Início', tipo: 'date', required: true },
+  data_assinatura: {
+    id: 'data_assinatura',
+    label: 'Data de Assinatura',
+    tipo: 'date',
+    required: true,
+  },
+  cidade_assinatura: {
+    id: 'cidade_assinatura',
+    label: 'Cidade de Assinatura',
+    tipo: 'text',
+    required: true,
+  },
+  duracao_meses: { id: 'duracao_meses', label: 'Duração (meses)', tipo: 'number', required: true },
 };
 
 export const UniversalDocumentDialog = ({
@@ -71,7 +87,7 @@ export const UniversalDocumentDialog = ({
       const contratoFields = camposDinamicos?.contrato || camposDinamicos?.documento || [];
 
       // Extrair nomes de campos dos placeholders (remover {{ }})
-      const fieldNames = contratoFields.map((placeholder: string) => 
+      const fieldNames = contratoFields.map((placeholder: string) =>
         placeholder.replace(/\{\{|\}\}/g, '').trim()
       );
 
@@ -85,7 +101,8 @@ export const UniversalDocumentDialog = ({
       documentFields.forEach((field: DynamicField) => {
         if (field.tipo === 'date') {
           // Usar data_contratacao do motorista se disponível, senão data atual
-          initialData[field.id] = motorista.data_contratacao || new Date().toISOString().split('T')[0];
+          initialData[field.id] =
+            motorista.data_contratacao || new Date().toISOString().split('T')[0];
         } else if (field.id === 'cidade_assinatura') {
           // Cidade sempre fixada como Leiria
           initialData[field.id] = 'Leiria';
@@ -119,7 +136,9 @@ export const UniversalDocumentDialog = ({
     );
 
     if (missingFields.length > 0) {
-      toast.error(`Preencha os campos obrigatórios: ${missingFields.map((f) => f.label).join(', ')}`);
+      toast.error(
+        `Preencha os campos obrigatórios: ${missingFields.map((f) => f.label).join(', ')}`
+      );
       return;
     }
 
@@ -139,7 +158,7 @@ export const UniversalDocumentDialog = ({
       let contratoId: string | undefined;
       if (templateData.tipo === 'contrato_tvde' || templateData.tipo === 'contrato') {
         const { data: user } = await supabase.auth.getUser();
-        
+
         const { data: contratoData, error: contratoError } = await supabase
           .from('contratos')
           .insert({
@@ -153,8 +172,14 @@ export const UniversalDocumentDialog = ({
             motorista_documento_numero: motorista.documento_numero,
             empresa_id: templateData.empresa_id,
             template_id: templateId,
-            data_inicio: documentData.data_inicio || motorista.data_contratacao || new Date().toISOString().split('T')[0],
-            data_assinatura: documentData.data_assinatura || motorista.data_contratacao || new Date().toISOString().split('T')[0],
+            data_inicio:
+              documentData.data_inicio ||
+              motorista.data_contratacao ||
+              new Date().toISOString().split('T')[0],
+            data_assinatura:
+              documentData.data_assinatura ||
+              motorista.data_contratacao ||
+              new Date().toISOString().split('T')[0],
             cidade_assinatura: 'Leiria',
             duracao_meses: 12,
             status: 'ativo',
@@ -173,13 +198,11 @@ export const UniversalDocumentDialog = ({
         contratoId = contratoData.id;
 
         // Registrar geração inicial no histórico
-        await supabase
-          .from('contratos_reimpressoes')
-          .insert({
-            contrato_id: contratoId,
-            reimpresso_por: user?.user?.id,
-            motivo: 'Geração inicial do documento',
-          });
+        await supabase.from('contratos_reimpressoes').insert({
+          contrato_id: contratoId,
+          reimpresso_por: user?.user?.id,
+          motivo: 'Geração inicial do documento',
+        });
       }
 
       // Preparar dados do motorista
@@ -203,15 +226,17 @@ export const UniversalDocumentDialog = ({
 
       const docData = {
         ...documentData,
-        empresaData: empresa ? {
-          nomeCompleto: empresa.nomeCompleto,
-          nif: empresa.nif,
-          sede: empresa.sede,
-          licencaTVDE: empresa.licencaTVDE,
-          licencaValidade: empresa.licencaValidade,
-          representante: empresa.representante,
-          cargoRepresentante: empresa.cargoRepresentante,
-        } : undefined
+        empresaData: empresa
+          ? {
+              nomeCompleto: empresa.nomeCompleto,
+              nif: empresa.nif,
+              sede: empresa.sede,
+              licencaTVDE: empresa.licencaTVDE,
+              licencaValidade: empresa.licencaValidade,
+              representante: empresa.representante,
+              cargoRepresentante: empresa.cargoRepresentante,
+            }
+          : undefined,
       };
 
       // Generate and upload document to storage
@@ -233,7 +258,8 @@ export const UniversalDocumentDialog = ({
         }
       } else {
         // For non-contract documents, just generate without storage
-        const { generateDocumentFromTemplate } = await import('@/utils/generateDocumentFromTemplate');
+        const { generateDocumentFromTemplate } =
+          await import('@/utils/generateDocumentFromTemplate');
         await generateDocumentFromTemplate({
           templateId,
           motoristaData,
@@ -242,10 +268,10 @@ export const UniversalDocumentDialog = ({
         });
       }
 
-      const successMessage = contratoId 
-        ? 'Contrato gerado e registrado com sucesso!' 
+      const successMessage = contratoId
+        ? 'Contrato gerado e registrado com sucesso!'
         : `Documento ${action === 'print' ? 'enviado para impressão' : 'transferido com sucesso'}!`;
-      
+
       toast.success(successMessage);
       onOpenChange(false);
     } catch (error: any) {
@@ -335,8 +361,7 @@ export const UniversalDocumentDialog = ({
           >
             {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                A gerar...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A gerar...
               </>
             ) : (
               'Download'
@@ -345,8 +370,7 @@ export const UniversalDocumentDialog = ({
           <Button onClick={() => handleGenerate('print')} disabled={isGenerating || loading}>
             {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                A gerar...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A gerar...
               </>
             ) : (
               'Imprimir'

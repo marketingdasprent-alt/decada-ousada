@@ -1,8 +1,16 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { GripVertical, Trash2, Type, Mail, Phone, Calendar, FileText, ToggleLeft } from 'lucide-react';
+import {
+  GripVertical,
+  Trash2,
+  Type,
+  Mail,
+  Phone,
+  Calendar,
+  FileText,
+  ToggleLeft,
+} from 'lucide-react';
 import { FormField } from './DynamicFieldEditor';
 import { FieldEditor } from './FieldEditor';
 
@@ -23,7 +31,7 @@ const fieldTypeIcons = {
   select: ToggleLeft,
   date: Calendar,
   checkbox: ToggleLeft,
-  radio: ToggleLeft
+  radio: ToggleLeft,
 };
 
 export const FieldCard: React.FC<FieldCardProps> = ({
@@ -32,7 +40,7 @@ export const FieldCard: React.FC<FieldCardProps> = ({
   onEdit,
   onDelete,
   onUpdate,
-  dragHandleProps
+  dragHandleProps,
 }) => {
   const IconComponent = fieldTypeIcons[field.type];
 
@@ -41,17 +49,12 @@ export const FieldCard: React.FC<FieldCardProps> = ({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-foreground">
           <div className="flex items-center gap-3">
-            <div 
-              {...dragHandleProps}
-              className="cursor-grab active:cursor-grabbing touch-none"
-            >
+            <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing touch-none">
               <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
             </div>
             <IconComponent className="h-4 w-4 text-primary" />
             <span className="text-sm">{field.label}</span>
-            {field.required && (
-              <span className="text-destructive text-xs">*</span>
-            )}
+            {field.required && <span className="text-destructive text-xs">*</span>}
           </div>
           <div className="flex gap-2">
             <Button
@@ -74,9 +77,7 @@ export const FieldCard: React.FC<FieldCardProps> = ({
         </CardTitle>
       </CardHeader>
 
-      {isEditing && (
-        <FieldEditor field={field} onUpdate={onUpdate} />
-      )}
+      {isEditing && <FieldEditor field={field} onUpdate={onUpdate} />}
     </Card>
   );
 };

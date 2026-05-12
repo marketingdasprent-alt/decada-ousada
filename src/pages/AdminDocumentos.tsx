@@ -71,17 +71,15 @@ const AdminDocumentos = () => {
 
   const handleDuplicate = async (template: DocumentTemplate) => {
     try {
-      const { error } = await supabase
-        .from('document_templates')
-        .insert({
-          nome: `${template.nome} (Cópia)`,
-          tipo: template.tipo,
-          empresa_id: template.empresa_id,
-          template_data: template.template_data,
-          campos_dinamicos: template.campos_dinamicos,
-          ativo: false,
-          versao: 1,
-        });
+      const { error } = await supabase.from('document_templates').insert({
+        nome: `${template.nome} (Cópia)`,
+        tipo: template.tipo,
+        empresa_id: template.empresa_id,
+        template_data: template.template_data,
+        campos_dinamicos: template.campos_dinamicos,
+        ativo: false,
+        versao: 1,
+      });
 
       if (error) throw error;
       toast.success('Template duplicado com sucesso');
@@ -122,9 +120,7 @@ const AdminDocumentos = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Gestão de Documentos</h1>
-          <p className="text-muted-foreground mt-1">
-            Gerir templates de contratos e documentos
-          </p>
+          <p className="text-muted-foreground mt-1">Gerir templates de contratos e documentos</p>
         </div>
         <Button onClick={handleNew}>
           <Plus className="mr-2 h-4 w-4" />

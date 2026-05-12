@@ -20,11 +20,11 @@ const TIPO_LABELS: Record<string, string> = {
 };
 
 const TIPO_COLORS_PDF: Record<string, [number, number, number]> = {
-  entrega:   [34,  197, 94],
-  recolha:   [59,  130, 246],
+  entrega: [34, 197, 94],
+  recolha: [59, 130, 246],
   devolucao: [249, 115, 22],
-  troca:     [168, 85,  247],
-  upgrade:   [234, 179, 8],
+  troca: [168, 85, 247],
+  upgrade: [234, 179, 8],
 };
 
 async function loadImageWithDimensions(
@@ -87,7 +87,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
 
       if (error) throw error;
 
-      const criadorIds = [...new Set((data || []).map(e => e.criado_por))];
+      const criadorIds = [...new Set((data || []).map((e) => e.criado_por))];
       let profilesMap: Record<string, string> = {};
       if (criadorIds.length > 0) {
         const { data: profiles } = await supabase
@@ -95,11 +95,11 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
           .select('id, nome')
           .in('id', criadorIds);
         if (profiles) {
-          profilesMap = Object.fromEntries(profiles.map(p => [p.id, p.nome || '']));
+          profilesMap = Object.fromEntries(profiles.map((p) => [p.id, p.nome || '']));
         }
       }
 
-      return (data || []).map(e => ({
+      return (data || []).map((e) => ({
         ...e,
         profiles: profilesMap[e.criado_por] ? { nome: profilesMap[e.criado_por] } : null,
       })) as CalendarioEvento[];
@@ -116,8 +116,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
       const marginR = 14;
 
       // Try white logo first (for dark header), fallback to default
-      const logoInfo =
-        await loadImageWithDimensions('/Logo.png');
+      const logoInfo = await loadImageWithDimensions('/Logo.png');
 
       // ── HEADER ──────────────────────────────────────────────
       const headerH = 44;
@@ -143,7 +142,9 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
           const logoX = marginL;
           const logoY = (headerH - logoH) / 2;
           doc.addImage(logoInfo.dataUrl, 'PNG', logoX, logoY, logoW, logoH);
-        } catch { /* skip logo if error */ }
+        } catch {
+          /* skip logo if error */
+        }
       }
 
       // Title on right side of header
@@ -191,7 +192,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
 
       // ── HELPERS ─────────────────────────────────────────────
       const rowPad = 3.5;
-      const lineH  = 5;
+      const lineH = 5;
       const lineH2 = 4.2;
       const obsMaxW = COL.tipo - COL.mat - 2;
       const bodyMaxY = pageH - 12;
@@ -221,11 +222,11 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
       };
 
       // Pre-calculate row heights
-      const rowHeights = eventos.map(ev => {
+      const rowHeights = eventos.map((ev) => {
         let h = rowPad + lineH + lineH2;
         if (ev.descricao) {
           const lines = doc.splitTextToSize(`Obs: ${ev.descricao}`, obsMaxW);
-          h += (lines.length * 4);
+          h += lines.length * 4;
         }
         return h + rowPad;
       });
@@ -262,9 +263,10 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9.5);
         doc.setTextColor(20, 20, 25);
-        const matricula = ev.tipo === 'troca'
-          ? `${formatMatricula(ev.titulo)}${ev.matricula_devolver ? `  <>  ${formatMatricula(ev.matricula_devolver)}` : ''}`
-          : formatMatricula(ev.titulo);
+        const matricula =
+          ev.tipo === 'troca'
+            ? `${formatMatricula(ev.titulo)}${ev.matricula_devolver ? `  <>  ${formatMatricula(ev.matricula_devolver)}` : ''}`
+            : formatMatricula(ev.titulo);
         const cidadeStr = ev.cidade ? `  ${ev.cidade.toUpperCase()}` : '';
 
         // Ensure matrícula doesn't overflow into tipo column
@@ -345,11 +347,18 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
       };
 
       const headers = [
-        'ID', 'Data', 'Hora', 'Tipo', 'Matrícula',
-        'Matrícula Devolver', 'Cidade', 'Responsável', 'Observações',
+        'ID',
+        'Data',
+        'Hora',
+        'Tipo',
+        'Matrícula',
+        'Matrícula Devolver',
+        'Cidade',
+        'Responsável',
+        'Observações',
       ];
 
-      const rows = eventos.map(ev => {
+      const rows = eventos.map((ev) => {
         const dt = new Date(ev.data_inicio);
         return [
           escape(ev.id),
@@ -379,7 +388,6 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
     }
   };
 
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col gap-4">
@@ -392,22 +400,26 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
 
         <div className="flex gap-3 items-end">
           <div className="flex-1 space-y-1">
-            <Label htmlFor="relatorio-inicio" className="text-xs">De</Label>
+            <Label htmlFor="relatorio-inicio" className="text-xs">
+              De
+            </Label>
             <input
               id="relatorio-inicio"
               type="date"
               value={dataInicio}
-              onChange={e => setDataInicio(e.target.value)}
+              onChange={(e) => setDataInicio(e.target.value)}
               className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
             />
           </div>
           <div className="flex-1 space-y-1">
-            <Label htmlFor="relatorio-fim" className="text-xs">Até</Label>
+            <Label htmlFor="relatorio-fim" className="text-xs">
+              Até
+            </Label>
             <input
               id="relatorio-fim"
               type="date"
               value={dataFim}
-              onChange={e => setDataFim(e.target.value)}
+              onChange={(e) => setDataFim(e.target.value)}
               className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
             />
           </div>
@@ -416,13 +428,12 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
             disabled={isLoading || exportLoading || eventos.length === 0}
             className="gap-2 shrink-0"
           >
-            {exportLoading
-              ? <Loader2 className="h-4 w-4 animate-spin" />
-              : <FileDown className="h-4 w-4" />
-            }
-            <span className="hidden sm:inline">
-              {exportLoading ? 'A gerar...' : 'PDF'}
-            </span>
+            {exportLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">{exportLoading ? 'A gerar...' : 'PDF'}</span>
           </Button>
           <Button
             variant="outline"
@@ -430,13 +441,12 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
             disabled={isLoading || exportExcelLoading || eventos.length === 0}
             className="gap-2 shrink-0 border-green-600/40 text-green-700 hover:bg-green-600 hover:text-white dark:text-green-400 dark:hover:text-white"
           >
-            {exportExcelLoading
-              ? <Loader2 className="h-4 w-4 animate-spin" />
-              : <FileSpreadsheet className="h-4 w-4" />
-            }
-            <span className="hidden sm:inline">
-              {exportExcelLoading ? 'A gerar...' : 'Excel'}
-            </span>
+            {exportExcelLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">{exportExcelLoading ? 'A gerar...' : 'Excel'}</span>
           </Button>
         </div>
 
@@ -451,8 +461,10 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
             </p>
           ) : (
             <>
-              <p className="text-xs text-muted-foreground">{eventos.length} evento(s) encontrado(s)</p>
-              {eventos.map(ev => (
+              <p className="text-xs text-muted-foreground">
+                {eventos.length} evento(s) encontrado(s)
+              </p>
+              {eventos.map((ev) => (
                 <div key={ev.id} className="border rounded-lg p-3 text-sm space-y-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">
@@ -467,7 +479,11 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
                   </div>
                   <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
                     <span>
-                      {format(new Date(ev.data_inicio), ev.dia_todo ? 'dd/MM/yyyy' : 'dd/MM/yyyy HH:mm', { locale: pt })}
+                      {format(
+                        new Date(ev.data_inicio),
+                        ev.dia_todo ? 'dd/MM/yyyy' : 'dd/MM/yyyy HH:mm',
+                        { locale: pt }
+                      )}
                     </span>
                     {ev.profiles?.nome && <span>Por: {ev.profiles.nome}</span>}
                     {ev.descricao && <span className="w-full">Obs: {ev.descricao}</span>}

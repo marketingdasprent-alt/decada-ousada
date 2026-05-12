@@ -45,7 +45,7 @@ const GrupoPermSummary: React.FC<GrupoPermSummaryProps> = ({ cargoId }) => {
       // Filtra por quem tem acesso (seja via tem_acesso ou pode_ver)
       .then(({ data, error }) => {
         if (error) {
-          console.error("Erro ao carregar sumário:", error);
+          console.error('Erro ao carregar sumário:', error);
           return;
         }
         if (data) {
@@ -110,10 +110,7 @@ export const GruposTab = () => {
 
   const fetchGrupos = async () => {
     try {
-      const { data, error } = await supabase
-        .from('cargos')
-        .select('*')
-        .order('nome');
+      const { data, error } = await supabase.from('cargos').select('*').order('nome');
       if (error) throw error;
       setGrupos(data || []);
 
@@ -131,7 +128,11 @@ export const GruposTab = () => {
         setMembrosCount(counts);
       }
     } catch (error: any) {
-      toast({ title: 'Erro ao carregar grupos', description: error.message, variant: 'destructive' });
+      toast({
+        title: 'Erro ao carregar grupos',
+        description: error.message,
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -153,7 +154,11 @@ export const GruposTab = () => {
 
   const handleSave = async () => {
     if (!formData.nome.trim()) {
-      toast({ title: 'Nome obrigatório', description: 'Insira um nome para o grupo.', variant: 'destructive' });
+      toast({
+        title: 'Nome obrigatório',
+        description: 'Insira um nome para o grupo.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -183,8 +188,8 @@ export const GruposTab = () => {
 
       // Inserir permissões — apenas as que têm acesso (tem_acesso = true)
       const toInsert = selectedPermissions
-        .filter(p => p.tem_acesso)
-        .map(p => ({
+        .filter((p) => p.tem_acesso)
+        .map((p) => ({
           cargo_id: grupoId,
           recurso_id: p.recurso_id,
           tem_acesso: true,
@@ -193,7 +198,7 @@ export const GruposTab = () => {
 
       // ── Gravação com Auto-Recuperação de Emergência ─────────────────────
       if (toInsert.length > 0) {
-        let currentToInsert = toInsert.map(p => ({
+        let currentToInsert = toInsert.map((p) => ({
           cargo_id: p.cargo_id,
           recurso_id: p.recurso_id,
           tem_acesso: true,
@@ -203,28 +208,29 @@ export const GruposTab = () => {
 
         const performSafeInsert = async (data: any[]): Promise<void> => {
           const { error } = await supabase.from('cargo_permissoes').insert(data);
-          
+
           if (error) {
             console.error('Tentativa de gravação falhou:', error.message);
-            
+
             // Se o erro for de coluna inexistente, removemos essa coluna e tentamos de novo
-            const missingColumnMatch = error.message.match(/column ['"](.+)['"]/i) || 
-                                     error.message.match(/find the ['"](.+)['"] column/i);
-            
+            const missingColumnMatch =
+              error.message.match(/column ['"](.+)['"]/i) ||
+              error.message.match(/find the ['"](.+)['"] column/i);
+
             if (missingColumnMatch && missingColumnMatch[1]) {
               const columnName = missingColumnMatch[1];
               console.warn(`A remover coluna inexistente '${columnName}' e a tentar novamente...`);
-              
-              const cleanedData = data.map(item => {
+
+              const cleanedData = data.map((item) => {
                 const { [columnName]: _, ...rest } = item;
                 return rest;
               });
-              
+
               if (Object.keys(cleanedData[0]).length <= 2) {
                 // Se só sobraram cargo_id e recurso_id, paramos para evitar loop infinito
-                throw new Error("A base de dados não aceita as colunas de permissão básicas.");
+                throw new Error('A base de dados não aceita as colunas de permissão básicas.');
               }
-              
+
               return performSafeInsert(cleanedData);
             }
             throw error;
@@ -236,9 +242,10 @@ export const GruposTab = () => {
         } catch (err: any) {
           console.error('Falha crítica na gravação:', err);
           toast({
-            title: "Erro Crítico",
-            description: "Não foi possível gravar as permissões. Por favor, verifique a base de dados.",
-            variant: "destructive"
+            title: 'Erro Crítico',
+            description:
+              'Não foi possível gravar as permissões. Por favor, verifique a base de dados.',
+            variant: 'destructive',
           });
           return;
         }
@@ -284,7 +291,11 @@ export const GruposTab = () => {
       toast({ title: 'Grupo eliminado', description: `"${grupoToDelete.nome}" foi eliminado.` });
       fetchGrupos();
     } catch (error: any) {
-      toast({ title: 'Erro ao eliminar grupo', description: error.message, variant: 'destructive' });
+      toast({
+        title: 'Erro ao eliminar grupo',
+        description: error.message,
+        variant: 'destructive',
+      });
     } finally {
       setIsDeleting(false);
       setDeleteConfirmOpen(false);
@@ -323,7 +334,7 @@ export const GruposTab = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {grupos.map(grupo => (
+              {grupos.map((grupo) => (
                 <div
                   key={grupo.id}
                   className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted/20 transition-colors gap-4"
@@ -335,7 +346,8 @@ export const GruposTab = () => {
                       {membrosCount[grupo.id] > 0 && (
                         <Badge variant="secondary" className="text-xs">
                           <Users className="h-2.5 w-2.5 mr-1" />
-                          {membrosCount[grupo.id]} utilizador{membrosCount[grupo.id] !== 1 ? 'es' : ''}
+                          {membrosCount[grupo.id]} utilizador
+                          {membrosCount[grupo.id] !== 1 ? 'es' : ''}
                         </Badge>
                       )}
                     </div>
@@ -362,7 +374,10 @@ export const GruposTab = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => { setGrupoToDelete(grupo); setDeleteConfirmOpen(true); }}
+                      onClick={() => {
+                        setGrupoToDelete(grupo);
+                        setDeleteConfirmOpen(true);
+                      }}
                       className="text-red-500 hover:text-red-500 hover:bg-red-500/10"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -392,7 +407,7 @@ export const GruposTab = () => {
                 <Input
                   id="nome"
                   value={formData.nome}
-                  onChange={e => setFormData(p => ({ ...p, nome: e.target.value }))}
+                  onChange={(e) => setFormData((p) => ({ ...p, nome: e.target.value }))}
                   placeholder="Ex: Gestor TVDE, Comercial..."
                 />
               </div>
@@ -401,7 +416,7 @@ export const GruposTab = () => {
                 <Input
                   id="descricao"
                   value={formData.descricao}
-                  onChange={e => setFormData(p => ({ ...p, descricao: e.target.value }))}
+                  onChange={(e) => setFormData((p) => ({ ...p, descricao: e.target.value }))}
                   placeholder="Breve descrição do grupo..."
                 />
               </div>
@@ -415,10 +430,7 @@ export const GruposTab = () => {
                   Defina o nível de acesso de cada funcionalidade para este grupo.
                 </p>
               </div>
-              <PermissionsSelector
-                cargoId={editingGrupo?.id}
-                onChange={setSelectedPermissions}
-              />
+              <PermissionsSelector cargoId={editingGrupo?.id} onChange={setSelectedPermissions} />
             </div>
           </div>
 
@@ -428,7 +440,9 @@ export const GruposTab = () => {
             </Button>
             <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...</>
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...
+                </>
               ) : (
                 'Guardar Grupo'
               )}
@@ -455,8 +469,12 @@ export const GruposTab = () => {
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               {isDeleting ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A eliminar...</>
-              ) : 'Eliminar'}
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />A eliminar...
+                </>
+              ) : (
+                'Eliminar'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

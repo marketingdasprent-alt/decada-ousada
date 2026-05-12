@@ -1,17 +1,17 @@
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
 export const AwardsSection = () => {
   const awards = [
     {
-      image: "/images/premio-scoring-top5.png",
-      title: "TOP 5% Melhores PME",
-      description: "Portugal 2024 - 2º ano consecutivo"
+      image: '/images/premio-scoring-top5.png',
+      title: 'TOP 5% Melhores PME',
+      description: 'Portugal 2024 - 2º ano consecutivo',
     },
     {
-      image: "/images/premio-1500-maiores.png",
-      title: "1500 Maiores Empresas",
-      description: "Distrito de Coimbra 2023"
-    }
+      image: '/images/premio-1500-maiores.png',
+      title: '1500 Maiores Empresas',
+      description: 'Distrito de Coimbra 2023',
+    },
   ];
 
   return (
@@ -26,9 +26,7 @@ export const AwardsSection = () => {
           <span className="text-primary font-semibold text-sm uppercase tracking-wider">
             Excelência reconhecida
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mt-4">
-            Reconhecimentos
-          </h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mt-4">Reconhecimentos</h2>
         </motion.div>
 
         <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">

@@ -11,9 +11,7 @@ interface CandidaturaAprovadaProps {
   candidatura: Candidatura;
 }
 
-export const CandidaturaAprovada: React.FC<CandidaturaAprovadaProps> = ({
-  candidatura,
-}) => {
+export const CandidaturaAprovada: React.FC<CandidaturaAprovadaProps> = ({ candidatura }) => {
   const { signOut } = useAuth();
 
   return (
@@ -29,7 +27,7 @@ export const CandidaturaAprovada: React.FC<CandidaturaAprovadaProps> = ({
               <h1 className="text-lg font-semibold text-foreground">Área do Motorista</h1>
             </div>
           </div>
-          
+
           <Button variant="ghost" size="icon" onClick={() => signOut()}>
             <LogOut className="h-4 w-4" />
           </Button>
@@ -52,7 +50,10 @@ export const CandidaturaAprovada: React.FC<CandidaturaAprovadaProps> = ({
           <CardContent>
             {candidatura.data_decisao && (
               <p className="text-center text-sm text-muted-foreground">
-                Aprovada a {format(new Date(candidatura.data_decisao), "dd 'de' MMMM 'de' yyyy", { locale: pt })}
+                Aprovada a{' '}
+                {format(new Date(candidatura.data_decisao), "dd 'de' MMMM 'de' yyyy", {
+                  locale: pt,
+                })}
               </p>
             )}
           </CardContent>
@@ -71,7 +72,8 @@ export const CandidaturaAprovada: React.FC<CandidaturaAprovadaProps> = ({
               <div>
                 <h4 className="font-medium">Assinatura do Contrato</h4>
                 <p className="text-sm text-muted-foreground">
-                  A nossa equipa irá contactá-lo para agendar a assinatura do contrato de prestação de serviços.
+                  A nossa equipa irá contactá-lo para agendar a assinatura do contrato de prestação
+                  de serviços.
                 </p>
               </div>
             </div>
@@ -83,7 +85,8 @@ export const CandidaturaAprovada: React.FC<CandidaturaAprovadaProps> = ({
               <div>
                 <h4 className="font-medium">Formação Inicial</h4>
                 <p className="text-sm text-muted-foreground">
-                  Após a assinatura, receberá informações sobre a formação inicial e entrega da viatura.
+                  Após a assinatura, receberá informações sobre a formação inicial e entrega da
+                  viatura.
                 </p>
               </div>
             </div>
@@ -95,7 +98,8 @@ export const CandidaturaAprovada: React.FC<CandidaturaAprovadaProps> = ({
               <div>
                 <h4 className="font-medium">Início de Atividade</h4>
                 <p className="text-sm text-muted-foreground">
-                  Quando estiver tudo pronto, poderá iniciar a sua atividade como motorista TVDE connosco.
+                  Quando estiver tudo pronto, poderá iniciar a sua atividade como motorista TVDE
+                  connosco.
                 </p>
               </div>
             </div>
@@ -126,7 +130,9 @@ export const CandidaturaAprovada: React.FC<CandidaturaAprovadaProps> = ({
             </div>
             <div className="col-span-2">
               <p className="text-muted-foreground">Morada</p>
-              <p className="font-medium">{candidatura.morada}, {candidatura.cidade}</p>
+              <p className="font-medium">
+                {candidatura.morada}, {candidatura.cidade}
+              </p>
             </div>
           </CardContent>
         </Card>

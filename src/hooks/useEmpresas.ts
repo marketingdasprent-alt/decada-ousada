@@ -35,7 +35,9 @@ export function useEmpresas() {
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => {
+    fetch();
+  }, []);
 
   const getById = (id: string) => empresas.find((e) => e.id === id);
 

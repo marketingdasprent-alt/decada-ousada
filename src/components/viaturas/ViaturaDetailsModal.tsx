@@ -11,16 +11,16 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Car, 
-  User, 
-  History, 
-  FileText, 
-  Calendar, 
-  Gauge, 
-  Fuel, 
+import {
+  Car,
+  User,
+  History,
+  FileText,
+  Calendar,
+  Gauge,
+  Fuel,
   Shield,
-  AlertTriangle
+  AlertTriangle,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -79,11 +79,13 @@ export function ViaturaDetailsModal({ viatura, open, onOpenChange }: ViaturaDeta
       // Buscar motorista atual
       const { data: motoristaData } = await supabase
         .from('motorista_viaturas')
-        .select(`
+        .select(
+          `
           id,
           data_inicio,
           motoristas_ativos!inner(id, nome)
-        `)
+        `
+        )
         .eq('viatura_id', viatura.id)
         .eq('status', 'ativo')
         .maybeSingle();
@@ -102,12 +104,14 @@ export function ViaturaDetailsModal({ viatura, open, onOpenChange }: ViaturaDeta
       // Buscar histórico
       const { data: historicoData } = await supabase
         .from('motorista_viaturas')
-        .select(`
+        .select(
+          `
           id,
           data_inicio,
           data_fim,
           motoristas_ativos!inner(nome)
-        `)
+        `
+        )
         .eq('viatura_id', viatura.id)
         .order('data_inicio', { ascending: false });
 
@@ -132,31 +136,46 @@ export function ViaturaDetailsModal({ viatura, open, onOpenChange }: ViaturaDeta
 
   const getCategoriaColor = (categoria: string | null | undefined) => {
     switch (categoria?.toLowerCase()) {
-      case 'green': return 'bg-green-500 text-white';
-      case 'comfort': return 'bg-blue-500 text-white';
-      case 'black': return 'bg-black text-white';
-      case 'x-saver': return 'bg-orange-500 text-white';
-      default: return 'bg-muted text-muted-foreground';
+      case 'green':
+        return 'bg-green-500 text-white';
+      case 'comfort':
+        return 'bg-blue-500 text-white';
+      case 'black':
+        return 'bg-black text-white';
+      case 'x-saver':
+        return 'bg-orange-500 text-white';
+      default:
+        return 'bg-muted text-muted-foreground';
     }
   };
 
   const getStatusColor = (status: string | null | undefined) => {
     switch (status) {
-      case 'disponivel': return 'bg-green-500/10 text-green-500 border-green-500/20';
-      case 'em_uso': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-      case 'manutencao': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
-      case 'inativo': return 'bg-muted text-muted-foreground border-border';
-      default: return 'bg-muted text-muted-foreground border-border';
+      case 'disponivel':
+        return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'em_uso':
+        return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+      case 'manutencao':
+        return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+      case 'inativo':
+        return 'bg-muted text-muted-foreground border-border';
+      default:
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
   const getStatusLabel = (status: string | null | undefined) => {
     switch (status) {
-      case 'disponivel': return 'Disponível';
-      case 'em_uso': return 'Em Uso';
-      case 'manutencao': return 'Manutenção';
-      case 'inativo': return 'Inativo';
-      default: return status || 'N/D';
+      case 'disponivel':
+        return 'Disponível';
+      case 'em_uso':
+        return 'Em Uso';
+      case 'manutencao':
+        return 'Manutenção';
+      case 'inativo':
+        return 'Inativo';
+      default:
+        return status || 'N/D';
     }
   };
 
@@ -164,7 +183,9 @@ export function ViaturaDetailsModal({ viatura, open, onOpenChange }: ViaturaDeta
     if (!date) return false;
     const expiryDate = new Date(date);
     const today = new Date();
-    const daysUntilExpiry = Math.floor((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const daysUntilExpiry = Math.floor(
+      (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
     return daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
   };
 
@@ -287,11 +308,14 @@ export function ViaturaDetailsModal({ viatura, open, onOpenChange }: ViaturaDeta
                       {isExpired(viatura.seguro_validade) && (
                         <AlertTriangle className="h-4 w-4 text-destructive" />
                       )}
-                      {isExpiringSoon(viatura.seguro_validade) && !isExpired(viatura.seguro_validade) && (
-                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                      )}
-                      <span className={`font-medium ${isExpired(viatura.seguro_validade) ? 'text-destructive' : ''}`}>
-                        {viatura.seguro_validade 
+                      {isExpiringSoon(viatura.seguro_validade) &&
+                        !isExpired(viatura.seguro_validade) && (
+                          <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                        )}
+                      <span
+                        className={`font-medium ${isExpired(viatura.seguro_validade) ? 'text-destructive' : ''}`}
+                      >
+                        {viatura.seguro_validade
                           ? format(new Date(viatura.seguro_validade), 'dd/MM/yyyy', { locale: pt })
                           : 'N/D'}
                       </span>
@@ -306,12 +330,17 @@ export function ViaturaDetailsModal({ viatura, open, onOpenChange }: ViaturaDeta
                       {isExpired(viatura.inspecao_validade) && (
                         <AlertTriangle className="h-4 w-4 text-destructive" />
                       )}
-                      {isExpiringSoon(viatura.inspecao_validade) && !isExpired(viatura.inspecao_validade) && (
-                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                      )}
-                      <span className={`font-medium ${isExpired(viatura.inspecao_validade) ? 'text-destructive' : ''}`}>
-                        {viatura.inspecao_validade 
-                          ? format(new Date(viatura.inspecao_validade), 'dd/MM/yyyy', { locale: pt })
+                      {isExpiringSoon(viatura.inspecao_validade) &&
+                        !isExpired(viatura.inspecao_validade) && (
+                          <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                        )}
+                      <span
+                        className={`font-medium ${isExpired(viatura.inspecao_validade) ? 'text-destructive' : ''}`}
+                      >
+                        {viatura.inspecao_validade
+                          ? format(new Date(viatura.inspecao_validade), 'dd/MM/yyyy', {
+                              locale: pt,
+                            })
                           : 'N/D'}
                       </span>
                     </div>
@@ -350,7 +379,8 @@ export function ViaturaDetailsModal({ viatura, open, onOpenChange }: ViaturaDeta
                     <div>
                       <p className="font-semibold">{motoristaAtual.nome}</p>
                       <p className="text-sm text-muted-foreground">
-                        Desde {format(new Date(motoristaAtual.data_inicio), 'dd/MM/yyyy', { locale: pt })}
+                        Desde{' '}
+                        {format(new Date(motoristaAtual.data_inicio), 'dd/MM/yyyy', { locale: pt })}
                       </p>
                     </div>
                   </div>
@@ -375,8 +405,8 @@ export function ViaturaDetailsModal({ viatura, open, onOpenChange }: ViaturaDeta
                 ) : historico.length > 0 ? (
                   <div className="space-y-3">
                     {historico.map((item) => (
-                      <div 
-                        key={item.id} 
+                      <div
+                        key={item.id}
                         className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                       >
                         <div className="flex items-center gap-3">
@@ -386,7 +416,7 @@ export function ViaturaDetailsModal({ viatura, open, onOpenChange }: ViaturaDeta
                         <div className="text-sm text-muted-foreground">
                           {format(new Date(item.data_inicio), 'dd/MM/yyyy', { locale: pt })}
                           {' → '}
-                          {item.data_fim 
+                          {item.data_fim
                             ? format(new Date(item.data_fim), 'dd/MM/yyyy', { locale: pt })
                             : 'Atual'}
                         </div>

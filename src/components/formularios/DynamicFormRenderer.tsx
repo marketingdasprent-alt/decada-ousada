@@ -1,8 +1,13 @@
-
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -27,7 +32,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
   fields,
   values,
   onValueChange,
-  errors = {}
+  errors = {},
 }) => {
   const renderField = (field: FormField) => {
     const value = values[field.id] || '';
@@ -36,9 +41,9 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
     const commonProps = {
       id: field.id,
       className: cn(
-        "bg-black border-yellow-500/30 text-white placeholder-gray-400 focus:border-yellow-500",
-        error && "border-red-500"
-      )
+        'bg-black border-yellow-500/30 text-white placeholder-gray-400 focus:border-yellow-500',
+        error && 'border-red-500'
+      ),
     };
 
     switch (field.type) {
@@ -63,9 +68,9 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
             onChange={(newValue) => onValueChange(field.id, newValue)}
             defaultCountry="PT"
             className={cn(
-              "[&_button]:bg-black [&_button]:border-yellow-500/30 [&_button]:text-white",
-              "[&_input]:bg-black [&_input]:border-yellow-500/30 [&_input]:text-white [&_input]:placeholder-gray-400",
-              error && "[&_button]:border-red-500 [&_input]:border-red-500"
+              '[&_button]:bg-black [&_button]:border-yellow-500/30 [&_button]:text-white',
+              '[&_input]:bg-black [&_input]:border-yellow-500/30 [&_input]:text-white [&_input]:placeholder-gray-400',
+              error && '[&_button]:border-red-500 [&_input]:border-red-500'
             )}
           />
         );
@@ -89,11 +94,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
             </SelectTrigger>
             <SelectContent className="bg-gray-900 border-yellow-500/30">
               {field.options?.map((option) => (
-                <SelectItem 
-                  key={option} 
-                  value={option} 
-                  className="text-white hover:bg-gray-800"
-                >
+                <SelectItem key={option} value={option} className="text-white hover:bg-gray-800">
                   {option}
                 </SelectItem>
               ))}
@@ -108,16 +109,17 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full justify-start text-left font-normal bg-black border-yellow-500/30 text-white hover:bg-gray-800 hover:text-white focus:border-yellow-500",
-                  !value && "text-gray-400",
-                  error && "border-red-500"
+                  'w-full justify-start text-left font-normal bg-black border-yellow-500/30 text-white hover:bg-gray-800 hover:text-white focus:border-yellow-500',
+                  !value && 'text-gray-400',
+                  error && 'border-red-500'
                 )}
               >
                 <Calendar className="mr-2 h-4 w-4" />
-                {value ? 
-                  format(new Date(value), "PPP", { locale: pt }) : 
+                {value ? (
+                  format(new Date(value), 'PPP', { locale: pt })
+                ) : (
                   <span>{field.placeholder || 'Selecionar data'}</span>
-                }
+                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0 bg-gray-900 border-yellow-500/30" align="start">
@@ -157,8 +159,8 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
           >
             {field.options?.map((option) => (
               <div key={option} className="flex items-center space-x-2">
-                <RadioGroupItem 
-                  value={option} 
+                <RadioGroupItem
+                  value={option}
                   id={`${field.id}-${option}`}
                   className="border-yellow-500/30 text-yellow-500"
                 />
@@ -184,9 +186,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
             {field.required && <span className="text-red-400 ml-1">*</span>}
           </Label>
           {renderField(field)}
-          {errors[field.id] && (
-            <p className="text-red-400 text-sm">{errors[field.id]}</p>
-          )}
+          {errors[field.id] && <p className="text-red-400 text-sm">{errors[field.id]}</p>}
         </div>
       ))}
     </div>

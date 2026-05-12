@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { format } from "date-fns";
-import { 
-  FileSignature, 
-  Pencil, 
-  User, 
-  Phone, 
-  CreditCard, 
-  Car, 
-  FileText, 
-  MessageSquare, 
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { format } from 'date-fns';
+import {
+  FileSignature,
+  Pencil,
+  User,
+  Phone,
+  CreditCard,
+  Car,
+  FileText,
+  MessageSquare,
   Fuel,
   Receipt,
   AlertTriangle,
@@ -19,24 +19,24 @@ import {
   TrendingDown,
   XCircle,
   Loader2,
-  Wallet
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SectionCard } from "@/components/ui/section-card";
-import { MotoristaFullModal } from "@/components/motoristas/MotoristaFullModal";
-import { MotoristaTabDocumentos } from "@/components/motoristas/tabs/MotoristaTabDocumentos";
-import { MotoristaTabFinanceiro } from "@/components/motoristas/tabs/MotoristaTabFinanceiro";
-import { MotoristaTabRecibos } from "@/components/motoristas/tabs/MotoristaTabRecibos";
-import { MotoristaTabViaturas } from "@/components/motoristas/tabs/MotoristaTabViaturas";
-import { MotoristaTabContratos } from "@/components/motoristas/tabs/MotoristaTabContratos";
-import { MotoristaTabDanos } from "@/components/motoristas/tabs/MotoristaTabDanos";
-import type { Motorista } from "@/pages/Motoristas";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { 
+  Wallet,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SectionCard } from '@/components/ui/section-card';
+import { MotoristaFullModal } from '@/components/motoristas/MotoristaFullModal';
+import { MotoristaTabDocumentos } from '@/components/motoristas/tabs/MotoristaTabDocumentos';
+import { MotoristaTabFinanceiro } from '@/components/motoristas/tabs/MotoristaTabFinanceiro';
+import { MotoristaTabRecibos } from '@/components/motoristas/tabs/MotoristaTabRecibos';
+import { MotoristaTabViaturas } from '@/components/motoristas/tabs/MotoristaTabViaturas';
+import { MotoristaTabContratos } from '@/components/motoristas/tabs/MotoristaTabContratos';
+import { MotoristaTabDanos } from '@/components/motoristas/tabs/MotoristaTabDanos';
+import type { Motorista } from '@/pages/Motoristas';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -45,7 +45,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 
 interface ViaturaAtual {
   matricula: string;
@@ -61,30 +61,30 @@ export default function MotoristaDetalhe() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const returnUrl = (location.state as any)?.listaUrl || "/motoristas";
+  const returnUrl = (location.state as any)?.listaUrl || '/motoristas';
   const { toast } = useToast();
   const [motorista, setMotorista] = useState<Motorista | null>(null);
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [initialModalTab, setInitialModalTab] = useState<"dados" | "contratos">("dados");
+  const [initialModalTab, setInitialModalTab] = useState<'dados' | 'contratos'>('dados');
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const [viaturaAtual, setViaturaAtual] = useState<ViaturaAtual | null>(null);
-  const [activeTab, setActiveTab] = useState("dados");
+  const [activeTab, setActiveTab] = useState('dados');
   const [financeiroResumo, setFinanceiroResumo] = useState({
     totalCreditos: 0,
     totalDebitos: 0,
-    saldo: 0
+    saldo: 0,
   });
 
   const TABS = [
-    { id: "dados", label: "Dados", icon: User },
-    { id: "documentos", label: "Documentos", icon: FileText },
-    { id: "financeiro", label: "Financeiro", icon: Wallet },
-    { id: "recibos", label: "Recibos", icon: Receipt },
-    { id: "viaturas", label: "Viaturas", icon: Car },
-    { id: "contratos", label: "Contratos", icon: FileSignature },
-    { id: "danos", label: "Danos", icon: AlertTriangle },
+    { id: 'dados', label: 'Dados', icon: User },
+    { id: 'documentos', label: 'Documentos', icon: FileText },
+    { id: 'financeiro', label: 'Financeiro', icon: Wallet },
+    { id: 'recibos', label: 'Recibos', icon: Receipt },
+    { id: 'viaturas', label: 'Viaturas', icon: Car },
+    { id: 'contratos', label: 'Contratos', icon: FileSignature },
+    { id: 'danos', label: 'Danos', icon: AlertTriangle },
   ];
 
   useEffect(() => {
@@ -99,26 +99,26 @@ export default function MotoristaDetalhe() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from("motoristas_ativos")
-        .select("*")
-        .eq("id", id)
+        .from('motoristas_ativos')
+        .select('*')
+        .eq('id', id)
         .maybeSingle();
 
       if (error) throw error;
-      
+
       if (!data) {
-        throw new Error("Motorista não encontrado na base de dados ativa.");
+        throw new Error('Motorista não encontrado na base de dados ativa.');
       }
-      
+
       setMotorista(data);
     } catch (error: any) {
-      console.error("Erro ao carregar motorista:", error);
+      console.error('Erro ao carregar motorista:', error);
       toast({
-        title: "Erro ao carregar motorista",
+        title: 'Erro ao carregar motorista',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
-      navigate("/motoristas");
+      navigate('/motoristas');
     } finally {
       setLoading(false);
     }
@@ -128,28 +128,28 @@ export default function MotoristaDetalhe() {
     if (!id) return;
     try {
       const { data, error } = await supabase
-        .from("motorista_financeiro")
-        .select("valor, tipo")
-        .eq("motorista_id", id)
-        .neq("status", "cancelado");
+        .from('motorista_financeiro')
+        .select('valor, tipo')
+        .eq('motorista_id', id)
+        .neq('status', 'cancelado');
 
       if (error) throw error;
 
       let creditos = 0;
       let debitos = 0;
 
-      (data || []).forEach(mov => {
-        if (mov.tipo === "credito") creditos += Number(mov.valor);
-        else if (mov.tipo === "debito") debitos += Number(mov.valor);
+      (data || []).forEach((mov) => {
+        if (mov.tipo === 'credito') creditos += Number(mov.valor);
+        else if (mov.tipo === 'debito') debitos += Number(mov.valor);
       });
 
       setFinanceiroResumo({
         totalCreditos: creditos,
         totalDebitos: debitos,
-        saldo: creditos - debitos
+        saldo: creditos - debitos,
       });
     } catch (error) {
-      console.error("Erro ao carregar resumo financeiro:", error);
+      console.error('Erro ao carregar resumo financeiro:', error);
     }
   };
 
@@ -180,22 +180,22 @@ export default function MotoristaDetalhe() {
       setIsTogglingStatus(true);
       const newStatus = !motorista.status_ativo;
       const { error } = await supabase
-        .from("motoristas_ativos")
+        .from('motoristas_ativos')
         .update({ status_ativo: newStatus })
-        .eq("id", motorista.id);
+        .eq('id', motorista.id);
 
       if (error) throw error;
 
       setMotorista({ ...motorista, status_ativo: newStatus });
       toast({
-        title: newStatus ? "Motorista ativado" : "Motorista inativado",
+        title: newStatus ? 'Motorista ativado' : 'Motorista inativado',
         description: `O motorista ${motorista.nome} foi ${newStatus ? 'ativado' : 'inativado'} com sucesso.`,
       });
     } catch (error: any) {
       toast({
-        title: "Erro ao alterar status",
+        title: 'Erro ao alterar status',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setIsTogglingStatus(false);
@@ -204,21 +204,21 @@ export default function MotoristaDetalhe() {
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
+    if (!dateString) return '-';
     try {
-      return format(new Date(dateString), "dd/MM/yyyy");
+      return format(new Date(dateString), 'dd/MM/yyyy');
     } catch {
-      return "-";
+      return '-';
     }
   };
 
   const handleViewContracts = () => {
-    setInitialModalTab("contratos");
+    setInitialModalTab('contratos');
     setEditDialogOpen(true);
   };
 
   const handleEdit = () => {
-    setInitialModalTab("dados");
+    setInitialModalTab('dados');
     setEditDialogOpen(true);
   };
 
@@ -229,9 +229,12 @@ export default function MotoristaDetalhe() {
     }
   };
 
-  const handleViewDocument = async (path: string | null, bucket: string = "motorista-documentos") => {
+  const handleViewDocument = async (
+    path: string | null,
+    bucket: string = 'motorista-documentos'
+  ) => {
     if (!path) return;
-    
+
     try {
       // Se já for uma URL completa (http...), abre direto
       if (path.startsWith('http')) {
@@ -239,20 +242,18 @@ export default function MotoristaDetalhe() {
         return;
       }
 
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .createSignedUrl(path, 3600);
+      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
 
       if (error) throw error;
       if (data?.signedUrl) {
         window.open(data.signedUrl, '_blank');
       }
     } catch (error) {
-      console.error("Erro ao gerar link do documento:", error);
+      console.error('Erro ao gerar link do documento:', error);
       toast({
-        title: "Erro ao abrir documento",
-        description: "Não foi possível gerar um link seguro para o ficheiro.",
-        variant: "destructive",
+        title: 'Erro ao abrir documento',
+        description: 'Não foi possível gerar um link seguro para o ficheiro.',
+        variant: 'destructive',
       });
     }
   };
@@ -280,9 +281,9 @@ export default function MotoristaDetalhe() {
       {/* Header com Ações */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-xl border shadow-sm">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => navigate(returnUrl)}
             className="rounded-full"
           >
@@ -291,36 +292,38 @@ export default function MotoristaDetalhe() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{motorista.nome}</h1>
-              <Badge 
-                variant={motorista.status_ativo ? "default" : "secondary"}
-                className={motorista.status_ativo ? "bg-green-600 hover:bg-green-700" : ""}
+              <Badge
+                variant={motorista.status_ativo ? 'default' : 'secondary'}
+                className={motorista.status_ativo ? 'bg-green-600 hover:bg-green-700' : ''}
               >
-                {motorista.status_ativo ? "Ativo" : "Inativo"}
+                {motorista.status_ativo ? 'Ativo' : 'Inativo'}
               </Badge>
             </div>
-            <p className="text-muted-foreground font-mono text-sm mt-1">Código: #{motorista.codigo}</p>
+            <p className="text-muted-foreground font-mono text-sm mt-1">
+              Código: #{motorista.codigo}
+            </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleEdit}
-            className="flex-1 md:flex-none"
-          >
+          <Button variant="outline" onClick={handleEdit} className="flex-1 md:flex-none">
             <Pencil className="h-4 w-4 mr-2" />
             Editar
           </Button>
-          
-          <Button 
-            variant={motorista.status_ativo ? "destructive" : "default"}
+
+          <Button
+            variant={motorista.status_ativo ? 'destructive' : 'default'}
             onClick={() => setIsStatusDialogOpen(true)}
-            className={`flex-1 md:flex-none ${!motorista.status_ativo ? "bg-green-600 hover:bg-green-700" : ""}`}
+            className={`flex-1 md:flex-none ${!motorista.status_ativo ? 'bg-green-600 hover:bg-green-700' : ''}`}
           >
             {motorista.status_ativo ? (
-              <><XCircle className="h-4 w-4 mr-2" /> Inativar</>
+              <>
+                <XCircle className="h-4 w-4 mr-2" /> Inativar
+              </>
             ) : (
-              <><CheckCircle className="h-4 w-4 mr-2" /> Ativar</>
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" /> Ativar
+              </>
             )}
           </Button>
         </div>
@@ -329,8 +332,8 @@ export default function MotoristaDetalhe() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-card border w-full h-auto p-1 flex-wrap justify-start">
           {TABS.map((tab) => (
-            <TabsTrigger 
-              key={tab.id} 
+            <TabsTrigger
+              key={tab.id}
               value={tab.id}
               className="flex items-center gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
@@ -349,12 +352,12 @@ export default function MotoristaDetalhe() {
               className="h-full"
             >
               <div className="space-y-1">
-                <InfoItem label="NIF" value={motorista.nif || "-"} />
-                <InfoItem label="Morada" value={motorista.morada || "-"} />
-                <InfoItem label="Código Postal" value={motorista.codigo_postal || "-"} />
-                <InfoItem label="Cidade" value={motorista.cidade || "-"} />
-                <InfoItem label="IBAN" value={motorista.iban || "-"} />
-                <InfoItem label="Gestor Responsável" value={motorista.gestor_responsavel || "-"} />
+                <InfoItem label="NIF" value={motorista.nif || '-'} />
+                <InfoItem label="Morada" value={motorista.morada || '-'} />
+                <InfoItem label="Código Postal" value={motorista.codigo_postal || '-'} />
+                <InfoItem label="Cidade" value={motorista.cidade || '-'} />
+                <InfoItem label="IBAN" value={motorista.iban || '-'} />
+                <InfoItem label="Gestor Responsável" value={motorista.gestor_responsavel || '-'} />
               </div>
             </SectionCard>
 
@@ -365,18 +368,31 @@ export default function MotoristaDetalhe() {
               className="h-full"
             >
               <div className="space-y-1">
-                <InfoItem label="Tipo" value={motorista.documento_tipo || "-"} />
-                <InfoItem label="Número" value={motorista.documento_numero || "-"} />
+                <InfoItem label="Tipo" value={motorista.documento_tipo || '-'} />
+                <InfoItem label="Número" value={motorista.documento_numero || '-'} />
                 <InfoItem label="Validade" value={formatDate(motorista.documento_validade)} />
-                {(motorista.documento_ficheiro_url || motorista.documento_identificacao_verso_url) && (
+                {(motorista.documento_ficheiro_url ||
+                  motorista.documento_identificacao_verso_url) && (
                   <div className="flex gap-2 pt-3">
                     {motorista.documento_ficheiro_url && (
-                      <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => handleViewDocument(motorista.documento_ficheiro_url)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={() => handleViewDocument(motorista.documento_ficheiro_url)}
+                      >
                         Ver Frente
                       </Button>
                     )}
                     {motorista.documento_identificacao_verso_url && (
-                      <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => handleViewDocument(motorista.documento_identificacao_verso_url)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={() =>
+                          handleViewDocument(motorista.documento_identificacao_verso_url)
+                        }
+                      >
                         Ver Verso
                       </Button>
                     )}
@@ -392,11 +408,16 @@ export default function MotoristaDetalhe() {
               className="h-full"
             >
               <div className="space-y-1">
-                <InfoItem label="Número" value={motorista.licenca_tvde_numero || "-"} />
+                <InfoItem label="Número" value={motorista.licenca_tvde_numero || '-'} />
                 <InfoItem label="Validade" value={formatDate(motorista.licenca_tvde_validade)} />
                 {motorista.licenca_tvde_ficheiro_url && (
                   <div className="pt-3">
-                    <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => handleViewDocument(motorista.licenca_tvde_ficheiro_url)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => handleViewDocument(motorista.licenca_tvde_ficheiro_url)}
+                    >
                       Ver Documento
                     </Button>
                   </div>
@@ -411,8 +432,8 @@ export default function MotoristaDetalhe() {
               className="h-full"
             >
               <div className="space-y-1">
-                <InfoItem label="Telefone" value={motorista.telefone || "-"} />
-                <InfoItem label="Email" value={motorista.email || "-"} />
+                <InfoItem label="Telefone" value={motorista.telefone || '-'} />
+                <InfoItem label="Email" value={motorista.email || '-'} />
               </div>
             </SectionCard>
 
@@ -423,18 +444,31 @@ export default function MotoristaDetalhe() {
               className="h-full"
             >
               <div className="space-y-1">
-                <InfoItem label="Número" value={motorista.carta_conducao || "-"} />
-                <InfoItem label="Categorias" value={motorista.carta_categorias?.join(", ") || "-"} />
+                <InfoItem label="Número" value={motorista.carta_conducao || '-'} />
+                <InfoItem
+                  label="Categorias"
+                  value={motorista.carta_categorias?.join(', ') || '-'}
+                />
                 <InfoItem label="Validade" value={formatDate(motorista.carta_validade)} />
                 {(motorista.carta_ficheiro_url || motorista.carta_conducao_verso_url) && (
                   <div className="flex gap-2 pt-3">
                     {motorista.carta_ficheiro_url && (
-                      <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => handleViewDocument(motorista.carta_ficheiro_url)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={() => handleViewDocument(motorista.carta_ficheiro_url)}
+                      >
                         Ver Frente
                       </Button>
                     )}
                     {motorista.carta_conducao_verso_url && (
-                      <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => handleViewDocument(motorista.carta_conducao_verso_url)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={() => handleViewDocument(motorista.carta_conducao_verso_url)}
+                      >
                         Ver Verso
                       </Button>
                     )}
@@ -451,23 +485,42 @@ export default function MotoristaDetalhe() {
             >
               <div className="grid grid-cols-1 gap-2 pt-1">
                 {motorista.registo_criminal_url && (
-                  <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={() => handleViewDocument(motorista.registo_criminal_url)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start text-xs"
+                    onClick={() => handleViewDocument(motorista.registo_criminal_url)}
+                  >
                     <FileText className="h-3 w-3 mr-2" /> Registo Criminal
                   </Button>
                 )}
                 {motorista.comprovativo_morada_url && (
-                  <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={() => handleViewDocument(motorista.comprovativo_morada_url)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start text-xs"
+                    onClick={() => handleViewDocument(motorista.comprovativo_morada_url)}
+                  >
                     <FileText className="h-3 w-3 mr-2" /> Comprovativo Morada
                   </Button>
                 )}
                 {motorista.comprovativo_iban_url && (
-                  <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={() => handleViewDocument(motorista.comprovativo_iban_url)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start text-xs"
+                    onClick={() => handleViewDocument(motorista.comprovativo_iban_url)}
+                  >
                     <FileText className="h-3 w-3 mr-2" /> Comprovativo IBAN
                   </Button>
                 )}
-                {!motorista.registo_criminal_url && !motorista.comprovativo_morada_url && !motorista.comprovativo_iban_url && (
-                  <p className="text-muted-foreground italic text-center py-2 text-sm">Sem documentos extra</p>
-                )}
+                {!motorista.registo_criminal_url &&
+                  !motorista.comprovativo_morada_url &&
+                  !motorista.comprovativo_iban_url && (
+                    <p className="text-muted-foreground italic text-center py-2 text-sm">
+                      Sem documentos extra
+                    </p>
+                  )}
               </div>
             </SectionCard>
 
@@ -478,9 +531,9 @@ export default function MotoristaDetalhe() {
               className="h-full"
             >
               <div className="space-y-1">
-                <InfoItem label="BP" value={motorista.cartao_bp || "-"} />
-                <InfoItem label="REPSOL" value={motorista.cartao_repsol || "-"} />
-                <InfoItem label="EDP" value={motorista.cartao_edp || "-"} />
+                <InfoItem label="BP" value={motorista.cartao_bp || '-'} />
+                <InfoItem label="REPSOL" value={motorista.cartao_repsol || '-'} />
+                <InfoItem label="EDP" value={motorista.cartao_edp || '-'} />
               </div>
             </SectionCard>
 
@@ -493,14 +546,21 @@ export default function MotoristaDetalhe() {
               {viaturaAtual ? (
                 <div className="space-y-1">
                   <InfoItem label="Matrícula" value={viaturaAtual.matricula} />
-                  <InfoItem label="Marca / Modelo" value={`${viaturaAtual.marca} ${viaturaAtual.modelo}`} />
+                  <InfoItem
+                    label="Marca / Modelo"
+                    value={`${viaturaAtual.marca} ${viaturaAtual.modelo}`}
+                  />
                   {viaturaAtual.ano && <InfoItem label="Ano" value={String(viaturaAtual.ano)} />}
                   {viaturaAtual.cor && <InfoItem label="Cor" value={viaturaAtual.cor} />}
-                  {viaturaAtual.categoria && <InfoItem label="Categoria" value={viaturaAtual.categoria} />}
+                  {viaturaAtual.categoria && (
+                    <InfoItem label="Categoria" value={viaturaAtual.categoria} />
+                  )}
                   <InfoItem label="Desde" value={formatDate(viaturaAtual.data_inicio)} />
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground italic text-center py-2">Sem viatura associada</p>
+                <p className="text-sm text-muted-foreground italic text-center py-2">
+                  Sem viatura associada
+                </p>
               )}
             </SectionCard>
 
@@ -511,7 +571,9 @@ export default function MotoristaDetalhe() {
                 headerClassName="bg-muted/50"
                 className="h-full"
               >
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{motorista.observacoes}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {motorista.observacoes}
+                </p>
               </SectionCard>
             )}
 
@@ -528,7 +590,9 @@ export default function MotoristaDetalhe() {
                     <span className="text-sm font-medium">Total Créditos</span>
                   </div>
                   <span className="font-bold text-green-600">
-                    {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(financeiroResumo.totalCreditos)}
+                    {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(
+                      financeiroResumo.totalCreditos
+                    )}
                   </span>
                 </div>
 
@@ -538,17 +602,23 @@ export default function MotoristaDetalhe() {
                     <span className="text-sm font-medium">Total Débitos</span>
                   </div>
                   <span className="font-bold text-red-600">
-                    {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(financeiroResumo.totalDebitos)}
+                    {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(
+                      financeiroResumo.totalDebitos
+                    )}
                   </span>
                 </div>
 
                 <div className="pt-2 border-t flex justify-between items-center">
                   <span className="text-sm font-semibold">Saldo Atual</span>
-                  <span className={cn(
-                    "font-bold text-lg",
-                    financeiroResumo.saldo >= 0 ? "text-green-600" : "text-red-600"
-                  )}>
-                    {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(financeiroResumo.saldo)}
+                  <span
+                    className={cn(
+                      'font-bold text-lg',
+                      financeiroResumo.saldo >= 0 ? 'text-green-600' : 'text-red-600'
+                    )}
+                  >
+                    {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(
+                      financeiroResumo.saldo
+                    )}
                   </span>
                 </div>
               </div>
@@ -582,9 +652,9 @@ export default function MotoristaDetalhe() {
       </Tabs>
 
       {/* Modais de Suporte */}
-      <MotoristaFullModal 
-        open={editDialogOpen} 
-        onOpenChange={(open) => handleEditClose(!open)} 
+      <MotoristaFullModal
+        open={editDialogOpen}
+        onOpenChange={(open) => handleEditClose(!open)}
         motorista={motorista}
         onMotoristaUpdated={loadMotorista}
         initialTab={initialModalTab}
@@ -595,10 +665,10 @@ export default function MotoristaDetalhe() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {motorista.status_ativo ? "Inativar Motorista" : "Ativar Motorista"}
+              {motorista.status_ativo ? 'Inativar Motorista' : 'Ativar Motorista'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja {motorista.status_ativo ? "inativar" : "ativar"} o motorista{" "}
+              Tem certeza que deseja {motorista.status_ativo ? 'inativar' : 'ativar'} o motorista{' '}
               <strong>{motorista.nome}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -607,9 +677,13 @@ export default function MotoristaDetalhe() {
             <AlertDialogAction
               onClick={handleToggleStatus}
               disabled={isTogglingStatus}
-              className={motorista.status_ativo ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "bg-green-600 hover:bg-green-700"}
+              className={
+                motorista.status_ativo
+                  ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                  : 'bg-green-600 hover:bg-green-700'
+              }
             >
-              {isTogglingStatus ? "Processando..." : motorista.status_ativo ? "Inativar" : "Ativar"}
+              {isTogglingStatus ? 'Processando...' : motorista.status_ativo ? 'Inativar' : 'Ativar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -57,7 +57,14 @@ export const computeDefaultRoute = (
 
 export const useDefaultRoute = () => {
   const { loading: authLoading, user } = useAuth();
-  const { hasAccessToResource, isAdmin, loading: permissionsLoading, cargo_id, recursos, tipoUtilizador } = usePermissions();
+  const {
+    hasAccessToResource,
+    isAdmin,
+    loading: permissionsLoading,
+    cargo_id,
+    recursos,
+    tipoUtilizador,
+  } = usePermissions();
 
   const loading = authLoading || permissionsLoading;
 
@@ -65,7 +72,16 @@ export const useDefaultRoute = () => {
     if (authLoading || permissionsLoading) return null;
     if (!user) return null;
     return computeDefaultRoute(isAdmin, cargo_id, recursos, hasAccessToResource, tipoUtilizador);
-  }, [hasAccessToResource, isAdmin, authLoading, permissionsLoading, cargo_id, recursos, tipoUtilizador, user]);
+  }, [
+    hasAccessToResource,
+    isAdmin,
+    authLoading,
+    permissionsLoading,
+    cargo_id,
+    recursos,
+    tipoUtilizador,
+    user,
+  ]);
 
   return { defaultRoute, loading };
 };

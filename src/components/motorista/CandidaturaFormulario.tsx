@@ -5,10 +5,39 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Send, User, FileText, Car, LogOut, Upload, X, CheckCircle2, FileCheck, Home, Building2 } from 'lucide-react';
+import {
+  Loader2,
+  Save,
+  Send,
+  User,
+  FileText,
+  Car,
+  LogOut,
+  Upload,
+  X,
+  CheckCircle2,
+  FileCheck,
+  Home,
+  Building2,
+} from 'lucide-react';
+import {
+  validarNIF,
+  validarCodigoPostal,
+  validarNumeroDocumento,
+  formatarCodigoPostal,
+  validarCartaConducao,
+  validarTelefone,
+  validarEmail,
+} from '@/lib/pt-validators';
 import { Candidatura } from '@/pages/motorista/PainelMotorista';
 import { DocumentUploader } from './DocumentUploader';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -33,12 +62,23 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
 }) => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
-  
+
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const setFieldError = (field: string, msg: string) =>
+    setFieldErrors((prev) => ({ ...prev, [field]: msg }));
+  const clearFieldError = (field: string) =>
+    setFieldErrors((prev) => {
+      const n = { ...prev };
+      delete n[field];
+      return n;
+    });
+
   const metadataNome = typeof user?.user_metadata?.nome === 'string' ? user.user_metadata.nome : '';
-  const metadataTelefone = typeof user?.user_metadata?.telefone === 'string' ? user.user_metadata.telefone : '';
+  const metadataTelefone =
+    typeof user?.user_metadata?.telefone === 'string' ? user.user_metadata.telefone : '';
 
   // Dados pessoais
   const [nome, setNome] = useState(candidatura?.nome || metadataNome || '');
@@ -48,30 +88,50 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
   const [morada, setMorada] = useState(candidatura?.morada || '');
   const [codigoPostal, setCodigoPostal] = useState(candidatura?.codigo_postal || '');
   const [cidade, setCidade] = useState(candidatura?.cidade || '');
-  
+
   // Documento de identificação
   const [documentoTipo, setDocumentoTipo] = useState(candidatura?.documento_tipo || '');
   const [documentoNumero, setDocumentoNumero] = useState(candidatura?.documento_numero || '');
   const [documentoValidade, setDocumentoValidade] = useState(candidatura?.documento_validade || '');
-  const [documentoFicheiroUrl, setDocumentoFicheiroUrl] = useState(candidatura?.documento_ficheiro_url || '');
-  const [documentoIdentificacaoVersoUrl, setDocumentoIdentificacaoVersoUrl] = useState(candidatura?.documento_identificacao_verso_url || '');
-  
+  const [documentoFicheiroUrl, setDocumentoFicheiroUrl] = useState(
+    candidatura?.documento_ficheiro_url || ''
+  );
+  const [documentoIdentificacaoVersoUrl, setDocumentoIdentificacaoVersoUrl] = useState(
+    candidatura?.documento_identificacao_verso_url || ''
+  );
+
   // Carta de condução
   const [cartaConducao, setCartaConducao] = useState(candidatura?.carta_conducao || '');
-  const [cartaCategorias, setCartaCategorias] = useState<string[]>(candidatura?.carta_categorias || []);
+  const [cartaCategorias, setCartaCategorias] = useState<string[]>(
+    candidatura?.carta_categorias || []
+  );
   const [cartaValidade, setCartaValidade] = useState(candidatura?.carta_validade || '');
   const [cartaFicheiroUrl, setCartaFicheiroUrl] = useState(candidatura?.carta_ficheiro_url || '');
-  const [cartaConducaoVersoUrl, setCartaConducaoVersoUrl] = useState(candidatura?.carta_conducao_verso_url || '');
-  
+  const [cartaConducaoVersoUrl, setCartaConducaoVersoUrl] = useState(
+    candidatura?.carta_conducao_verso_url || ''
+  );
+
   // Licença TVDE
-  const [licencaTvdeNumero, setLicencaTvdeNumero] = useState(candidatura?.licenca_tvde_numero || '');
-  const [licencaTvdeValidade, setLicencaTvdeValidade] = useState(candidatura?.licenca_tvde_validade || '');
-  const [licencaTvdeFicheiroUrl, setLicencaTvdeFicheiroUrl] = useState(candidatura?.licenca_tvde_ficheiro_url || '');
+  const [licencaTvdeNumero, setLicencaTvdeNumero] = useState(
+    candidatura?.licenca_tvde_numero || ''
+  );
+  const [licencaTvdeValidade, setLicencaTvdeValidade] = useState(
+    candidatura?.licenca_tvde_validade || ''
+  );
+  const [licencaTvdeFicheiroUrl, setLicencaTvdeFicheiroUrl] = useState(
+    candidatura?.licenca_tvde_ficheiro_url || ''
+  );
 
   // Documentos adicionais
-  const [registoCriminalUrl, setRegistoCriminalUrl] = useState(candidatura?.registo_criminal_url || '');
-  const [comprovativoMoradaUrl, setComprovativoMoradaUrl] = useState(candidatura?.comprovativo_morada_url || '');
-  const [comprovativoIbanUrl, setComprovativoIbanUrl] = useState(candidatura?.comprovativo_iban_url || '');
+  const [registoCriminalUrl, setRegistoCriminalUrl] = useState(
+    candidatura?.registo_criminal_url || ''
+  );
+  const [comprovativoMoradaUrl, setComprovativoMoradaUrl] = useState(
+    candidatura?.comprovativo_morada_url || ''
+  );
+  const [comprovativoIbanUrl, setComprovativoIbanUrl] = useState(
+    candidatura?.comprovativo_iban_url || ''
+  );
 
   useEffect(() => {
     setNome(candidatura?.nome || metadataNome || '');
@@ -84,7 +144,9 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
     setDocumentoTipo(candidatura?.documento_tipo || '');
     setDocumentoNumero(candidatura?.documento_numero || '');
     setDocumentoValidade(candidatura?.documento_validade || '');
-    setDocumentoFicheiroUrl(candidatura?.documento_frente_url || candidatura?.documento_ficheiro_url || '');
+    setDocumentoFicheiroUrl(
+      candidatura?.documento_frente_url || candidatura?.documento_ficheiro_url || ''
+    );
     setDocumentoIdentificacaoVersoUrl(candidatura?.documento_identificacao_verso_url || '');
     setCartaConducao(candidatura?.carta_conducao || '');
     setCartaCategorias(candidatura?.carta_categorias || []);
@@ -100,10 +162,8 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
   }, [candidatura, metadataNome, metadataTelefone, user?.email]);
 
   const handleCategoriaToggle = (categoria: string) => {
-    setCartaCategorias(prev => 
-      prev.includes(categoria)
-        ? prev.filter(c => c !== categoria)
-        : [...prev, categoria]
+    setCartaCategorias((prev) =>
+      prev.includes(categoria) ? prev.filter((c) => c !== categoria) : [...prev, categoria]
     );
   };
 
@@ -136,31 +196,31 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
 
   const handleSave = async () => {
     if (!user) return;
-    
+
     setSaving(true);
     try {
       const data = buildCandidaturaData();
-      
+
       if (candidatura) {
         const { error } = await supabase
           .from('motorista_candidaturas')
           .update(data)
           .eq('id', candidatura.id);
-        
+
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('motorista_candidaturas')
           .insert({ ...data, status: 'rascunho' });
-        
+
         if (error) throw error;
       }
-      
+
       toast({
         title: 'Guardado',
         description: 'Os seus dados foram guardados com sucesso.',
       });
-      
+
       onUpdate();
     } catch (error: any) {
       console.error('Erro ao guardar:', error);
@@ -175,30 +235,80 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
   };
 
   const validateForm = (): string | null => {
-    if (!nome.trim()) return 'Nome é obrigatório';
-    if (!email.trim()) return 'Email é obrigatório';
-    if (!telefone.trim()) return 'Telefone é obrigatório';
-    if (!nif.trim()) return 'NIF é obrigatório';
-    if (!morada.trim()) return 'Morada é obrigatória';
-    if (!codigoPostal.trim()) return 'Código Postal é obrigatório';
-    if (!cidade.trim()) return 'Cidade é obrigatória';
-    if (!documentoTipo) return 'Tipo de documento é obrigatório';
-    if (!documentoNumero.trim()) return 'Número do documento é obrigatório';
-    if (!documentoValidade) return 'Validade do documento é obrigatória';
-    if (!documentoFicheiroUrl) return 'Upload da frente do documento é obrigatório';
-    if (!documentoIdentificacaoVersoUrl) return 'Upload do verso do documento é obrigatório';
-    if (!cartaConducao.trim()) return 'Número da carta de condução é obrigatório';
-    if (cartaCategorias.length === 0) return 'Selecione pelo menos uma categoria da carta';
-    if (!cartaValidade) return 'Validade da carta de condução é obrigatória';
-    if (!cartaFicheiroUrl) return 'Upload da frente da carta é obrigatório';
-    if (!cartaConducaoVersoUrl) return 'Upload do verso da carta é obrigatório';
-    if (!licencaTvdeNumero.trim()) return 'Número da licença TVDE é obrigatório';
-    if (!licencaTvdeValidade) return 'Validade da licença TVDE é obrigatória';
-    if (!licencaTvdeFicheiroUrl) return 'Upload da licença TVDE é obrigatório';
-    if (!registoCriminalUrl) return 'Upload do Registo Criminal é obrigatório';
-    if (!comprovativoMoradaUrl) return 'Upload do Comprovativo de Morada é obrigatório';
-    if (!comprovativoIbanUrl) return 'Upload do Comprovativo de IBAN é obrigatório';
-    return null;
+    const errors: Record<string, string> = {};
+
+    if (!nome.trim()) errors.nome = 'Nome é obrigatório';
+    if (!email.trim()) {
+      errors.email = 'Email é obrigatório';
+    } else {
+      const r = validarEmail(email);
+      if (!r.valid) errors.email = r.message!;
+    }
+
+    if (!telefone.trim()) {
+      errors.telefone = 'Telefone é obrigatório';
+    } else {
+      const r = validarTelefone(telefone);
+      if (!r.valid) errors.telefone = r.message!;
+    }
+
+    if (!nif.trim()) {
+      errors.nif = 'NIF é obrigatório';
+    } else {
+      const r = validarNIF(nif);
+      if (!r.valid) errors.nif = r.message!;
+    }
+
+    if (!morada.trim()) errors.morada = 'Morada é obrigatória';
+    if (!cidade.trim()) errors.cidade = 'Cidade é obrigatória';
+
+    if (!codigoPostal.trim()) {
+      errors.codigoPostal = 'Código Postal é obrigatório';
+    } else {
+      const r = validarCodigoPostal(codigoPostal);
+      if (!r.valid) errors.codigoPostal = r.message!;
+    }
+
+    if (!documentoTipo) errors.documentoTipo = 'Tipo de documento é obrigatório';
+
+    if (!documentoNumero.trim()) {
+      errors.documentoNumero = 'Número do documento é obrigatório';
+    } else if (documentoTipo) {
+      const r = validarNumeroDocumento(documentoTipo, documentoNumero);
+      if (!r.valid) errors.documentoNumero = r.message!;
+    }
+
+    if (!documentoValidade) errors.documentoValidade = 'Validade do documento é obrigatória';
+    if (!documentoFicheiroUrl)
+      errors.documentoFicheiroUrl = 'Upload da frente do documento é obrigatório';
+    if (!documentoIdentificacaoVersoUrl)
+      errors.documentoIdentificacaoVersoUrl = 'Upload do verso do documento é obrigatório';
+    if (!cartaConducao.trim()) {
+      errors.cartaConducao = 'Número da carta de condução é obrigatório';
+    } else {
+      const r = validarCartaConducao(cartaConducao);
+      if (!r.valid) errors.cartaConducao = r.message!;
+    }
+    if (cartaCategorias.length === 0) errors.cartaCategorias = 'Selecione pelo menos uma categoria';
+    if (!cartaValidade) errors.cartaValidade = 'Validade da carta é obrigatória';
+    if (!cartaFicheiroUrl) errors.cartaFicheiroUrl = 'Upload da frente da carta é obrigatório';
+    if (!cartaConducaoVersoUrl)
+      errors.cartaConducaoVersoUrl = 'Upload do verso da carta é obrigatório';
+    if (!licencaTvdeNumero.trim())
+      errors.licencaTvdeNumero = 'Número da licença TVDE é obrigatório';
+    if (!licencaTvdeValidade) errors.licencaTvdeValidade = 'Validade da licença TVDE é obrigatória';
+    if (!licencaTvdeFicheiroUrl)
+      errors.licencaTvdeFicheiroUrl = 'Upload da licença TVDE é obrigatório';
+    if (!registoCriminalUrl) errors.registoCriminalUrl = 'Upload do Registo Criminal é obrigatório';
+    if (!comprovativoMoradaUrl)
+      errors.comprovativoMoradaUrl = 'Upload do Comprovativo de Morada é obrigatório';
+    if (!comprovativoIbanUrl)
+      errors.comprovativoIbanUrl = 'Upload do Comprovativo de IBAN é obrigatório';
+
+    setFieldErrors(errors);
+    if (Object.keys(errors).length === 0) return null;
+    // Retorna o primeiro erro para o toast
+    return Object.values(errors)[0];
   };
 
   const handleSubmit = async () => {
@@ -219,27 +329,25 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
         status: 'submetido',
         data_submissao: new Date().toISOString(),
       };
-      
+
       if (candidatura) {
         const { error } = await supabase
           .from('motorista_candidaturas')
           .update(data)
           .eq('id', candidatura.id);
-        
+
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('motorista_candidaturas')
-          .insert(data);
-        
+        const { error } = await supabase.from('motorista_candidaturas').insert(data);
+
         if (error) throw error;
       }
-      
+
       toast({
         title: 'Candidatura Submetida!',
         description: 'Os seus documentos serão analisados pela nossa equipa.',
       });
-      
+
       onUpdate();
     } catch (error: any) {
       console.error('Erro ao submeter:', error);
@@ -255,11 +363,26 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
 
   const completionPercentage = () => {
     const fields = [
-      nome, email, telefone, nif, morada, cidade,
-      documentoTipo, documentoNumero, documentoValidade, documentoFicheiroUrl,
-      cartaConducao, cartaCategorias.length > 0, cartaValidade, cartaFicheiroUrl,
-      licencaTvdeNumero, licencaTvdeValidade, licencaTvdeFicheiroUrl,
-      registoCriminalUrl, comprovativoMoradaUrl, comprovativoIbanUrl,
+      nome,
+      email,
+      telefone,
+      nif,
+      morada,
+      cidade,
+      documentoTipo,
+      documentoNumero,
+      documentoValidade,
+      documentoFicheiroUrl,
+      cartaConducao,
+      cartaCategorias.length > 0,
+      cartaValidade,
+      cartaFicheiroUrl,
+      licencaTvdeNumero,
+      licencaTvdeValidade,
+      licencaTvdeFicheiroUrl,
+      registoCriminalUrl,
+      comprovativoMoradaUrl,
+      comprovativoIbanUrl,
     ];
     const filled = fields.filter(Boolean).length;
     return Math.round((filled / fields.length) * 100);
@@ -279,7 +402,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
               <p className="text-sm text-muted-foreground">Candidatura de Motorista</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium text-foreground">{nome || user?.email}</p>
@@ -295,7 +418,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
       {/* Progress Bar */}
       <div className="max-w-4xl mx-auto px-4 py-4">
         <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div 
+          <div
             className="h-full bg-primary transition-all duration-500"
             style={{ width: `${completionPercentage()}%` }}
           />
@@ -304,6 +427,9 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
 
       {/* Form */}
       <div className="max-w-4xl mx-auto px-4 pb-8 space-y-6">
+        <p className="text-xs text-muted-foreground">
+          <span className="text-destructive font-semibold">*</span> Campos obrigatórios
+        </p>
         {/* Dados Pessoais */}
         <Card className="border-border overflow-hidden">
           <CardHeader className="bg-muted/30 pb-4">
@@ -315,7 +441,9 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome Completo *</Label>
+              <Label htmlFor="nome">
+                Nome Completo <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="nome"
                 value={nome}
@@ -324,64 +452,139 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">
+                Email <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  clearFieldError('email');
+                }}
+                onBlur={() => {
+                  if (email) {
+                    const r = validarEmail(email);
+                    if (!r.valid) setFieldError('email', r.message!);
+                  }
+                }}
                 placeholder="seu@email.com"
+                className={fieldErrors.email ? 'border-destructive' : ''}
               />
+              {fieldErrors.email && <p className="text-xs text-destructive">{fieldErrors.email}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="telefone">Telefone *</Label>
+              <Label htmlFor="telefone">
+                Telefone <span className="text-destructive">*</span>
+              </Label>
               <PhoneInput
                 id="telefone"
                 value={telefone}
-                onChange={setTelefone}
+                onChange={(v) => {
+                  setTelefone(v);
+                  clearFieldError('telefone');
+                }}
                 defaultCountry="PT"
               />
+              {fieldErrors.telefone && (
+                <p className="text-xs text-destructive">{fieldErrors.telefone}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="nif">NIF *</Label>
+              <Label htmlFor="nif">
+                NIF <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="nif"
                 value={nif}
-                onChange={(e) => setNif(e.target.value)}
+                onChange={(e) => setNif(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                onBlur={() => {
+                  if (nif.trim()) {
+                    const r = validarNIF(nif);
+                    if (!r.valid) setFieldError('nif', r.message!);
+                    else clearFieldError('nif');
+                  }
+                }}
                 placeholder="123456789"
+                maxLength={9}
+                inputMode="numeric"
+                aria-invalid={!!fieldErrors.nif}
+                className={fieldErrors.nif ? 'border-destructive' : ''}
               />
+              {fieldErrors.nif && <p className="text-xs text-destructive">{fieldErrors.nif}</p>}
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="morada">Morada *</Label>
+              <Label htmlFor="morada">
+                Morada <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="morada"
                 value={morada}
-                onChange={(e) => setMorada(e.target.value)}
+                onChange={(e) => {
+                  setMorada(e.target.value);
+                  clearFieldError('morada');
+                }}
                 placeholder="Rua, número, andar..."
+                aria-invalid={!!fieldErrors.morada}
+                className={fieldErrors.morada ? 'border-destructive' : ''}
               />
+              {fieldErrors.morada && (
+                <p className="text-xs text-destructive">{fieldErrors.morada}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cidade">Cidade *</Label>
+              <Label htmlFor="cidade">
+                Cidade <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="cidade"
                 value={cidade}
-                onChange={(e) => setCidade(e.target.value)}
+                onChange={(e) => {
+                  setCidade(e.target.value);
+                  clearFieldError('cidade');
+                }}
                 placeholder="Lisboa"
+                aria-invalid={!!fieldErrors.cidade}
+                className={fieldErrors.cidade ? 'border-destructive' : ''}
               />
+              {fieldErrors.cidade && (
+                <p className="text-xs text-destructive">{fieldErrors.cidade}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="codigoPostal">Código Postal *</Label>
+              <Label htmlFor="codigoPostal">
+                Código Postal <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="codigoPostal"
                 value={codigoPostal}
-                onChange={(e) => setCodigoPostal(e.target.value)}
+                onChange={(e) => {
+                  const formatted = formatarCodigoPostal(e.target.value);
+                  setCodigoPostal(formatted);
+                  clearFieldError('codigoPostal');
+                }}
+                onBlur={() => {
+                  if (codigoPostal.trim()) {
+                    const r = validarCodigoPostal(codigoPostal);
+                    if (!r.valid) setFieldError('codigoPostal', r.message!);
+                    else clearFieldError('codigoPostal');
+                  }
+                }}
                 placeholder="0000-000"
+                maxLength={8}
+                inputMode="numeric"
+                aria-invalid={!!fieldErrors.codigoPostal}
+                className={fieldErrors.codigoPostal ? 'border-destructive' : ''}
               />
+              {fieldErrors.codigoPostal && (
+                <p className="text-xs text-destructive">{fieldErrors.codigoPostal}</p>
+              )}
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label className="flex items-center gap-2 text-foreground">
                 <Home className="h-4 w-4 text-muted-foreground" />
-                Comprovativo de Morada *
+                Comprovativo de Morada <span className="text-destructive">*</span>
               </Label>
               <DocumentUploader
                 folder="comprovativo-morada"
@@ -407,31 +610,62 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Tipo de Documento *</Label>
-              <Select value={documentoTipo} onValueChange={setDocumentoTipo}>
-                <SelectTrigger>
+              <Label>
+                Tipo de Documento <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={documentoTipo}
+                onValueChange={(v) => {
+                  setDocumentoTipo(v);
+                  clearFieldError('documentoTipo');
+                  clearFieldError('documentoNumero');
+                }}
+              >
+                <SelectTrigger className={fieldErrors.documentoTipo ? 'border-destructive' : ''}>
                   <SelectValue placeholder="Selecionar tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  {TIPOS_DOCUMENTO.map(tipo => (
+                  {TIPOS_DOCUMENTO.map((tipo) => (
                     <SelectItem key={tipo.value} value={tipo.value}>
                       {tipo.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {fieldErrors.documentoTipo && (
+                <p className="text-xs text-destructive">{fieldErrors.documentoTipo}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="documentoNumero">Número do Documento *</Label>
+              <Label htmlFor="documentoNumero">
+                Número do Documento <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="documentoNumero"
                 value={documentoNumero}
-                onChange={(e) => setDocumentoNumero(e.target.value)}
+                onChange={(e) => {
+                  setDocumentoNumero(e.target.value.toUpperCase());
+                  clearFieldError('documentoNumero');
+                }}
+                onBlur={() => {
+                  if (documentoNumero.trim() && documentoTipo) {
+                    const r = validarNumeroDocumento(documentoTipo, documentoNumero);
+                    if (!r.valid) setFieldError('documentoNumero', r.message!);
+                    else clearFieldError('documentoNumero');
+                  }
+                }}
                 placeholder="Nº do documento"
+                aria-invalid={!!fieldErrors.documentoNumero}
+                className={fieldErrors.documentoNumero ? 'border-destructive' : ''}
               />
+              {fieldErrors.documentoNumero && (
+                <p className="text-xs text-destructive">{fieldErrors.documentoNumero}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="documentoValidade">Data de Validade *</Label>
+              <Label htmlFor="documentoValidade">
+                Data de Validade <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="documentoValidade"
                 type="date"
@@ -440,7 +674,9 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label>Documento de Identificação *</Label>
+              <Label>
+                Documento de Identificação <span className="text-destructive">*</span>
+              </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <span className="text-xs text-muted-foreground block mb-1">Frente</span>
@@ -476,16 +712,33 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="cartaConducao">Número da Carta *</Label>
+              <Label htmlFor="cartaConducao">
+                Número da Carta <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="cartaConducao"
                 value={cartaConducao}
-                onChange={(e) => setCartaConducao(e.target.value)}
+                onChange={(e) => {
+                  setCartaConducao(e.target.value.toUpperCase());
+                  clearFieldError('cartaConducao');
+                }}
+                onBlur={() => {
+                  if (cartaConducao) {
+                    const r = validarCartaConducao(cartaConducao);
+                    if (!r.valid) setFieldError('cartaConducao', r.message!);
+                  }
+                }}
                 placeholder="Nº da carta de condução"
+                className={fieldErrors.cartaConducao ? 'border-destructive' : ''}
               />
+              {fieldErrors.cartaConducao && (
+                <p className="text-xs text-destructive">{fieldErrors.cartaConducao}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cartaValidade">Data de Validade *</Label>
+              <Label htmlFor="cartaValidade">
+                Data de Validade <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="cartaValidade"
                 type="date"
@@ -494,9 +747,11 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label>Categorias *</Label>
+              <Label>
+                Categorias <span className="text-destructive">*</span>
+              </Label>
               <div className="flex flex-wrap gap-2">
-                {CATEGORIAS_CARTA.map(cat => (
+                {CATEGORIAS_CARTA.map((cat) => (
                   <div key={cat} className="flex items-center space-x-2">
                     <Checkbox
                       id={`cat-${cat}`}
@@ -514,7 +769,9 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
               </div>
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label>Upload da Carta de Condução *</Label>
+              <Label>
+                Upload da Carta de Condução <span className="text-destructive">*</span>
+              </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <span className="text-xs text-muted-foreground block mb-1">Frente</span>
@@ -550,7 +807,9 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="licencaTvdeNumero">Número da Licença TVDE *</Label>
+              <Label htmlFor="licencaTvdeNumero">
+                Número da Licença TVDE <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="licencaTvdeNumero"
                 value={licencaTvdeNumero}
@@ -559,7 +818,9 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="licencaTvdeValidade">Data de Validade *</Label>
+              <Label htmlFor="licencaTvdeValidade">
+                Data de Validade <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="licencaTvdeValidade"
                 type="date"
@@ -568,7 +829,9 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label>Upload da Licença TVDE *</Label>
+              <Label>
+                Upload da Licença TVDE <span className="text-destructive">*</span>
+              </Label>
               <DocumentUploader
                 folder="licenca-tvde"
                 currentUrl={licencaTvdeFicheiroUrl}
@@ -592,7 +855,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-foreground">
                 <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                Registo Criminal *
+                Registo Criminal <span className="text-destructive">*</span>
               </Label>
               <DocumentUploader
                 folder="registo-criminal"
@@ -600,13 +863,15 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
                 onUpload={setRegistoCriminalUrl}
                 accept="application/pdf,image/jpeg,image/png"
               />
-              <p className="text-xs text-muted-foreground">Certificado do registo criminal português (válido por 3 meses)</p>
+              <p className="text-xs text-muted-foreground">
+                Certificado do registo criminal português (válido por 3 meses)
+              </p>
             </div>
-            
+
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-foreground">
                 <Building2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                Comprovativo de IBAN *
+                Comprovativo de IBAN <span className="text-destructive">*</span>
               </Label>
               <DocumentUploader
                 folder="comprovativo-iban"
@@ -614,7 +879,9 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
                 onUpload={setComprovativoIbanUrl}
                 accept="application/pdf,image/jpeg,image/png"
               />
-              <p className="text-xs text-muted-foreground">Documento bancário com IBAN para recebimento de pagamentos</p>
+              <p className="text-xs text-muted-foreground">
+                Documento bancário com IBAN para recebimento de pagamentos
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -629,8 +896,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
           >
             {saving ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                A guardar...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...
               </>
             ) : (
               <>
@@ -646,8 +912,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
           >
             {submitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                A submeter...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A submeter...
               </>
             ) : (
               <>

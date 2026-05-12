@@ -7,14 +7,32 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { ArrowLeft, Camera, CheckCircle, Film, Loader2, Upload, X, FileText, AlertCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  Camera,
+  CheckCircle,
+  Film,
+  Loader2,
+  Upload,
+  X,
+  FileText,
+  AlertCircle,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { formatMatricula } from './calendarioUtils';
 import type { PendingEventoData } from './NovoEventoPage';
 import { useEmpresas } from '@/hooks/useEmpresas';
-import { uploadDocumentToStorage, generateDocumentFromTemplate } from '@/utils/generateDocumentFromTemplate';
-import { CheckinDadosSection, emptyCheckinDados, validateCheckinDados, saveCheckinDados } from './CheckinDadosSection';
+import {
+  uploadDocumentToStorage,
+  generateDocumentFromTemplate,
+} from '@/utils/generateDocumentFromTemplate';
+import {
+  CheckinDadosSection,
+  emptyCheckinDados,
+  validateCheckinDados,
+  saveCheckinDados,
+} from './CheckinDadosSection';
 import type { CheckinDadosState } from './CheckinDadosSection';
 
 export interface ContratoEntregaStepProps {
@@ -30,10 +48,23 @@ interface SelectedFile {
 }
 
 export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
-  eventoData, onConcluir, onVoltar,
+  eventoData,
+  onConcluir,
+  onVoltar,
 }) => {
-  const { motoristaId, motoristaNome, viaturaId, viatura, userId,
-          data, hora, diaTodo, observacoes, estacaoId, estacaoNome } = eventoData;
+  const {
+    motoristaId,
+    motoristaNome,
+    viaturaId,
+    viatura,
+    userId,
+    data,
+    hora,
+    diaTodo,
+    observacoes,
+    estacaoId,
+    estacaoNome,
+  } = eventoData;
 
   const queryClient = useQueryClient();
   const { empresas } = useEmpresas();
@@ -66,7 +97,9 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('motoristas_ativos')
-        .select('id, nome, nif, email, telefone, morada, documento_tipo, documento_numero, data_contratacao, cidade')
+        .select(
+          'id, nome, nif, email, telefone, morada, documento_tipo, documento_numero, data_contratacao, cidade'
+        )
         .eq('id', motoristaId)
         .single();
       if (error) throw error;
@@ -76,18 +109,19 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
   });
 
   const toggleTemplate = (id: string) => {
-    setSelectedTemplates(prev => {
+    setSelectedTemplates((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || []);
-    setFiles(prev => [
+    setFiles((prev) => [
       ...prev,
-      ...selected.map(f => ({
+      ...selected.map((f) => ({
         id: Math.random().toString(36).slice(2),
         file: f,
         preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
@@ -98,10 +132,10 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
   };
 
   const removeFile = (id: string) => {
-    setFiles(prev => {
-      const f = prev.find(x => x.id === id);
+    setFiles((prev) => {
+      const f = prev.find((x) => x.id === id);
       if (f?.preview) URL.revokeObjectURL(f.preview);
-      return prev.filter(x => x.id !== id);
+      return prev.filter((x) => x.id !== id);
     });
   };
 
@@ -110,11 +144,21 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
       toast.error('Adicione pelo menos uma foto/vídeo ou registe um dano com foto');
       return;
     }
-    const checkinErr = validateCheckinDados(checkinDados, viatura.km_atual ?? 0, viatura.combustivel ?? '');
-    if (checkinErr) { toast.error(checkinErr); return; }
+    const checkinErr = validateCheckinDados(
+      checkinDados,
+      viatura.km_atual ?? 0,
+      viatura.combustivel ?? ''
+    );
+    if (checkinErr) {
+      toast.error(checkinErr);
+      return;
+    }
 
     const empresaId = empresas[0]?.id;
-    if (!empresaId) { toast.error('Nenhuma empresa configurada'); return; }
+    if (!empresaId) {
+      toast.error('Nenhuma empresa configurada');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -135,7 +179,11 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
       };
       if (motoristaId) eventoPayload.motorista_id = motoristaId;
 
-      let evResult = await supabase.from('calendario_eventos').insert(eventoPayload).select('id').single();
+      let evResult = await supabase
+        .from('calendario_eventos')
+        .insert(eventoPayload)
+        .select('id')
+        .single();
       if (evResult.error) {
         const { motorista_id: _, ...fallback } = eventoPayload;
         evResult = await supabase.from('calendario_eventos').insert(fallback).select('id').single();
@@ -153,16 +201,25 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
       });
 
       // 3. Viatura → em_uso + estação
-      await supabase.from('viaturas')
+      await supabase
+        .from('viaturas')
         .update({ status: 'em_uso', estacao_id: estacaoId || null })
         .eq('id', viaturaId);
 
       // 4. Notificação (fire & forget)
       try {
         await supabase.functions.invoke('send-calendar-notification', {
-          body: { matricula: eventoPayload.titulo, cidade: estacaoNome, tipo: 'entrega', data_inicio: dataISO, dia_todo: diaTodo },
+          body: {
+            matricula: eventoPayload.titulo,
+            cidade: estacaoNome,
+            tipo: 'entrega',
+            data_inicio: dataISO,
+            dia_todo: diaTodo,
+          },
         });
-      } catch { /* non-critical */ }
+      } catch {
+        /* non-critical */
+      }
 
       // 5. Insert contrato
       const { data: ct, error: ctErr } = await supabase
@@ -188,7 +245,13 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
       setContratoNumero(ct.numero_contrato);
 
       // 6. KM, combustivel, danos
-      await saveCheckinDados({ dados: checkinDados, contratoId, viaturaId, userId, tipo: 'checkout' });
+      await saveCheckinDados({
+        dados: checkinDados,
+        contratoId,
+        viaturaId,
+        userId,
+        tipo: 'checkout',
+      });
 
       // 7. Upload checkout media (obrigatório)
       const mediaRecords: any[] = [];
@@ -224,14 +287,30 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
         for (const templateId of Array.from(selectedTemplates)) {
           try {
             if (!firstDocUrl) {
-              firstDocUrl = await uploadDocumentToStorage({ templateId, motoristaData: motoristaFull, documentData: docData, contratoId }) || null;
+              firstDocUrl =
+                (await uploadDocumentToStorage({
+                  templateId,
+                  motoristaData: motoristaFull,
+                  documentData: docData,
+                  contratoId,
+                })) || null;
             } else {
-              await generateDocumentFromTemplate({ templateId, motoristaData: motoristaFull, documentData: docData, action: 'print' });
+              await generateDocumentFromTemplate({
+                templateId,
+                motoristaData: motoristaFull,
+                documentData: docData,
+                action: 'print',
+              });
             }
-          } catch { /* PDF non-critical */ }
+          } catch {
+            /* PDF non-critical */
+          }
         }
         if (firstDocUrl) {
-          await supabase.from('contratos').update({ documento_url: firstDocUrl }).eq('id', contratoId);
+          await supabase
+            .from('contratos')
+            .update({ documento_url: firstDocUrl })
+            .eq('id', contratoId);
         }
       }
 
@@ -268,7 +347,13 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b border-border px-4 py-3 bg-card shrink-0">
-        <Button variant="ghost" size="icon" onClick={onVoltar} className="shrink-0" disabled={saving}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onVoltar}
+          className="shrink-0"
+          disabled={saving}
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 min-w-0">
@@ -278,15 +363,18 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
           </p>
         </div>
         <Button onClick={handleConfirm} disabled={saving} className="shrink-0">
-          {saving
-            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A criar...</>
-            : 'Confirmar'}
+          {saving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />A criar...
+            </>
+          ) : (
+            'Confirmar'
+          )}
         </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-
           <div className="rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-4 text-sm text-green-700 dark:text-green-300">
             <p className="font-medium">Entrega pronta para registar.</p>
             <p className="mt-0.5 opacity-80">
@@ -297,11 +385,19 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Data de Início do Contrato</Label>
-              <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
+              <Input
+                type="date"
+                value={dataInicio}
+                onChange={(e) => setDataInicio(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Cidade de Assinatura</Label>
-              <Input value={cidadeAssinatura} onChange={e => setCidadeAssinatura(e.target.value)} placeholder="Ex: Leiria" />
+              <Input
+                value={cidadeAssinatura}
+                onChange={(e) => setCidadeAssinatura(e.target.value)}
+                placeholder="Ex: Leiria"
+              />
             </div>
           </div>
 
@@ -310,11 +406,16 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
               <Label className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
                 Documentos{' '}
-                <span className="text-muted-foreground font-normal text-xs">(serão impressos ao confirmar)</span>
+                <span className="text-muted-foreground font-normal text-xs">
+                  (serão impressos ao confirmar)
+                </span>
               </Label>
               <div className="rounded-lg border border-border divide-y divide-border">
-                {templates.map(t => (
-                  <label key={t.id} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors">
+                {templates.map((t) => (
+                  <label
+                    key={t.id}
+                    className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors"
+                  >
                     <Checkbox
                       checked={selectedTemplates.has(t.id)}
                       onCheckedChange={() => toggleTemplate(t.id)}
@@ -344,11 +445,27 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
             <Label className="flex items-center gap-2">
               <Camera className="h-4 w-4 text-muted-foreground" />
               Fotos / Vídeos de Checkout
-              <span className="text-muted-foreground text-xs font-normal ml-1">(obrigatório se sem danos)</span>
+              <span className="text-muted-foreground text-xs font-normal ml-1">
+                (obrigatório se sem danos)
+              </span>
             </Label>
 
-            <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
-            <input ref={cameraInputRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileChange} />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*,video/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileChange}
+            />
 
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -371,17 +488,30 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
 
             {files.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {files.map(f => (
-                  <div key={f.id} className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted">
-                    {f.preview
-                      ? <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
-                      : (
-                        <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
-                          <Film className="h-6 w-6 text-muted-foreground" />
-                          <span className="text-[10px] text-muted-foreground text-center leading-tight truncate w-full">{f.file.name}</span>
-                        </div>
-                      )}
-                    <button type="button" onClick={() => removeFile(f.id)} className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80">
+                {files.map((f) => (
+                  <div
+                    key={f.id}
+                    className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted"
+                  >
+                    {f.preview ? (
+                      <img
+                        src={f.preview}
+                        alt={f.file.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
+                        <Film className="h-6 w-6 text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground text-center leading-tight truncate w-full">
+                          {f.file.name}
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeFile(f.id)}
+                      className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80"
+                    >
                       <X className="h-3 w-3" />
                     </button>
                   </div>
@@ -392,10 +522,10 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
 
           <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex items-start gap-2">
             <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            Contrato de prestação de serviços com duração de <strong className="text-foreground mx-1">12 meses</strong>.
-            O dashboard irá alertar quando estiver próximo de renovar.
+            Contrato de prestação de serviços com duração de{' '}
+            <strong className="text-foreground mx-1">12 meses</strong>. O dashboard irá alertar
+            quando estiver próximo de renovar.
           </div>
-
         </div>
       </div>
     </div>

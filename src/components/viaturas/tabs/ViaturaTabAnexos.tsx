@@ -92,16 +92,14 @@ export function ViaturaTabAnexos({ viaturaId }: ViaturaTabAnexosProps) {
 
       if (uploadError) throw uploadError;
 
-      const { error } = await supabase
-        .from('viatura_documentos')
-        .insert({
-          viatura_id: viaturaId,
-          tipo_documento: tipo,
-          ficheiro_url: fileName,
-          nome_ficheiro: selectedFile.name,
-          data_validade: dataValidade || null,
-          observacoes: observacoes.trim() || null,
-        });
+      const { error } = await supabase.from('viatura_documentos').insert({
+        viatura_id: viaturaId,
+        tipo_documento: tipo,
+        ficheiro_url: fileName,
+        nome_ficheiro: selectedFile.name,
+        data_validade: dataValidade || null,
+        observacoes: observacoes.trim() || null,
+      });
 
       if (error) throw error;
 
@@ -157,14 +155,9 @@ export function ViaturaTabAnexos({ viaturaId }: ViaturaTabAnexosProps) {
     if (!confirm('Tem certeza que deseja eliminar este documento?')) return;
 
     try {
-      await supabase.storage
-        .from('viatura-documentos')
-        .remove([doc.ficheiro_url]);
+      await supabase.storage.from('viatura-documentos').remove([doc.ficheiro_url]);
 
-      const { error } = await supabase
-        .from('viatura_documentos')
-        .delete()
-        .eq('id', doc.id);
+      const { error } = await supabase.from('viatura_documentos').delete().eq('id', doc.id);
 
       if (error) throw error;
       toast.success('Documento eliminado!');
@@ -186,7 +179,8 @@ export function ViaturaTabAnexos({ viaturaId }: ViaturaTabAnexosProps) {
     if (!filename) return <File className="h-5 w-5" />;
     const ext = filename.split('.').pop()?.toLowerCase();
     if (ext === 'pdf') return <FileText className="h-5 w-5 text-red-500" />;
-    if (['jpg', 'jpeg', 'png', 'gif'].includes(ext || '')) return <FileText className="h-5 w-5 text-blue-500" />;
+    if (['jpg', 'jpeg', 'png', 'gif'].includes(ext || ''))
+      return <FileText className="h-5 w-5 text-blue-500" />;
     return <File className="h-5 w-5" />;
   };
 
@@ -288,7 +282,9 @@ export function ViaturaTabAnexos({ viaturaId }: ViaturaTabAnexosProps) {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{doc.nome_ficheiro || 'Documento'}</p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Badge variant="outline" className="text-xs">{doc.tipo_documento}</Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {doc.tipo_documento}
+                    </Badge>
                     <span>{format(new Date(doc.created_at), 'dd/MM/yyyy')}</span>
                     {doc.data_validade && (
                       <span>• Validade: {format(new Date(doc.data_validade), 'dd/MM/yyyy')}</span>
@@ -302,7 +298,12 @@ export function ViaturaTabAnexos({ viaturaId }: ViaturaTabAnexosProps) {
                   <Button size="icon" variant="ghost" onClick={() => handleDownload(doc)}>
                     <Download className="h-4 w-4" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(doc)}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-destructive"
+                    onClick={() => handleDelete(doc)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

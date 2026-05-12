@@ -49,14 +49,24 @@ const AssinaturasTab = () => {
   });
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Assinaturas de Email</h2>
-        <Button onClick={() => { setEditing(null); setDialogOpen(true); }} className="gap-2">
+        <Button
+          onClick={() => {
+            setEditing(null);
+            setDialogOpen(true);
+          }}
+          className="gap-2"
+        >
           <Plus className="h-4 w-4" /> Nova Assinatura
         </Button>
       </div>
@@ -75,7 +85,14 @@ const AssinaturasTab = () => {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">{a.nome}</CardTitle>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => { setEditing(a); setDialogOpen(true); }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditing(a);
+                        setDialogOpen(true);
+                      }}
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button variant="destructive" size="sm" onClick={() => setDeleteId(a.id)}>
@@ -101,11 +118,16 @@ const AssinaturasTab = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar assinatura?</AlertDialogTitle>
-            <AlertDialogDescription>Esta ação não pode ser revertida. Campanhas que usam esta assinatura ficarão sem assinatura.</AlertDialogDescription>
+            <AlertDialogDescription>
+              Esta ação não pode ser revertida. Campanhas que usam esta assinatura ficarão sem
+              assinatura.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>Eliminar</AlertDialogAction>
+            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
+              Eliminar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

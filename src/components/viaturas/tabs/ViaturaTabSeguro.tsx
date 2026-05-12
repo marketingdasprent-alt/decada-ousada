@@ -14,7 +14,17 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Save, Loader2, Upload, FileText, Eye, Trash2, AlertTriangle, CheckCircle2, Shield } from 'lucide-react';
+import {
+  Save,
+  Loader2,
+  Upload,
+  FileText,
+  Eye,
+  Trash2,
+  AlertTriangle,
+  CheckCircle2,
+  Shield,
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, differenceInDays } from 'date-fns';
@@ -79,7 +89,7 @@ export function ViaturaTabSeguro({ viatura, onUpdate }: ViaturaTabSeguroProps) {
 
   const loadCartaVerde = async () => {
     if (!viatura?.id) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('viatura_documentos')
@@ -147,14 +157,12 @@ export function ViaturaTabSeguro({ viatura, onUpdate }: ViaturaTabSeguroProps) {
 
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('viatura_documentos')
-          .insert({
-            viatura_id: viatura.id,
-            tipo_documento: 'carta_verde',
-            ficheiro_url: fileName,
-            nome_ficheiro: file.name,
-          });
+        const { error } = await supabase.from('viatura_documentos').insert({
+          viatura_id: viatura.id,
+          tipo_documento: 'carta_verde',
+          ficheiro_url: fileName,
+          nome_ficheiro: file.name,
+        });
 
         if (error) throw error;
       }
@@ -189,14 +197,9 @@ export function ViaturaTabSeguro({ viatura, onUpdate }: ViaturaTabSeguroProps) {
     if (!cartaVerde) return;
 
     try {
-      await supabase.storage
-        .from('viatura-documentos')
-        .remove([cartaVerde.ficheiro_url]);
+      await supabase.storage.from('viatura-documentos').remove([cartaVerde.ficheiro_url]);
 
-      const { error } = await supabase
-        .from('viatura_documentos')
-        .delete()
-        .eq('id', cartaVerde.id);
+      const { error } = await supabase.from('viatura_documentos').delete().eq('id', cartaVerde.id);
 
       if (error) throw error;
       toast.success('Carta Verde removida com sucesso!');
@@ -209,13 +212,17 @@ export function ViaturaTabSeguro({ viatura, onUpdate }: ViaturaTabSeguroProps) {
 
   const getValidityStatus = (date: string | null | undefined) => {
     if (!date) return null;
-    
+
     const daysUntilExpiry = differenceInDays(new Date(date), new Date());
-    
+
     if (daysUntilExpiry < 0) {
       return { status: 'expired', label: 'Expirado', color: 'destructive' as const };
     } else if (daysUntilExpiry <= 30) {
-      return { status: 'expiring', label: `Expira em ${daysUntilExpiry} dias`, color: 'warning' as const };
+      return {
+        status: 'expiring',
+        label: `Expira em ${daysUntilExpiry} dias`,
+        color: 'warning' as const,
+      };
     } else {
       return { status: 'valid', label: 'Válido', color: 'success' as const };
     }
@@ -283,7 +290,15 @@ export function ViaturaTabSeguro({ viatura, onUpdate }: ViaturaTabSeguroProps) {
                     <FormLabel className="flex items-center gap-2">
                       Validade do Seguro
                       {seguroStatus && (
-                        <Badge variant={seguroStatus.color === 'success' ? 'default' : seguroStatus.color === 'warning' ? 'secondary' : 'destructive'}>
+                        <Badge
+                          variant={
+                            seguroStatus.color === 'success'
+                              ? 'default'
+                              : seguroStatus.color === 'warning'
+                                ? 'secondary'
+                                : 'destructive'
+                          }
+                        >
                           {seguroStatus.label}
                         </Badge>
                       )}
@@ -304,7 +319,15 @@ export function ViaturaTabSeguro({ viatura, onUpdate }: ViaturaTabSeguroProps) {
                     <FormLabel className="flex items-center gap-2">
                       Validade da Inspeção (IPO)
                       {inspecaoStatus && (
-                        <Badge variant={inspecaoStatus.color === 'success' ? 'default' : inspecaoStatus.color === 'warning' ? 'secondary' : 'destructive'}>
+                        <Badge
+                          variant={
+                            inspecaoStatus.color === 'success'
+                              ? 'default'
+                              : inspecaoStatus.color === 'warning'
+                                ? 'secondary'
+                                : 'destructive'
+                          }
+                        >
                           {inspecaoStatus.label}
                         </Badge>
                       )}
@@ -355,7 +378,12 @@ export function ViaturaTabSeguro({ viatura, onUpdate }: ViaturaTabSeguroProps) {
                     <Eye className="h-4 w-4 mr-2" />
                     Visualizar
                   </Button>
-                  <Button variant="outline" size="sm" className="text-destructive" onClick={handleDeleteCartaVerde}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={handleDeleteCartaVerde}
+                  >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Remover
                   </Button>
@@ -399,8 +427,10 @@ export function ViaturaTabSeguro({ viatura, onUpdate }: ViaturaTabSeguroProps) {
           </div>
 
           {/* Alertas de Validade */}
-          {(seguroStatus?.status === 'expired' || seguroStatus?.status === 'expiring' ||
-            inspecaoStatus?.status === 'expired' || inspecaoStatus?.status === 'expiring') && (
+          {(seguroStatus?.status === 'expired' ||
+            seguroStatus?.status === 'expiring' ||
+            inspecaoStatus?.status === 'expired' ||
+            inspecaoStatus?.status === 'expiring') && (
             <div className="mt-6 space-y-2">
               {seguroStatus?.status === 'expired' && (
                 <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg text-destructive text-sm">

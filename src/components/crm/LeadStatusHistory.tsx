@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +25,7 @@ const statusLabels: Record<string, string> = {
   contactado: 'Contactado',
   interessado: 'Interessado',
   convertido: 'Convertido',
-  perdido: 'Perdido'
+  perdido: 'Perdido',
 };
 
 const statusColors: Record<string, string> = {
@@ -34,7 +33,7 @@ const statusColors: Record<string, string> = {
   contactado: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
   interessado: 'bg-green-500/20 text-green-400 border-green-500/50',
   convertido: 'bg-purple-500/20 text-purple-400 border-purple-500/50',
-  perdido: 'bg-red-500/20 text-red-400 border-red-500/50'
+  perdido: 'bg-red-500/20 text-red-400 border-red-500/50',
 };
 
 export const LeadStatusHistory: React.FC<LeadStatusHistoryProps> = ({ leadId }) => {
@@ -51,7 +50,7 @@ export const LeadStatusHistory: React.FC<LeadStatusHistoryProps> = ({ leadId }) 
       setLoading(true);
       setError(null);
       console.log('Buscando histórico para lead:', leadId);
-      
+
       const { data: historyData, error: historyError } = await supabase
         .from('lead_status_history')
         .select('*')
@@ -66,19 +65,19 @@ export const LeadStatusHistory: React.FC<LeadStatusHistoryProps> = ({ leadId }) 
       }
 
       console.log('Histórico carregado:', historyData);
-      
+
       if (!historyData || historyData.length === 0) {
         console.log('Nenhum histórico encontrado');
         setHistory([]);
         return;
       }
-      
+
       // Buscar informações dos usuários que alteraram
       const userIds = historyData.map((entry: any) => entry.alterado_por).filter(Boolean);
       const uniqueUserIds = [...new Set(userIds)];
-      
+
       let userProfiles: Record<string, string> = {};
-      
+
       if (uniqueUserIds.length > 0) {
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
@@ -86,17 +85,20 @@ export const LeadStatusHistory: React.FC<LeadStatusHistoryProps> = ({ leadId }) 
           .in('id', uniqueUserIds);
 
         if (!profilesError && profilesData) {
-          userProfiles = profilesData.reduce((acc: any, profile: any) => {
-            acc[profile.id] = profile.nome || profile.email || 'Usuário';
-            return acc;
-          }, {} as Record<string, string>);
+          userProfiles = profilesData.reduce(
+            (acc: any, profile: any) => {
+              acc[profile.id] = profile.nome || profile.email || 'Usuário';
+              return acc;
+            },
+            {} as Record<string, string>
+          );
         }
       }
 
       // Combinar dados do histórico com informações dos usuários
       const transformedData = historyData.map((entry: any) => ({
         ...entry,
-        user_email: entry.alterado_por ? userProfiles[entry.alterado_por] || 'Sistema' : 'Sistema'
+        user_email: entry.alterado_por ? userProfiles[entry.alterado_por] || 'Sistema' : 'Sistema',
       }));
 
       setHistory(transformedData);
@@ -200,42 +202,42 @@ export const LeadStatusHistory: React.FC<LeadStatusHistoryProps> = ({ leadId }) 
       <CardContent className="p-4">
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {history.map((entry, index) => (
-            <div 
-              key={entry.id} 
+            <div
+              key={entry.id}
               className="flex items-start gap-3 p-3 rounded-lg bg-card/50 border border-border/50 hover:bg-muted/70 transition-colors"
             >
               <div className="flex-shrink-0 mt-1">
                 <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
               </div>
-              
+
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   {entry.status_anterior ? (
                     <div className="flex items-center gap-2">
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={`text-xs ${statusColors[entry.status_anterior] || 'bg-gray-500/20 text-gray-400'}`}
                       >
                         {statusLabels[entry.status_anterior] || entry.status_anterior}
                       </Badge>
                       <ArrowRight className="h-3 w-3 text-gray-500 flex-shrink-0" />
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={`text-xs ${statusColors[entry.status_novo] || 'bg-gray-500/20 text-gray-400'}`}
                       >
                         {statusLabels[entry.status_novo] || entry.status_novo}
                       </Badge>
                     </div>
                   ) : (
-                    <Badge 
-                      variant="outline" 
+                    <Badge
+                      variant="outline"
                       className={`text-xs ${statusColors[entry.status_novo] || 'bg-gray-500/20 text-gray-400'}`}
                     >
                       {statusLabels[entry.status_novo] || entry.status_novo} (Inicial)
                     </Badge>
                   )}
                 </div>
-                
+
                 <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                   <div className="flex items-center gap-1">
                     <User className="h-3 w-3 flex-shrink-0" />
@@ -248,7 +250,7 @@ export const LeadStatusHistory: React.FC<LeadStatusHistoryProps> = ({ leadId }) 
                     </span>
                   </div>
                 </div>
-                
+
                 {entry.observacoes && (
                   <p className="text-xs text-foreground mt-2 italic bg-card/50 p-2 rounded border-l-2 border-yellow-500/30">
                     "{entry.observacoes}"

@@ -1,8 +1,21 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Loader2, ChevronDown, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -38,7 +51,11 @@ const EnvioDetalhes = ({ envioId }: { envioId: string }) => {
   }
 
   if (!detalhes?.length) {
-    return <p className="text-sm text-muted-foreground py-2 px-4">Sem detalhes disponíveis para este envio.</p>;
+    return (
+      <p className="text-sm text-muted-foreground py-2 px-4">
+        Sem detalhes disponíveis para este envio.
+      </p>
+    );
   }
 
   const erros = detalhes.filter((d: any) => d.status === 'erro');
@@ -53,8 +70,13 @@ const EnvioDetalhes = ({ envioId }: { envioId: string }) => {
           </h4>
           <div className="space-y-1">
             {erros.map((d: any) => (
-              <div key={d.id} className="text-sm border border-destructive/20 rounded-md p-2 bg-destructive/5">
-                <div className="font-medium">{d.contacto_nome || '—'} &lt;{d.contacto_email}&gt;</div>
+              <div
+                key={d.id}
+                className="text-sm border border-destructive/20 rounded-md p-2 bg-destructive/5"
+              >
+                <div className="font-medium">
+                  {d.contacto_nome || '—'} &lt;{d.contacto_email}&gt;
+                </div>
                 {d.erro_mensagem && (
                   <p className="text-xs text-muted-foreground mt-1 break-all">{d.erro_mensagem}</p>
                 )}
@@ -103,7 +125,7 @@ const HistoricoEnviosDialog = ({ open, onOpenChange, campanha }: Props) => {
   });
 
   const toggleExpand = (envioId: string) => {
-    setExpandedEnvio(prev => prev === envioId ? null : envioId);
+    setExpandedEnvio((prev) => (prev === envioId ? null : envioId));
   };
 
   return (
@@ -131,7 +153,11 @@ const HistoricoEnviosDialog = ({ open, onOpenChange, campanha }: Props) => {
                   onClick={() => toggleExpand(e.id)}
                 >
                   <div className="flex items-center gap-2 text-sm">
-                    {expandedEnvio === e.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    {expandedEnvio === e.id ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
                     <span className="font-medium">
                       {format(new Date(e.enviado_em), "dd/MM/yyyy 'às' HH:mm", { locale: pt })}
                     </span>
@@ -140,7 +166,10 @@ const HistoricoEnviosDialog = ({ open, onOpenChange, campanha }: Props) => {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400">
+                    <Badge
+                      variant="outline"
+                      className="bg-green-500/10 text-green-700 dark:text-green-400"
+                    >
                       {e.total_enviados} ✓
                     </Badge>
                     {e.total_erros > 0 && (

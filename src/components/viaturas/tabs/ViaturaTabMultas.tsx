@@ -49,9 +49,17 @@ interface ViaturaTabMultasProps {
 }
 
 const ESTADOS = [
-  { value: 'pendente', label: 'Pendente', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
+  {
+    value: 'pendente',
+    label: 'Pendente',
+    color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+  },
   { value: 'paga', label: 'Paga', color: 'bg-green-500/10 text-green-500 border-green-500/20' },
-  { value: 'contestada', label: 'Contestada', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
+  {
+    value: 'contestada',
+    label: 'Contestada',
+    color: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  },
   { value: 'anulada', label: 'Anulada', color: 'bg-muted text-muted-foreground border-border' },
 ];
 
@@ -83,10 +91,12 @@ export function ViaturaTabMultas({ viaturaId }: ViaturaTabMultasProps) {
     try {
       const { data, error } = await supabase
         .from('viatura_multas')
-        .select(`
+        .select(
+          `
           *,
           motorista:motoristas_ativos(nome)
-        `)
+        `
+        )
         .eq('viatura_id', viaturaId)
         .order('data_infracao', { ascending: false });
 
@@ -122,17 +132,15 @@ export function ViaturaTabMultas({ viaturaId }: ViaturaTabMultasProps) {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('viatura_multas')
-        .insert({
-          viatura_id: viaturaId,
-          motorista_id: motoristaId || null,
-          data_infracao: dataInfracao,
-          descricao: descricao.trim() || null,
-          valor: valor ? parseFloat(valor) : null,
-          observacoes: observacoes.trim() || null,
-          estado: 'pendente',
-        });
+      const { error } = await supabase.from('viatura_multas').insert({
+        viatura_id: viaturaId,
+        motorista_id: motoristaId || null,
+        data_infracao: dataInfracao,
+        descricao: descricao.trim() || null,
+        valor: valor ? parseFloat(valor) : null,
+        observacoes: observacoes.trim() || null,
+        estado: 'pendente',
+      });
 
       if (error) throw error;
 
@@ -150,19 +158,16 @@ export function ViaturaTabMultas({ viaturaId }: ViaturaTabMultasProps) {
 
   const handleUpdateEstado = async (multaId: string, novoEstado: string) => {
     try {
-      const updates: any = { 
-        estado: novoEstado, 
-        updated_at: new Date().toISOString() 
+      const updates: any = {
+        estado: novoEstado,
+        updated_at: new Date().toISOString(),
       };
-      
+
       if (novoEstado === 'paga') {
         updates.data_pagamento = new Date().toISOString().split('T')[0];
       }
 
-      const { error } = await supabase
-        .from('viatura_multas')
-        .update(updates)
-        .eq('id', multaId);
+      const { error } = await supabase.from('viatura_multas').update(updates).eq('id', multaId);
 
       if (error) throw error;
       toast.success('Estado atualizado!');
@@ -177,10 +182,7 @@ export function ViaturaTabMultas({ viaturaId }: ViaturaTabMultasProps) {
     if (!confirm('Tem certeza que deseja eliminar esta multa?')) return;
 
     try {
-      const { error } = await supabase
-        .from('viatura_multas')
-        .delete()
-        .eq('id', multaId);
+      const { error } = await supabase.from('viatura_multas').delete().eq('id', multaId);
 
       if (error) throw error;
       toast.success('Multa eliminada!');
@@ -200,11 +202,11 @@ export function ViaturaTabMultas({ viaturaId }: ViaturaTabMultasProps) {
   };
 
   const getEstadoConfig = (estado: string) => {
-    return ESTADOS.find(e => e.value === estado) || ESTADOS[0];
+    return ESTADOS.find((e) => e.value === estado) || ESTADOS[0];
   };
 
   const totalPendente = multas
-    .filter(m => m.estado === 'pendente')
+    .filter((m) => m.estado === 'pendente')
     .reduce((acc, m) => acc + (m.valor || 0), 0);
 
   if (!viaturaId) {
@@ -231,7 +233,7 @@ export function ViaturaTabMultas({ viaturaId }: ViaturaTabMultasProps) {
           <Card>
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-yellow-600">
-                {multas.filter(m => m.estado === 'pendente').length}
+                {multas.filter((m) => m.estado === 'pendente').length}
               </div>
               <p className="text-sm text-muted-foreground">Pendentes</p>
             </CardContent>
@@ -295,7 +297,9 @@ export function ViaturaTabMultas({ viaturaId }: ViaturaTabMultasProps) {
                     </SelectTrigger>
                     <SelectContent>
                       {motoristas.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.nome}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -353,7 +357,11 @@ export function ViaturaTabMultas({ viaturaId }: ViaturaTabMultasProps) {
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">
-                            {multa.data_infracao ? format(new Date(multa.data_infracao), "d 'de' MMMM 'de' yyyy", { locale: pt }) : 'Data N/D'}
+                            {multa.data_infracao
+                              ? format(new Date(multa.data_infracao), "d 'de' MMMM 'de' yyyy", {
+                                  locale: pt,
+                                })
+                              : 'Data N/D'}
                           </span>
                         </div>
                         {multa.descricao && (
@@ -373,7 +381,10 @@ export function ViaturaTabMultas({ viaturaId }: ViaturaTabMultasProps) {
                             {multa.valor.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}
                           </Badge>
                         )}
-                        <Select value={multa.estado} onValueChange={(v) => handleUpdateEstado(multa.id, v)}>
+                        <Select
+                          value={multa.estado}
+                          onValueChange={(v) => handleUpdateEstado(multa.id, v)}
+                        >
                           <SelectTrigger className="w-[130px]">
                             <Badge variant="outline" className={estadoConfig.color}>
                               {estadoConfig.label}
@@ -381,11 +392,18 @@ export function ViaturaTabMultas({ viaturaId }: ViaturaTabMultasProps) {
                           </SelectTrigger>
                           <SelectContent>
                             {ESTADOS.map((est) => (
-                              <SelectItem key={est.value} value={est.value}>{est.label}</SelectItem>
+                              <SelectItem key={est.value} value={est.value}>
+                                {est.label}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(multa.id)}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="text-destructive"
+                          onClick={() => handleDelete(multa.id)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -397,7 +415,10 @@ export function ViaturaTabMultas({ viaturaId }: ViaturaTabMultasProps) {
                     )}
                     {multa.data_pagamento && (
                       <p className="text-xs text-green-600">
-                        Paga em {format(new Date(multa.data_pagamento), "d 'de' MMMM 'de' yyyy", { locale: pt })}
+                        Paga em{' '}
+                        {format(new Date(multa.data_pagamento), "d 'de' MMMM 'de' yyyy", {
+                          locale: pt,
+                        })}
                       </p>
                     )}
                   </div>

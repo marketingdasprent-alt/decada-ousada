@@ -12,15 +12,18 @@ interface CandidaturaEmAnaliseProps {
   candidatura: Candidatura;
 }
 
-export const CandidaturaEmAnalise: React.FC<CandidaturaEmAnaliseProps> = ({
-  candidatura,
-}) => {
+export const CandidaturaEmAnalise: React.FC<CandidaturaEmAnaliseProps> = ({ candidatura }) => {
   const { signOut } = useAuth();
 
   const steps = [
     { id: 1, label: 'Registo', completed: true },
     { id: 2, label: 'Documentos enviados', completed: true },
-    { id: 3, label: 'Em análise', completed: candidatura.status === 'em_analise', current: candidatura.status === 'submetido' },
+    {
+      id: 3,
+      label: 'Em análise',
+      completed: candidatura.status === 'em_analise',
+      current: candidatura.status === 'submetido',
+    },
     { id: 4, label: 'Decisão', completed: false },
   ];
 
@@ -37,7 +40,7 @@ export const CandidaturaEmAnalise: React.FC<CandidaturaEmAnaliseProps> = ({
               <h1 className="text-lg font-semibold text-foreground">Área do Motorista</h1>
             </div>
           </div>
-          
+
           <Button variant="ghost" size="icon" onClick={() => signOut()}>
             <LogOut className="h-4 w-4" />
           </Button>
@@ -54,14 +57,17 @@ export const CandidaturaEmAnalise: React.FC<CandidaturaEmAnaliseProps> = ({
             </div>
             <CardTitle className="text-xl">Candidatura em Análise</CardTitle>
             <CardDescription>
-              Os seus documentos estão a ser analisados pela nossa equipa. 
-              Entraremos em contacto em breve.
+              Os seus documentos estão a ser analisados pela nossa equipa. Entraremos em contacto em
+              breve.
             </CardDescription>
           </CardHeader>
           <CardContent>
             {candidatura.data_submissao && (
               <p className="text-center text-sm text-muted-foreground">
-                Submetida a {format(new Date(candidatura.data_submissao), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: pt })}
+                Submetida a{' '}
+                {format(new Date(candidatura.data_submissao), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", {
+                  locale: pt,
+                })}
               </p>
             )}
           </CardContent>
@@ -77,13 +83,15 @@ export const CandidaturaEmAnalise: React.FC<CandidaturaEmAnaliseProps> = ({
               {steps.map((step, index) => (
                 <div key={step.id} className="flex items-start gap-4 pb-6 last:pb-0">
                   <div className="relative flex flex-col items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      step.completed 
-                        ? 'bg-green-500 text-white' 
-                        : step.current 
-                          ? 'bg-amber-500 text-white animate-pulse'
-                          : 'bg-muted text-muted-foreground'
-                    }`}>
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        step.completed
+                          ? 'bg-green-500 text-white'
+                          : step.current
+                            ? 'bg-amber-500 text-white animate-pulse'
+                            : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
                       {step.completed ? (
                         <CheckCircle2 className="w-4 h-4" />
                       ) : (
@@ -91,15 +99,19 @@ export const CandidaturaEmAnalise: React.FC<CandidaturaEmAnaliseProps> = ({
                       )}
                     </div>
                     {index < steps.length - 1 && (
-                      <div className={`absolute top-8 w-0.5 h-[calc(100%-8px)] ${
-                        step.completed ? 'bg-green-500' : 'bg-muted'
-                      }`} />
+                      <div
+                        className={`absolute top-8 w-0.5 h-[calc(100%-8px)] ${
+                          step.completed ? 'bg-green-500' : 'bg-muted'
+                        }`}
+                      />
                     )}
                   </div>
                   <div className="pt-1">
-                    <p className={`font-medium ${
-                      step.completed || step.current ? 'text-foreground' : 'text-muted-foreground'
-                    }`}>
+                    <p
+                      className={`font-medium ${
+                        step.completed || step.current ? 'text-foreground' : 'text-muted-foreground'
+                      }`}
+                    >
                       {step.label}
                     </p>
                   </div>

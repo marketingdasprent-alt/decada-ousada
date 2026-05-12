@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,17 +12,11 @@ interface FieldEditorProps {
   onUpdate: (updates: Partial<FormField>) => void;
 }
 
-export const FieldEditor: React.FC<FieldEditorProps> = ({
-  field,
-  onUpdate
-}) => {
+export const FieldEditor: React.FC<FieldEditorProps> = ({ field, onUpdate }) => {
   return (
     <CardContent className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <FieldTypeSelector 
-          value={field.type}
-          onChange={(value) => onUpdate({ type: value })}
-        />
+        <FieldTypeSelector value={field.type} onChange={(value) => onUpdate({ type: value })} />
 
         <div>
           <Label className="text-gray-300">Rótulo do Campo</Label>
@@ -55,10 +48,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
       </div>
 
       {(field.type === 'select' || field.type === 'radio') && (
-        <OptionsEditor
-          options={field.options}
-          onChange={(options) => onUpdate({ options })}
-        />
+        <OptionsEditor options={field.options} onChange={(options) => onUpdate({ options })} />
       )}
     </CardContent>
   );

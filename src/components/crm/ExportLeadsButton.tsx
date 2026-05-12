@@ -43,26 +43,28 @@ export const ExportLeadsButton: React.FC<ExportLeadsButtonProps> = ({ leads }) =
       'tipo_viatura',
       'formulario_id',
       'tem_formacao_tvde',
-      'created_at'
+      'created_at',
     ];
 
     const csvContent = [
       headers.join(','),
-      ...data.map(lead => [
-        `"${lead.nome || ''}"`,
-        `"${lead.email || ''}"`,
-        `"${lead.telefone || ''}"`,
-        `"${lead.zona || ''}"`,
-        `"${lead.data_aluguer || ''}"`,
-        `"${lead.status || ''}"`,
-        `"${lead.campaign_tags?.join(';') || ''}"`,
-        `"${lead.observacoes || ''}"`,
-        `"${lead.observacoes_gestores || ''}"`,
-        `"${lead.tipo_viatura || ''}"`,
-        `"${lead.formulario_id || ''}"`,
-        `"${lead.tem_formacao_tvde !== null ? (lead.tem_formacao_tvde ? 'Sim' : 'Não') : ''}"`,
-        `"${lead.created_at || ''}"`
-      ].join(','))
+      ...data.map((lead) =>
+        [
+          `"${lead.nome || ''}"`,
+          `"${lead.email || ''}"`,
+          `"${lead.telefone || ''}"`,
+          `"${lead.zona || ''}"`,
+          `"${lead.data_aluguer || ''}"`,
+          `"${lead.status || ''}"`,
+          `"${lead.campaign_tags?.join(';') || ''}"`,
+          `"${lead.observacoes || ''}"`,
+          `"${lead.observacoes_gestores || ''}"`,
+          `"${lead.tipo_viatura || ''}"`,
+          `"${lead.formulario_id || ''}"`,
+          `"${lead.tem_formacao_tvde !== null ? (lead.tem_formacao_tvde ? 'Sim' : 'Não') : ''}"`,
+          `"${lead.created_at || ''}"`,
+        ].join(',')
+      ),
     ].join('\n');
 
     return csvContent;
@@ -83,11 +85,14 @@ export const ExportLeadsButton: React.FC<ExportLeadsButtonProps> = ({ leads }) =
       const csvContent = convertToCSV(allLeads || []);
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
-      
+
       if (link.download !== undefined) {
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `leads_dasprent_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute(
+          'download',
+          `leads_dasprent_${new Date().toISOString().split('T')[0]}.csv`
+        );
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
@@ -95,15 +100,15 @@ export const ExportLeadsButton: React.FC<ExportLeadsButtonProps> = ({ leads }) =
       }
 
       toast({
-        title: "Sucesso",
-        description: `${allLeads?.length || 0} leads exportados com sucesso`
+        title: 'Sucesso',
+        description: `${allLeads?.length || 0} leads exportados com sucesso`,
       });
     } catch (error) {
       console.error('Error exporting leads:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao exportar leads",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao exportar leads',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);

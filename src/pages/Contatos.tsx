@@ -6,8 +6,22 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CRMFilters, FilterState } from '@/components/crm/CRMFilters';
 import { useCampaignTags } from '@/hooks/useCampaignTags';
@@ -31,7 +45,7 @@ const statusColors = {
   contactado: 'bg-yellow-500',
   interessado: 'bg-green-500',
   convertido: 'bg-purple-500',
-  perdido: 'bg-red-500'
+  perdido: 'bg-red-500',
 };
 
 const statusLabels = {
@@ -39,7 +53,7 @@ const statusLabels = {
   contactado: 'Contactado',
   interessado: 'Interessado',
   convertido: 'Convertido',
-  perdido: 'Perdido'
+  perdido: 'Perdido',
 };
 
 const statusColumns = [
@@ -47,7 +61,7 @@ const statusColumns = [
   { id: 'contactado', title: 'Contactado', color: '#eab308', icon: '📞' },
   { id: 'interessado', title: 'Interessado', color: '#22c55e', icon: '👍' },
   { id: 'convertido', title: 'Convertido', color: '#8b5cf6', icon: '✅' },
-  { id: 'perdido', title: 'Perdido', color: '#ef4444', icon: '❌' }
+  { id: 'perdido', title: 'Perdido', color: '#ef4444', icon: '❌' },
 ];
 
 const ITEMS_PER_PAGE = 50;
@@ -62,7 +76,7 @@ const Contatos = () => {
     status: 'todos',
     dateRange: 'todos',
     campaignTags: [],
-    userId: 'todos'
+    userId: 'todos',
   });
   const { toast } = useToast();
   const { availableTags } = useCampaignTags();
@@ -79,16 +93,16 @@ const Contatos = () => {
     if ((!lead.nome || !lead.email || !lead.telefone) && lead.observacoes) {
       try {
         const observacoesData = JSON.parse(lead.observacoes);
-        
+
         if (typeof observacoesData === 'object' && observacoesData !== null) {
           // Mapeamento específico para os campos do formulário TVDE
           const fieldMapping: Record<string, string> = {
-            'field_1748938792037': 'nome',
-            'field_1748938798127': 'email', 
-            'field_1748938804488': 'telefone',
-            'field_1748939842786': 'nome',
-            'field_1748939848328': 'email',
-            'field_1748939855085': 'telefone'
+            field_1748938792037: 'nome',
+            field_1748938798127: 'email',
+            field_1748938804488: 'telefone',
+            field_1748939842786: 'nome',
+            field_1748939848328: 'email',
+            field_1748939855085: 'telefone',
           };
 
           // Aplicar mapeamento específico primeiro
@@ -132,7 +146,9 @@ const Contatos = () => {
       }
 
       if (filters.search) {
-        query = query.or(`nome.ilike.%${filters.search}%,email.ilike.%${filters.search}%,telefone.ilike.%${filters.search}%,zona.ilike.%${filters.search}%`);
+        query = query.or(
+          `nome.ilike.%${filters.search}%,email.ilike.%${filters.search}%,telefone.ilike.%${filters.search}%,zona.ilike.%${filters.search}%`
+        );
       }
 
       if (filters.campaignTags.length > 0) {
@@ -170,15 +186,15 @@ const Contatos = () => {
       const { data, error, count } = await query;
 
       if (error) throw error;
-      
+
       setLeads(data || []);
       setTotalCount(count || 0);
     } catch (error) {
       console.error('Error fetching leads:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao carregar contatos",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao carregar contatos',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -215,10 +231,13 @@ const Contatos = () => {
         })
       );
 
-      const statsObj = statusCounts.reduce((acc, { status, count }) => {
-        acc[status] = count;
-        return acc;
-      }, {} as Record<string, number>);
+      const statsObj = statusCounts.reduce(
+        (acc, { status, count }) => {
+          acc[status] = count;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
 
       setStats(statsObj);
     } catch (error) {
@@ -243,7 +262,7 @@ const Contatos = () => {
     <div className="min-h-screen bg-background">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent hidden dark:block" />
       <div className="absolute inset-0 bg-grid-foreground/[0.02] bg-[size:60px_60px] hidden dark:block" />
-      
+
       <div className="relative z-10 p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -253,9 +272,7 @@ const Contatos = () => {
                 <Users className="h-8 w-8 text-primary" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-foreground">
-                  Contatos
-                </h1>
+                <h1 className="text-4xl font-bold text-foreground">Contatos</h1>
                 <p className="text-xl text-muted-foreground">
                   {totalCount.toLocaleString()} leads registrados
                 </p>
@@ -289,36 +306,40 @@ const Contatos = () => {
                       <TableHead className="text-muted-foreground">Tags</TableHead>
                     </TableRow>
                   </TableHeader>
-                   <TableBody>
-                     {leads.map((lead) => {
-                       const displayData = getLeadDisplayData(lead);
-                       return (
-                         <TableRow key={lead.id} className="border-border hover:bg-muted/30">
-                           <TableCell className="text-foreground font-medium">
-                             {displayData.nome || 'Nome não informado'}
-                           </TableCell>
-                           <TableCell className="text-foreground">
-                             {displayData.email ? (
-                               <div className="flex items-center gap-2">
-                                 <Mail className="h-4 w-4" />
-                                 <span className="truncate max-w-[200px]" title={displayData.email}>
-                                   {displayData.email}
-                                 </span>
-                               </div>
-                             ) : (
-                               <span className="text-muted-foreground italic">Email não informado</span>
-                             )}
-                           </TableCell>
-                           <TableCell className="text-foreground">
-                             {displayData.telefone ? (
-                               <div className="flex items-center gap-2">
-                                 <Phone className="h-4 w-4" />
-                                 {displayData.telefone}
-                               </div>
-                             ) : (
-                               <span className="text-muted-foreground italic">Telefone não informado</span>
-                             )}
-                           </TableCell>
+                  <TableBody>
+                    {leads.map((lead) => {
+                      const displayData = getLeadDisplayData(lead);
+                      return (
+                        <TableRow key={lead.id} className="border-border hover:bg-muted/30">
+                          <TableCell className="text-foreground font-medium">
+                            {displayData.nome || 'Nome não informado'}
+                          </TableCell>
+                          <TableCell className="text-foreground">
+                            {displayData.email ? (
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4" />
+                                <span className="truncate max-w-[200px]" title={displayData.email}>
+                                  {displayData.email}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground italic">
+                                Email não informado
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-foreground">
+                            {displayData.telefone ? (
+                              <div className="flex items-center gap-2">
+                                <Phone className="h-4 w-4" />
+                                {displayData.telefone}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground italic">
+                                Telefone não informado
+                              </span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-foreground">
                             {lead.zona ? (
                               <div className="flex items-center gap-2">
@@ -326,11 +347,15 @@ const Contatos = () => {
                                 {lead.zona}
                               </div>
                             ) : (
-                              <span className="text-muted-foreground italic">Zona não informada</span>
+                              <span className="text-muted-foreground italic">
+                                Zona não informada
+                              </span>
                             )}
                           </TableCell>
                           <TableCell>
-                            <Badge className={`${statusColors[lead.status as keyof typeof statusColors]} text-white`}>
+                            <Badge
+                              className={`${statusColors[lead.status as keyof typeof statusColors]} text-white`}
+                            >
                               {statusLabels[lead.status as keyof typeof statusLabels]}
                             </Badge>
                           </TableCell>
@@ -342,7 +367,7 @@ const Contatos = () => {
                                 month: '2-digit',
                                 year: 'numeric',
                                 hour: '2-digit',
-                                minute: '2-digit'
+                                minute: '2-digit',
                               })}
                             </div>
                           </TableCell>
@@ -364,10 +389,10 @@ const Contatos = () => {
                               <span className="text-muted-foreground italic text-xs">Sem tags</span>
                             )}
                           </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
                 </Table>
               </div>
 
@@ -375,8 +400,10 @@ const Contatos = () => {
                 <div className="text-center py-12">
                   <Users className="h-16 w-16 text-muted mx-auto mb-4" />
                   <p className="text-muted-foreground text-lg">
-                    {Object.values(filters).some(f => f && (Array.isArray(f) ? f.length > 0 : f !== 'todos')) 
-                      ? 'Nenhum contato encontrado com os filtros aplicados' 
+                    {Object.values(filters).some(
+                      (f) => f && (Array.isArray(f) ? f.length > 0 : f !== 'todos')
+                    )
+                      ? 'Nenhum contato encontrado com os filtros aplicados'
                       : 'Nenhum contato cadastrado ainda'}
                   </p>
                 </div>
@@ -388,12 +415,14 @@ const Contatos = () => {
                   <Pagination>
                     <PaginationContent>
                       <PaginationItem>
-                        <PaginationPrevious 
+                        <PaginationPrevious
                           onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                          className={currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                          className={
+                            currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                          }
                         />
                       </PaginationItem>
-                      
+
                       {[...Array(Math.min(5, totalPages))].map((_, i) => {
                         const page = i + 1;
                         return (
@@ -408,19 +437,26 @@ const Contatos = () => {
                           </PaginationItem>
                         );
                       })}
-                      
+
                       <PaginationItem>
-                        <PaginationNext 
-                          onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                          className={currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                        <PaginationNext
+                          onClick={() =>
+                            currentPage < totalPages && handlePageChange(currentPage + 1)
+                          }
+                          className={
+                            currentPage === totalPages
+                              ? 'opacity-50 cursor-not-allowed'
+                              : 'cursor-pointer'
+                          }
                         />
                       </PaginationItem>
                     </PaginationContent>
                   </Pagination>
-                  
+
                   <div className="text-center mt-4">
                     <p className="text-muted-foreground text-sm">
-                      Página {currentPage} de {totalPages} • {totalCount.toLocaleString()} leads total
+                      Página {currentPage} de {totalPages} • {totalCount.toLocaleString()} leads
+                      total
                     </p>
                   </div>
                 </div>

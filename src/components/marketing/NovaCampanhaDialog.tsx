@@ -5,7 +5,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import MarketingEmailEditor from './MarketingEmailEditor';
@@ -62,11 +68,18 @@ const NovaCampanhaDialog = ({ open, onOpenChange, campanha }: Props) => {
       };
 
       if (campanha?.id) {
-        const { error } = await supabase.from('marketing_campanhas').update(payload).eq('id', campanha.id);
+        const { error } = await supabase
+          .from('marketing_campanhas')
+          .update(payload)
+          .eq('id', campanha.id);
         if (error) throw error;
       } else {
-        const { data: { user } } = await supabase.auth.getUser();
-        const { error } = await supabase.from('marketing_campanhas').insert({ ...payload, criado_por: user?.id });
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        const { error } = await supabase
+          .from('marketing_campanhas')
+          .insert({ ...payload, criado_por: user?.id });
         if (error) throw error;
       }
     },
@@ -88,12 +101,20 @@ const NovaCampanhaDialog = ({ open, onOpenChange, campanha }: Props) => {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Nome da campanha</Label>
-            <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Newsletter Janeiro" />
+            <Input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Ex: Newsletter Janeiro"
+            />
           </div>
 
           <div className="space-y-2">
             <Label>Assunto do email</Label>
-            <Input value={assunto} onChange={(e) => setAssunto(e.target.value)} placeholder="Assunto que aparece na caixa de entrada" />
+            <Input
+              value={assunto}
+              onChange={(e) => setAssunto(e.target.value)}
+              placeholder="Assunto que aparece na caixa de entrada"
+            />
           </div>
 
           <div className="space-y-2">
@@ -103,14 +124,19 @@ const NovaCampanhaDialog = ({ open, onOpenChange, campanha }: Props) => {
 
           <div className="space-y-2">
             <Label>Assinatura</Label>
-            <Select value={assinaturaId || 'none'} onValueChange={(v) => setAssinaturaId(v === 'none' ? '' : v)}>
+            <Select
+              value={assinaturaId || 'none'}
+              onValueChange={(v) => setAssinaturaId(v === 'none' ? '' : v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Sem assinatura" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Sem assinatura</SelectItem>
                 {assinaturas?.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.nome}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -123,8 +149,13 @@ const NovaCampanhaDialog = ({ open, onOpenChange, campanha }: Props) => {
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={() => saveMutation.mutate()} disabled={!nome || saveMutation.isPending}>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={!nome || saveMutation.isPending}
+            >
               {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {campanha ? 'Guardar' : 'Criar Campanha'}
             </Button>

@@ -48,10 +48,7 @@ export const EstacoesTab = () => {
   const { data: estacoes = [], isLoading } = useQuery({
     queryKey: ['estacoes'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('estacoes')
-        .select('*')
-        .order('nome');
+      const { data, error } = await supabase.from('estacoes').select('*').order('nome');
       if (error) throw error;
       return data as Estacao[];
     },
@@ -144,7 +141,9 @@ export const EstacoesTab = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-semibold">Estações</h2>
-          <p className="text-sm text-muted-foreground">{estacoes.length} estação(ões) registada(s)</p>
+          <p className="text-sm text-muted-foreground">
+            {estacoes.length} estação(ões) registada(s)
+          </p>
         </div>
         <Button onClick={openCreate} className="gap-2">
           <Plus className="h-4 w-4" />
@@ -170,7 +169,12 @@ export const EstacoesTab = () => {
                     <span className="font-semibold truncate">{e.nome}</span>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(e)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => openEdit(e)}
+                    >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <Button
@@ -240,7 +244,9 @@ export const EstacoesTab = () => {
               />
             </div>
             <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
-              <Label htmlFor="ativa" className="cursor-pointer">Estação ativa</Label>
+              <Label htmlFor="ativa" className="cursor-pointer">
+                Estação ativa
+              </Label>
               <Switch
                 id="ativa"
                 checked={form.ativa}
@@ -250,7 +256,9 @@ export const EstacoesTab = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>Cancelar</Button>
+            <Button variant="outline" onClick={closeDialog}>
+              Cancelar
+            </Button>
             <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
               {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {editing ? 'Guardar' : 'Criar'}
@@ -265,7 +273,8 @@ export const EstacoesTab = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar estação?</AlertDialogTitle>
             <AlertDialogDescription>
-              As viaturas associadas a esta estação ficam sem estação atribuída. Esta ação não pode ser desfeita.
+              As viaturas associadas a esta estação ficam sem estação atribuída. Esta ação não pode
+              ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

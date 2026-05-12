@@ -20,11 +20,10 @@ export function AuthMobileShell({
   children,
 }: AuthMobileShellProps) {
   const location = useLocation();
-  const isMotoristaRoute = location.pathname === '/motorista' || location.pathname.startsWith('/motorista/');
-  
-  const logoSrc = isMotoristaRoute 
-    ? '/Logo.png'
-    : '/Logo.png';
+  const isMotoristaRoute =
+    location.pathname === '/motorista' || location.pathname.startsWith('/motorista/');
+
+  const logoSrc = isMotoristaRoute ? '/Logo.png' : '/Logo.png';
 
   return (
     <div className={`auth-screen auth-screen-safe ${isMotoristaRoute ? 'rota-liquida' : ''}`}>
@@ -42,7 +41,7 @@ export function AuthMobileShell({
                 onError={(e) => {
                   const img = e.currentTarget;
                   if (!isMotoristaRoute && img.src.includes('-white')) {
-                    img.src = "/Logo.png";
+                    img.src = '/Logo.png';
                   } else {
                     img.style.display = 'none';
                   }
@@ -52,9 +51,7 @@ export function AuthMobileShell({
 
             <div className="flex items-center justify-center gap-2">
               {headerIcon}
-              <CardTitle className="text-2xl font-bold text-card-foreground">
-                {title}
-              </CardTitle>
+              <CardTitle className="text-2xl font-bold text-card-foreground">{title}</CardTitle>
             </div>
 
             <CardDescription className="text-sm leading-relaxed text-muted-foreground">

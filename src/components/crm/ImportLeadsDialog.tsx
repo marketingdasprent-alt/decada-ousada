@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,15 +27,19 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ onImportCo
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
-    if (selectedFile && (selectedFile.type === 'text/csv' || 
+    if (
+      selectedFile &&
+      (selectedFile.type === 'text/csv' ||
         selectedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.csv'))) {
+        selectedFile.name.endsWith('.xlsx') ||
+        selectedFile.name.endsWith('.csv'))
+    ) {
       setFile(selectedFile);
     } else {
       toast({
-        title: "Erro",
-        description: "Por favor, selecione um arquivo CSV ou Excel (.xlsx) válido",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Por favor, selecione um arquivo CSV ou Excel (.xlsx) válido',
+        variant: 'destructive',
       });
     }
   };
@@ -43,29 +54,37 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ onImportCo
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-          
+
           if (jsonData.length < 2) {
-            reject(new Error('Arquivo deve conter pelo menos uma linha de cabeçalho e uma linha de dados'));
+            reject(
+              new Error(
+                'Arquivo deve conter pelo menos uma linha de cabeçalho e uma linha de dados'
+              )
+            );
             return;
           }
-          
+
           const headers = jsonData[0] as string[];
           const rows = jsonData.slice(1) as any[][];
-          
+
           const processedData = rows
-            .filter(row => {
-              return row.some(cell => cell !== undefined && cell !== null && cell !== '' && String(cell).trim() !== '');
+            .filter((row) => {
+              return row.some(
+                (cell) =>
+                  cell !== undefined && cell !== null && cell !== '' && String(cell).trim() !== ''
+              );
             })
-            .map(row => {
+            .map((row) => {
               const rowData: any = {};
               headers.forEach((header, index) => {
                 const cellValue = row[index];
                 const normalizedHeader = header.toString().toLowerCase().trim();
-                rowData[normalizedHeader] = cellValue !== undefined && cellValue !== null ? String(cellValue).trim() : '';
+                rowData[normalizedHeader] =
+                  cellValue !== undefined && cellValue !== null ? String(cellValue).trim() : '';
               });
               return rowData;
             });
-          
+
           resolve(processedData);
         } catch (error) {
           reject(error);
@@ -77,23 +96,23 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ onImportCo
   };
   const parseCSV = (csvText: string) => {
     const lines = csvText.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const headers = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
     const data = [];
 
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (line) {
-        const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-        
-        const hasValidData = values.some(value => value !== '');
+        const values = line.split(',').map((v) => v.trim().replace(/"/g, ''));
+
+        const hasValidData = values.some((value) => value !== '');
         if (!hasValidData) continue;
-        
+
         const row: any = {};
         headers.forEach((header, index) => {
           const normalizedHeader = header.toLowerCase().trim();
           row[normalizedHeader] = values[index] || '';
         });
-        
+
         data.push(row);
       }
     }
@@ -104,9 +123,9 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ onImportCo
   const handleImport = async () => {
     if (!file) {
       toast({
-        title: "Erro",
-        description: "Por favor, selecione um arquivo",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Por favor, selecione um arquivo',
+        variant: 'destructive',
       });
       return;
     }
@@ -116,7 +135,10 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ onImportCo
     try {
       let leadsData: any[] = [];
 
-      if (file.name.endsWith('.xlsx') || file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+      if (
+        file.name.endsWith('.xlsx') ||
+        file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ) {
         // Process Excel file
         leadsData = await parseExcel(file);
       } else {
@@ -128,7 +150,7 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ onImportCo
       console.log('Dados brutos importados:', leadsData.slice(0, 2)); // Debug: ver primeiros 2 registros
 
       const processedLeads = leadsData
-        .map(lead => {
+        .map((lead) => {
           console.log('Lead original:', lead); // Debug
 
           // Mapear colunas comuns diretamente
@@ -144,26 +166,24 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ onImportCo
             observacoes_gestores: lead.observacoes_gestores || lead.manager_notes || '',
             tipo_viatura: lead.tipo_viatura || lead.vehicle_type || lead['tipo viatura'] || '',
             formulario_id: null,
-            tem_formacao_tvde: null
+            tem_formacao_tvde: null,
           };
 
           console.log('Lead processado:', finalLead); // Debug
           return finalLead;
         })
-        .filter(lead => {
+        .filter((lead) => {
           // Validação final: pelo menos nome OU email devem estar preenchidos
           return lead.nome.trim() !== '' || lead.email.trim() !== '';
         });
 
-      const { error } = await supabase
-        .from('leads_dasprent')
-        .insert(processedLeads);
+      const { error } = await supabase.from('leads_dasprent').insert(processedLeads);
 
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: `${processedLeads.length} leads importados com sucesso`
+        title: 'Sucesso',
+        description: `${processedLeads.length} leads importados com sucesso`,
       });
 
       setIsOpen(false);
@@ -172,9 +192,9 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ onImportCo
     } catch (error) {
       console.error('Error importing leads:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao importar leads. Verifique o formato do arquivo.",
-        variant: "destructive"
+        title: 'Erro',
+        description: 'Erro ao importar leads. Verifique o formato do arquivo.',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -184,7 +204,10 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ onImportCo
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="bg-green-600/20 border-green-500/50 text-green-100 hover:bg-green-600/30">
+        <Button
+          variant="outline"
+          className="bg-green-600/20 border-green-500/50 text-green-100 hover:bg-green-600/30"
+        >
           <FileSpreadsheet className="h-4 w-4 mr-2" />
           Importar Leads
         </Button>
@@ -193,20 +216,30 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ onImportCo
         <DialogHeader>
           <DialogTitle className="text-foreground">Importar Leads</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Importe leads de um arquivo CSV ou Excel (.xlsx). O arquivo deve conter as colunas principais.
+            Importe leads de um arquivo CSV ou Excel (.xlsx). O arquivo deve conter as colunas
+            principais.
             <br />
             <strong>Colunas suportadas:</strong>
             <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-              <li><strong>Obrigatórias:</strong> nome, email</li>
-              <li><strong>Opcionais:</strong> telefone, zona, status, data_aluguer, tipo_viatura, observacoes, observacoes_gestores, tem_formacao_tvde, campaign_tags</li>
-              <li><strong>Formatos:</strong> CSV (vírgula) ou Excel (.xlsx)</li>
+              <li>
+                <strong>Obrigatórias:</strong> nome, email
+              </li>
+              <li>
+                <strong>Opcionais:</strong> telefone, zona, status, data_aluguer, tipo_viatura,
+                observacoes, observacoes_gestores, tem_formacao_tvde, campaign_tags
+              </li>
+              <li>
+                <strong>Formatos:</strong> CSV (vírgula) ou Excel (.xlsx)
+              </li>
             </ul>
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div>
-            <Label htmlFor="file" className="text-foreground">Arquivo CSV ou Excel (.xlsx)</Label>
+            <Label htmlFor="file" className="text-foreground">
+              Arquivo CSV ou Excel (.xlsx)
+            </Label>
             <Input
               id="file"
               type="file"
@@ -215,12 +248,8 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ onImportCo
               className="bg-card border-border text-foreground"
             />
           </div>
-          
-          {file && (
-            <div className="text-sm text-green-400">
-              Arquivo selecionado: {file.name}
-            </div>
-          )}
+
+          {file && <div className="text-sm text-green-400">Arquivo selecionado: {file.name}</div>}
 
           <div className="flex justify-end space-x-2">
             <Button

@@ -6,18 +6,32 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import {
-  Loader2, Search, Fuel, Euro, X, Upload,
-  CheckCircle2, MapPin, Calendar as CalendarIcon,
+  Loader2,
+  Search,
+  Fuel,
+  Euro,
+  X,
+  Upload,
+  CheckCircle2,
+  MapPin,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -90,11 +104,13 @@ export const BPDataTab: React.FC = () => {
     try {
       let query = supabase
         .from('bp_transacoes')
-        .select(`
+        .select(
+          `
           *,
           motorista:motoristas_ativos!bp_transacoes_motorista_id_fkey (nome),
           integracao:plataformas_configuracao!bp_transacoes_integracao_id_fkey (nome)
-        `)
+        `
+        )
         .order('transaction_date', { ascending: false });
 
       if (dateRange?.from) {
@@ -117,9 +133,9 @@ export const BPDataTab: React.FC = () => {
     } catch (error: any) {
       console.error('Erro ao carregar transações BP:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar as transações BP.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Não foi possível carregar as transações BP.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -129,10 +145,11 @@ export const BPDataTab: React.FC = () => {
   const filteredTransacoes = useMemo(() => {
     if (!searchTerm) return transacoes;
     const term = searchTerm.toLowerCase();
-    return transacoes.filter((t) =>
-      (t.motorista?.nome || '').toLowerCase().includes(term) ||
-      (t.fuel_type || '').toLowerCase().includes(term) ||
-      (t.station_name || '').toLowerCase().includes(term)
+    return transacoes.filter(
+      (t) =>
+        (t.motorista?.nome || '').toLowerCase().includes(term) ||
+        (t.fuel_type || '').toLowerCase().includes(term) ||
+        (t.station_name || '').toLowerCase().includes(term)
     );
   }, [transacoes, searchTerm]);
 
@@ -149,7 +166,7 @@ export const BPDataTab: React.FC = () => {
     setDateRange({ from: subDays(new Date(), 30), to: new Date() });
   };
 
-  const firstActiveIntegracao = integracoes.find(i => i.ativo);
+  const firstActiveIntegracao = integracoes.find((i) => i.ativo);
 
   return (
     <div className="space-y-4">
@@ -163,11 +180,10 @@ export const BPDataTab: React.FC = () => {
                 {dateRange?.from ? (
                   dateRange.to ? (
                     <>
-                      {format(dateRange.from, "dd/MM/yyyy")} -{" "}
-                      {format(dateRange.to, "dd/MM/yyyy")}
+                      {format(dateRange.from, 'dd/MM/yyyy')} - {format(dateRange.to, 'dd/MM/yyyy')}
                     </>
                   ) : (
-                    format(dateRange.from, "dd/MM/yyyy")
+                    format(dateRange.from, 'dd/MM/yyyy')
                   )
                 ) : (
                   <span>Selecionar período</span>
@@ -194,7 +210,9 @@ export const BPDataTab: React.FC = () => {
             <SelectContent>
               <SelectItem value="all">Todas as integrações</SelectItem>
               {integracoes.map((int) => (
-                <SelectItem key={int.id} value={int.id}>{int.nome}</SelectItem>
+                <SelectItem key={int.id} value={int.id}>
+                  {int.nome}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -219,9 +237,16 @@ export const BPDataTab: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span className="text-sm text-muted-foreground">Dados de combustível importados da BP</span>
+            <span className="text-sm text-muted-foreground">
+              Dados de combustível importados da BP
+            </span>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)} disabled={!firstActiveIntegracao}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowImportDialog(true)}
+            disabled={!firstActiveIntegracao}
+          >
             <Upload className="h-4 w-4 mr-2" />
             Importar CSV BP
           </Button>
@@ -250,7 +275,14 @@ export const BPDataTab: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{stats.totalLitros.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })} L</p>
+            <p className="text-2xl font-bold">
+              {stats.totalLitros.toLocaleString('pt-PT', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+                useGrouping: true,
+              })}{' '}
+              L
+            </p>
           </CardContent>
         </Card>
 
@@ -262,7 +294,14 @@ export const BPDataTab: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-orange-400">€{stats.totalValor.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}</p>
+            <p className="text-2xl font-bold text-orange-400">
+              €
+              {stats.totalValor.toLocaleString('pt-PT', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+                useGrouping: true,
+              })}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -298,7 +337,9 @@ export const BPDataTab: React.FC = () => {
                     {format(new Date(t.transaction_date), 'dd/MM/yyyy HH:mm', { locale: pt })}
                   </TableCell>
                   <TableCell>
-                    {t.motorista?.nome || <span className="text-muted-foreground text-xs italic">Não identificado</span>}
+                    {t.motorista?.nome || (
+                      <span className="text-muted-foreground text-xs italic">Não identificado</span>
+                    )}
                   </TableCell>
                   <TableCell className="font-mono text-xs">{t.card_number || '-'}</TableCell>
                   <TableCell>
@@ -315,10 +356,20 @@ export const BPDataTab: React.FC = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {t.quantity?.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })} L
+                    {t.quantity?.toLocaleString('pt-PT', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                      useGrouping: true,
+                    })}{' '}
+                    L
                   </TableCell>
                   <TableCell className="text-right font-bold text-orange-400">
-                    €{t.amount?.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}
+                    €
+                    {t.amount?.toLocaleString('pt-PT', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                      useGrouping: true,
+                    })}
                   </TableCell>
                 </TableRow>
               ))}

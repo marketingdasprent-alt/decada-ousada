@@ -6,18 +6,34 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import {
-  Loader2, Search, Zap, Euro, X, Upload,
-  CheckCircle2, Star, Clock, Car, CalendarIcon,
+  Loader2,
+  Search,
+  Zap,
+  Euro,
+  X,
+  Upload,
+  CheckCircle2,
+  Star,
+  Clock,
+  Car,
+  CalendarIcon,
 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -110,7 +126,9 @@ export const BoltDataTab: React.FC = () => {
           count: data[0].viagens_novas ?? 0,
         });
       }
-    } catch { /* silent */ }
+    } catch {
+      /* silent */
+    }
   };
 
   const formatDateForQuery = (d: Date) => format(d, 'yyyy-MM-dd');
@@ -120,10 +138,12 @@ export const BoltDataTab: React.FC = () => {
     try {
       let query = supabase
         .from('bolt_resumos_semanais')
-        .select(`
+        .select(
+          `
           *,
           integracao:plataformas_configuracao!bolt_resumos_semanais_integracao_id_fkey (nome)
-        `)
+        `
+        )
         .order('motorista_nome');
 
       const fromDate = dateRange?.from;
@@ -145,9 +165,9 @@ export const BoltDataTab: React.FC = () => {
     } catch (error: any) {
       console.error('Erro ao carregar resumos:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar os resumos Bolt.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Não foi possível carregar os resumos Bolt.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -163,10 +183,11 @@ export const BoltDataTab: React.FC = () => {
   const filteredResumos = useMemo(() => {
     if (!searchTerm) return resumos;
     const term = searchTerm.toLowerCase();
-    return resumos.filter((r) =>
-      (r.motorista_nome || '').toLowerCase().includes(term) ||
-      (r.email || '').toLowerCase().includes(term) ||
-      (r.telefone || '').toLowerCase().includes(term)
+    return resumos.filter(
+      (r) =>
+        (r.motorista_nome || '').toLowerCase().includes(term) ||
+        (r.email || '').toLowerCase().includes(term) ||
+        (r.telefone || '').toLowerCase().includes(term)
     );
   }, [resumos, searchTerm]);
 
@@ -198,10 +219,10 @@ export const BoltDataTab: React.FC = () => {
     setRangeClickCount(0);
   };
 
-  const hasActiveFilters = searchTerm || selectedIntegracao !== 'all' ||
-    !dateRange?.from || !dateRange?.to;
+  const hasActiveFilters =
+    searchTerm || selectedIntegracao !== 'all' || !dateRange?.from || !dateRange?.to;
 
-  const firstActiveIntegracao = integracoes.find(i => i.ativo);
+  const firstActiveIntegracao = integracoes.find((i) => i.ativo);
 
   const formatMinutes = (min: number | null) => {
     if (!min) return '-';
@@ -210,11 +231,12 @@ export const BoltDataTab: React.FC = () => {
     return h > 0 ? `${h}h${m > 0 ? ` ${m}m` : ''}` : `${m}m`;
   };
 
-  const dateLabel = dateRange?.from && dateRange?.to
-    ? `${format(dateRange.from, 'dd/MM/yyyy', { locale: pt })} - ${format(dateRange.to, 'dd/MM/yyyy', { locale: pt })}`
-    : dateRange?.from
-      ? format(dateRange.from, 'dd/MM/yyyy', { locale: pt })
-      : 'Selecionar datas';
+  const dateLabel =
+    dateRange?.from && dateRange?.to
+      ? `${format(dateRange.from, 'dd/MM/yyyy', { locale: pt })} - ${format(dateRange.to, 'dd/MM/yyyy', { locale: pt })}`
+      : dateRange?.from
+        ? format(dateRange.from, 'dd/MM/yyyy', { locale: pt })
+        : 'Selecionar datas';
 
   const handleFetchFromApify = async () => {
     setLoading(true);
@@ -229,46 +251,58 @@ export const BoltDataTab: React.FC = () => {
       if (configError) throw configError;
 
       // STRICT Filtering for Bolt-related integrations
-      const boltConfigs = configs?.filter(c => 
-        c.plataforma === 'bolt' || 
-        c.robot_target_platform === 'bolt' || 
-        c.nome.toLowerCase().includes('bolt')
+      const boltConfigs = configs?.filter(
+        (c) =>
+          c.plataforma === 'bolt' ||
+          c.robot_target_platform === 'bolt' ||
+          c.nome.toLowerCase().includes('bolt')
       );
 
       if (!boltConfigs || boltConfigs.length === 0) {
-        toast({ title: "Configuração não encontrada", description: "Certifique-se de que a integração Bolt-Robot está ativa.", variant: "destructive" });
+        toast({
+          title: 'Configuração não encontrada',
+          description: 'Certifique-se de que a integração Bolt-Robot está ativa.',
+          variant: 'destructive',
+        });
         return;
       }
 
       // Removed cleanup: orphan records must be preserved for manual association
       console.log('Fetching Bolt records from Apify...');
 
-      toast({ title: "Resgatando do Apify", description: `Processando ${boltConfigs.length} integração(ões) Bolt...` });
+      toast({
+        title: 'Resgatando do Apify',
+        description: `Processando ${boltConfigs.length} integração(ões) Bolt...`,
+      });
 
       let totalImported = 0;
       for (const config of boltConfigs) {
         console.log(`Rescuing Bolt integration: ${config.nome}`);
-        
+
         const { data, error } = await supabase.functions.invoke('bolt-rescue-apify', {
-          body: { integracao_id: config.id }
+          body: { integracao_id: config.id },
         });
 
         if (!error && data?.success) {
-          totalImported += (data.imported || 0);
+          totalImported += data.imported || 0;
         } else {
           console.error(`Error rescuing ${config.nome}:`, error || data?.error);
         }
       }
 
-      toast({ 
-        title: "Resgate Bolt concluído!", 
-        description: `Importados ${totalImported} registos das sincronizações do Apify.` 
+      toast({
+        title: 'Resgate Bolt concluído!',
+        description: `Importados ${totalImported} registos das sincronizações do Apify.`,
       });
       fetchResumos();
       fetchLastImport();
     } catch (error: any) {
       console.error('Erro no resgate Bolt:', error);
-      toast({ title: "Erro no Resgate", description: error.message || "Falha técnica ao tentar resgatar dados.", variant: "destructive" });
+      toast({
+        title: 'Erro no Resgate',
+        description: error.message || 'Falha técnica ao tentar resgatar dados.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -285,8 +319,8 @@ export const BoltDataTab: React.FC = () => {
               <Button
                 variant="outline"
                 className={cn(
-                  "w-[280px] justify-start text-left font-normal",
-                  !dateRange?.from && "text-muted-foreground"
+                  'w-[280px] justify-start text-left font-normal',
+                  !dateRange?.from && 'text-muted-foreground'
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -299,7 +333,7 @@ export const BoltDataTab: React.FC = () => {
                 selected={dateRange}
                 onSelect={handleDateRangeSelect}
                 numberOfMonths={2}
-                className={cn("p-3 pointer-events-auto")}
+                className={cn('p-3 pointer-events-auto')}
                 locale={pt}
               />
             </PopoverContent>
@@ -333,9 +367,9 @@ export const BoltDataTab: React.FC = () => {
             />
           </div>
 
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleFetchFromApify}
             className="text-xs text-muted-foreground hidden md:flex items-center gap-1"
           >
@@ -357,12 +391,14 @@ export const BoltDataTab: React.FC = () => {
               <>
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                 <span className="text-muted-foreground">
-                  Última importação: {format(new Date(lastImport.date), "dd/MM/yyyy HH:mm", { locale: pt })} ({lastImport.count} registos)
+                  Última importação:{' '}
+                  {format(new Date(lastImport.date), 'dd/MM/yyyy HH:mm', { locale: pt })} (
+                  {lastImport.count} registos)
                 </span>
               </>
             ) : (
               <span className="text-muted-foreground">
-                {integracoes.filter(i => i.ativo).length === 0
+                {integracoes.filter((i) => i.ativo).length === 0
                   ? 'Nenhuma integração activa'
                   : 'Dados recebidos via importação automática ou manual'}
               </span>
@@ -403,7 +439,15 @@ export const BoltDataTab: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold"><p className="text-2xl font-bold">€{stats.totalBruto.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></p>
+            <p className="text-2xl font-bold">
+              <p className="text-2xl font-bold">
+                €
+                {stats.totalBruto.toLocaleString('pt-PT', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+            </p>
           </CardContent>
         </Card>
 
@@ -415,7 +459,15 @@ export const BoltDataTab: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-green-400"><p className="text-2xl font-bold text-green-400">€{stats.totalLiquido.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></p>
+            <p className="text-2xl font-bold text-green-400">
+              <p className="text-2xl font-bold text-green-400">
+                €
+                {stats.totalLiquido.toLocaleString('pt-PT', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -423,7 +475,9 @@ export const BoltDataTab: React.FC = () => {
       {/* Count */}
       <div className="text-sm text-muted-foreground">
         {loading ? (
-          <span><Loader2 className="h-4 w-4 inline-block mr-2 animate-spin" />A carregar...</span>
+          <span>
+            <Loader2 className="h-4 w-4 inline-block mr-2 animate-spin" />A carregar...
+          </span>
         ) : (
           <span>
             {stats.total} motorista{stats.total !== 1 ? 's' : ''}
@@ -515,7 +569,9 @@ export const BoltDataTab: React.FC = () => {
                         <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
                         {Number(resumo.classificacao_media).toFixed(1)}
                       </span>
-                    ) : '-'}
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

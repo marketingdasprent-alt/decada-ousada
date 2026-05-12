@@ -1,0 +1,6 @@
+dist
+node_modules
+android
+ios
+src/integrations/supabase/types.ts
+*.min.js

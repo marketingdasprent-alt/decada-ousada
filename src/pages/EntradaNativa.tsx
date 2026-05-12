@@ -4,13 +4,10 @@ import { Car, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useThemedLogo } from '@/hooks/useThemedLogo';
 
-
-
 const EntradaNativa = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const logoSrc = useThemedLogo();
-
 
   useEffect(() => {
     if (user) {
@@ -39,11 +36,7 @@ const EntradaNativa = () => {
       <div className="auth-screen__pattern" aria-hidden="true" />
 
       <div className="relative z-10 w-full max-w-sm px-6 flex flex-col items-center gap-10">
-        <img
-          src={logoSrc}
-          alt="WeGest"
-          className="h-24 w-auto object-contain"
-        />
+        <img src={logoSrc} alt="WeGest" className="h-24 w-auto object-contain" />
 
         <div className="w-full space-y-2 text-center">
           <h1 className="text-2xl font-black text-foreground">Bem-vindo</h1>

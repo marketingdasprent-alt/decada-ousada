@@ -1,25 +1,49 @@
-﻿import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Printer, Edit, History, Search, FileText, Plus, Download, Loader2, List, Users } from "lucide-react";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { ContractHistoryDialog } from "@/components/contratos/ContractHistoryDialog";
-import { EditContractDialog } from "@/components/contratos/EditContractDialog";
-import { ContractStatsCards } from "@/components/contratos/ContractStatsCards";
-import { GenerateDocumentsDialog } from "@/components/motoristas/GenerateDocumentsDialog";
-import { ContratosGroupedView } from "@/components/contratos/ContratosGroupedView";
-import { uploadDocumentToStorage } from "@/utils/generateDocumentFromTemplate";
-import { getEmpresaById } from "@/config/empresas";
+﻿import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Printer,
+  Edit,
+  History,
+  Search,
+  FileText,
+  Plus,
+  Download,
+  Loader2,
+  List,
+  Users,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { ContractHistoryDialog } from '@/components/contratos/ContractHistoryDialog';
+import { EditContractDialog } from '@/components/contratos/EditContractDialog';
+import { ContractStatsCards } from '@/components/contratos/ContractStatsCards';
+import { GenerateDocumentsDialog } from '@/components/motoristas/GenerateDocumentsDialog';
+import { ContratosGroupedView } from '@/components/contratos/ContratosGroupedView';
+import { uploadDocumentToStorage } from '@/utils/generateDocumentFromTemplate';
+import { getEmpresaById } from '@/config/empresas';
 import {
   Pagination,
   PaginationContent,
@@ -28,7 +52,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination";
+} from '@/components/ui/pagination';
 
 interface Contrato {
   id: string;
@@ -55,11 +79,11 @@ interface Contrato {
 export default function Contratos() {
   const [contratos, setContratos] = useState<Contrato[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [empresaFilter, setEmpresaFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [empresaFilter, setEmpresaFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showSubstituidos, setShowSubstituidos] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "grouped">("grouped");
+  const [viewMode, setViewMode] = useState<'list' | 'grouped'>('grouped');
   const [selectedContrato, setSelectedContrato] = useState<Contrato | null>(null);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -76,10 +100,7 @@ export default function Contratos() {
   const fetchContratos = async () => {
     try {
       setLoading(true);
-      let query = supabase
-        .from('contratos')
-        .select('*')
-        .order('criado_em', { ascending: false });
+      let query = supabase.from('contratos').select('*').order('criado_em', { ascending: false });
 
       if (empresaFilter !== 'all') {
         query = query.eq('empresa_id', empresaFilter);
@@ -97,7 +118,7 @@ export default function Contratos() {
       const { data, error } = await query;
 
       if (error) throw error;
-      
+
       setContratos(data || []);
     } catch (error) {
       console.error('Erro ao buscar contratos:', error);
@@ -108,11 +129,14 @@ export default function Contratos() {
   };
 
   // Gerar PDF sob demanda para contratos antigos
-  const generatePdfForContract = async (contrato: Contrato, mode: 'download' | 'print'): Promise<string | null> => {
+  const generatePdfForContract = async (
+    contrato: Contrato,
+    mode: 'download' | 'print'
+  ): Promise<string | null> => {
     try {
       // Buscar template: usar template_id do contrato ou encontrar o mais recente ativo
       let templateId = contrato.template_id;
-      
+
       if (!templateId) {
         const { data: templates, error: templateError } = await supabase
           .from('document_templates')
@@ -122,7 +146,7 @@ export default function Contratos() {
           .eq('ativo', true)
           .order('versao', { ascending: false })
           .limit(1);
-        
+
         if (templateError || !templates || templates.length === 0) {
           throw new Error('Nenhum template de contrato encontrado para esta empresa');
         }
@@ -182,7 +206,7 @@ export default function Contratos() {
       // Atualizar o contrato com o documento_url e template_id
       const { error: updateError } = await supabase
         .from('contratos')
-        .update({ 
+        .update({
           documento_url: documentPath,
           template_id: templateId,
         })
@@ -193,14 +217,14 @@ export default function Contratos() {
       }
 
       // Registrar geração retroativa
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase
-        .from('contratos_reimpressoes')
-        .insert({
-          contrato_id: contrato.id,
-          reimpresso_por: user?.id,
-          motivo: 'PDF gerado retroativamente a pedido do usuário'
-        });
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      await supabase.from('contratos_reimpressoes').insert({
+        contrato_id: contrato.id,
+        reimpresso_por: user?.id,
+        motivo: 'PDF gerado retroativamente a pedido do usuário',
+      });
 
       return documentPath;
     } catch (error) {
@@ -212,29 +236,27 @@ export default function Contratos() {
   const handleDownload = async (contrato: Contrato) => {
     try {
       setDownloadingId(contrato.id);
-      
+
       let documentUrl = contrato.documento_url;
-      
+
       // Se não tem documento, gerar primeiro
       if (!documentUrl) {
         setGeneratingId(contrato.id);
         toast.info('Gerando PDF do contrato...');
         documentUrl = await generatePdfForContract(contrato, 'download');
         setGeneratingId(null);
-        
+
         if (!documentUrl) {
           throw new Error('Erro ao gerar documento');
         }
-        
+
         // Atualizar estado local
-        setContratos(prev => prev.map(c => 
-          c.id === contrato.id ? { ...c, documento_url: documentUrl } : c
-        ));
+        setContratos((prev) =>
+          prev.map((c) => (c.id === contrato.id ? { ...c, documento_url: documentUrl } : c))
+        );
       }
 
-      const { data, error } = await supabase.storage
-        .from('documentos')
-        .download(documentUrl);
+      const { data, error } = await supabase.storage.from('documentos').download(documentUrl);
 
       if (error) throw error;
 
@@ -247,7 +269,7 @@ export default function Contratos() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
+
       toast.success('Download concluído!');
     } catch (error) {
       console.error('Erro ao fazer download:', error);
@@ -261,34 +283,34 @@ export default function Contratos() {
   const handleReimprimir = async (contrato: Contrato) => {
     try {
       let documentUrl = contrato.documento_url;
-      
+
       // Se não tem documento, gerar primeiro
       if (!documentUrl) {
         setGeneratingId(contrato.id);
         toast.info('Gerando PDF do contrato...');
         documentUrl = await generatePdfForContract(contrato, 'print');
         setGeneratingId(null);
-        
+
         if (!documentUrl) {
           throw new Error('Erro ao gerar documento');
         }
-        
+
         // Atualizar estado local
-        setContratos(prev => prev.map(c => 
-          c.id === contrato.id ? { ...c, documento_url: documentUrl } : c
-        ));
+        setContratos((prev) =>
+          prev.map((c) => (c.id === contrato.id ? { ...c, documento_url: documentUrl } : c))
+        );
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       // Registrar reimpressão
-      const { error } = await supabase
-        .from('contratos_reimpressoes')
-        .insert({
-          contrato_id: contrato.id,
-          reimpresso_por: user?.id,
-          motivo: 'Reimpressão solicitada pelo usuário'
-        });
+      const { error } = await supabase.from('contratos_reimpressoes').insert({
+        contrato_id: contrato.id,
+        reimpresso_por: user?.id,
+        motivo: 'Reimpressão solicitada pelo usuário',
+      });
 
       if (error) throw error;
 
@@ -308,7 +330,6 @@ export default function Contratos() {
       }
 
       toast.success('Documento aberto para impressão!');
-      
     } catch (error) {
       console.error('Erro ao reimprimir:', error);
       toast.error('Erro ao reimprimir contrato');
@@ -317,7 +338,7 @@ export default function Contratos() {
     }
   };
 
-  const filteredContratos = contratos.filter(contrato =>
+  const filteredContratos = contratos.filter((contrato) =>
     contrato.motorista_nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -333,12 +354,12 @@ export default function Contratos() {
   }, [searchTerm, empresaFilter, statusFilter, showSubstituidos]);
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      ativo: "default",
-      expirado: "secondary",
-      cancelado: "destructive"
+    const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
+      ativo: 'default',
+      expirado: 'secondary',
+      cancelado: 'destructive',
     };
-    return <Badge variant={variants[status] || "default"}>{status}</Badge>;
+    return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
   };
 
   const getEmpresaNome = (empresaId: string) => {
@@ -398,7 +419,7 @@ export default function Contratos() {
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "grouped")}>
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'grouped')}>
               <TabsList>
                 <TabsTrigger value="grouped" className="gap-2">
                   <Users className="h-4 w-4" />
@@ -434,7 +455,7 @@ export default function Contratos() {
           </div>
         ) : (
           <>
-            {viewMode === "grouped" ? (
+            {viewMode === 'grouped' ? (
               <ContratosGroupedView
                 contratos={filteredContratos}
                 onDownload={handleDownload}
@@ -469,7 +490,7 @@ export default function Contratos() {
                         <TableCell className="font-medium">{contrato.motorista_nome}</TableCell>
                         <TableCell>{getEmpresaNome(contrato.empresa_id)}</TableCell>
                         <TableCell>
-                          {format(new Date(contrato.data_inicio), "dd/MM/yyyy", { locale: ptBR })}
+                          {format(new Date(contrato.data_inicio), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>
                         <TableCell>{getStatusBadge(contrato.status)}</TableCell>
                         <TableCell>
@@ -481,10 +502,12 @@ export default function Contratos() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleDownload(contrato)}
-                              disabled={downloadingId === contrato.id || generatingId === contrato.id}
-                              title={contrato.documento_url ? "Download PDF" : "Gerar e baixar PDF"}
+                              disabled={
+                                downloadingId === contrato.id || generatingId === contrato.id
+                              }
+                              title={contrato.documento_url ? 'Download PDF' : 'Gerar e baixar PDF'}
                             >
-                              {(downloadingId === contrato.id || generatingId === contrato.id) ? (
+                              {downloadingId === contrato.id || generatingId === contrato.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
                                 <Download className="h-4 w-4" />
@@ -495,7 +518,7 @@ export default function Contratos() {
                               variant="outline"
                               onClick={() => handleReimprimir(contrato)}
                               disabled={generatingId === contrato.id}
-                              title={contrato.documento_url ? "Imprimir" : "Gerar e imprimir PDF"}
+                              title={contrato.documento_url ? 'Imprimir' : 'Gerar e imprimir PDF'}
                             >
                               {generatingId === contrato.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -534,17 +557,19 @@ export default function Contratos() {
               </div>
             )}
 
-            {viewMode === "list" && totalPages > 1 && (
+            {viewMode === 'list' && totalPages > 1 && (
               <div className="mt-4">
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
-                      <PaginationPrevious 
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        className={
+                          currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                        }
                       />
                     </PaginationItem>
-                    
+
                     {[...Array(totalPages)].map((_, i) => {
                       const pageNum = i + 1;
                       if (
@@ -572,11 +597,15 @@ export default function Contratos() {
                       }
                       return null;
                     })}
-                    
+
                     <PaginationItem>
-                      <PaginationNext 
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      <PaginationNext
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        className={
+                          currentPage === totalPages
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
                       />
                     </PaginationItem>
                   </PaginationContent>
@@ -602,7 +631,7 @@ export default function Contratos() {
           />
         </>
       )}
-      
+
       <GenerateDocumentsDialog
         open={showNewContractDialog}
         onOpenChange={setShowNewContractDialog}

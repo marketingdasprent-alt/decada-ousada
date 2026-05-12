@@ -1,7 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, BarChart3, User, FileText, Settings, Menu, ClipboardCheck, ChevronDown, Wrench, Car, Wallet, CalendarDays, Mail } from 'lucide-react';
+import {
+  LayoutDashboard,
+  BarChart3,
+  User,
+  FileText,
+  Settings,
+  Menu,
+  ClipboardCheck,
+  ChevronDown,
+  Wrench,
+  Car,
+  Wallet,
+  CalendarDays,
+  Mail,
+} from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useThemedLogo } from '@/hooks/useThemedLogo';
@@ -35,15 +50,15 @@ const MENU_ITEMS: MenuItem[] = [
   { label: 'Dashboard', url: '/dashboard', icon: LayoutDashboard, recurso: 'motoristas_gestao' },
   { label: 'CRM', url: '/crm', icon: BarChart3, recurso: 'motoristas_crm' },
   { label: 'Meus Tickets', url: '/meus-tickets', icon: Wrench, recurso: 'motoristas_crm' },
-{ 
-    label: 'Motoristas', 
-    icon: User, 
+  {
+    label: 'Motoristas',
+    icon: User,
     recurso: 'motoristas_gestao',
     subItems: [
       { label: 'Motoristas', url: '/motoristas', icon: User },
       { label: 'Aprovação', url: '/motoristas/candidaturas', icon: ClipboardCheck },
       { label: 'Contratos', url: '/contratos', icon: FileText },
-    ]
+    ],
   },
   { label: 'Viaturas', url: '/viaturas', icon: Car, recurso: 'viaturas_ver' },
   { label: 'Financeiro', url: '/financeiro', icon: Wallet, recurso: 'financeiro_recibos' },
@@ -56,13 +71,14 @@ const MENU_ITEMS: MenuItem[] = [
 
 export const HorizontalTopMenu: React.FC = () => {
   const { isAdmin, hasAccessToResource, loading } = usePermissions();
+  const { user } = useAuth();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const logoSrc = useThemedLogo();
   const location = useLocation();
 
   // Show all menu items immediately, even while loading
-  const visibleMenuItems = MENU_ITEMS.filter(item => {
+  const visibleMenuItems = MENU_ITEMS.filter((item) => {
     if (loading) return true; // Show all during load
     if (item.recurso) return hasAccessToResource(item.recurso);
     return true;
@@ -88,18 +104,14 @@ export const HorizontalTopMenu: React.FC = () => {
                 <div className="flex flex-col h-full">
                   {/* Logo in Sheet */}
                   <div className="p-6 border-b">
-                    <img 
-                      src={logoSrc}
-                      alt="WeGest" 
-                      className="h-10 w-auto object-contain"
-                    />
+                    <img src={logoSrc} alt="WeGest" className="h-10 w-auto object-contain" />
                   </div>
-                  
+
                   {/* Menu Items */}
                   <nav className="flex-1 py-4">
                     {visibleMenuItems.map((item) => {
                       const Icon = item.icon;
-                      
+
                       // Se tem subitens, renderiza grupo
                       if (item.subItems && item.subItems.length > 0) {
                         return (
@@ -121,15 +133,17 @@ export const HorizontalTopMenu: React.FC = () => {
                                     }
                                     setIsOpen(false);
                                   }}
-                                  className={({ isActive }) => cn(
-                                    "flex items-center gap-3 px-6 pl-10 py-3 transition-colors",
-                                    "hover:bg-primary/10",
-                                    "text-sm font-medium",
-                                    loading && "pointer-events-none opacity-50",
-                                    isActive 
-                                      ? "bg-primary/20 text-primary border-l-4 border-primary" 
-                                      : "text-muted-foreground hover:text-foreground"
-                                  )}
+                                  className={({ isActive }) =>
+                                    cn(
+                                      'flex items-center gap-3 px-6 pl-10 py-3 transition-colors',
+                                      'hover:bg-primary/10',
+                                      'text-sm font-medium',
+                                      loading && 'pointer-events-none opacity-50',
+                                      isActive
+                                        ? 'bg-primary/20 text-primary border-l-4 border-primary'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                    )
+                                  }
                                 >
                                   <SubIcon className="h-4 w-4" />
                                   <span>{subItem.label}</span>
@@ -139,7 +153,7 @@ export const HorizontalTopMenu: React.FC = () => {
                           </div>
                         );
                       }
-                      
+
                       // Item normal sem subitens
                       return (
                         <NavLink
@@ -152,15 +166,17 @@ export const HorizontalTopMenu: React.FC = () => {
                             }
                             setIsOpen(false);
                           }}
-                          className={({ isActive }) => cn(
-                            "flex items-center gap-3 px-6 py-4 transition-colors",
-                            "hover:bg-primary/10",
-                            "text-base font-medium",
-                            loading && "pointer-events-none opacity-50",
-                            isActive 
-                              ? "bg-primary/20 text-primary border-l-4 border-primary" 
-                              : "text-muted-foreground hover:text-foreground"
-                          )}
+                          className={({ isActive }) =>
+                            cn(
+                              'flex items-center gap-3 px-6 py-4 transition-colors',
+                              'hover:bg-primary/10',
+                              'text-base font-medium',
+                              loading && 'pointer-events-none opacity-50',
+                              isActive
+                                ? 'bg-primary/20 text-primary border-l-4 border-primary'
+                                : 'text-muted-foreground hover:text-foreground'
+                            )
+                          }
                         >
                           <Icon className="h-5 w-5" />
                           <span>{item.label}</span>
@@ -173,14 +189,16 @@ export const HorizontalTopMenu: React.FC = () => {
                       <NavLink
                         to="/admin/settings"
                         onClick={() => setIsOpen(false)}
-                        className={({ isActive }) => cn(
-                          "flex items-center gap-3 px-6 py-4 transition-colors mt-2",
-                          "hover:bg-primary/10",
-                          "text-base font-medium",
-                          isActive 
-                            ? "bg-primary/20 text-primary border-l-4 border-primary" 
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
+                        className={({ isActive }) =>
+                          cn(
+                            'flex items-center gap-3 px-6 py-4 transition-colors mt-2',
+                            'hover:bg-primary/10',
+                            'text-base font-medium',
+                            isActive
+                              ? 'bg-primary/20 text-primary border-l-4 border-primary'
+                              : 'text-muted-foreground hover:text-foreground'
+                          )
+                        }
                       >
                         <Settings className="h-5 w-5" />
                         <span>Administração</span>
@@ -200,14 +218,10 @@ export const HorizontalTopMenu: React.FC = () => {
 
           {/* Logo and Email Centered */}
           <div className="col-span-3 flex flex-col items-center justify-center gap-0.5">
-            <img 
-              src={logoSrc}
-              alt="WeGest" 
-              className="h-8 w-auto object-contain"
-            />
+            <img src={logoSrc} alt="WeGest" className="h-8 w-auto object-contain" />
             {!loading && (
               <span className="text-[10px] text-muted-foreground font-medium truncate max-w-full">
-                {useAuth().user?.email}
+                {user?.email}
               </span>
             )}
           </div>
@@ -227,35 +241,39 @@ export const HorizontalTopMenu: React.FC = () => {
       <div className="h-full flex items-center justify-between px-6 max-w-[1800px] mx-auto w-full gap-8">
         {/* Logo */}
         <div className="flex-shrink-0">
-          <img 
-            src={logoSrc}
-            alt="WeGest" 
-            className="h-14 w-auto object-contain"
-          />
+          <img src={logoSrc} alt="WeGest" className="h-14 w-auto object-contain" />
         </div>
 
         {/* Menu Items arranged in 2 rows of 5 */}
         <nav className="grid grid-cols-5 gap-x-2 gap-y-2 flex-1 max-w-4xl">
-          {[...visibleMenuItems, ...(hasAdminAccess ? [{ label: 'Administração', url: '/admin/settings', icon: Settings }] : [])].map((item) => {
+          {[
+            ...visibleMenuItems,
+            ...(hasAdminAccess
+              ? [{ label: 'Administração', url: '/admin/settings', icon: Settings }]
+              : []),
+          ].map((item) => {
             const Icon = item.icon;
-            
+
             // Se tem subitens, renderiza dropdown
             if (item.subItems && item.subItems.length > 0) {
-              const isSubActive = item.subItems.some(sub => location.pathname === sub.url || location.pathname.startsWith(sub.url + '/'));
-              
+              const isSubActive = item.subItems.some(
+                (sub) =>
+                  location.pathname === sub.url || location.pathname.startsWith(sub.url + '/')
+              );
+
               return (
                 <DropdownMenu key={item.label}>
                   <DropdownMenuTrigger asChild>
                     <button
                       disabled={loading}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 w-full justify-start",
-                        "hover:bg-primary/10",
-                        "text-xs font-medium border-none outline-none",
-                        loading && "pointer-events-none opacity-50",
-                        isSubActive 
-                          ? "bg-primary/20 text-primary" 
-                          : "text-muted-foreground hover:text-foreground"
+                        'flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 w-full justify-start',
+                        'hover:bg-primary/10',
+                        'text-xs font-medium border-none outline-none',
+                        loading && 'pointer-events-none opacity-50',
+                        isSubActive
+                          ? 'bg-primary/20 text-primary'
+                          : 'text-muted-foreground hover:text-foreground'
                       )}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
@@ -282,7 +300,7 @@ export const HorizontalTopMenu: React.FC = () => {
                 </DropdownMenu>
               );
             }
-            
+
             // Item normal sem subitens
             return (
               <NavLink
@@ -294,15 +312,17 @@ export const HorizontalTopMenu: React.FC = () => {
                     return false;
                   }
                 }}
-                className={({ isActive }) => cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 w-full justify-start",
-                  "hover:bg-primary/10",
-                  "text-xs font-medium",
-                  loading && "pointer-events-none opacity-50",
-                  isActive 
-                    ? "bg-primary/20 text-primary" 
-                    : "text-muted-foreground hover:text-foreground"
-                )}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 w-full justify-start',
+                    'hover:bg-primary/10',
+                    'text-xs font-medium',
+                    loading && 'pointer-events-none opacity-50',
+                    isActive
+                      ? 'bg-primary/20 text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )
+                }
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="truncate">{item.label}</span>

@@ -15,7 +15,9 @@ export function UpdateNotification() {
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-4 rounded-xl border border-border bg-card px-5 py-3.5 shadow-xl animate-in slide-in-from-bottom-4 duration-300">
       <div className="flex flex-col leading-tight">
         <span className="text-sm font-semibold">Nova versão disponível</span>
-        <span className="text-xs text-muted-foreground">Atualize para usar as melhorias mais recentes.</span>
+        <span className="text-xs text-muted-foreground">
+          Atualize para usar as melhorias mais recentes.
+        </span>
       </div>
       <Button size="sm" onClick={() => updateServiceWorker(true)} className="shrink-0 gap-1.5">
         <RefreshCw className="h-3.5 w-3.5" />

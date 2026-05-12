@@ -145,7 +145,10 @@ const TIPOS = [
 // ── Accent-insensitive search ─────────────────────────────────────────────────
 
 function norm(s: string): string {
-  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
 }
 
 export function matchViatura(v: Viatura, q: string): boolean {
@@ -161,9 +164,7 @@ export function matchViatura(v: Viatura, q: string): boolean {
 export function matchMotorista(m: Motorista, q: string): boolean {
   const n = norm(q);
   return (
-    norm(m.nome).includes(n) ||
-    norm(m.nif || '').includes(n) ||
-    norm(m.telefone || '').includes(n)
+    norm(m.nome).includes(n) || norm(m.nif || '').includes(n) || norm(m.telefone || '').includes(n)
   );
 }
 
@@ -195,8 +196,7 @@ const ViaturaAtualDisplay: React.FC<{
   if (loading) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-border text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-        A detetar viatura atual...
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin" />A detetar viatura atual...
       </div>
     );
   }
@@ -212,7 +212,9 @@ const ViaturaAtualDisplay: React.FC<{
     <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-muted/30 text-sm">
       <Car className="h-4 w-4 shrink-0 text-muted-foreground" />
       <span className="font-medium">{formatMatricula(viatura.matricula)}</span>
-      <span className="text-muted-foreground">— {viatura.marca} {viatura.modelo}</span>
+      <span className="text-muted-foreground">
+        — {viatura.marca} {viatura.modelo}
+      </span>
       {viatura.categoria && (
         <span className="ml-auto text-xs text-muted-foreground">{viatura.categoria}</span>
       )}
@@ -227,8 +229,8 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
 
   const [tipo, setTipo] = useState('entrega');
   const [motoristaId, setMotoristaId] = useState('');
-  const [viaturaId, setViaturaId] = useState('');       // nova / principal
-  const [autoViatura, setAutoViatura] = useState<Viatura | null>(null);   // auto-detectada pelo motorista
+  const [viaturaId, setViaturaId] = useState(''); // nova / principal
+  const [autoViatura, setAutoViatura] = useState<Viatura | null>(null); // auto-detectada pelo motorista
   const [loadingAutoViatura, setLoadingAutoViatura] = useState(false);
   const [data, setData] = useState(
     defaultDate
@@ -286,7 +288,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
     },
   });
 
-  const selectedEstacao = estacoes.find(e => e.id === estacaoId) || null;
+  const selectedEstacao = estacoes.find((e) => e.id === estacaoId) || null;
 
   // ── Auto-detect current vehicle when motorista changes ──────────────────────
   // Used for: recolha, troca, upgrade
@@ -309,7 +311,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
       .maybeSingle()
       .then(({ data: assignment }) => {
         if (assignment?.viatura_id) {
-          const v = viaturas.find(x => x.id === assignment.viatura_id) || null;
+          const v = viaturas.find((x) => x.id === assignment.viatura_id) || null;
           setAutoViatura(v);
           // For recolha, also pre-fill the viaturaId with the current vehicle
           if (tipo === 'recolha') setViaturaId(assignment.viatura_id);
@@ -329,23 +331,23 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
   }, [tipo]);
 
   // ── Vehicle lists by tipo ───────────────────────────────────────────────────
-  const viaturasDisponiveis = viaturas.filter(v => {
+  const viaturasDisponiveis = viaturas.filter((v) => {
     const s = (v.status || '').toLowerCase();
     return s === 'disponivel' || s === 'disponível';
   });
-  const viaturasEmUso = viaturas.filter(v => {
+  const viaturasEmUso = viaturas.filter((v) => {
     const s = (v.status || '').toLowerCase();
     return s === 'em_uso' || s === 'em uso';
   });
-  const viaturasRecuperaveis = viaturas.filter(v => {
+  const viaturasRecuperaveis = viaturas.filter((v) => {
     const s = (v.status || '').toLowerCase();
     return s === 'em_uso' || s === 'em uso' || s === 'em_recolha' || s === 'em recolha';
   });
 
   const viaturaOptions: Viatura[] = (() => {
     if (tipo === 'entrega') return viaturasDisponiveis;
-    if (tipo === 'recolha') return viaturasEmUso;            // manual fallback if no motorista
-    if (tipo === 'devolucao') return viaturasRecuperaveis;   // em_uso + em_recolha
+    if (tipo === 'recolha') return viaturasEmUso; // manual fallback if no motorista
+    if (tipo === 'devolucao') return viaturasRecuperaveis; // em_uso + em_recolha
     if (tipo === 'troca' || tipo === 'upgrade') return viaturasDisponiveis; // nova viatura
     return [];
   })();
@@ -373,7 +375,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
   const canSave = (() => {
     if (!data) return false;
     if (tipo === 'entrega') return !!motoristaId && !!viaturaId;
-    if (tipo === 'recolha') return !!viaturaId;           // motorista optional — fechamos pelo viatura_id
+    if (tipo === 'recolha') return !!viaturaId; // motorista optional — fechamos pelo viatura_id
     if (tipo === 'devolucao') return !!viaturaId;
     if (tipo === 'troca' || tipo === 'upgrade') {
       return !!motoristaId && !!autoViatura && !!viaturaId;
@@ -386,16 +388,13 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
   const mutation = useMutation({
     mutationFn: async () => {
       // Determine the "main" vehicle (the one being delivered or involved)
-      const mainViaturaId =
-        tipo === 'troca' || tipo === 'upgrade'
-          ? viaturaId
-          : viaturaId;
+      const mainViaturaId = tipo === 'troca' || tipo === 'upgrade' ? viaturaId : viaturaId;
 
-      const mainViatura = viaturas.find(v => v.id === mainViaturaId);
+      const mainViatura = viaturas.find((v) => v.id === mainViaturaId);
       if (!mainViatura) throw new Error('Selecione uma viatura válida');
 
       // For troca/upgrade, the old vehicle comes from autoViatura
-      const oldViatura = (tipo === 'troca' || tipo === 'upgrade') ? autoViatura : null;
+      const oldViatura = tipo === 'troca' || tipo === 'upgrade' ? autoViatura : null;
 
       const dataISO = diaTodo
         ? new Date(`${data}T00:00:00`).toISOString()
@@ -419,7 +418,11 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
       if (motoristaId) eventoPayload.motorista_id = motoristaId;
 
       // Insert evento (resilient to missing motorista_id column)
-      let result = await supabase.from('calendario_eventos').insert(eventoPayload).select('id').single();
+      let result = await supabase
+        .from('calendario_eventos')
+        .insert(eventoPayload)
+        .select('id')
+        .single();
       if (result.error) {
         const { motorista_id: _, ...fallback } = eventoPayload;
         result = await supabase.from('calendario_eventos').insert(fallback).select('id').single();
@@ -430,19 +433,22 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
       if (tipo === 'recolha') {
         // Fechar associação motorista_viaturas
         if (motoristaId) {
-          await supabase.from('motorista_viaturas')
+          await supabase
+            .from('motorista_viaturas')
             .update({ status: 'encerrado', data_fim: data })
             .eq('motorista_id', motoristaId)
             .eq('viatura_id', mainViatura.id)
             .eq('status', 'ativo');
         } else {
-          await supabase.from('motorista_viaturas')
+          await supabase
+            .from('motorista_viaturas')
             .update({ status: 'encerrado', data_fim: data })
             .eq('viatura_id', mainViatura.id)
             .eq('status', 'ativo');
         }
         // Viatura → em_recolha (aguarda check-in na estação)
-        await supabase.from('viaturas')
+        await supabase
+          .from('viaturas')
           .update({ status: 'em_recolha', estacao_id: estacaoId || null })
           .eq('id', mainViatura.id);
       }
@@ -458,8 +464,9 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
             dia_todo: eventoPayload.dia_todo,
           },
         });
-      } catch { /* non-critical */ }
-
+      } catch {
+        /* non-critical */
+      }
     },
 
     onSuccess: () => {
@@ -473,7 +480,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
     onError: (e: any) => toast.error(e.message || 'Erro ao criar evento'),
   });
 
-  const tipoInfo = TIPOS.find(t => t.value === tipo);
+  const tipoInfo = TIPOS.find((t) => t.value === tipo);
 
   // ── For entrega/devolucao: show step; recolha: mutation (em_recolha) ───────
   const handleGuardar = () => {
@@ -482,9 +489,9 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
       return;
     }
     if (tipo === 'entrega' || tipo === 'devolucao') {
-      const viatura = viaturas.find(v => v.id === viaturaId) || null;
+      const viatura = viaturas.find((v) => v.id === viaturaId) || null;
       if (!viatura) return;
-      const motorista = motoristas.find(m => m.id === motoristaId);
+      const motorista = motoristas.find((m) => m.id === motoristaId);
       setPendingEventoData({
         tipo,
         motoristaId,
@@ -500,9 +507,9 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
         viatura,
       });
     } else if ((tipo === 'troca' || tipo === 'upgrade') && autoViatura) {
-      const novaViatura = viaturas.find(v => v.id === viaturaId);
+      const novaViatura = viaturas.find((v) => v.id === viaturaId);
       if (!novaViatura) return;
-      const motorista = motoristas.find(m => m.id === motoristaId);
+      const motorista = motoristas.find((m) => m.id === motoristaId);
       setPendingTrocaData({
         tipo: tipo as 'troca' | 'upgrade',
         motoristaId,
@@ -523,7 +530,8 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
   };
 
   // ── Helpers para mostrar/esconder campos por tipo ──────────────────────────
-  const showMotorista = tipo === 'entrega' || tipo === 'recolha' || tipo === 'troca' || tipo === 'upgrade';
+  const showMotorista =
+    tipo === 'entrega' || tipo === 'recolha' || tipo === 'troca' || tipo === 'upgrade';
   const showViaturaAutoDetect = tipo === 'troca' || tipo === 'upgrade';
   const showViaturaManual = tipo !== 'troca' && tipo !== 'upgrade';
   // Para recolha, o campo viatura fica visível mas é preenchido automaticamente
@@ -531,7 +539,8 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
     if (tipo === 'entrega') return { label: 'Viatura a Entregar', hint: 'disponíveis' };
     if (tipo === 'recolha') return { label: 'Viatura a Recolher', hint: 'em uso' };
     if (tipo === 'devolucao') return { label: 'Viatura Devolvida', hint: 'em uso / em recolha' };
-    if (tipo === 'troca' || tipo === 'upgrade') return { label: 'Nova Viatura', hint: 'disponíveis' };
+    if (tipo === 'troca' || tipo === 'upgrade')
+      return { label: 'Nova Viatura', hint: 'disponíveis' };
     return { label: 'Viatura', hint: '' };
   })();
 
@@ -576,30 +585,31 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
         </Button>
         <div className="flex-1 min-w-0">
           <h1 className="text-base font-semibold leading-tight">Novo Evento</h1>
-          {tipoInfo && (
-            <p className="text-xs text-muted-foreground truncate">{tipoInfo.desc}</p>
-          )}
+          {tipoInfo && <p className="text-xs text-muted-foreground truncate">{tipoInfo.desc}</p>}
         </div>
         <Button
           onClick={handleGuardar}
           disabled={!canSave || mutation.isPending}
           className="shrink-0"
         >
-          {mutation.isPending
-            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...</>
-            : 'Guardar'}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...
+            </>
+          ) : (
+            'Guardar'
+          )}
         </Button>
       </div>
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-
           {/* ── Tipo de Evento ── */}
           <div className="space-y-2">
             <Label>Tipo de Evento</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {TIPOS.map(t => (
+              {TIPOS.map((t) => (
                 <button
                   key={t.value}
                   type="button"
@@ -612,7 +622,12 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
                   )}
                 >
                   <div className="font-medium">{t.label}</div>
-                  <div className={cn('text-xs mt-0.5 leading-tight', tipo === t.value ? 'opacity-80' : 'text-muted-foreground')}>
+                  <div
+                    className={cn(
+                      'text-xs mt-0.5 leading-tight',
+                      tipo === t.value ? 'opacity-80' : 'text-muted-foreground'
+                    )}
+                  >
                     {t.desc}
                   </div>
                 </button>
@@ -634,7 +649,9 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
                   <User className="h-3.5 w-3.5 text-muted-foreground" />
                   Motorista
                   {tipo === 'recolha' && (
-                    <span className="text-muted-foreground font-normal text-xs">(opcional — preenche viatura automaticamente)</span>
+                    <span className="text-muted-foreground font-normal text-xs">
+                      (opcional — preenche viatura automaticamente)
+                    </span>
                   )}
                   {(tipo === 'troca' || tipo === 'upgrade') && (
                     <span className="text-red-500 ml-1">*</span>
@@ -652,7 +669,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
                     placeholder="Pesquisar motorista..."
                     icon={<User className="h-4 w-4" />}
                     matchFn={(item, q) => {
-                      const m = motoristas.find(x => x.id === item.id);
+                      const m = motoristas.find((x) => x.id === item.id);
                       return m ? matchMotorista(m, q) : false;
                     }}
                   />
@@ -665,7 +682,10 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5">
                   <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground" />
-                  Viatura Atual <span className="text-muted-foreground font-normal text-xs">(a devolver — detetada automaticamente)</span>
+                  Viatura Atual{' '}
+                  <span className="text-muted-foreground font-normal text-xs">
+                    (a devolver — detetada automaticamente)
+                  </span>
                 </Label>
                 <ViaturaAtualDisplay
                   viatura={autoViatura}
@@ -681,7 +701,9 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
                 <Label>
                   {viaturaLabel.label}
                   {viaturaLabel.hint && (
-                    <span className="text-muted-foreground font-normal ml-1 text-xs">({viaturaLabel.hint})</span>
+                    <span className="text-muted-foreground font-normal ml-1 text-xs">
+                      ({viaturaLabel.hint})
+                    </span>
                   )}
                 </Label>
                 {loadingViaturas ? (
@@ -696,7 +718,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
                     placeholder="Selecionar viatura..."
                     icon={<Car className="h-4 w-4" />}
                     matchFn={(item, q) => {
-                      const v = viaturas.find(x => x.id === item.id);
+                      const v = viaturas.find((x) => x.id === item.id);
                       return v ? matchViatura(v, q) : false;
                     }}
                   />
@@ -707,8 +729,8 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
                     {tipo === 'entrega'
                       ? 'Sem viaturas disponíveis no parque.'
                       : tipo === 'devolucao'
-                      ? 'Sem viaturas em uso ou em recolha.'
-                      : 'Sem viaturas em uso.'}
+                        ? 'Sem viaturas em uso ou em recolha.'
+                        : 'Sem viaturas em uso.'}
                   </p>
                 )}
               </div>
@@ -719,7 +741,8 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5">
                   <Car className="h-3.5 w-3.5 text-muted-foreground" />
-                  Nova Viatura <span className="text-muted-foreground font-normal text-xs">(disponíveis)</span>
+                  Nova Viatura{' '}
+                  <span className="text-muted-foreground font-normal text-xs">(disponíveis)</span>
                 </Label>
                 {loadingViaturas ? (
                   <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
@@ -733,14 +756,15 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
                     placeholder="Selecionar nova viatura..."
                     icon={<Car className="h-4 w-4" />}
                     matchFn={(item, q) => {
-                      const v = viaturas.find(x => x.id === item.id);
+                      const v = viaturas.find((x) => x.id === item.id);
                       return v ? matchViatura(v, q) : false;
                     }}
                   />
                 )}
                 {!loadingViaturas && viaturaOptions.length === 0 && (
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Info className="h-3 w-3" />Sem viaturas disponíveis no parque.
+                    <Info className="h-3 w-3" />
+                    Sem viaturas disponíveis no parque.
                   </p>
                 )}
               </div>
@@ -757,7 +781,12 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="data">Data *</Label>
-                <Input id="data" type="date" value={data} onChange={e => setData(e.target.value)} />
+                <Input
+                  id="data"
+                  type="date"
+                  value={data}
+                  onChange={(e) => setData(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center gap-3">
@@ -766,7 +795,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
                     <input
                       type="checkbox"
                       checked={diaTodo}
-                      onChange={e => setDiaTodo(e.target.checked)}
+                      onChange={(e) => setDiaTodo(e.target.checked)}
                       className="rounded"
                     />
                     Dia inteiro
@@ -776,7 +805,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
                   id="hora"
                   type="time"
                   value={hora}
-                  onChange={e => setHora(e.target.value)}
+                  onChange={(e) => setHora(e.target.value)}
                   disabled={diaTodo}
                 />
               </div>
@@ -788,7 +817,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
                 Estação <span className="text-destructive">*</span>
               </Label>
               <SearchableDropdown
-                items={estacoes.map(e => ({
+                items={estacoes.map((e) => ({
                   id: e.id,
                   primary: e.nome,
                   secondary: [e.morada, e.cidade].filter(Boolean).join(', ') || undefined,
@@ -798,10 +827,14 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
                 placeholder="Selecionar estação..."
                 icon={<MapPin className="h-4 w-4" />}
                 matchFn={(item, q) => {
-                  const e = estacoes.find(x => x.id === item.id);
+                  const e = estacoes.find((x) => x.id === item.id);
                   if (!e) return false;
                   const n = norm(q);
-                  return norm(e.nome).includes(n) || norm(e.cidade || '').includes(n) || norm(e.morada || '').includes(n);
+                  return (
+                    norm(e.nome).includes(n) ||
+                    norm(e.cidade || '').includes(n) ||
+                    norm(e.morada || '').includes(n)
+                  );
                 }}
               />
             </div>
@@ -813,36 +846,52 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
             <Textarea
               id="obs"
               value={observacoes}
-              onChange={e => setObservacoes(e.target.value)}
+              onChange={(e) => setObservacoes(e.target.value)}
               placeholder="Notas adicionais sobre esta movimentação..."
               rows={3}
             />
           </div>
 
           {/* ── Info contextual ── */}
-          <div className={cn(
-            'rounded-lg border p-3 text-xs space-y-1',
-            tipo === 'recolha'
-              ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300'
-              : 'border-border bg-muted/40 text-muted-foreground'
-          )}>
+          <div
+            className={cn(
+              'rounded-lg border p-3 text-xs space-y-1',
+              tipo === 'recolha'
+                ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                : 'border-border bg-muted/40 text-muted-foreground'
+            )}
+          >
             {tipo === 'entrega' && (
-              <p>A viatura ficará <strong>associada ao motorista</strong> a partir da data indicada e mudará para estado <strong>em uso</strong>.</p>
+              <p>
+                A viatura ficará <strong>associada ao motorista</strong> a partir da data indicada e
+                mudará para estado <strong>em uso</strong>.
+              </p>
             )}
             {tipo === 'recolha' && (
               <>
-                <p className="font-medium">⚠ A viatura ficará em estado <strong>em recolha</strong> — pendente de confirmação de chegada ao parque.</p>
-                <p>Um gestor terá de confirmar a chegada para que a viatura fique <strong>disponível</strong>.</p>
+                <p className="font-medium">
+                  ⚠ A viatura ficará em estado <strong>em recolha</strong> — pendente de confirmação
+                  de chegada ao parque.
+                </p>
+                <p>
+                  Um gestor terá de confirmar a chegada para que a viatura fique{' '}
+                  <strong>disponível</strong>.
+                </p>
               </>
             )}
             {tipo === 'devolucao' && (
-              <p>A viatura é desassociada do motorista e fica <strong>disponível imediatamente</strong> no parque.</p>
+              <p>
+                A viatura é desassociada do motorista e fica{' '}
+                <strong>disponível imediatamente</strong> no parque.
+              </p>
             )}
             {(tipo === 'troca' || tipo === 'upgrade') && (
-              <p>A viatura atual será devolvida ao parque e a nova ficará associada ao motorista. O histórico é preservado em ambas as fichas.</p>
+              <p>
+                A viatura atual será devolvida ao parque e a nova ficará associada ao motorista. O
+                histórico é preservado em ambas as fichas.
+              </p>
             )}
           </div>
-
         </div>
       </div>
     </div>

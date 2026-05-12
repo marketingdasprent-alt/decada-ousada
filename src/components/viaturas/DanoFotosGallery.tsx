@@ -1,17 +1,17 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Camera, Upload, Loader2, Eye, Trash2, ImageIcon, Wrench } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+} from '@/components/ui/dialog';
+import { Camera, Upload, Loader2, Eye, Trash2, ImageIcon, Wrench } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 interface DanoFoto {
   id: string;
   ficheiro_url: string;
@@ -35,7 +35,10 @@ export function DanoFotosGallery({
   const [uploading, setUploading] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedFoto, setSelectedFoto] = useState<DanoFoto | null>(null);
-  const [editingDescricao, setEditingDescricao] = useState<{ id: string, descricao: string } | null>(null);
+  const [editingDescricao, setEditingDescricao] = useState<{
+    id: string;
+    descricao: string;
+  } | null>(null);
   const [updating, setUpdating] = useState(false);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,30 +47,30 @@ export function DanoFotosGallery({
 
     setUploading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       for (const file of Array.from(files)) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${danoId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('viatura-documentos')
           .upload(fileName, file);
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('viatura-documentos')
-          .getPublicUrl(fileName);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from('viatura-documentos').getPublicUrl(fileName);
 
-        const { error: insertError } = await supabase
-          .from('viatura_dano_fotos')
-          .insert({
-            dano_id: danoId,
-            ficheiro_url: publicUrl,
-            nome_ficheiro: file.name,
-            uploaded_by: user?.id,
-          });
+        const { error: insertError } = await supabase.from('viatura_dano_fotos').insert({
+          dano_id: danoId,
+          ficheiro_url: publicUrl,
+          nome_ficheiro: file.name,
+          uploaded_by: user?.id,
+        });
 
         if (insertError) throw insertError;
       }
@@ -87,10 +90,7 @@ export function DanoFotosGallery({
     if (!confirm('Tem certeza que deseja eliminar esta foto?')) return;
 
     try {
-      const { error } = await supabase
-        .from('viatura_dano_fotos')
-        .delete()
-        .eq('id', fotoId);
+      const { error } = await supabase.from('viatura_dano_fotos').delete().eq('id', fotoId);
 
       if (error) throw error;
       toast.success('Foto eliminada!');
@@ -103,7 +103,7 @@ export function DanoFotosGallery({
 
   const handleUpdateDescricao = async () => {
     if (!editingDescricao) return;
-    
+
     setUpdating(true);
     try {
       const { error } = await supabase
@@ -112,7 +112,7 @@ export function DanoFotosGallery({
         .eq('id', editingDescricao.id);
 
       if (error) throw error;
-      
+
       toast.success('Descrição atualizada!');
       setEditingDescricao(null);
       onFotosChange();
@@ -160,7 +160,9 @@ export function DanoFotosGallery({
                       size="icon"
                       variant="ghost"
                       className="h-7 w-7 text-white hover:text-primary hover:bg-white/20"
-                      onClick={() => setEditingDescricao({ id: foto.id, descricao: foto.descricao || '' })}
+                      onClick={() =>
+                        setEditingDescricao({ id: foto.id, descricao: foto.descricao || '' })
+                      }
                     >
                       <Wrench className="h-3 w-3" />
                     </Button>
@@ -195,8 +197,7 @@ export function DanoFotosGallery({
         <div className="flex flex-wrap gap-2">
           {uploading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              A enviar...
+              <Loader2 className="h-4 w-4 animate-spin" />A enviar...
             </div>
           ) : (
             <>
@@ -217,7 +218,7 @@ export function DanoFotosGallery({
                 onChange={handleUpload}
                 disabled={uploading}
               />
-              
+
               {/* Galeria */}
               <Label
                 htmlFor={`foto-upload-${danoId}`}
@@ -245,51 +246,61 @@ export function DanoFotosGallery({
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>{selectedFoto?.nome_ficheiro || 'Foto do Dano'}</DialogTitle>
-            <DialogDescription className="sr-only">Visualização ampliada da foto selecionada.</DialogDescription>
+            <DialogDescription className="sr-only">
+              Visualização ampliada da foto selecionada.
+            </DialogDescription>
           </DialogHeader>
-            {selectedFoto && (
-              <div className="flex flex-col items-center gap-4">
-                <img
-                  src={selectedFoto.ficheiro_url}
-                  alt={selectedFoto.nome_ficheiro || 'Foto do dano'}
-                  className="max-h-[60vh] max-w-full object-contain rounded-lg"
-                />
-                {selectedFoto.descricao && (
-                  <p className="text-center italic text-muted-foreground border-t pt-2 w-full">
-                    {selectedFoto.descricao}
-                  </p>
-                )}
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Dialog Editar Descrição */}
-        <Dialog open={!!editingDescricao} onOpenChange={(open) => !open && setEditingDescricao(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Editar Legenda da Foto</DialogTitle>
-              <DialogDescription className="sr-only">Edite a legenda ou descrição da foto do dano.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Legenda / Descrição</Label>
-                <Input 
-                  placeholder="Ex: Risco na porta traseira esquerda..."
-                  value={editingDescricao?.descricao || ''}
-                  onChange={(e) => setEditingDescricao(prev => prev ? { ...prev, descricao: e.target.value } : null)}
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setEditingDescricao(null)}>Cancelar</Button>
-                <Button onClick={handleUpdateDescricao} disabled={updating}>
-                  {updating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Guardar
-                </Button>
-              </div>
+          {selectedFoto && (
+            <div className="flex flex-col items-center gap-4">
+              <img
+                src={selectedFoto.ficheiro_url}
+                alt={selectedFoto.nome_ficheiro || 'Foto do dano'}
+                className="max-h-[60vh] max-w-full object-contain rounded-lg"
+              />
+              {selectedFoto.descricao && (
+                <p className="text-center italic text-muted-foreground border-t pt-2 w-full">
+                  {selectedFoto.descricao}
+                </p>
+              )}
             </div>
-          </DialogContent>
-        </Dialog>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Editar Descrição */}
+      <Dialog open={!!editingDescricao} onOpenChange={(open) => !open && setEditingDescricao(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Legenda da Foto</DialogTitle>
+            <DialogDescription className="sr-only">
+              Edite a legenda ou descrição da foto do dano.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Legenda / Descrição</Label>
+              <Input
+                placeholder="Ex: Risco na porta traseira esquerda..."
+                value={editingDescricao?.descricao || ''}
+                onChange={(e) =>
+                  setEditingDescricao((prev) =>
+                    prev ? { ...prev, descricao: e.target.value } : null
+                  )
+                }
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditingDescricao(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleUpdateDescricao} disabled={updating}>
+                {updating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Guardar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

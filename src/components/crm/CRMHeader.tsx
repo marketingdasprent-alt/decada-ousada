@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, Users } from 'lucide-react';
@@ -28,12 +27,15 @@ interface CRMHeaderProps {
 export const CRMHeader: React.FC<CRMHeaderProps> = ({ leads = [], onImportComplete }) => {
   const isMobile = useIsMobile();
   const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const formattedStartDate = startOfMonth.toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' });
+  const formattedStartDate = startOfMonth.toLocaleDateString('pt-PT', {
+    day: 'numeric',
+    month: 'long',
+  });
   const today = new Date().toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' });
-  
+
   if (isMobile) {
     return (
-      <motion.div 
+      <motion.div
         className="mb-6"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -58,7 +60,7 @@ export const CRMHeader: React.FC<CRMHeaderProps> = ({ leads = [], onImportComple
               </p>
             </div>
           </div>
-          
+
           {/* Buttons - Stacked */}
           <div className="flex flex-col gap-2">
             <ImportLeadsDialog onImportComplete={onImportComplete || (() => {})} />
@@ -71,7 +73,7 @@ export const CRMHeader: React.FC<CRMHeaderProps> = ({ leads = [], onImportComple
 
   // Desktop version
   return (
-    <motion.div 
+    <motion.div
       className="mb-12"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -92,11 +94,13 @@ export const CRMHeader: React.FC<CRMHeaderProps> = ({ leads = [], onImportComple
               Controle total sobre seu pipeline de vendas
             </p>
             <p className="text-xs text-muted-foreground/70 mt-1">
-              📅 A mostrar leads de <span className="text-primary font-medium">{formattedStartDate}</span> até <span className="text-primary font-medium">{today}</span>
+              📅 A mostrar leads de{' '}
+              <span className="text-primary font-medium">{formattedStartDate}</span> até{' '}
+              <span className="text-primary font-medium">{today}</span>
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <ImportLeadsDialog onImportComplete={onImportComplete || (() => {})} />
           <ExportLeadsButton leads={leads} />

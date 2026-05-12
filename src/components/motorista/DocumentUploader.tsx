@@ -23,7 +23,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
-  
+
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
 
@@ -55,9 +55,9 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('motorista-documentos')
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('motorista-documentos').getPublicUrl(filePath);
 
       // Como o bucket é privado, guardamos o path em vez da URL pública
       onUpload(filePath);
@@ -146,9 +146,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground">
-        PDF, JPG ou PNG. Máximo 10MB.
-      </p>
+      <p className="text-xs text-muted-foreground">PDF, JPG ou PNG. Máximo 10MB.</p>
     </div>
   );
 };

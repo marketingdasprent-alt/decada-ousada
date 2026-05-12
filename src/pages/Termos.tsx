@@ -1,12 +1,12 @@
-﻿import { SimpleNavbar } from "@/components/landing/SimpleNavbar";
-import { Footer } from "@/components/landing/Footer";
-import { motion } from "framer-motion";
+﻿import { SimpleNavbar } from '@/components/landing/SimpleNavbar';
+import { Footer } from '@/components/landing/Footer';
+import { motion } from 'framer-motion';
 
 const Termos = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <SimpleNavbar />
-      
+
       {/* Hero Section */}
       <section className="py-16 bg-gradient-to-b from-gray-900 to-black">
         <div className="container mx-auto px-4">
@@ -19,9 +19,7 @@ const Termos = () => {
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
               Termos e <span className="text-[#E53333]">Condições</span>
             </h1>
-            <p className="text-gray-400">
-              Última atualização: Janeiro 2026
-            </p>
+            <p className="text-gray-400">Última atualização: Janeiro 2026</p>
           </motion.div>
         </div>
       </section>
@@ -40,19 +38,31 @@ const Termos = () => {
               <div className="bg-gray-800/30 rounded-xl p-6">
                 <h2 className="text-2xl font-bold mb-4 text-white">1. Objeto</h2>
                 <p className="text-gray-400">
-                  Os presentes Termos e Condições regulam a utilização dos serviços prestados pela WeGest, 
-                  incluindo o aluguer de veículos para atividade TVDE e serviços associados. Ao utilizar os nossos 
-                  serviços, o utilizador aceita integralmente estes termos.
+                  Os presentes Termos e Condições regulam a utilização dos serviços prestados pela
+                  WeGest, incluindo o aluguer de veículos para atividade TVDE e serviços associados.
+                  Ao utilizar os nossos serviços, o utilizador aceita integralmente estes termos.
                 </p>
               </div>
 
               <div className="bg-gray-800/30 rounded-xl p-6">
                 <h2 className="text-2xl font-bold mb-4 text-white">2. Definições</h2>
                 <ul className="text-gray-400 space-y-2 list-disc list-inside">
-                  <li><strong className="text-white">Empresa:</strong> WeGest, operador TVDE certificado</li>
-                  <li><strong className="text-white">Motorista:</strong> Pessoa singular que celebra contrato de aluguer de veículo</li>
-                  <li><strong className="text-white">Veículo:</strong> Automóvel disponibilizado para atividade TVDE</li>
-                  <li><strong className="text-white">Serviços:</strong> Conjunto de prestações incluídas no contrato</li>
+                  <li>
+                    <strong className="text-white">Empresa:</strong> WeGest, operador TVDE
+                    certificado
+                  </li>
+                  <li>
+                    <strong className="text-white">Motorista:</strong> Pessoa singular que celebra
+                    contrato de aluguer de veículo
+                  </li>
+                  <li>
+                    <strong className="text-white">Veículo:</strong> Automóvel disponibilizado para
+                    atividade TVDE
+                  </li>
+                  <li>
+                    <strong className="text-white">Serviços:</strong> Conjunto de prestações
+                    incluídas no contrato
+                  </li>
                 </ul>
               </div>
 
@@ -95,49 +105,56 @@ const Termos = () => {
               <div className="bg-gray-800/30 rounded-xl p-6">
                 <h2 className="text-2xl font-bold mb-4 text-white">6. Pagamentos e Faturação</h2>
                 <p className="text-gray-400">
-                  Os valores e condições de pagamento são definidos no contrato individual celebrado com cada 
-                  motorista. O incumprimento dos pagamentos pode resultar na suspensão dos serviços e rescisão 
-                  contratual, sem prejuízo de outras consequências legais.
+                  Os valores e condições de pagamento são definidos no contrato individual celebrado
+                  com cada motorista. O incumprimento dos pagamentos pode resultar na suspensão dos
+                  serviços e rescisão contratual, sem prejuízo de outras consequências legais.
                 </p>
               </div>
 
               <div className="bg-gray-800/30 rounded-xl p-6">
                 <h2 className="text-2xl font-bold mb-4 text-white">7. Responsabilidade</h2>
                 <p className="text-gray-400">
-                  A WeGest não se responsabiliza por danos resultantes de utilização indevida do veículo, 
-                  incumprimento das regras de trânsito pelo motorista, ou situações de força maior. O motorista 
-                  é responsável por todos os danos causados ao veículo durante o período de utilização.
+                  A WeGest não se responsabiliza por danos resultantes de utilização indevida do
+                  veículo, incumprimento das regras de trânsito pelo motorista, ou situações de
+                  força maior. O motorista é responsável por todos os danos causados ao veículo
+                  durante o período de utilização.
                 </p>
               </div>
 
               <div className="bg-gray-800/30 rounded-xl p-6">
                 <h2 className="text-2xl font-bold mb-4 text-white">8. Rescisão</h2>
                 <p className="text-gray-400">
-                  O contrato pode ser rescindido por qualquer das partes mediante aviso prévio conforme 
-                  estabelecido no contrato individual. A rescisão por justa causa pode ocorrer imediatamente 
-                  em casos de incumprimento grave das obrigações contratuais.
+                  O contrato pode ser rescindido por qualquer das partes mediante aviso prévio
+                  conforme estabelecido no contrato individual. A rescisão por justa causa pode
+                  ocorrer imediatamente em casos de incumprimento grave das obrigações contratuais.
                 </p>
               </div>
 
               <div className="bg-gray-800/30 rounded-xl p-6">
                 <h2 className="text-2xl font-bold mb-4 text-white">9. Lei Aplicável</h2>
                 <p className="text-gray-400">
-                  Os presentes Termos e Condições regem-se pela lei portuguesa. Para resolução de quaisquer 
-                  litígios será competente o foro da comarca de Lisboa, com renúncia a qualquer outro.
+                  Os presentes Termos e Condições regem-se pela lei portuguesa. Para resolução de
+                  quaisquer litígios será competente o foro da comarca de Lisboa, com renúncia a
+                  qualquer outro.
                 </p>
               </div>
 
               <div className="bg-gray-800/30 rounded-xl p-6">
                 <h2 className="text-2xl font-bold mb-4 text-white">10. Contactos</h2>
                 <p className="text-gray-400">
-                  Para questões relacionadas com estes Termos e Condições, contacte-nos através do email{" "}
-                  <a href="mailto:motoristas.tvde@distanciaarrojada.pt" className="text-[#E53333] hover:underline">
+                  Para questões relacionadas com estes Termos e Condições, contacte-nos através do
+                  email{' '}
+                  <a
+                    href="mailto:motoristas.tvde@distanciaarrojada.pt"
+                    className="text-[#E53333] hover:underline"
+                  >
                     motoristas.tvde@distanciaarrojada.pt
-                  </a>
-                  {" "}ou telefone{" "}
+                  </a>{' '}
+                  ou telefone{' '}
                   <a href="tel:+351309100174" className="text-[#E53333] hover:underline">
                     309 100 174
-                  </a>.
+                  </a>
+                  .
                 </p>
               </div>
             </motion.div>
