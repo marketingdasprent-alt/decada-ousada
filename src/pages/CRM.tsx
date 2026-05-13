@@ -1085,8 +1085,8 @@ const CRM = () => {
 
       <div className="relative z-10 p-6">
         <div className="max-w-7xl mx-auto">
-          {/* Stickable CRM Header: Stats and Filters */}
-          <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 py-4 -mt-4 mb-4 space-y-4">
+          {/* CRM Header: Stats and Filters */}
+          <div className="mb-4 space-y-4">
             <div className="flex justify-between items-center px-1">
               <CRMViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
               <RealtimeStatus isConnected={isConnected} lastActivity={lastActivity} />
