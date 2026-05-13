@@ -317,8 +317,11 @@ export function ImportarRecibosDialog({
 
     for (const recibo of toImport) {
       try {
-        // Upload PDF to storage
-        const filePath = `recibos-importados/${orgId}/${recibo.dataInicio}/${recibo.motoristaId}_${recibo.fileName}`;
+        // Upload PDF to storage — normalizar nome para evitar caracteres especiais
+        const safeFileName = recibo.fileName
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-zA-Z0-9._-]/g, '_');
+        const filePath = `recibos-importados/${orgId}/${recibo.dataInicio}/${recibo.motoristaId}_${safeFileName}`;
         const { error: uploadError } = await supabase.storage
           .from('motorista-recibos')
           .upload(filePath, recibo.file, { upsert: true });
