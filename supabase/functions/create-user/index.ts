@@ -90,6 +90,7 @@ serve(async (req) => {
 
     // Buscar nome do cargo se fornecido
     let cargoNome = null;
+    let isCargoAdmin = false;
     if (cargo_id) {
       const { data: cargo } = await supabaseAdmin
         .from("cargos")
@@ -97,6 +98,8 @@ serve(async (req) => {
         .eq("id", cargo_id)
         .single();
       cargoNome = cargo?.nome || null;
+      // Detectar se o cargo é de administrador
+      isCargoAdmin = cargoNome?.toLowerCase().includes('admin') || false;
     }
 
     // Criar utilizador com API Admin
@@ -119,14 +122,15 @@ serve(async (req) => {
       );
     }
 
-    // Actualizar o profile com os dados adicionais + org_id
+    // Actualizar o profile com os dados adicionais + org_id + is_admin
     const { error: updateError } = await supabaseAdmin
       .from("profiles")
       .update({
         nome: nome,
         cargo_id: cargo_id,
         cargo: cargoNome,
-        org_id: targetOrgId
+        org_id: targetOrgId,
+        is_admin: isCargoAdmin
       })
       .eq("id", newUser.user.id);
 

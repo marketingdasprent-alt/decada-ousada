@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useTenant } from '@/contexts/TenantContext';
 import {
   Loader2,
   Zap,
@@ -84,6 +85,7 @@ interface Motorista {
 
 export const BoltIntegrationPanel: React.FC = () => {
   const { toast } = useToast();
+  const { orgId } = useTenant();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -238,6 +240,7 @@ export const BoltIntegrationPanel: React.FC = () => {
         ativo: formData.ativo,
         sync_automatico: formData.sync_automatico,
         intervalo_sync_horas: formData.intervalo_sync_horas,
+        org_id: orgId,
       };
 
       let error;

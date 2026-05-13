@@ -110,12 +110,13 @@ Deno.serve(async (req) => {
       status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-  const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+  const { data: profile } = await supabase.from('profiles').select('is_admin, org_id').eq('id', user.id).single();
   if (!profile?.is_admin) {
     return new Response(JSON.stringify({ error: 'Sem permissão de administrador' }), {
       status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+  const callerOrgId = profile.org_id;
 
   let rows: ExcelRow[];
   try {
@@ -128,8 +129,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Load all profiles once for gestor resolution
-  const { data: allProfiles } = await supabase.from('profiles').select('id, nome');
+  // Load all profiles once for gestor resolution (filtered by org)
+  const { data: allProfiles } = await supabase.from('profiles').select('id, nome').eq('org_id', callerOrgId);
 
   const results: ImportResult[] = [];
   let ok = 0, erros = 0;
@@ -165,6 +166,7 @@ Deno.serve(async (req) => {
         caucao: caucaoVal,
         gestor_id: gestorId,
         observacoes: row.observacoes?.trim() || null,
+        org_id: callerOrgId,
       };
 
       // Remove null keys to avoid overwriting existing data with null
@@ -175,9 +177,9 @@ Deno.serve(async (req) => {
       });
 
       if (nifTrim && nifTrim !== 'N/A') {
-        // Upsert by NIF
+        // Upsert by NIF (filtered by org)
         const { data: existing } = await supabase
-          .from('motoristas').select('id').eq('nif', nifTrim).maybeSingle();
+          .from('motoristas').select('id').eq('nif', nifTrim).eq('org_id', callerOrgId).maybeSingle();
 
         if (existing) {
           await supabase.from('motoristas').update(motoristaPayload).eq('id', existing.id);
@@ -189,9 +191,9 @@ Deno.serve(async (req) => {
           motoristaId = inserted.id;
         }
       } else if (nomeTrim) {
-        // Fallback: match by nome (case-insensitive)
+        // Fallback: match by nome (case-insensitive, filtered by org)
         const { data: existing } = await supabase
-          .from('motoristas').select('id').ilike('nome', nomeTrim).maybeSingle();
+          .from('motoristas').select('id').ilike('nome', nomeTrim).eq('org_id', callerOrgId).maybeSingle();
 
         if (existing) {
           await supabase.from('motoristas').update(motoristaPayload).eq('id', existing.id);
@@ -217,6 +219,7 @@ Deno.serve(async (req) => {
           valor_aluguer: valorViatura ?? undefined,
           km_atual: kmVal ?? undefined,
           is_slot: isSlot,
+          org_id: callerOrgId,
         };
 
         // Remove undefined
@@ -225,7 +228,7 @@ Deno.serve(async (req) => {
         });
 
         const { data: existingV } = await supabase
-          .from('viaturas').select('id').eq('matricula', mat).maybeSingle();
+          .from('viaturas').select('id').eq('matricula', mat).eq('org_id', callerOrgId).maybeSingle();
 
         if (existingV) {
           await supabase.from('viaturas').update(viaturaPayload).eq('id', existingV.id);
@@ -267,6 +270,7 @@ Deno.serve(async (req) => {
               data_inicio: dataInicio,
               data_fim: dataSaida || null,
               status: dataSaida ? 'encerrado' : 'ativo',
+              org_id: callerOrgId,
             });
 
             // Update viatura status if active

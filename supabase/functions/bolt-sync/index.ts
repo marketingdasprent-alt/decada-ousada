@@ -28,10 +28,10 @@ interface BoltOrder {
   };
 }
 
-async function getBoltToken(supabase: any, integracaoId?: string): Promise<{ token: string; companyId: number; integracaoId: string }> {
+async function getBoltToken(supabase: any, integracaoId?: string): Promise<{ token: string; companyId: number; integracaoId: string; orgId: string }> {
   let query = supabase
     .from("plataformas_configuracao")
-    .select("id, client_id, client_secret, company_id")
+    .select("id, client_id, client_secret, company_id, org_id")
     .eq("ativo", true)
     .eq("plataforma", "bolt");
 
@@ -62,7 +62,7 @@ async function getBoltToken(supabase: any, integracaoId?: string): Promise<{ tok
   }
 
   const data = await response.json();
-  return { token: data.access_token, companyId: config.company_id, integracaoId: config.id };
+  return { token: data.access_token, companyId: config.company_id, integracaoId: config.id, orgId: config.org_id };
 }
 
 function getRetryAfterMs(response: Response, attempt: number) {
@@ -173,7 +173,7 @@ serve(async (req) => {
     const startTs = Math.floor(new Date(start_date).getTime() / 1000);
     const endTs = Math.floor(new Date(end_date + "T23:59:59").getTime() / 1000);
 
-    const { token, companyId, integracaoId } = await getBoltToken(supabase, integracao_id);
+    const { token, companyId, integracaoId, orgId } = await getBoltToken(supabase, integracao_id);
 
     // Fetch ALL orders in batches with rate limit handling
     const BATCH_SIZE = 200; // Reduced batch size to avoid rate limits
@@ -208,6 +208,7 @@ serve(async (req) => {
         driver_earnings: order.order_price?.net_earnings ?? null,
         commission: order.order_price?.commission ?? null,
         integracao_id: integracaoId,
+        org_id: orgId,
       }));
 
       // Upsert batch (insert or update based on order_reference)
@@ -247,6 +248,7 @@ serve(async (req) => {
       viagens_novas: totalProcessed,
       viagens_atualizadas: 0,
       integracao_id: integracaoId,
+      org_id: orgId,
     });
 
     // Auto-mapear motoristas após sincronização de viagens

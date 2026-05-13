@@ -71,6 +71,14 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { integracao_id, combustivel_csv } = body;
 
+    // Buscar org_id da integração
+    const { data: intConfig } = await supabase
+      .from('plataformas_configuracao')
+      .select('org_id')
+      .eq('id', integracao_id)
+      .single();
+    const orgId = intConfig?.org_id || null;
+
     const rows = parseCsv(combustivel_csv);
     const { data: motoristas } = await supabase.from('motoristas_ativos').select('id, nome, cartao_edp');
 
@@ -122,7 +130,8 @@ Deno.serve(async (req) => {
         fuel_type: 'Elétrico',
         station_name: station || null,
         motorista_id: motoristaId,
-        raw_data: row
+        raw_data: row,
+        org_id: orgId,
       }, { onConflict: 'integracao_id,transaction_id' });
 
       if (!error) imported++;

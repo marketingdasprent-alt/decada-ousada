@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, UserPlus } from 'lucide-react';
+import { useTenant } from '@/contexts/TenantContext';
 
 interface Cargo {
   id: string;
@@ -29,6 +30,7 @@ export const InviteGenerationForm = ({ onInviteGenerated }: InviteGenerationForm
   const [cargos, setCargos] = useState<Cargo[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { orgId } = useTenant();
 
   useEffect(() => {
     fetchCargos();
@@ -82,7 +84,7 @@ export const InviteGenerationForm = ({ onInviteGenerated }: InviteGenerationForm
       // Remover convites antigos para este email
       await supabase.from('convites').delete().eq('email', email.toLowerCase().trim());
 
-      // Inserir novo convite COM cargo_id
+      // Inserir novo convite COM cargo_id e org_id
       const { data, error } = await supabase
         .from('convites')
         .insert({
@@ -91,6 +93,7 @@ export const InviteGenerationForm = ({ onInviteGenerated }: InviteGenerationForm
           expires_at: expiresAt.toISOString(),
           usado: false,
           cargo_id: cargoId,
+          org_id: orgId,
         })
         .select()
         .single();

@@ -53,6 +53,20 @@ serve(async (req) => {
       )
     }
 
+    // Buscar org_id do profile existente (necessário para NOT NULL constraint)
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('org_id')
+      .eq('id', user.id)
+      .single();
+
+    if (!existingProfile?.org_id) {
+      return new Response(
+        JSON.stringify({ error: 'Usuário não tem organização associada' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Atualizar o perfil do usuário para admin
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
@@ -61,6 +75,7 @@ serve(async (req) => {
         email: user.email,
         nome: user.user_metadata?.nome || 'Admin',
         is_admin: true,
+        org_id: existingProfile.org_id,
         updated_at: new Date().toISOString()
       })
 

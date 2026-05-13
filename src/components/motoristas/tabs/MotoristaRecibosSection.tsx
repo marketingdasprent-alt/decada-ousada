@@ -41,6 +41,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { usePermissions } from '@/hooks/usePermissions';
 import { RECURSOS } from '@/utils/permissions';
+import { MotoristaResumoDialog } from '@/components/administrativo/MotoristaResumoDialog';
 
 interface Recibo {
   id: string;
@@ -73,6 +74,7 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
 }) => {
   const { hasAccessToResource, isAdmin } = usePermissions();
   const podeAdicionarRecibo = isAdmin || hasAccessToResource(RECURSOS.RECIBOS_VERDES_ADICIONAR);
+  const [resumoDialogOpen, setResumoDialogOpen] = useState(false);
 
   const [recibos, setRecibos] = useState<Recibo[]>([]);
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
@@ -119,8 +121,16 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
     outrasReceitas: 0,
     totalFaturado: 0,
     custosSemanal: 0,
+    aluguer: 0,
+    combustivel: 0,
+    portagens: 0,
+    reparacoes: 0,
+    caucao: 0,
+    seguros: 0,
+    outrosCustos: 0,
     liquido: 0,
     loading: false,
+    isImportado: false,
   });
 
   const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
@@ -157,6 +167,48 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
     const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
 
     try {
+      // 0. Verificar se existe recibo importado para este motorista+semana
+      const { data: reciboImportado } = await supabase
+        .from('recibos_importados')
+        .select('*')
+        .eq('motorista_id', motoristaId)
+        .eq('semana_inicio', weekStartStr)
+        .maybeSingle();
+
+      if (reciboImportado) {
+        const boltVal = Number(reciboImportado.faturado_bolt) || 0;
+        const uberVal = Number(reciboImportado.faturado_uber) || 0;
+        const outrasRec = Number(reciboImportado.outras_receitas) || 0;
+        const totalFat = boltVal + uberVal + outrasRec;
+        const aluguer = Number(reciboImportado.aluguer) || 0;
+        const combustivel = Number(reciboImportado.combustivel) || 0;
+        const viaVerde = Number(reciboImportado.via_verde) || 0;
+        const outrosCustos = Number(reciboImportado.outros_custos) || 0;
+        const caucao = Number(reciboImportado.caucao) || 0;
+        const seguros = Number(reciboImportado.seguros) || 0;
+        const reparacoes = Number(reciboImportado.reparacoes) || 0;
+        const custosTotal = aluguer + combustivel + viaVerde + outrosCustos + caucao + seguros + reparacoes;
+
+        setResumoSemanal({
+          faturadoBolt: boltVal,
+          faturadoUber: uberVal,
+          outrasReceitas: outrasRec,
+          totalFaturado: totalFat,
+          custosSemanal: custosTotal,
+          aluguer,
+          combustivel,
+          portagens: viaVerde,
+          reparacoes,
+          caucao,
+          seguros,
+          outrosCustos,
+          liquido: Number(reciboImportado.liquido) || 0,
+          loading: false,
+          isImportado: true,
+        });
+        return;
+      }
+
       // 1. Fetch ALL associated Uber IDs for this driver
       const { data: associatedUberDrivers } = await supabase
         .from('uber_drivers')
@@ -264,34 +316,41 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
       );
 
       let extraCredits = 0;
-      let extraDebits = 0;
+      let finReparacoes = 0;
+      let finCaucao = 0;
+      let finSeguros = 0;
+      let finRendaViatura = 0;
+      let finOutros = 0;
 
       (finData || []).forEach((mov: any) => {
         const val = Number(mov.valor) || 0;
         if (mov.tipo === 'credito') {
-          // Não incluir caução como receita/crédito no recibo semanal
           if (mov.categoria === 'caucao') return;
           extraCredits += val;
         } else {
-          extraDebits += val;
+          if (mov.categoria === 'reparacao') finReparacoes += val;
+          else if (mov.categoria === 'caucao') finCaucao += val;
+          else if (mov.categoria === 'seguros') finSeguros += val;
+          else if (mov.categoria === 'renda_viatura') finRendaViatura += val;
+          else finOutros += val;
         }
       });
 
       // 6. FINAL AGGREGATION (MIRROR OF ContasResumoTab.tsx:resumosCalculados)
       const passesReciboVerde = motorista.recibo_verde ?? true;
 
-      // To match Admin EXACTLY, we sum Bolt sources if they both exist (Admin is additive)
       const boltTotal = boltViagensTotal + boltResumosTotal;
       const faturadoPlataformas = uberTotal + boltTotal;
       const totalFaturadoReal = faturadoPlataformas + extraCredits;
 
-      // Admin uses: revenue = passesReciboVerde ? totalFaturado : (faturado_bolt + faturado_uber) / 1.06 + extrasValor;
       const receitaLiquidaPlataformas = passesReciboVerde
         ? faturadoPlataformas
         : faturadoPlataformas / 1.06;
 
+      const totalAluguer = fixedRent + finRendaViatura;
+      const totalOutrosCustos = finOutros + extraCostsTotal;
       const receitaTotalFinal = receitaLiquidaPlataformas + extraCredits;
-      const custosTotal = extraDebits + fuelTotal + fixedRent + extraCostsTotal;
+      const custosTotal = totalAluguer + fuelTotal + finReparacoes + finCaucao + finSeguros + totalOutrosCustos;
       const liquidoFinal = receitaTotalFinal - custosTotal;
 
       setResumoSemanal({
@@ -300,8 +359,16 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
         outrasReceitas: extraCredits,
         totalFaturado: totalFaturadoReal,
         custosSemanal: custosTotal,
+        aluguer: totalAluguer,
+        combustivel: fuelTotal,
+        portagens: 0,
+        reparacoes: finReparacoes,
+        caucao: finCaucao,
+        seguros: finSeguros,
+        outrosCustos: totalOutrosCustos,
         liquido: liquidoFinal,
         loading: false,
+        isImportado: false,
       });
     } catch (error) {
       console.error('Erro ao carregar resumo semanal:', error);
@@ -488,6 +555,7 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
     return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(val);
   };
 
+
   return (
     <div className="space-y-6">
       {/* Resumo Real-time */}
@@ -561,10 +629,10 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
           <Button
             variant="outline"
             className="gap-2 h-12 w-full mx-4 border-dashed"
-            onClick={() => window.print()}
+            onClick={() => setResumoDialogOpen(true)}
           >
             <Printer className="h-4 w-4" />
-            Imprimir Resumo
+            Ver Resumo
           </Button>
         </Card>
       </div>
@@ -774,6 +842,32 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog Resumo Financeiro — mesmo layout do Financeiro > Contas */}
+      <MotoristaResumoDialog
+        open={resumoDialogOpen}
+        onOpenChange={setResumoDialogOpen}
+        motorista={{
+          driver_name: motorista.nome,
+          driver_uuid: '',
+          motorista_id: motoristaId,
+          total_faturado: resumoSemanal.totalFaturado,
+          faturado_bolt: resumoSemanal.faturadoBolt,
+          faturado_uber: resumoSemanal.faturadoUber,
+          total_viagens: 0,
+          viagens_bolt: 0,
+          viagens_uber: 0,
+          recibo_verde: motorista.recibo_verde ?? true,
+          liquido: resumoSemanal.liquido,
+          combustivel: resumoSemanal.combustivel,
+          portagens: resumoSemanal.portagens,
+          reparacoes: resumoSemanal.reparacoes,
+          outros_custos: resumoSemanal.outrosCustos,
+          aluguer: resumoSemanal.aluguer,
+          tem_recibo_importado: resumoSemanal.isImportado,
+        }}
+        dateRange={{ from: weekStart, to: weekEnd }}
+      />
     </div>
   );
 };
