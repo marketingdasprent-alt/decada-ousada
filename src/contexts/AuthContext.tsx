@@ -58,9 +58,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = async () => {
+    // Detetar contexto antes do signOut: portal motorista (/motorista, /motorista/...) vs equipa
+    const isMotoristaPortal = /^\/motorista(\/|$)/.test(window.location.pathname);
     await supabase.auth.signOut();
     // Forçar reload limpo — garante redirect para login mesmo com PWA/SW em cache
-    window.location.href = '/login';
+    window.location.href = isMotoristaPortal ? '/login' : '/equipa';
   };
 
   const value = {
