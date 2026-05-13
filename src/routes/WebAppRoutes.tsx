@@ -47,6 +47,8 @@ const Marketing = lazy(() => import('@/pages/Marketing'));
 const MotoristaDetalhe = lazy(() => import('@/pages/MotoristaDetalhe'));
 const Index = lazy(() => import('@/pages/Index'));
 const EliminarConta = lazy(() => import('@/pages/EliminarConta'));
+const SelecionarOrg = lazy(() => import('@/pages/SelecionarOrg'));
+const RegistarOrg = lazy(() => import('@/pages/RegistarOrg'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -72,6 +74,8 @@ const WebAppRoutes = () => {
           <Route path="/formulario/:id" element={<FormularioPublico />} />
           <Route path="/login" element={<LoginMotorista />} />
           <Route path="/equipa" element={<Login />} />
+          <Route path="/selecionar-org" element={<SelecionarOrg />} />
+          <Route path="/registar-org" element={<RegistarOrg />} />
           <Route path="/register" element={<Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/obrigado" element={<Obrigado />} />

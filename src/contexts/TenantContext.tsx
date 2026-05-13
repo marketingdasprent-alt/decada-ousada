@@ -1,0 +1,178 @@
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { subdomainCodigo } from '@/lib/subdomain';
+
+interface Organizacao {
+  id: string;
+  nome: string;
+  codigo: string;
+  logo_url: string | null;
+  ativa: boolean;
+}
+
+interface TenantContextType {
+  orgId: string | null;
+  orgNome: string | null;
+  orgs: Organizacao[];
+  loading: boolean;
+  initialized: boolean;
+  switchOrg: (orgId: string) => Promise<void>;
+}
+
+const TenantContext = createContext<TenantContextType | undefined>(undefined);
+
+export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading: authLoading } = useAuth();
+  const [orgs, setOrgs] = useState<Organizacao[]>([]);
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
+
+  const loadOrgs = useCallback(async () => {
+    if (authLoading) return;
+
+    if (!user) {
+      setOrgs([]);
+      setOrgId(null);
+      setLoading(false);
+      setInitialized(true);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Carregar orgs do user
+      const { data: userOrgs, error: orgsError } = await supabase
+        .from('user_organizacoes')
+        .select('org_id, organizacoes(id, nome, codigo, logo_url, ativa)')
+        .eq('user_id', user.id);
+
+      if (orgsError) {
+        console.error('[TenantContext] Erro ao carregar orgs:', orgsError);
+        setLoading(false);
+        setInitialized(true);
+        return;
+      }
+
+      const orgsList: Organizacao[] = (userOrgs || [])
+        .map((uo: any) => uo.organizacoes)
+        .filter((o: any) => o && o.ativa);
+
+      setOrgs(orgsList);
+
+      // Carregar org ativa
+      const { data: orgAtiva } = await supabase
+        .from('user_org_ativa')
+        .select('org_id')
+        .eq('user_id', user.id)
+        .single();
+
+      // Se estamos num subdomínio, auto-selecionar a org correspondente
+      if (subdomainCodigo) {
+        const subdomainOrg = orgsList.find((o) => o.codigo === subdomainCodigo);
+        if (subdomainOrg) {
+          setOrgId(subdomainOrg.id);
+          await supabase
+            .from('user_org_ativa')
+            .upsert({ user_id: user.id, org_id: subdomainOrg.id }, { onConflict: 'user_id' });
+        } else {
+          // User não pertence a esta org — limpar seleção
+          console.warn(`[TenantContext] User não pertence à org do subdomínio: ${subdomainCodigo}`);
+          setOrgId(null);
+        }
+      } else if (orgAtiva?.org_id && orgsList.some((o) => o.id === orgAtiva.org_id)) {
+        setOrgId(orgAtiva.org_id);
+      } else if (orgsList.length === 1) {
+        // Auto-selecionar se só tem uma org
+        const singleOrgId = orgsList[0].id;
+        setOrgId(singleOrgId);
+        await supabase
+          .from('user_org_ativa')
+          .upsert({ user_id: user.id, org_id: singleOrgId }, { onConflict: 'user_id' });
+      } else if (orgsList.length > 1) {
+        // Múltiplas orgs sem seleção — user precisa escolher
+        setOrgId(null);
+      }
+    } catch (err) {
+      console.error('[TenantContext] Erro:', err);
+    } finally {
+      setLoading(false);
+      setInitialized(true);
+    }
+  }, [user?.id, authLoading]);
+
+  useEffect(() => {
+    loadOrgs();
+  }, [user?.id, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const switchOrg = useCallback(
+    async (newOrgId: string) => {
+      if (!user) return;
+
+      // Verificar que o user pertence à org
+      if (!orgs.some((o) => o.id === newOrgId)) {
+        console.error('[TenantContext] User não pertence à org:', newOrgId);
+        return;
+      }
+
+      // Atualizar no DB
+      const { error } = await supabase
+        .from('user_org_ativa')
+        .upsert({ user_id: user.id, org_id: newOrgId }, { onConflict: 'user_id' });
+
+      if (error) {
+        console.error('[TenantContext] Erro ao trocar org:', error);
+        return;
+      }
+
+      setOrgId(newOrgId);
+
+      // Redirecionar para o domínio correto da nova org
+      const newOrg = orgs.find((o) => o.id === newOrgId);
+      if (newOrg) {
+        // Década usa wegest.pt diretamente, outras orgs usam subdomínio
+        const targetHost = newOrg.codigo === 'decada'
+          ? 'wegest.pt'
+          : `${newOrg.codigo}.wegest.pt`;
+        const currentHost = window.location.hostname;
+        if (currentHost !== targetHost) {
+          window.location.href = `https://${targetHost}${window.location.pathname}`;
+          return;
+        }
+      }
+
+      // Forçar reload para limpar caches de dados
+      window.location.reload();
+    },
+    [user, orgs]
+  );
+
+  const orgNome = orgs.find((o) => o.id === orgId)?.nome ?? null;
+
+  return (
+    <TenantContext.Provider
+      value={{ orgId, orgNome, orgs, loading, initialized, switchOrg }}
+    >
+      {children}
+    </TenantContext.Provider>
+  );
+};
+
+export const useTenant = (): TenantContextType => {
+  const context = useContext(TenantContext);
+  if (context === undefined) {
+    throw new Error('useTenant must be used within a TenantProvider');
+  }
+  return context;
+};
+
+/**
+ * Hook simples que retorna o orgId ativo.
+ * Usar em componentes que fazem queries Supabase.
+ */
+export const useOrgId = (): string | null => {
+  const { orgId } = useTenant();
+  return orgId;
+};

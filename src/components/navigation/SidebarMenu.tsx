@@ -22,6 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useThemedLogo } from '@/hooks/useThemedLogo';
+import { OrgSelector } from '@/components/OrgSelector';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -145,6 +146,7 @@ export const SidebarMenu: React.FC = () => {
         <div className="flex items-center justify-center w-full py-1">
           <img src={logoSrc} alt="Logo" className="h-20 w-auto object-contain" />
         </div>
+        <OrgSelector className="w-full mt-2 justify-center" />
       </div>
 
       <ScrollArea className="flex-1 px-3">

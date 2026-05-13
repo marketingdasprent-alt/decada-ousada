@@ -7,11 +7,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ShieldCheck, Building2 } from 'lucide-react';
 import { getEmailRedirectUrl, getResetPasswordRedirectUrl } from '@/lib/native';
 import { AuthMobileShell } from '@/components/auth/AuthMobileShell';
+import { subdomainCodigo } from '@/lib/subdomain';
 
 const Login = () => {
+  const [codigoOrg, setCodigoOrg] = useState(subdomainCodigo || '');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -44,16 +46,72 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // 1. Validar código da organização (subdomínio tem prioridade)
+      const orgCode = (subdomainCodigo || codigoOrg.trim()).toLowerCase();
+      if (!orgCode) {
+        toast({
+          title: 'Código da empresa obrigatório',
+          description: 'Introduza o código da empresa para iniciar sessão.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      // 2. Autenticar com email/password
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
+      // 3. Verificar se a org existe e o user pertence a ela
+      const { data: org, error: orgError } = await supabase
+        .from('organizacoes')
+        .select('id, nome')
+        .eq('codigo', orgCode)
+        .eq('ativa', true)
+        .single();
+
+      if (orgError || !org) {
+        await supabase.auth.signOut();
+        toast({
+          title: 'Empresa não encontrada',
+          description: 'O código da empresa introduzido não é válido.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      // 4. Verificar que o user pertence à org
+      const { data: userOrg, error: userOrgError } = await supabase
+        .from('user_organizacoes')
+        .select('id')
+        .eq('user_id', authData.user.id)
+        .eq('org_id', org.id)
+        .single();
+
+      if (userOrgError || !userOrg) {
+        await supabase.auth.signOut();
+        toast({
+          title: 'Sem acesso',
+          description: 'A sua conta não tem acesso a esta empresa.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      // 5. Definir org ativa
+      await supabase
+        .from('user_org_ativa')
+        .upsert({ user_id: authData.user.id, org_id: org.id }, { onConflict: 'user_id' });
+
       toast({
         title: 'Sucesso',
-        description: 'Sessão iniciada com sucesso.',
+        description: `Sessão iniciada em ${org.nome}.`,
       });
     } catch (error: any) {
       console.error('Login error:', error);
@@ -204,6 +262,25 @@ const Login = () => {
       ) : (
         <>
           <form onSubmit={handleLogin} className="space-y-5">
+            {!subdomainCodigo && (
+              <div className="space-y-2">
+                <Label htmlFor="codigoOrg">Código da Empresa</Label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="codigoOrg"
+                    type="text"
+                    value={codigoOrg}
+                    onChange={(e) => setCodigoOrg(e.target.value)}
+                    required
+                    className="auth-input pl-10"
+                    placeholder="Ex: decada"
+                    autoComplete="organization"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

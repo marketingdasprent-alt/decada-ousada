@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTenant } from '@/contexts/TenantContext';
 
 export type AppRole = 'admin' | 'gestor_tvde' | 'gestor_comercial' | 'colaborador';
 
@@ -38,6 +39,7 @@ const PermissionsContext = createContext<PermissionsContextType | undefined>(und
 
 export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
+  const { orgId, loading: tenantLoading } = useTenant();
   const fetchIdRef = useRef(0);
   // Tracks which user's permissions are currently in state.
   // When user.id !== lastFetchedUserIdRef.current, we treat loading=true
@@ -50,9 +52,9 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const fetchPermissions = useCallback(async () => {
     const currentFetchId = ++fetchIdRef.current;
 
-    if (authLoading) return;
+    if (authLoading || tenantLoading) return;
 
-    if (!user) {
+    if (!user || !orgId) {
       lastFetchedUserIdRef.current = null;
       setState({ ...DEFAULT_STATE, loading: false, initialized: true });
       return;
@@ -65,6 +67,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         .from('profiles')
         .select('is_admin, cargo_id, cargo, tipo_utilizador')
         .eq('id', user.id)
+        .eq('org_id', orgId)
         .single();
 
       // Fallback se tipo_utilizador não existir na tabela
@@ -76,6 +79,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
           .from('profiles')
           .select('is_admin, cargo_id, cargo')
           .eq('id', user.id)
+          .eq('org_id', orgId)
           .single();
 
         profile = fallbackProfile;
@@ -203,11 +207,11 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setState({ ...DEFAULT_STATE, loading: false, initialized: true });
       }
     }
-  }, [user?.id, authLoading, state.initialized]);
+  }, [user?.id, orgId, authLoading, tenantLoading, state.initialized]);
 
   useEffect(() => {
     fetchPermissions();
-  }, [user?.id, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, orgId, authLoading, tenantLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasAccessToResource = useCallback(
     (recurso: string): boolean => {
@@ -230,7 +234,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // been fetched yet. This is computed synchronously during render, eliminating
   // the race window between "user changes" and "fetchPermissions sets state.loading=true".
   const effectiveLoading =
-    state.loading || (!authLoading && user != null && user.id !== lastFetchedUserIdRef.current);
+    state.loading || tenantLoading || (!authLoading && user != null && user.id !== lastFetchedUserIdRef.current);
 
   return (
     <PermissionsContext.Provider

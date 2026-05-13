@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 
-const NATIVE_AUTH_WEB_BASE_URL = 'https://decada-ousada.lovable.app';
+const NATIVE_AUTH_WEB_BASE_URL = 'https://wegest.pt';
 const NATIVE_DRIVER_ENTRY_ROUTE = '/motorista';
 const NATIVE_DRIVER_LOGIN_ROUTE = '/motorista/login';
 const NATIVE_DRIVER_PANEL_ROUTE = '/motorista/painel';

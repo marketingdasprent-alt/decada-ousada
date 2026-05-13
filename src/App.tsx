@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { PermissionsProvider } from '@/contexts/PermissionsContext';
+import { TenantProvider } from '@/contexts/TenantContext';
 import { ThemeProvider } from 'next-themes';
 import { isNativeDriverOnlyMode } from '@/lib/native';
 import NativeAppRoutes from '@/routes/NativeAppRoutes';
@@ -23,6 +24,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <TenantProvider>
         <PermissionsProvider>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             <TooltipProvider>
@@ -35,6 +37,7 @@ const App = () => {
             </TooltipProvider>
           </ThemeProvider>
         </PermissionsProvider>
+        </TenantProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

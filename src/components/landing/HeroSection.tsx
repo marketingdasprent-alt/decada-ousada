@@ -12,7 +12,7 @@ export const HeroSection = ({ onRentClick, onSlotClick }: HeroSectionProps) => {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Login button */}
       <a
-        href="https://decadaousada.pt/motorista/login"
+        href="https://wegest.pt/motorista/login"
         className="absolute top-6 right-6 z-20 inline-flex items-center gap-2 border border-white/30 text-white hover:bg-white/10 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
       >
         <LogIn className="h-4 w-4" />
