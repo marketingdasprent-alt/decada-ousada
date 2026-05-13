@@ -28,6 +28,7 @@ import {
   Search,
   Wallet,
   PlayCircle,
+  Play,
   UserPlus,
   Users,
   Building2,
@@ -1369,38 +1370,43 @@ const TicketDetails = () => {
   const canChangeStatus = isAssistanceManager || isAdmin; // Manter a alteração de estado para gestores/admin
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col p-4 md:p-6 gap-6 overflow-hidden bg-background">
+    <div className="flex flex-col p-4 md:p-6 gap-6 bg-background lg:h-[calc(100vh-64px)] lg:overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4 shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(isFromMeusTickets ? '/meus-tickets' : '/assistencia')}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <span className="font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
-              #{String(ticket.numero).padStart(4, '0')}
-            </span>
-            {categoria && (
-              <Badge
-                variant="outline"
-                className="shrink-0"
-                style={{ borderColor: categoria.cor, color: categoria.cor }}
-              >
-                {categoria.nome}
+      <div className="flex flex-col gap-2 shrink-0 sm:flex-row sm:items-center sm:gap-4">
+        {/* Linha 1: Voltar + Título */}
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={() => navigate(isFromMeusTickets ? '/meus-tickets' : '/assistencia')}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1 flex-wrap">
+              <span className="font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
+                #{String(ticket.numero).padStart(4, '0')}
+              </span>
+              {categoria && (
+                <Badge
+                  variant="outline"
+                  className="shrink-0"
+                  style={{ borderColor: categoria.cor, color: categoria.cor }}
+                >
+                  {categoria.nome}
+                </Badge>
+              )}
+              <Badge className={`shrink-0 ${prioridadeConfig[ticket.prioridade]?.color}`}>
+                {prioridadeConfig[ticket.prioridade]?.label}
               </Badge>
-            )}
-            <Badge className={`shrink-0 ${prioridadeConfig[ticket.prioridade]?.color}`}>
-              {prioridadeConfig[ticket.prioridade]?.label}
-            </Badge>
+            </div>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold truncate">{ticket.titulo}</h1>
           </div>
-          <h1 className="text-xl md:text-2xl font-bold truncate">{ticket.titulo}</h1>
         </div>
 
-        <div className="flex items-center gap-2 mr-2 shrink-0">
+        {/* Linha 2 (mobile) / Continuação (desktop): Ações + Status */}
+        <div className="flex items-center gap-2 shrink-0 pl-11 sm:pl-0">
           <div className="hidden sm:flex -space-x-2 overflow-hidden">
             {acessos.slice(0, 3).map((user) => (
               <div
@@ -1447,33 +1453,33 @@ const TicketDetails = () => {
               <span className="hidden xs:inline">Editar</span>
             </Button>
           )}
-        </div>
 
-        <Select
-          value={ticket.status}
-          onValueChange={handleStatusChange}
-          disabled={
-            !canChangeStatus || ['resolvido', 'fechado', 'pendente'].includes(ticket.status)
-          }
-        >
-          <SelectTrigger
-            className={`w-[140px] md:w-[160px] font-bold text-white transition-all shrink-0 ${statusConfig[ticket.status]?.color}`}
+          <Select
+            value={ticket.status}
+            onValueChange={handleStatusChange}
+            disabled={
+              !canChangeStatus || ['resolvido', 'fechado', 'pendente'].includes(ticket.status)
+            }
           >
-            <div className="flex items-center gap-2">
-              {statusConfig[ticket.status]?.icon}
-              <SelectValue />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            {ticket.status === 'pendente' && <SelectItem value="pendente">Pendente</SelectItem>}
-            <SelectItem value="aberto">Aberto</SelectItem>
-            <SelectItem value="em_andamento">Em Manutenção</SelectItem>
-            <SelectItem value="aguardando">Peças/Aguardar</SelectItem>
-            <SelectItem value="resolvido" className="text-green-600 font-bold">
-              ✓ Concluir
-            </SelectItem>
-          </SelectContent>
-        </Select>
+            <SelectTrigger
+              className={`w-[120px] sm:w-[140px] md:w-[160px] font-bold text-white transition-all shrink-0 ${statusConfig[ticket.status]?.color}`}
+            >
+              <div className="flex items-center gap-1.5">
+                {statusConfig[ticket.status]?.icon}
+                <SelectValue />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              {ticket.status === 'pendente' && <SelectItem value="pendente">Pendente</SelectItem>}
+              <SelectItem value="aberto">Aberto</SelectItem>
+              <SelectItem value="em_andamento">Em Manutenção</SelectItem>
+              <SelectItem value="aguardando">Peças/Aguardar</SelectItem>
+              <SelectItem value="resolvido" className="text-green-600 font-bold">
+                ✓ Concluir
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Banner de Aprovação */}
@@ -1500,19 +1506,19 @@ const TicketDetails = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:flex-1 lg:min-h-0">
         {/* Main Content (Chat) */}
-        <div className="lg:col-span-3 flex flex-col min-h-0">
+        <div className="lg:col-span-3 flex flex-col lg:min-h-0">
           {/* Messages */}
-          <Card className="flex flex-col flex-1 border-none shadow-md overflow-hidden bg-card/50 backdrop-blur-sm">
+          <Card className="flex flex-col lg:flex-1 border-none shadow-md lg:overflow-hidden bg-card/50 backdrop-blur-sm">
             <CardHeader className="border-b bg-muted/30 py-3 shrink-0">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Send className="h-5 w-5 text-primary" />
                 Conversação em Tempo Real
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 flex flex-col flex-1 min-h-0">
-              <ScrollArea className="flex-1 p-4">
+            <CardContent className="p-0 flex flex-col flex-1 lg:min-h-0">
+              <div className="overflow-y-auto h-[55vh] lg:h-auto lg:max-h-none lg:flex-1 p-4">
                 {mensagens.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8 italic">
                     Ainda não há mensagens neste ticket.
@@ -1528,12 +1534,12 @@ const TicketDetails = () => {
                           !msg.mensagem.toLowerCase().startsWith('viatura reparada')
                             ? 'bg-muted/50 text-center text-sm'
                             : msg.autor?.id === user?.id
-                              ? 'bg-primary/10 ml-8'
-                              : 'bg-muted mr-8'
+                              ? 'bg-primary/10 ml-4 sm:ml-8'
+                              : 'bg-muted mr-4 sm:mr-8'
                         }`}
                       >
                         {msg.tipo !== 'status_change' && (
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="font-medium text-sm">
                               {msg.autor?.nome || 'Sistema'}
                             </span>
@@ -1565,7 +1571,7 @@ const TicketDetails = () => {
 
                         {/* Anexos inline na conversação */}
                         {msg.anexos && msg.anexos.length > 0 && (
-                          <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 max-w-3xl">
+                          <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-w-3xl">
                             {msg.anexos.map((anexo) => {
                               const isImage =
                                 anexo.tipo_ficheiro?.startsWith('image/') ||
@@ -1574,55 +1580,11 @@ const TicketDetails = () => {
                               return (
                                 <div
                                   key={anexo.id}
-                                  className="flex flex-col p-2 bg-background rounded border"
+                                  className="flex flex-col bg-background rounded border overflow-hidden"
                                 >
-                                  <div className="flex items-center gap-2 mb-2">
-                                    {isImage ? (
-                                      <Image className="h-4 w-4 text-muted-foreground" />
-                                    ) : (
-                                      <FileText className="h-4 w-4 text-muted-foreground" />
-                                    )}
-                                    <span className="flex-1 text-sm truncate font-medium">
-                                      {anexo.nome_ficheiro}
-                                    </span>
-                                    <div className="flex gap-1">
-                                      <a
-                                        href={anexo.ficheiro_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-1 hover:bg-muted rounded"
-                                        title="Ver"
-                                      >
-                                        <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                                      </a>
-                                      <a
-                                        href={anexo.ficheiro_url}
-                                        download={anexo.nome_ficheiro}
-                                        className="p-1 hover:bg-muted rounded"
-                                        title="Descarregar"
-                                      >
-                                        <Download className="h-3.5 w-3.5 text-muted-foreground" />
-                                      </a>
-                                      {(isAdmin || hasAccessToResource('assistencia_tickets')) && (
-                                        <button
-                                          onClick={() =>
-                                            setEditingLegenda({
-                                              id: anexo.id,
-                                              legenda: anexo.legenda || '',
-                                            })
-                                          }
-                                          className="p-1 hover:bg-muted rounded text-primary"
-                                          title="Editar Legenda"
-                                        >
-                                          <Wrench className="h-3.5 w-3.5" />
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-
                                   {isImage && (
                                     <div
-                                      className="relative rounded overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                      className="relative cursor-pointer hover:opacity-90 transition-opacity"
                                       onClick={() =>
                                         openLightbox(
                                           msg.anexos || [],
@@ -1633,7 +1595,7 @@ const TicketDetails = () => {
                                       <img
                                         src={anexo.ficheiro_url}
                                         alt={anexo.nome_ficheiro}
-                                        className="w-full aspect-square object-cover rounded shadow-sm"
+                                        className="w-full aspect-square object-cover"
                                         onError={(e) => {
                                           (e.target as HTMLImageElement).src =
                                             'https://placehold.co/400x300?text=Imagem+Indispon%C3%ADvel';
@@ -1651,7 +1613,7 @@ const TicketDetails = () => {
                                     (anexo.tipo_ficheiro === 'video' ||
                                       anexo.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i)) && (
                                       <div
-                                        className="relative rounded overflow-hidden cursor-pointer hover:opacity-90 transition-opacity bg-black flex items-center justify-center aspect-square"
+                                        className="relative cursor-pointer hover:opacity-90 transition-opacity bg-black flex items-center justify-center aspect-square"
                                         onClick={() =>
                                           openLightbox(
                                             msg.anexos || [],
@@ -1669,6 +1631,52 @@ const TicketDetails = () => {
                                         </div>
                                       </div>
                                     )}
+
+                                  {!isImage &&
+                                    anexo.tipo_ficheiro !== 'video' &&
+                                    !anexo.ficheiro_url?.match(/\.(mp4|webm|mov|ogg)$/i) && (
+                                      <div className="flex items-center gap-2 p-2">
+                                        <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                        <span className="flex-1 text-xs truncate">
+                                          {anexo.nome_ficheiro}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                  {/* Ações compactas */}
+                                  <div className="flex items-center justify-end gap-1 px-1 pb-1 pt-0.5">
+                                    <a
+                                      href={anexo.ficheiro_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="p-1 hover:bg-muted rounded"
+                                      title="Ver"
+                                    >
+                                      <Eye className="h-3 w-3 text-muted-foreground" />
+                                    </a>
+                                    <a
+                                      href={anexo.ficheiro_url}
+                                      download={anexo.nome_ficheiro}
+                                      className="p-1 hover:bg-muted rounded"
+                                      title="Descarregar"
+                                    >
+                                      <Download className="h-3 w-3 text-muted-foreground" />
+                                    </a>
+                                    {(isAdmin || hasAccessToResource('assistencia_tickets')) && (
+                                      <button
+                                        onClick={() =>
+                                          setEditingLegenda({
+                                            id: anexo.id,
+                                            legenda: anexo.legenda || '',
+                                          })
+                                        }
+                                        className="p-1 hover:bg-muted rounded text-primary"
+                                        title="Editar Legenda"
+                                      >
+                                        <Wrench className="h-3 w-3" />
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
@@ -1679,7 +1687,7 @@ const TicketDetails = () => {
                     <div ref={messagesEndRef} />
                   </div>
                 )}
-              </ScrollArea>
+              </div>
 
               <Separator />
 
@@ -1764,7 +1772,7 @@ const TicketDetails = () => {
                   </div>
                 )}
 
-                <p className="text-[10px] text-muted-foreground text-center">
+                <p className="hidden sm:block text-[10px] text-muted-foreground text-center">
                   Prime{' '}
                   <kbd className="pointer-events-none inline-flex h-4 select-none items-center gap-1 rounded border bg-muted px-1 font-mono text-[9px] font-medium opacity-100">
                     Enter
@@ -1781,7 +1789,7 @@ const TicketDetails = () => {
         </div>
 
         {/* Sidebar (Scrollable) */}
-        <div className="space-y-6 h-full overflow-y-auto pr-1 custom-scrollbar">
+        <div className="space-y-6 lg:h-full lg:overflow-y-auto pr-1 custom-scrollbar">
           {/* Description Card - MOVED HERE */}
           {ticket.descricao && (
             <Card className="border-l-4 border-l-primary shadow-sm">
