@@ -571,7 +571,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                   />
                   {(() => {
                     const tipoIdAtual = form.watch('tipo_id');
-                    const tipoAtual = viaturasTipos.find(t => t.id === tipoIdAtual);
+                    const tipoAtual = viaturasTipos.find((t) => t.id === tipoIdAtual);
                     const isComercial = tipoAtual?.nome?.toLowerCase() === 'comercial';
                     return isComercial ? (
                       <>
@@ -582,7 +582,13 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                             <FormItem>
                               <FormLabel>Valor Mensal (€)</FormLabel>
                               <FormControl>
-                                <Input type="number" step="0.01" min="0" placeholder="Ex: 800.00" {...field} />
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="Ex: 800.00"
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -595,7 +601,13 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                             <FormItem>
                               <FormLabel>Valor Diário (€)</FormLabel>
                               <FormControl>
-                                <Input type="number" step="0.01" min="0" placeholder="Ex: 35.00" {...field} />
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="Ex: 35.00"
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -610,7 +622,13 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                           <FormItem>
                             <FormLabel>Valor Aluguer (€)</FormLabel>
                             <FormControl>
-                              <Input type="number" step="0.01" min="0" placeholder="Ex: 250.00" {...field} />
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="Ex: 250.00"
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -653,12 +671,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                       <FormItem>
                         <FormLabel>Limite KM Mensal</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            min="0"
-                            placeholder="Ex: 3000"
-                            {...field}
-                          />
+                          <Input type="number" min="0" placeholder="Ex: 3000" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
