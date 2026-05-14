@@ -96,14 +96,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Prevent admin from resetting their own password via this method
-    if (userId === user.id) {
-      return new Response(
-        JSON.stringify({ error: 'Não pode resetar a sua própria password por este método' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Update user password (reuse supabaseAdmin from admin check)
     const { data: updatedUser, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
