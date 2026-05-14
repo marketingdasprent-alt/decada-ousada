@@ -180,7 +180,12 @@ export default function ViaturaDetalhe() {
           .single();
 
         console.log('[DEBUG] Resultado update:', { updated, error });
-        console.log('[DEBUG] tipo_id enviado:', data.tipo_id, '| tipo_id retornado:', updated?.tipo_id);
+        console.log(
+          '[DEBUG] tipo_id enviado:',
+          data.tipo_id,
+          '| tipo_id retornado:',
+          updated?.tipo_id
+        );
         if (error) throw error;
         if (!updated) throw new Error('Nenhuma viatura foi atualizada');
         toast.success('Viatura atualizada com sucesso!');
