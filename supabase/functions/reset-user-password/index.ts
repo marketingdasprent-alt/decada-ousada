@@ -22,32 +22,32 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    // Admin client (service role) — used both to validate the caller's token and to update passwords
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    // Validate the caller's JWT via raw REST (bypasses gotrue-js session handling)
+    const userResp = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: anonKey,
+      },
+    });
 
-    // Verify the caller's JWT using the admin client (does not require a session)
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseAdmin.auth.getUser(token);
-
-    if (userError || !user) {
-      console.error('Authentication error:', userError);
+    if (!userResp.ok) {
+      console.error('Authentication error:', userResp.status, await userResp.text());
       return new Response(
         JSON.stringify({ error: 'Não autenticado - Token inválido' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const user = await userResp.json();
+
+    // Admin client (service role) for DB lookups and password update
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     // Check if user is admin using service role (bypasses RLS)
     const { data: profile, error: profileError } = await supabaseAdmin
