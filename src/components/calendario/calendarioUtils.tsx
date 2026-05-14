@@ -50,8 +50,13 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
 
   const handleOpen = () => {
     if (disabled) return;
-    setOpen(true);
-    setTimeout(() => inputRef.current?.focus(), 50);
+    if (open) {
+      setOpen(false);
+      setQuery('');
+    } else {
+      setOpen(true);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
   };
 
   return (
