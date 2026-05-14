@@ -370,7 +370,7 @@ export function MotoristaDialog({
 
   return (
     <Dialog open={open} onOpenChange={() => onOpenChange(false)}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden [&>button:last-child]:hidden">
         <DialogHeader className="px-6 py-4 border-b bg-card flex flex-row items-center justify-between shrink-0">
           <div className="space-y-0.5">
             <DialogTitle className="text-2xl font-bold">

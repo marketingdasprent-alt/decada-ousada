@@ -22,7 +22,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, FileText, CheckCircle2, Search, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { generateDocumentFromTemplate } from '@/utils/generateDocumentFromTemplate';
+import jsPDF from 'jspdf';
+import {
+  generateDocumentFromTemplate,
+  uploadDocumentToStorage,
+} from '@/utils/generateDocumentFromTemplate';
 import { useEmpresas } from '@/hooks/useEmpresas';
 
 interface Motorista {
@@ -57,6 +61,12 @@ interface GenerateDocumentsDialogProps {
   onOpenChange: (open: boolean) => void;
   motorista?: Motorista | null; // Agora opcional
   onSuccess?: () => void; // Callback quando documentos são gerados
+  // Parâmetros opcionais para contexto de calendário (entrega/troca de viatura)
+  viaturaId?: string | null;
+  calendarioEventoId?: string | null;
+  checkoutPendente?: boolean;
+  forceNewVersion?: boolean;
+  uploadFirstToStorage?: boolean; // Se true, faz upload do primeiro contrato ao storage
 }
 
 export const GenerateDocumentsDialog = ({
@@ -64,6 +74,11 @@ export const GenerateDocumentsDialog = ({
   onOpenChange,
   motorista,
   onSuccess,
+  viaturaId,
+  calendarioEventoId,
+  checkoutPendente,
+  forceNewVersion = false,
+  uploadFirstToStorage = false,
 }: GenerateDocumentsDialogProps) => {
   const { empresas, getById } = useEmpresas();
   const defaultEmpresaId = empresas[0]?.id || '';
@@ -254,12 +269,35 @@ export const GenerateDocumentsDialog = ({
       );
 
       let successCount = 0;
+      const isMultiple = templatesToGenerate.length > 1;
 
-      // Processar contratos (usar função atómica)
-      for (const template of contratoTemplates) {
-        setCurrentGenerating(template.id);
+      // Quando múltiplos, criar um PDF combinado onde todos os documentos são adicionados
+      const combinedPdf = isMultiple
+        ? new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+        : null;
+
+      const docParams = {
+        data_inicio: activeMotorista.data_contratacao || today,
+        data_assinatura: activeMotorista.data_contratacao || today,
+        cidade_assinatura: cidadeAssinatura,
+        duracao_meses: 12,
+        empresaData: empresa
+          ? {
+              nomeCompleto: empresa.nomeCompleto,
+              nif: empresa.nif,
+              sede: empresa.sede,
+              licencaTVDE: empresa.licencaTVDE,
+              licencaValidade: empresa.licencaValidade,
+              representante: empresa.representante,
+              cargoRepresentante: empresa.cargoRepresentante,
+            }
+          : undefined,
+      };
+
+      // Criar/reutilizar contrato UMA vez (não por template)
+      let contratoId: string | null = null;
+      if (contratoTemplates.length > 0) {
         try {
-          // Usar a função atômica do Supabase para criar/verificar contrato
           const { data: contratoResult, error: contratoError } = await supabase.rpc(
             'gerar_contrato_atomico',
             {
@@ -277,51 +315,62 @@ export const GenerateDocumentsDialog = ({
               p_data_inicio: activeMotorista.data_contratacao || today,
               p_duracao_meses: 12,
               p_criado_por: user?.user?.id || null,
-              p_force_new_version: false, // Não forçar nova versão se já existir
+              p_force_new_version: forceNewVersion,
+              ...(viaturaId ? { p_viatura_id: viaturaId } : {}),
+              ...(calendarioEventoId ? { p_calendario_evento_id: calendarioEventoId } : {}),
+              ...(checkoutPendente !== undefined ? { p_checkout_pendente: checkoutPendente } : {}),
             }
           );
 
-          if (contratoError) {
-            console.error('Erro ao criar/verificar contrato:', contratoError);
-            throw contratoError;
-          }
+          if (contratoError) throw contratoError;
 
           const contratoData = Array.isArray(contratoResult) ? contratoResult[0] : contratoResult;
           const isExisting = (contratoData as any)?.is_existing;
+          contratoId = contratoData?.id || null;
 
-          // Registrar no histórico de reimpressões
-          if (contratoData?.id) {
+          if (contratoId) {
             await supabase.from('contratos_reimpressoes').insert({
-              contrato_id: contratoData.id,
+              contrato_id: contratoId,
               reimpresso_por: user?.user?.id,
               motivo: isExisting
                 ? 'Reimpressão de contrato existente'
                 : 'Geração inicial do documento',
             });
-          }
 
-          // Gerar o documento
+            // Upload do primeiro template ao storage se pedido
+            if (uploadFirstToStorage) {
+              const docUrl = await uploadDocumentToStorage({
+                templateId: contratoTemplates[0].id,
+                motoristaData,
+                documentData: docParams,
+                contratoId,
+                action,
+              });
+              if (docUrl) {
+                await supabase
+                  .from('contratos')
+                  .update({ documento_url: docUrl })
+                  .eq('id', contratoId);
+              }
+            }
+          }
+        } catch (err: any) {
+          console.error('Erro ao criar/verificar contrato:', err);
+          toast.error('Erro ao criar contrato');
+        }
+      }
+
+      // Gerar PDFs dos templates de contrato (sem chamar RPC de novo)
+      for (const template of contratoTemplates) {
+        setCurrentGenerating(template.id);
+        try {
           await generateDocumentFromTemplate({
             templateId: template.id,
             motoristaData,
-            documentData: {
-              data_inicio: activeMotorista.data_contratacao || today,
-              data_assinatura: activeMotorista.data_contratacao || today,
-              cidade_assinatura: cidadeAssinatura,
-              duracao_meses: 12,
-              empresaData: empresa
-                ? {
-                    nomeCompleto: empresa.nomeCompleto,
-                    nif: empresa.nif,
-                    sede: empresa.sede,
-                    licencaTVDE: empresa.licencaTVDE,
-                    licencaValidade: empresa.licencaValidade,
-                    representante: empresa.representante,
-                    cargoRepresentante: empresa.cargoRepresentante,
-                  }
-                : undefined,
-            },
+            documentData: docParams,
             action,
+            skipOutput: isMultiple,
+            existingPdf: combinedPdf || undefined,
           });
 
           setGeneratedTemplates((prev) => new Set(prev).add(template.id));
@@ -339,24 +388,10 @@ export const GenerateDocumentsDialog = ({
           await generateDocumentFromTemplate({
             templateId: template.id,
             motoristaData,
-            documentData: {
-              data_inicio: activeMotorista.data_contratacao || today,
-              data_assinatura: activeMotorista.data_contratacao || today,
-              cidade_assinatura: cidadeAssinatura,
-              duracao_meses: 12,
-              empresaData: empresa
-                ? {
-                    nomeCompleto: empresa.nomeCompleto,
-                    nif: empresa.nif,
-                    sede: empresa.sede,
-                    licencaTVDE: empresa.licencaTVDE,
-                    licencaValidade: empresa.licencaValidade,
-                    representante: empresa.representante,
-                    cargoRepresentante: empresa.cargoRepresentante,
-                  }
-                : undefined,
-            },
+            documentData: docParams,
             action,
+            skipOutput: isMultiple,
+            existingPdf: combinedPdf || undefined,
           });
 
           setGeneratedTemplates((prev) => new Set(prev).add(template.id));
@@ -367,11 +402,22 @@ export const GenerateDocumentsDialog = ({
         }
       }
 
+      // Quando múltiplos: apagar página 1 em branco e abrir/descarregar o PDF combinado
+      if (isMultiple && combinedPdf && successCount > 0) {
+        combinedPdf.deletePage(1);
+
+        if (action === 'print') {
+          combinedPdf.autoPrint();
+          window.open(combinedPdf.output('bloburl') as string, '_blank');
+        } else {
+          const today_str = new Date().toISOString().split('T')[0].replace(/-/g, '');
+          const fileName = `Documentos_${activeMotorista.nome}_${today_str}.pdf`;
+          combinedPdf.save(fileName);
+        }
+      }
+
       setCurrentGenerating(null);
       toast.success(`${successCount} documento(s) gerado(s) com sucesso!`);
-      if (action === 'print' && successCount > 0) {
-        toast.info('Os documentos foram abertos em novas abas para impressão');
-      }
 
       // Chamar callback de sucesso se existir
       onSuccess?.();
@@ -388,7 +434,7 @@ export const GenerateDocumentsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden [&>button:last-child]:hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -537,6 +583,7 @@ export const GenerateDocumentsDialog = ({
                                 id={template.id}
                                 checked={selectedTemplates.has(template.id)}
                                 onCheckedChange={() => toggleTemplate(template.id)}
+                                onClick={(e) => e.stopPropagation()}
                               />
                               <label
                                 htmlFor={template.id}

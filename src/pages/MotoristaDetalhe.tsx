@@ -33,9 +33,11 @@ import { MotoristaTabRecibos } from '@/components/motoristas/tabs/MotoristaTabRe
 import { MotoristaTabViaturas } from '@/components/motoristas/tabs/MotoristaTabViaturas';
 import { MotoristaTabContratos } from '@/components/motoristas/tabs/MotoristaTabContratos';
 import { MotoristaTabDanos } from '@/components/motoristas/tabs/MotoristaTabDanos';
+import { GenerateDocumentsDialog } from '@/components/motoristas/GenerateDocumentsDialog';
 import type { Motorista } from '@/pages/Motoristas';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,9 +65,11 @@ export default function MotoristaDetalhe() {
   const location = useLocation();
   const returnUrl = (location.state as any)?.listaUrl || '/motoristas';
   const { toast } = useToast();
+  const { hasPermission } = usePermissions();
   const [motorista, setMotorista] = useState<Motorista | null>(null);
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [initialModalTab, setInitialModalTab] = useState<'dados' | 'contratos'>('dados');
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
@@ -306,6 +310,12 @@ export default function MotoristaDetalhe() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {hasPermission('contratos_criar') && (
+            <Button onClick={() => setGenerateDialogOpen(true)} className="flex-1 md:flex-none">
+              <FileSignature className="h-4 w-4 mr-2" />
+              Gerar Documentos
+            </Button>
+          )}
           <Button variant="outline" onClick={handleEdit} className="flex-1 md:flex-none">
             <Pencil className="h-4 w-4 mr-2" />
             Editar
@@ -688,6 +698,12 @@ export default function MotoristaDetalhe() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <GenerateDocumentsDialog
+        open={generateDialogOpen}
+        onOpenChange={setGenerateDialogOpen}
+        motorista={motorista}
+      />
     </div>
   );
 }

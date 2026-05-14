@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { formatMatricula } from './calendarioUtils';
 import type { PendingEventoData } from './NovoEventoPage';
+import jsPDF from 'jspdf';
 import { useEmpresas } from '@/hooks/useEmpresas';
 import {
   uploadDocumentToStorage,
@@ -284,16 +285,36 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
         if (mediaErr) throw mediaErr;
       }
 
-      // Generate selected documents
+      // Generate selected documents (mesma lógica do GenerateDocumentsDialog)
       if (selectedTemplates.size > 0 && motoristaFull) {
+        const empresa = empresas[0];
         const docData = {
           data_assinatura: dataInicio,
           data_inicio: dataInicio,
           cidade_assinatura: cidadeAssinatura,
           duracao_meses: '12',
+          empresaData: empresa
+            ? {
+                nomeCompleto: empresa.nomeCompleto,
+                nif: empresa.nif,
+                sede: empresa.sede,
+                licencaTVDE: empresa.licencaTVDE,
+                licencaValidade: empresa.licencaValidade,
+                representante: empresa.representante,
+                cargoRepresentante: empresa.cargoRepresentante,
+              }
+            : undefined,
         };
+
+        const templateIds = Array.from(selectedTemplates);
+        const isMultiple = templateIds.length > 1;
+        const combinedPdf = isMultiple
+          ? new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+          : null;
+
+        // Upload do primeiro template ao storage
         let firstDocUrl: string | null = null;
-        for (const templateId of Array.from(selectedTemplates)) {
+        for (const templateId of templateIds) {
           try {
             if (!firstDocUrl) {
               firstDocUrl =
@@ -303,23 +324,34 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
                   documentData: docData,
                   contratoId,
                 })) || null;
-            } else {
-              await generateDocumentFromTemplate({
-                templateId,
-                motoristaData: motoristaFull,
-                documentData: docData,
-                action: 'print',
-              });
             }
+
+            await generateDocumentFromTemplate({
+              templateId,
+              motoristaData: motoristaFull,
+              documentData: docData,
+              action: 'print',
+              skipOutput: isMultiple,
+              existingPdf: combinedPdf || undefined,
+            });
           } catch {
             /* PDF non-critical */
           }
         }
+
+        // Upload URL do primeiro documento
         if (firstDocUrl) {
           await supabase
             .from('contratos')
             .update({ documento_url: firstDocUrl })
             .eq('id', contratoId);
+        }
+
+        // Abrir PDF combinado quando múltiplos documentos
+        if (isMultiple && combinedPdf) {
+          combinedPdf.deletePage(1);
+          combinedPdf.autoPrint();
+          window.open(combinedPdf.output('bloburl') as string, '_blank');
         }
       }
 
