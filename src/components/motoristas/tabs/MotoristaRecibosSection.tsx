@@ -187,7 +187,8 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
         const caucao = Number(reciboImportado.caucao) || 0;
         const seguros = Number(reciboImportado.seguros) || 0;
         const reparacoes = Number(reciboImportado.reparacoes) || 0;
-        const custosTotal = aluguer + combustivel + viaVerde + outrosCustos + caucao + seguros + reparacoes;
+        const custosTotal =
+          aluguer + combustivel + viaVerde + outrosCustos + caucao + seguros + reparacoes;
 
         setResumoSemanal({
           faturadoBolt: boltVal,
@@ -350,7 +351,8 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
       const totalAluguer = fixedRent + finRendaViatura;
       const totalOutrosCustos = finOutros + extraCostsTotal;
       const receitaTotalFinal = receitaLiquidaPlataformas + extraCredits;
-      const custosTotal = totalAluguer + fuelTotal + finReparacoes + finCaucao + finSeguros + totalOutrosCustos;
+      const custosTotal =
+        totalAluguer + fuelTotal + finReparacoes + finCaucao + finSeguros + totalOutrosCustos;
       const liquidoFinal = receitaTotalFinal - custosTotal;
 
       setResumoSemanal({
@@ -554,7 +556,6 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(val);
   };
-
 
   return (
     <div className="space-y-6">

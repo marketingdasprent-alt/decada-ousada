@@ -132,9 +132,7 @@ const RegistarOrg = () => {
               {resultData && (
                 <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
                   <p className="text-sm text-muted-foreground mb-1">O seu endereço:</p>
-                  <p className="text-lg font-semibold text-primary">
-                    {resultData.subdomain}
-                  </p>
+                  <p className="text-lg font-semibold text-primary">{resultData.subdomain}</p>
                   <p className="text-xs text-muted-foreground mt-2">
                     O subdomínio está a ser configurado. Pode demorar alguns minutos.
                   </p>
@@ -152,11 +150,7 @@ const RegistarOrg = () => {
                 >
                   Aceder ao sistema
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/')}
-                  className="w-full"
-                >
+                <Button variant="outline" onClick={() => navigate('/')} className="w-full">
                   Voltar à página inicial
                 </Button>
               </div>
@@ -185,9 +179,7 @@ const RegistarOrg = () => {
               <Building2 className="h-6 w-6 text-primary" />
               <CardTitle className="text-2xl font-bold">Criar Organização</CardTitle>
             </div>
-            <CardDescription>
-              Registe a sua empresa para começar a usar o WeGest.
-            </CardDescription>
+            <CardDescription>Registe a sua empresa para começar a usar o WeGest.</CardDescription>
           </CardHeader>
 
           <CardContent>
@@ -241,7 +233,8 @@ const RegistarOrg = () => {
                   </div>
                   {codigo.length >= 3 && (
                     <p className="text-xs text-muted-foreground">
-                      O seu endereço será: <span className="font-medium text-primary">{codigo}.wegest.pt</span>
+                      O seu endereço será:{' '}
+                      <span className="font-medium text-primary">{codigo}.wegest.pt</span>
                     </p>
                   )}
                 </div>
@@ -363,8 +356,7 @@ const RegistarOrg = () => {
               >
                 {loading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    A criar organização...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />A criar organização...
                   </>
                 ) : (
                   'Criar Organização'

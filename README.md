@@ -14,8 +14,8 @@ Sistema de gestão de frotas TVDE — CRM, motoristas, viaturas, contratos e mui
 ```sh
 git clone <URL_DO_REPO>
 cd decada-ousada
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 ## Publicação iOS com GitHub Actions
@@ -68,7 +68,7 @@ O workflow também dispara automaticamente quando criar uma tag com o formato `i
 ### 5. O que o workflow faz
 
 - instala dependências
-- corre `npm run build`
+- corre `pnpm build`
 - corre `npx cap add ios || true` e `npx cap sync ios`
 - instala certificados e provisioning profile
 - gera o `.ipa`

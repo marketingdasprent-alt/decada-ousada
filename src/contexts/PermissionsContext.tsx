@@ -234,7 +234,9 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // been fetched yet. This is computed synchronously during render, eliminating
   // the race window between "user changes" and "fetchPermissions sets state.loading=true".
   const effectiveLoading =
-    state.loading || tenantLoading || (!authLoading && user != null && user.id !== lastFetchedUserIdRef.current);
+    state.loading ||
+    tenantLoading ||
+    (!authLoading && user != null && user.id !== lastFetchedUserIdRef.current);
 
   return (
     <PermissionsContext.Provider

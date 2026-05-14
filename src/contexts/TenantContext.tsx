@@ -133,9 +133,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const newOrg = orgs.find((o) => o.id === newOrgId);
       if (newOrg) {
         // Década usa wegest.pt diretamente, outras orgs usam subdomínio
-        const targetHost = newOrg.codigo === 'decada'
-          ? 'wegest.pt'
-          : `${newOrg.codigo}.wegest.pt`;
+        const targetHost = newOrg.codigo === 'decada' ? 'wegest.pt' : `${newOrg.codigo}.wegest.pt`;
         const currentHost = window.location.hostname;
         if (currentHost !== targetHost) {
           window.location.href = `https://${targetHost}${window.location.pathname}`;
@@ -152,9 +150,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const orgNome = orgs.find((o) => o.id === orgId)?.nome ?? null;
 
   return (
-    <TenantContext.Provider
-      value={{ orgId, orgNome, orgs, loading, initialized, switchOrg }}
-    >
+    <TenantContext.Provider value={{ orgId, orgNome, orgs, loading, initialized, switchOrg }}>
       {children}
     </TenantContext.Provider>
   );
