@@ -17,6 +17,7 @@ import {
   PackageOpen,
   ArrowRight,
   Sparkles,
+  CalendarDays,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -205,6 +206,7 @@ export function MotoristaTabDocumentos({
   const [batchEntries, setBatchEntries] = useState<BatchFileEntry[]>([]);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [batchUploading, setBatchUploading] = useState(false);
+  const [reextractingTipo, setReextractingTipo] = useState<string | null>(null);
 
   useEffect(() => {
     loadDocumentos();
@@ -237,7 +239,8 @@ export function MotoristaTabDocumentos({
         tipo_documento: tipoValue,
         ficheiro_url: (motorista as any)[field],
         nome_ficheiro: `${tipoValue.replace(/_/g, ' ').toUpperCase()}`,
-        data_validade: null, // As validades principais são tratadas à parte se necessário
+        data_validade: null,
+        observacoes: null,
         created_at: motorista.created_at || new Date().toISOString(),
         is_official: true,
       };
@@ -540,6 +543,7 @@ export function MotoristaTabDocumentos({
         reconhecido: tipo !== 'outros',
         isFinanceiro,
         valor: '',
+        validade: '',
       };
     });
     setBatchEntries(entries);

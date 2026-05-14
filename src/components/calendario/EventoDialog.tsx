@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Car, CalendarDays, MapPin, ArrowLeftRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatMatricula } from './calendarioUtils';
+import { DatePickerField, TimePickerField } from './calendarioPickers';
 import type { CalendarioEvento } from '@/pages/Calendario';
 
 interface Props {
@@ -52,7 +53,7 @@ const TIPOS = [
     value: 'lista_espera',
     label: 'Lista de Espera',
     color: 'border-pink-500 bg-pink-500/10 text-pink-700 dark:text-pink-400',
-    desc: 'Motorista aguarda viatura — regista marca e modelo pretendido',
+    desc: 'Reservar viatura — fica registada como reservada no calendário',
   },
 ];
 
@@ -255,16 +256,15 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="data">Data *</Label>
-                <Input
-                  id="data"
-                  type="date"
-                  value={data}
-                  onChange={(e) => setData(e.target.value)}
-                />
+                <div className="flex items-center h-5">
+                  <Label htmlFor="data">
+                    Data <span className="text-destructive">*</span>
+                  </Label>
+                </div>
+                <DatePickerField id="data" value={data} onChange={setData} />
               </div>
               <div className="space-y-1.5">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 h-5">
                   <Label htmlFor="hora">Hora</Label>
                   <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
                     <input
@@ -276,13 +276,7 @@ export const EventoDialog: React.FC<Props> = ({ evento, userId, onClose }) => {
                     Dia inteiro
                   </label>
                 </div>
-                <Input
-                  id="hora"
-                  type="time"
-                  value={hora}
-                  onChange={(e) => setHora(e.target.value)}
-                  disabled={diaTodo}
-                />
+                <TimePickerField value={hora} onChange={setHora} disabled={diaTodo} />
               </div>
             </div>
 
