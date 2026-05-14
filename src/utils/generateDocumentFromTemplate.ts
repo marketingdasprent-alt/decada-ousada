@@ -438,11 +438,13 @@ export const generateDocumentFromTemplate = async (
     );
 
     // Criar PDF ou usar existente
-    const pdf = params.existingPdf || new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
+    const pdf =
+      params.existingPdf ||
+      new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
 
     // Se estamos a adicionar a um PDF existente, adicionar nova página
     const startPage = params.existingPdf ? pdf.internal.getNumberOfPages() + 1 : 1;
