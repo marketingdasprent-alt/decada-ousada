@@ -80,6 +80,20 @@ export const TrocaCheckinStep: React.FC<{
     enabled: !!motoristaId,
   });
 
+  const { data: motoristaFull } = useQuery({
+    queryKey: ['motorista-full-troca', motoristaId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('motoristas_ativos')
+        .select('id, nome, nif, email, telefone, morada, documento_tipo, documento_numero')
+        .eq('id', motoristaId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!motoristaId,
+  });
+
   const makeHandler =
     (setter: React.Dispatch<React.SetStateAction<SelectedFile[]>>) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -246,26 +260,29 @@ export const TrocaCheckinStep: React.FC<{
         }
       }
 
-      // 6. Criar novo contrato para a nova viatura
-      const { data: newCt, error: ctErr } = await supabase
-        .from('contratos')
-        .insert({
-          motorista_id: motoristaId,
-          empresa_id: empresaId,
-          motorista_nome: motoristaNome,
-          data_assinatura: dataInicio,
-          data_inicio: dataInicio,
-          cidade_assinatura: cidadeAssinatura,
-          status: 'ativo',
-          versao: 1,
-          duracao_meses: 12,
-          viatura_id: novaViatura.id,
-          calendario_evento_id: eventoId,
-          ...(fazerDepois ? { checkout_pendente: true } : {}),
-        })
-        .select('id, numero_contrato')
-        .single();
+      // 6. Criar novo contrato para a nova viatura (via RPC atómica)
+      const { data: ctResult, error: ctErr } = await supabase.rpc('gerar_contrato_atomico', {
+        p_motorista_id: motoristaId,
+        p_empresa_id: empresaId,
+        p_motorista_nome: motoristaNome,
+        p_motorista_nif: motoristaFull?.nif || null,
+        p_motorista_email: motoristaFull?.email || null,
+        p_motorista_telefone: motoristaFull?.telefone || null,
+        p_motorista_morada: motoristaFull?.morada || null,
+        p_motorista_documento_tipo: motoristaFull?.documento_tipo || null,
+        p_motorista_documento_numero: motoristaFull?.documento_numero || null,
+        p_cidade_assinatura: cidadeAssinatura,
+        p_data_assinatura: dataInicio,
+        p_data_inicio: dataInicio,
+        p_duracao_meses: 12,
+        p_criado_por: userId,
+        p_force_new_version: true,
+        p_viatura_id: novaViatura.id,
+        p_calendario_evento_id: eventoId,
+        p_checkout_pendente: fazerDepois || false,
+      });
       if (ctErr) throw ctErr;
+      const newCt = Array.isArray(ctResult) ? ctResult[0] : ctResult;
       setContratoNumero(newCt.numero_contrato);
 
       // 7. KM/fuel/danos checkout da nova viatura + fotos

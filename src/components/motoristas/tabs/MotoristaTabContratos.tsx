@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, addMonths } from 'date-fns';
+import { pt } from 'date-fns/locale';
 import {
   FileSignature,
   Download,
@@ -17,6 +18,9 @@ import {
   Camera,
   Film,
   Loader2,
+  RotateCcw,
+  History,
+  CalendarClock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +43,7 @@ import { useEmpresas } from '@/hooks/useEmpresas';
 import { usePermissions } from '@/hooks/usePermissions';
 import { generateDocumentFromTemplate } from '@/utils/generateDocumentFromTemplate';
 import { GenerateDocumentsDialog } from '../GenerateDocumentsDialog';
+import { EditContractDialog } from '@/components/contratos/EditContractDialog';
 import type { Motorista } from '@/pages/Motoristas';
 
 interface Contrato {
@@ -48,6 +53,7 @@ interface Contrato {
   data_assinatura: string;
   data_inicio: string;
   cidade_assinatura: string;
+  duracao_meses: number;
   status: string;
   versao: number;
   documento_url: string | null;
@@ -87,6 +93,9 @@ export function MotoristaTabContratos({
   const [mediaItems, setMediaItems] = useState<ContratoMedia[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(false);
   const [mediaSignedUrls, setMediaSignedUrls] = useState<Record<string, string>>({});
+  const [renovarContrato, setRenovarContrato] = useState<Contrato | null>(null);
+  const [renovando, setRenovando] = useState(false);
+  const [editContrato, setEditContrato] = useState<Contrato | null>(null);
 
   useEffect(() => {
     loadContratos();
@@ -104,7 +113,7 @@ export function MotoristaTabContratos({
         .from('contratos')
         .select('*, viaturas:viatura_id(matricula, marca, modelo)')
         .eq('motorista_id', motorista.id)
-        .order('numero_contrato', { ascending: false });
+        .order('versao', { ascending: false });
 
       if (error) throw error;
       setContratos((data || []) as Contrato[]);
@@ -256,6 +265,63 @@ export function MotoristaTabContratos({
   const handleContractGenerated = () => {
     setGenerateDialogOpen(false);
     loadContratos();
+  };
+
+  const handleRenovar = async () => {
+    if (!renovarContrato) return;
+    setRenovando(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data: result, error } = await supabase.rpc('gerar_contrato_atomico', {
+        p_motorista_id: motorista.id,
+        p_empresa_id: renovarContrato.empresa_id,
+        p_motorista_nome: motorista.nome,
+        p_motorista_nif: motorista.nif || null,
+        p_motorista_email: motorista.email || null,
+        p_motorista_telefone: motorista.telefone || null,
+        p_motorista_morada: motorista.morada || null,
+        p_motorista_documento_tipo: motorista.documento_tipo || null,
+        p_motorista_documento_numero: motorista.documento_numero || null,
+        p_cidade_assinatura: renovarContrato.cidade_assinatura || 'Leiria',
+        p_data_assinatura: today,
+        p_data_inicio: today,
+        p_duracao_meses: renovarContrato.duracao_meses || 12,
+        p_criado_por: user?.id || null,
+        p_force_new_version: true,
+      });
+
+      if (error) throw error;
+
+      // Se o contrato antigo tinha viatura, associar ao novo + atualizar motorista_viaturas
+      const novoContrato = Array.isArray(result) ? result[0] : result;
+      if (novoContrato?.id && renovarContrato.viatura_id) {
+        await supabase
+          .from('contratos')
+          .update({ viatura_id: renovarContrato.viatura_id })
+          .eq('id', novoContrato.id);
+
+        // Sincronizar contrato_prestacao_assinatura na associação ativa
+        await supabase
+          .from('motorista_viaturas')
+          .update({ contrato_prestacao_assinatura: today })
+          .eq('motorista_id', motorista.id)
+          .eq('status', 'ativo');
+      }
+
+      toast.success('Contrato renovado com sucesso');
+      setRenovarContrato(null);
+      loadContratos();
+    } catch (err: any) {
+      console.error('Erro ao renovar contrato:', err);
+      toast.error(err.message || 'Erro ao renovar contrato');
+    } finally {
+      setRenovando(false);
+    }
   };
 
   // Função para garantir que a data está no formato YYYY-MM-DD para o input
@@ -431,8 +497,8 @@ export function MotoristaTabContratos({
             <TableRow>
               <TableHead className="w-28">Nº</TableHead>
               <TableHead>Empresa / Viatura</TableHead>
-              <TableHead>Data Assinatura</TableHead>
-              <TableHead>Data Início</TableHead>
+              <TableHead>Início</TableHead>
+              <TableHead>Fim</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -476,39 +542,85 @@ export function MotoristaTabContratos({
                       </div>
                     )}
                   </TableCell>
-                  <TableCell>{format(new Date(contrato.data_assinatura), 'dd/MM/yyyy')}</TableCell>
-                  <TableCell>{format(new Date(contrato.data_inicio), 'dd/MM/yyyy')}</TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      {format(new Date(contrato.data_inicio), 'dd/MM/yyyy')}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      Assin. {format(new Date(contrato.data_assinatura), 'dd/MM/yyyy')}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const dataFim = addMonths(
+                        new Date(contrato.data_inicio),
+                        contrato.duracao_meses || 12
+                      );
+                      const isExpired = dataFim < new Date();
+                      const diffDays = Math.ceil(
+                        (dataFim.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                      );
+                      const isNearExpiry = diffDays >= 0 && diffDays <= 60;
+                      return (
+                        <div>
+                          <div
+                            className={`text-sm ${contrato.status === 'ativo' && isExpired ? 'text-destructive font-medium' : contrato.status === 'ativo' && isNearExpiry ? 'text-amber-600 dark:text-amber-400 font-medium' : ''}`}
+                          >
+                            {format(dataFim, 'dd/MM/yyyy')}
+                          </div>
+                          {contrato.status === 'ativo' && (
+                            <div
+                              className={`text-[10px] ${isExpired ? 'text-destructive' : isNearExpiry ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+                            >
+                              {isExpired ? 'Expirado' : `${diffDays}d restantes`}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </TableCell>
                   <TableCell>{getStatusBadge(contrato.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {contrato.status === 'ativo' && hasPermission('contratos_criar') && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setRenovarContrato(contrato)}
+                          title="Renovar contrato"
+                          className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {contrato.status === 'ativo' && hasPermission('contratos_criar') && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditContrato(contrato)}
+                          title="Editar contrato"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => loadMedia(contrato)}
-                        title="Ver fotos"
+                        onClick={() => handleView(contrato)}
+                        disabled={!contrato.documento_url}
+                        title={contrato.documento_url ? 'Visualizar PDF' : 'PDF não disponível'}
                       >
-                        <Camera className="h-4 w-4" />
+                        <Eye className="h-4 w-4" />
                       </Button>
-                      {contrato.documento_url && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleView(contrato)}
-                            title="Visualizar"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDownload(contrato)}
-                            title="Download"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDownload(contrato)}
+                        disabled={!contrato.documento_url}
+                        title={contrato.documento_url ? 'Download PDF' : 'PDF não disponível'}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
                       {contrato.template_id && (
                         <Button
                           variant="ghost"
@@ -522,6 +634,14 @@ export function MotoristaTabContratos({
                           />
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => loadMedia(contrato)}
+                        title="Ver fotos check-in/check-out"
+                      >
+                        <Camera className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -605,6 +725,101 @@ export function MotoristaTabContratos({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de renovação */}
+      <Dialog
+        open={!!renovarContrato}
+        onOpenChange={(open) => {
+          if (!open) setRenovarContrato(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-blue-500" />
+              Renovar Contrato
+            </DialogTitle>
+          </DialogHeader>
+          {renovarContrato && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 text-sm space-y-1">
+                <p className="font-medium text-blue-700 dark:text-blue-300">
+                  {renovarContrato.numero_contrato != null &&
+                    `CT-${String(renovarContrato.numero_contrato).padStart(4, '0')} · `}
+                  Versão {renovarContrato.versao}
+                </p>
+                <p className="text-blue-600/80 dark:text-blue-400/80 text-xs">
+                  Início: {format(new Date(renovarContrato.data_inicio), 'dd/MM/yyyy')} · Fim:{' '}
+                  {format(
+                    addMonths(
+                      new Date(renovarContrato.data_inicio),
+                      renovarContrato.duracao_meses || 12
+                    ),
+                    'dd/MM/yyyy'
+                  )}
+                </p>
+                {renovarContrato.viaturas && (
+                  <p className="text-blue-600/80 dark:text-blue-400/80 text-xs">
+                    Viatura: {renovarContrato.viaturas.matricula} — {renovarContrato.viaturas.marca}{' '}
+                    {renovarContrato.viaturas.modelo}
+                  </p>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>Ao renovar:</p>
+                <ul className="list-disc list-inside text-xs space-y-0.5">
+                  <li>
+                    O contrato atual passa a <strong>Substituído</strong>
+                  </li>
+                  <li>
+                    Um novo contrato (versão {renovarContrato.versao + 1}) é criado com data de hoje
+                  </li>
+                  <li>
+                    Mesma empresa, viatura e duração de {renovarContrato.duracao_meses || 12} meses
+                  </li>
+                  <li>O histórico do contrato anterior fica preservado</li>
+                </ul>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setRenovarContrato(null)}
+                  disabled={renovando}
+                >
+                  Cancelar
+                </Button>
+                <Button onClick={handleRenovar} disabled={renovando}>
+                  {renovando ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />A renovar...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Renovar Contrato
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de edição */}
+      {editContrato && (
+        <EditContractDialog
+          contrato={editContrato}
+          open={!!editContrato}
+          onOpenChange={(open) => {
+            if (!open) setEditContrato(null);
+          }}
+          onSuccess={() => {
+            setEditContrato(null);
+            loadContratos();
+          }}
+        />
+      )}
 
       {/* Dialog para gerar documentos */}
       <GenerateDocumentsDialog
