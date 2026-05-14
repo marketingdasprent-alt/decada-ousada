@@ -44,6 +44,7 @@ export const TrocaCheckinStep: React.FC<{
     observacoes,
     estacaoId,
     estacaoNome,
+    fazerDepois,
   } = trocaData;
 
   const queryClient = useQueryClient();
@@ -132,31 +133,33 @@ export const TrocaCheckinStep: React.FC<{
   };
 
   const handleConfirm = async () => {
-    if (filesCheckin.length === 0) {
-      toast.error('Adicione pelo menos uma foto de checkin da viatura devolvida');
-      return;
-    }
-    if (filesCheckout.length === 0) {
-      toast.error('Adicione pelo menos uma foto de checkout da nova viatura');
-      return;
-    }
-    const checkinErr = validateCheckinDados(
-      dadosCheckin,
-      viaturaAtual.km_atual ?? 0,
-      viaturaAtual.combustivel ?? ''
-    );
-    if (checkinErr) {
-      toast.error(`Checkin — ${checkinErr}`);
-      return;
-    }
-    const checkoutErr = validateCheckinDados(
-      dadosCheckout,
-      novaViatura.km_atual ?? 0,
-      novaViatura.combustivel ?? ''
-    );
-    if (checkoutErr) {
-      toast.error(`Checkout — ${checkoutErr}`);
-      return;
+    if (!fazerDepois) {
+      if (filesCheckin.length === 0) {
+        toast.error('Adicione pelo menos uma foto de checkin da viatura devolvida');
+        return;
+      }
+      if (filesCheckout.length === 0) {
+        toast.error('Adicione pelo menos uma foto de checkout da nova viatura');
+        return;
+      }
+      const checkinErr = validateCheckinDados(
+        dadosCheckin,
+        viaturaAtual.km_atual ?? 0,
+        viaturaAtual.combustivel ?? ''
+      );
+      if (checkinErr) {
+        toast.error(`Checkin — ${checkinErr}`);
+        return;
+      }
+      const checkoutErr = validateCheckinDados(
+        dadosCheckout,
+        novaViatura.km_atual ?? 0,
+        novaViatura.combustivel ?? ''
+      );
+      if (checkoutErr) {
+        toast.error(`Checkout — ${checkoutErr}`);
+        return;
+      }
     }
     const empresaId = empresas[0]?.id;
     if (!empresaId) {
@@ -225,16 +228,22 @@ export const TrocaCheckinStep: React.FC<{
       if (contratoAtual) {
         await supabase
           .from('contratos')
-          .update({ status: 'encerrado', calendario_evento_id: eventoId })
+          .update({
+            status: 'encerrado',
+            calendario_evento_id: eventoId,
+            ...(fazerDepois ? { checkin_pendente: true } : {}),
+          })
           .eq('id', contratoAtual.id);
-        await saveCheckinDados({
-          dados: dadosCheckin,
-          contratoId: contratoAtual.id,
-          viaturaId: viaturaAtual.id,
-          userId,
-          tipo: 'checkin',
-        });
-        if (filesCheckin.length > 0) await uploadFiles(filesCheckin, contratoAtual.id, 'checkin');
+        if (!fazerDepois) {
+          await saveCheckinDados({
+            dados: dadosCheckin,
+            contratoId: contratoAtual.id,
+            viaturaId: viaturaAtual.id,
+            userId,
+            tipo: 'checkin',
+          });
+          if (filesCheckin.length > 0) await uploadFiles(filesCheckin, contratoAtual.id, 'checkin');
+        }
       }
 
       // 6. Criar novo contrato para a nova viatura
@@ -252,6 +261,7 @@ export const TrocaCheckinStep: React.FC<{
           duracao_meses: 12,
           viatura_id: novaViatura.id,
           calendario_evento_id: eventoId,
+          ...(fazerDepois ? { checkout_pendente: true } : {}),
         })
         .select('id, numero_contrato')
         .single();
@@ -259,14 +269,16 @@ export const TrocaCheckinStep: React.FC<{
       setContratoNumero(newCt.numero_contrato);
 
       // 7. KM/fuel/danos checkout da nova viatura + fotos
-      await saveCheckinDados({
-        dados: dadosCheckout,
-        contratoId: newCt.id,
-        viaturaId: novaViatura.id,
-        userId,
-        tipo: 'checkout',
-      });
-      if (filesCheckout.length > 0) await uploadFiles(filesCheckout, newCt.id, 'checkout');
+      if (!fazerDepois) {
+        await saveCheckinDados({
+          dados: dadosCheckout,
+          contratoId: newCt.id,
+          viaturaId: novaViatura.id,
+          userId,
+          tipo: 'checkout',
+        });
+        if (filesCheckout.length > 0) await uploadFiles(filesCheckout, newCt.id, 'checkout');
+      }
 
       // 8. Notificação (fire & forget)
       try {
@@ -384,7 +396,9 @@ export const TrocaCheckinStep: React.FC<{
           <div className="rounded-lg border border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/30 p-4 text-sm text-purple-700 dark:text-purple-300">
             <p className="font-medium flex items-center gap-2">
               <ArrowLeftRight className="h-4 w-4" />
-              Troca de viatura — adicione fotos ou confirme sem fotos.
+              {fazerDepois
+                ? 'Troca de viatura — check-in/check-out ficam pendentes. Pode confirmar diretamente.'
+                : 'Troca de viatura — adicione fotos ou confirme sem fotos.'}
             </p>
           </div>
 
@@ -441,7 +455,11 @@ export const TrocaCheckinStep: React.FC<{
               <Upload className="h-6 w-6 opacity-40" />
               <span>
                 Fotos / vídeos de checkin{' '}
-                <span className="text-xs text-destructive font-medium">*obrigatório</span>
+                {fazerDepois ? (
+                  <span className="text-xs text-muted-foreground font-medium">opcional</span>
+                ) : (
+                  <span className="text-xs text-destructive font-medium">*obrigatório</span>
+                )}
               </span>
             </button>
             {filesCheckin.length > 0 && (
@@ -515,7 +533,11 @@ export const TrocaCheckinStep: React.FC<{
               <Upload className="h-6 w-6 opacity-40" />
               <span>
                 Fotos / vídeos de checkout{' '}
-                <span className="text-xs text-destructive font-medium">*obrigatório</span>
+                {fazerDepois ? (
+                  <span className="text-xs text-muted-foreground font-medium">opcional</span>
+                ) : (
+                  <span className="text-xs text-destructive font-medium">*obrigatório</span>
+                )}
               </span>
             </button>
             {filesCheckout.length > 0 && (
