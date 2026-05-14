@@ -100,6 +100,13 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
     extintor_validade: '',
     contrato_prestacao_assinatura: '',
   });
+  const [contratoAtivo, setContratoAtivo] = useState<{
+    id: string;
+    data_inicio: string;
+    duracao_meses: number;
+    versao: number;
+    numero_contrato: number | null;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     viatura_id: '',
@@ -153,7 +160,7 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
 
       setAssociacoes(typedAssocData);
 
-      const [viaturasRes, activeMvRes] = await Promise.all([
+      const [viaturasRes, activeMvRes, contratoRes] = await Promise.all([
         supabase
           .from('viaturas')
           .select(
@@ -161,7 +168,17 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
           )
           .order('matricula'),
         supabase.from('motorista_viaturas').select('viatura_id').eq('status', 'ativo'),
+        supabase
+          .from('contratos')
+          .select('id, data_inicio, duracao_meses, versao, numero_contrato')
+          .eq('motorista_id', motorista.id)
+          .eq('status', 'ativo')
+          .order('versao', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
+
+      setContratoAtivo(contratoRes.data as any);
 
       if (viaturasRes.error) throw viaturasRes.error;
 
@@ -201,9 +218,18 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
   };
 
   const extintorStatus = getValidityStatus(viaturaAtual?.viatura?.extintor_validade);
-  const contratoValidade = viaturaAtual?.contrato_prestacao_assinatura
-    ? format(addMonths(new Date(viaturaAtual.contrato_prestacao_assinatura), 12), 'yyyy-MM-dd')
-    : null;
+  // Usar contrato ativo real (da tabela contratos) em vez do campo legacy contrato_prestacao_assinatura
+  const contratoValidade = contratoAtivo
+    ? format(
+        addMonths(
+          new Date(contratoAtivo.data_inicio + 'T00:00:00'),
+          contratoAtivo.duracao_meses ?? 12
+        ),
+        'yyyy-MM-dd'
+      )
+    : viaturaAtual?.contrato_prestacao_assinatura
+      ? format(addMonths(new Date(viaturaAtual.contrato_prestacao_assinatura), 12), 'yyyy-MM-dd')
+      : null;
   const contratoStatus = getValidityStatus(contratoValidade);
 
   const calcularDuracao = (dataInicio: string, dataFim: string | null) => {
@@ -457,9 +483,17 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
                     >
                       <ClipboardList className="h-4 w-4 shrink-0" />
                       <div className="min-w-0">
-                        <p className="font-medium leading-none">Contrato Prestação</p>
+                        <p className="font-medium leading-none">
+                          Contrato Prestação
+                          {contratoAtivo?.numero_contrato != null && (
+                            <span className="font-mono text-[10px] ml-1 opacity-70">
+                              CT-{String(contratoAtivo.numero_contrato).padStart(4, '0')} v
+                              {contratoAtivo.versao}
+                            </span>
+                          )}
+                        </p>
                         <p className="text-xs mt-0.5">
-                          {contratoStatus ? contratoStatus.label : 'Sem data de assinatura'}
+                          {contratoStatus ? contratoStatus.label : 'Sem contrato ativo'}
                         </p>
                       </div>
                       {(contratoStatus?.status === 'expired' ||

@@ -140,62 +140,32 @@ export const NewContractDialog = ({ open, onOpenChange, onSuccess }: NewContract
 
       const { data: user } = await supabase.auth.getUser();
 
-      // Check if an active contract already exists for this motorista and empresa
-      const { data: existingActiveContract } = await supabase
-        .from('contratos')
-        .select('id, versao')
-        .eq('motorista_id', selectedMotorista.id)
-        .eq('empresa_id', template.empresa_id)
-        .eq('status', 'ativo')
-        .maybeSingle();
-
-      // Check for any contract with this template (for versioning)
-      const { data: existingContracts } = await supabase
-        .from('contratos')
-        .select('id, versao')
-        .eq('motorista_id', selectedMotorista.id)
-        .eq('template_id', selectedTemplateId)
-        .order('versao', { ascending: false })
-        .limit(1);
-
-      const previousVersion = existingContracts?.[0];
-      const newVersion = previousVersion ? (previousVersion.versao || 1) + 1 : 1;
-
-      // If there's an active contract for this motorista/empresa, mark it as substituted
-      if (existingActiveContract) {
-        await supabase
-          .from('contratos')
-          .update({ status: 'substituido' })
-          .eq('id', existingActiveContract.id);
-      }
-
-      // Create new contract record
+      // Create contract via atomic RPC (handles dedup + versioning)
       const today = new Date().toISOString().split('T')[0];
-      const { data: contratoData, error: contratoError } = await supabase
-        .from('contratos')
-        .insert({
-          motorista_id: selectedMotorista.id,
-          motorista_nome: selectedMotorista.nome,
-          motorista_nif: selectedMotorista.nif,
-          motorista_email: selectedMotorista.email,
-          motorista_telefone: selectedMotorista.telefone,
-          motorista_morada: selectedMotorista.morada,
-          motorista_documento_tipo: selectedMotorista.documento_tipo,
-          motorista_documento_numero: selectedMotorista.documento_numero,
-          empresa_id: template.empresa_id,
-          template_id: selectedTemplateId,
-          data_inicio: selectedMotorista.data_contratacao || today,
-          data_assinatura: selectedMotorista.data_contratacao || today,
-          cidade_assinatura: 'Leiria',
-          duracao_meses: 12,
-          status: 'ativo',
-          versao: newVersion,
-          criado_por: user?.user?.id,
-        })
-        .select()
-        .single();
+      const { data: contratoResult, error: contratoError } = await supabase.rpc(
+        'gerar_contrato_atomico',
+        {
+          p_motorista_id: selectedMotorista.id,
+          p_empresa_id: template.empresa_id,
+          p_motorista_nome: selectedMotorista.nome,
+          p_motorista_nif: selectedMotorista.nif || null,
+          p_motorista_email: selectedMotorista.email || null,
+          p_motorista_telefone: selectedMotorista.telefone || null,
+          p_motorista_morada: selectedMotorista.morada || null,
+          p_motorista_documento_tipo: selectedMotorista.documento_tipo || null,
+          p_motorista_documento_numero: selectedMotorista.documento_numero || null,
+          p_cidade_assinatura: 'Leiria',
+          p_data_assinatura: selectedMotorista.data_contratacao || today,
+          p_data_inicio: selectedMotorista.data_contratacao || today,
+          p_duracao_meses: 12,
+          p_criado_por: user?.user?.id || null,
+          p_force_new_version: false,
+          p_template_id: selectedTemplateId,
+        }
+      );
 
       if (contratoError) throw contratoError;
+      const contratoData = Array.isArray(contratoResult) ? contratoResult[0] : contratoResult;
 
       // Prepare motorista data
       const motoristaData = {
@@ -251,16 +221,15 @@ export const NewContractDialog = ({ open, onOpenChange, onSuccess }: NewContract
       }
 
       // Log the generation
+      const isExisting = (contratoData as any)?.is_existing;
       await supabase.from('contratos_reimpressoes').insert({
         contrato_id: contratoData.id,
         reimpresso_por: user?.user?.id,
-        motivo: newVersion > 1 ? `Nova versão (v${newVersion})` : 'Geração inicial do documento',
+        motivo: isExisting ? 'Reimpressão de contrato existente' : 'Geração inicial do documento',
       });
 
       toast.success(
-        newVersion > 1
-          ? `Nova versão do contrato gerada (v${newVersion})!`
-          : 'Contrato gerado com sucesso!'
+        isExisting ? 'Documento reimpresso com sucesso!' : 'Contrato gerado com sucesso!'
       );
 
       onSuccess();

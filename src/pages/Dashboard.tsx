@@ -158,6 +158,7 @@ const Dashboard = () => {
   const [trocasCount, setTrocasCount] = useState(0);
   const [extintoresAPrazo, setExtintoresAPrazo] = useState<any[]>([]);
   const [contratosAPrazo, setContratosAPrazo] = useState<any[]>([]);
+  const [contratosExpirados, setContratosExpirados] = useState<any[]>([]);
 
   // ── Load gestores ────────────────────────────────────────────────────────
 
@@ -242,28 +243,40 @@ const Dashboard = () => {
 
       // ── Contratos a renovar (60 dias) — tabela contratos ──────────────────
       // Renovação = data_inicio + duracao_meses meses; alerta 60 dias antes
-      const { data: contratosAtivos } = await supabase
+      const { data: contratosAtivos, error: contratosErr } = await supabase
         .from('contratos')
         .select(
-          'id, numero_contrato, data_inicio, duracao_meses, motorista_nome, motorista_id, viaturas:viatura_id(matricula)'
+          'id, numero_contrato, data_inicio, duracao_meses, motorista_nome, motorista_id, viatura_id, viaturas:viatura_id(matricula)'
         )
         .eq('status', 'ativo')
         .not('data_inicio', 'is', null);
 
+      if (contratosErr) {
+        console.error('Erro ao carregar contratos:', contratosErr);
+      }
+
       const now = new Date();
-      const contratosRenovar = (contratosAtivos || [])
-        .filter((ct: any) => {
-          const renovacao = addMonths(new Date(ct.data_inicio), ct.duracao_meses ?? 12);
-          const diffDays = (renovacao.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-          return diffDays >= -30 && diffDays <= 60;
-        })
-        .sort((a: any, b: any) => {
-          const ra = addMonths(new Date(a.data_inicio), a.duracao_meses ?? 12);
-          const rb = addMonths(new Date(b.data_inicio), b.duracao_meses ?? 12);
-          return ra.getTime() - rb.getTime();
-        });
+      now.setHours(0, 0, 0, 0); // Normalizar para meia-noite local
+
+      const allContratos = (contratosAtivos || []).map((ct: any) => {
+        const inicio = new Date(ct.data_inicio + 'T00:00:00');
+        const renovacao = addMonths(inicio, ct.duracao_meses ?? 12);
+        const diffDays = Math.ceil((renovacao.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return { ...ct, _renovacao: renovacao, _diffDays: diffDays };
+      });
+
+      // Contratos a renovar: expiram nos próximos 60 dias
+      const contratosRenovar = allContratos
+        .filter((ct: any) => ct._diffDays >= 0 && ct._diffDays <= 60)
+        .sort((a: any, b: any) => a._renovacao.getTime() - b._renovacao.getTime());
+
+      // Contratos já expirados (data de fim no passado)
+      const expirados = allContratos
+        .filter((ct: any) => ct._diffDays < 0)
+        .sort((a: any, b: any) => a._renovacao.getTime() - b._renovacao.getTime());
 
       setContratosAPrazo(contratosRenovar);
+      setContratosExpirados(expirados);
 
       // ── 2. Candidaturas pendentes ────────────────────────────────────
       const { count: pendentes } = await supabase
@@ -791,8 +804,13 @@ const Dashboard = () => {
                 ) : (
                   <div className="space-y-3 mt-1 max-h-[200px] overflow-y-auto pr-1">
                     {contratosAPrazo.map((ct: any) => {
-                      const renovacao = addMonths(new Date(ct.data_inicio), ct.duracao_meses ?? 12);
-                      const isExpired = renovacao < new Date();
+                      const renovacao = addMonths(
+                        new Date(ct.data_inicio + 'T00:00:00'),
+                        ct.duracao_meses ?? 12
+                      );
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const isExpired = renovacao < today;
                       const viaturaStr = ct.viaturas?.matricula || '—';
 
                       return (
@@ -840,6 +858,71 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* ── Contratos Expirados ──────────────────── */}
+          {contratosExpirados.length > 0 && (
+            <Card className="border-destructive/30">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      Contratos Expirados
+                    </CardTitle>
+                    <CardDescription>Contratos ativos com prazo ultrapassado</CardDescription>
+                  </div>
+                  <Badge variant="destructive" className="font-mono">
+                    {contratosExpirados.length} Expirado{contratosExpirados.length !== 1 ? 's' : ''}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 mt-1 max-h-[250px] overflow-y-auto pr-1">
+                  {contratosExpirados.map((ct: any) => {
+                    const renovacao =
+                      ct._renovacao ||
+                      addMonths(new Date(ct.data_inicio + 'T00:00:00'), ct.duracao_meses ?? 12);
+                    const diasExpirado = Math.abs(
+                      ct._diffDays ||
+                        Math.ceil(
+                          (new Date().getTime() - renovacao.getTime()) / (1000 * 60 * 60 * 24)
+                        )
+                    );
+                    const viaturaStr = ct.viaturas?.matricula || '—';
+
+                    return (
+                      <div
+                        key={ct.id}
+                        className="flex flex-col p-2.5 rounded-lg border border-destructive/20 bg-destructive/5 transition-colors hover:bg-destructive/10"
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-2">
+                            {ct.numero_contrato != null && (
+                              <span className="font-mono text-[10px] text-muted-foreground">
+                                CT-{String(ct.numero_contrato).padStart(4, '0')}
+                              </span>
+                            )}
+                            <span className="font-semibold text-sm tracking-tight truncate">
+                              {ct.motorista_nome}
+                            </span>
+                          </div>
+                          <Badge variant="destructive" className="text-[10px] shrink-0">
+                            {format(renovacao, 'dd MMM yyyy', { locale: pt })}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span className="truncate pr-2">🚗 {viaturaStr}</span>
+                          <span className="text-destructive font-medium shrink-0">
+                            Expirado há {diasExpirado} dia{diasExpirado !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* ── Linha 4: Upgrade/Downgrade + Trocas ──────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

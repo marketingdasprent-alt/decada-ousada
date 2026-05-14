@@ -224,26 +224,29 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
         /* non-critical */
       }
 
-      // 5. Insert contrato
-      const { data: ct, error: ctErr } = await supabase
-        .from('contratos')
-        .insert({
-          motorista_id: motoristaId,
-          empresa_id: empresaId,
-          motorista_nome: motoristaNome,
-          data_assinatura: dataInicio,
-          data_inicio: dataInicio,
-          cidade_assinatura: cidadeAssinatura,
-          status: 'ativo',
-          versao: 1,
-          duracao_meses: 12,
-          viatura_id: viaturaId,
-          calendario_evento_id: eventoId,
-          ...(fazerDepois ? { checkout_pendente: true } : {}),
-        })
-        .select('id, numero_contrato')
-        .single();
+      // 5. Insert contrato (via RPC atómica — previne duplicados)
+      const { data: ctResult, error: ctErr } = await supabase.rpc('gerar_contrato_atomico', {
+        p_motorista_id: motoristaId,
+        p_empresa_id: empresaId,
+        p_motorista_nome: motoristaNome,
+        p_motorista_nif: motoristaFull?.nif || null,
+        p_motorista_email: motoristaFull?.email || null,
+        p_motorista_telefone: motoristaFull?.telefone || null,
+        p_motorista_morada: motoristaFull?.morada || null,
+        p_motorista_documento_tipo: motoristaFull?.documento_tipo || null,
+        p_motorista_documento_numero: motoristaFull?.documento_numero || null,
+        p_cidade_assinatura: cidadeAssinatura,
+        p_data_assinatura: dataInicio,
+        p_data_inicio: dataInicio,
+        p_duracao_meses: 12,
+        p_criado_por: userId,
+        p_force_new_version: true,
+        p_viatura_id: viaturaId,
+        p_calendario_evento_id: eventoId,
+        p_checkout_pendente: fazerDepois,
+      });
       if (ctErr) throw ctErr;
+      const ct = Array.isArray(ctResult) ? ctResult[0] : ctResult;
 
       const contratoId = ct.id;
       setContratoNumero(ct.numero_contrato);
