@@ -15,8 +15,6 @@ import {
   Pencil,
   Save,
   X,
-  Camera,
-  Film,
   Loader2,
   RotateCcw,
   History,
@@ -64,14 +62,6 @@ interface Contrato {
   viaturas: { matricula: string; marca: string; modelo: string } | null;
 }
 
-interface ContratoMedia {
-  id: string;
-  tipo: 'checkout' | 'checkin';
-  url: string;
-  nome_ficheiro: string | null;
-  tipo_ficheiro: string | null;
-}
-
 interface MotoristaTabContratosProps {
   motorista: Motorista;
   onMotoristaUpdated?: () => void;
@@ -89,10 +79,6 @@ export function MotoristaTabContratos({
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [editingContratual, setEditingContratual] = useState(false);
   const [dataContratacao, setDataContratacao] = useState(motorista.data_contratacao || '');
-  const [mediaDialogContrato, setMediaDialogContrato] = useState<Contrato | null>(null);
-  const [mediaItems, setMediaItems] = useState<ContratoMedia[]>([]);
-  const [loadingMedia, setLoadingMedia] = useState(false);
-  const [mediaSignedUrls, setMediaSignedUrls] = useState<Record<string, string>>({});
   const [renovarContrato, setRenovarContrato] = useState<Contrato | null>(null);
   const [renovando, setRenovando] = useState(false);
   const [editContrato, setEditContrato] = useState<Contrato | null>(null);
@@ -122,39 +108,6 @@ export function MotoristaTabContratos({
       toast.error('Erro ao carregar contratos');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadMedia = async (contrato: Contrato) => {
-    setMediaDialogContrato(contrato);
-    setMediaItems([]);
-    setMediaSignedUrls({});
-    setLoadingMedia(true);
-    try {
-      const { data, error } = await supabase
-        .from('contrato_media')
-        .select('id, tipo, url, nome_ficheiro, tipo_ficheiro')
-        .eq('contrato_id', contrato.id)
-        .order('created_at');
-      if (error) throw error;
-      const items = (data || []) as ContratoMedia[];
-      setMediaItems(items);
-
-      // Generate signed URLs for all items
-      const urls: Record<string, string> = {};
-      await Promise.all(
-        items.map(async (item) => {
-          const { data: signed } = await supabase.storage
-            .from('contrato-media')
-            .createSignedUrl(item.url, 3600);
-          if (signed?.signedUrl) urls[item.id] = signed.signedUrl;
-        })
-      );
-      setMediaSignedUrls(urls);
-    } catch {
-      toast.error('Erro ao carregar fotos');
-    } finally {
-      setLoadingMedia(false);
     }
   };
 
@@ -634,14 +587,6 @@ export function MotoristaTabContratos({
                           />
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => loadMedia(contrato)}
-                        title="Ver fotos check-in/check-out"
-                      >
-                        <Camera className="h-4 w-4" />
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -650,81 +595,6 @@ export function MotoristaTabContratos({
           </TableBody>
         </Table>
       </SectionCard>
-
-      {/* Media dialog */}
-      <Dialog
-        open={!!mediaDialogContrato}
-        onOpenChange={(open) => {
-          if (!open) setMediaDialogContrato(null);
-        }}
-      >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              Fotos do Contrato{' '}
-              {mediaDialogContrato?.numero_contrato != null && (
-                <Badge variant="outline" className="font-mono ml-2">
-                  CT-{String(mediaDialogContrato.numero_contrato).padStart(4, '0')}
-                </Badge>
-              )}
-            </DialogTitle>
-          </DialogHeader>
-          {loadingMedia ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : mediaItems.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Camera className="h-10 w-10 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Nenhuma foto ou vídeo registado neste contrato.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {(['checkout', 'checkin'] as const).map((tipo) => {
-                const items = mediaItems.filter((m) => m.tipo === tipo);
-                if (items.length === 0) return null;
-                return (
-                  <div key={tipo}>
-                    <p className="text-sm font-medium text-muted-foreground capitalize mb-2">
-                      {tipo}
-                    </p>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                      {items.map((item) => {
-                        const signedUrl = mediaSignedUrls[item.id];
-                        const isVideo = item.tipo_ficheiro?.startsWith('video/');
-                        return (
-                          <a
-                            key={item.id}
-                            href={signedUrl || '#'}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="relative rounded-lg overflow-hidden border border-border aspect-square bg-muted block"
-                          >
-                            {signedUrl && !isVideo ? (
-                              <img
-                                src={signedUrl}
-                                alt={item.nome_ficheiro || ''}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex flex-col items-center justify-center w-full h-full gap-1 p-2">
-                                <Film className="h-6 w-6 text-muted-foreground" />
-                                <span className="text-[10px] text-muted-foreground text-center leading-tight truncate w-full">
-                                  {item.nome_ficheiro}
-                                </span>
-                              </div>
-                            )}
-                          </a>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Dialog de renovação */}
       <Dialog
