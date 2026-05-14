@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,31 +23,7 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
 
-    // Create Supabase client with the caller's JWT so auth.getUser() resolves the session
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: { headers: { Authorization: `Bearer ${token}` } },
-        auth: { autoRefreshToken: false, persistSession: false },
-      }
-    );
-
-    // Verify user is authenticated
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser();
-
-    if (userError || !user) {
-      console.error('Authentication error:', userError);
-      return new Response(
-        JSON.stringify({ error: 'Não autenticado - Token inválido' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Create admin client with service role key to bypass RLS
+    // Admin client (service role) — used both to validate the caller's token and to update passwords
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -58,6 +34,20 @@ Deno.serve(async (req) => {
         },
       }
     );
+
+    // Verify the caller's JWT using the admin client (does not require a session)
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseAdmin.auth.getUser(token);
+
+    if (userError || !user) {
+      console.error('Authentication error:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Não autenticado - Token inválido' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Check if user is admin using service role (bypasses RLS)
     const { data: profile, error: profileError } = await supabaseAdmin
