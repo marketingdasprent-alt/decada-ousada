@@ -23,6 +23,8 @@ interface GenerateDocumentParams {
   motoristaData: Record<string, any>;
   documentData?: Record<string, any>;
   action?: 'print' | 'download';
+  skipOutput?: boolean; // Se true, retorna o PDF sem abrir/gravar
+  existingPdf?: jsPDF; // Se fornecido, adiciona páginas a este PDF em vez de criar novo
 }
 
 interface UploadDocumentParams extends GenerateDocumentParams {
@@ -435,12 +437,20 @@ export const generateDocumentFromTemplate = async (
       documentData
     );
 
-    // Criar PDF
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
+    // Criar PDF ou usar existente
+    const pdf =
+      params.existingPdf ||
+      new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+    // Se estamos a adicionar a um PDF existente, adicionar nova página
+    const startPage = params.existingPdf ? pdf.internal.getNumberOfPages() + 1 : 1;
+    if (params.existingPdf) {
+      pdf.addPage();
+    }
 
     // Carregar papel timbrado se existir
     let bg: HTMLImageElement | null = null;
@@ -672,26 +682,29 @@ export const generateDocumentFromTemplate = async (
       }
     }
 
-    // Adicionar numeração de páginas
-    const totalPages = pdf.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
+    // Adicionar numeração de páginas (apenas deste documento, não de PDFs anteriores)
+    const endPage = pdf.internal.getNumberOfPages();
+    const docTotalPages = endPage - startPage + 1;
+    for (let i = startPage; i <= endPage; i++) {
       pdf.setPage(i);
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(128, 128, 128);
-      const pageText = `Página ${i} de ${totalPages}`;
+      const pageText = `Página ${i - startPage + 1} de ${docTotalPages}`;
       const textWidth = pdf.getTextWidth(pageText);
       // Posicionar a 35mm da borda inferior da página (margem aumentada em 20 pontos)
       pdf.text(pageText, (pageWidth - textWidth) / 2, pageHeight - 35);
     }
 
     // Executar ação (imprimir ou download)
-    if (action === 'print') {
-      pdf.autoPrint();
-      window.open(pdf.output('bloburl'), '_blank');
-    } else {
-      const fileName = `${templateData.nome}_${motoristaData.nome}_${format(new Date(), 'yyyyMMdd')}.pdf`;
-      pdf.save(fileName);
+    if (!params.skipOutput) {
+      if (action === 'print') {
+        pdf.autoPrint();
+        window.open(pdf.output('bloburl'), '_blank');
+      } else {
+        const fileName = `${templateData.nome}_${motoristaData.nome}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+        pdf.save(fileName);
+      }
     }
 
     return pdf;
