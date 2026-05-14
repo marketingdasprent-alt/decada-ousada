@@ -1,6 +1,4 @@
-import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,27 +8,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const UserMenu = () => {
   const { user, signOut } = useAuth();
-  const { isAdmin } = usePermissions();
   const navigate = useNavigate();
 
   if (!user) return null;
 
+  const displayName = user.user_metadata?.nome || user.email?.split('@')[0] || 'Utilizador';
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="text-foreground hover:bg-primary/20 px-2 sm:px-4">
-          <User className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">{user.email}</span>
-          {isAdmin && (
-            <span className="sm:ml-2 text-[10px] sm:text-xs bg-primary text-primary-foreground px-1 rounded">
-              ADMIN
-            </span>
-          )}
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2 text-sm text-foreground hover:bg-primary/20 hover:text-foreground px-3"
+        >
+          <User className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">{displayName}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="bg-card border-border" align="end">

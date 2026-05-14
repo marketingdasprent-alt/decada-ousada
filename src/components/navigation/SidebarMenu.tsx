@@ -14,7 +14,6 @@ import {
   Wallet,
   CalendarDays,
   Mail,
-  X,
   ChevronRight,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -214,14 +213,8 @@ export const SidebarMenu: React.FC = () => {
 
       {/* User Footer */}
       <div className="p-4 border-t border-border/50 bg-muted/30">
-        <div className="flex items-center gap-2 bg-background/50 p-2 rounded-xl border border-border/50 overflow-hidden">
+        <div className="flex items-center w-full bg-background/50 p-2 rounded-xl border border-border/50 overflow-hidden">
           <UserMenu />
-          <div className="flex flex-col truncate hidden lg:block">
-            <span className="text-xs font-semibold truncate leading-none mb-1">{userName}</span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-tight">
-              {userRole}
-            </span>
-          </div>
         </div>
       </div>
     </div>

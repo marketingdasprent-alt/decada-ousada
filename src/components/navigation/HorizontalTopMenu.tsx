@@ -219,9 +219,9 @@ export const HorizontalTopMenu: React.FC = () => {
           {/* Logo and Email Centered */}
           <div className="col-span-3 flex flex-col items-center justify-center gap-0.5">
             <img src={logoSrc} alt="WeGest" className="h-8 w-auto object-contain" />
-            {!loading && (
+            {!loading && user && (
               <span className="text-[10px] text-muted-foreground font-medium truncate max-w-full">
-                {user?.email}
+                {user.user_metadata?.nome || user.email?.split('@')[0] || 'Utilizador'}
               </span>
             )}
           </div>
