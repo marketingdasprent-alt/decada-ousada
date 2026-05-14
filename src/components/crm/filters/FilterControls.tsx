@@ -81,7 +81,9 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
         '📋 Usuários carregados:',
         data?.map((u) => u.nome)
       );
-      const uniqueNomes = Array.from(new Set((data || []).map(u => u.nome))).map(nome => ({ nome }));
+      const uniqueNomes = Array.from(new Set((data || []).map((u) => u.nome))).map((nome) => ({
+        nome,
+      }));
       setUsuarios(uniqueNomes);
 
       // Também buscar gestores ativos (que têm leads atribuídos)

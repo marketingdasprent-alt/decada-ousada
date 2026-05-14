@@ -538,7 +538,9 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
 
   // ── For entrega/devolucao: show step; recolha: mutation (em_recolha) ───────
   const handleGuardar = () => {
-    const fazerDepoisAtivo = fazerDepois && (tipo === 'entrega' || tipo === 'devolucao' || tipo === 'troca' || tipo === 'upgrade');
+    const fazerDepoisAtivo =
+      fazerDepois &&
+      (tipo === 'entrega' || tipo === 'devolucao' || tipo === 'troca' || tipo === 'upgrade');
     if (!estacaoId && !fazerDepoisAtivo && tipo !== 'lista_espera') {
       toast.error('Estação é obrigatória');
       return;
@@ -662,7 +664,11 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...
             </>
-          ) : fazerDepois && (tipo === 'entrega' || tipo === 'devolucao' || tipo === 'troca' || tipo === 'upgrade') ? (
+          ) : fazerDepois &&
+            (tipo === 'entrega' ||
+              tipo === 'devolucao' ||
+              tipo === 'troca' ||
+              tipo === 'upgrade') ? (
             'Continuar (depois)'
           ) : (
             'Guardar'
@@ -970,7 +976,10 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
           </div>
 
           {/* ── Fazer Check-in / Check-out depois ── */}
-          {(tipo === 'entrega' || tipo === 'devolucao' || tipo === 'troca' || tipo === 'upgrade') && (
+          {(tipo === 'entrega' ||
+            tipo === 'devolucao' ||
+            tipo === 'troca' ||
+            tipo === 'upgrade') && (
             <label
               className={cn(
                 'flex items-start gap-3 cursor-pointer p-3 rounded-lg border transition-colors',
@@ -987,14 +996,20 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
               />
               <div>
                 <p className="text-sm font-medium">
-                  Fazer {tipo === 'entrega' ? 'Check-out' : tipo === 'troca' || tipo === 'upgrade' ? 'Check-in / Check-out' : 'Check-in'} depois
+                  Fazer{' '}
+                  {tipo === 'entrega'
+                    ? 'Check-out'
+                    : tipo === 'troca' || tipo === 'upgrade'
+                      ? 'Check-in / Check-out'
+                      : 'Check-in'}{' '}
+                  depois
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {tipo === 'entrega'
                     ? 'Regista a entrega agora e preenche o km, combustível e danos mais tarde. A estação é opcional.'
                     : tipo === 'troca' || tipo === 'upgrade'
-                    ? 'Regista a troca agora e preenche o km, combustível, danos e fotos mais tarde. A estação é opcional.'
-                    : 'Regista a devolução agora e preenche o km, combustível e danos mais tarde. A estação é opcional.'}
+                      ? 'Regista a troca agora e preenche o km, combustível, danos e fotos mais tarde. A estação é opcional.'
+                      : 'Regista a devolução agora e preenche o km, combustível e danos mais tarde. A estação é opcional.'}
                 </p>
               </div>
             </label>

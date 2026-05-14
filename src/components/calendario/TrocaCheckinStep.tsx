@@ -455,9 +455,11 @@ export const TrocaCheckinStep: React.FC<{
               <Upload className="h-6 w-6 opacity-40" />
               <span>
                 Fotos / vídeos de checkin{' '}
-                {fazerDepois
-                  ? <span className="text-xs text-muted-foreground font-medium">opcional</span>
-                  : <span className="text-xs text-destructive font-medium">*obrigatório</span>}
+                {fazerDepois ? (
+                  <span className="text-xs text-muted-foreground font-medium">opcional</span>
+                ) : (
+                  <span className="text-xs text-destructive font-medium">*obrigatório</span>
+                )}
               </span>
             </button>
             {filesCheckin.length > 0 && (
@@ -531,9 +533,11 @@ export const TrocaCheckinStep: React.FC<{
               <Upload className="h-6 w-6 opacity-40" />
               <span>
                 Fotos / vídeos de checkout{' '}
-                {fazerDepois
-                  ? <span className="text-xs text-muted-foreground font-medium">opcional</span>
-                  : <span className="text-xs text-destructive font-medium">*obrigatório</span>}
+                {fazerDepois ? (
+                  <span className="text-xs text-muted-foreground font-medium">opcional</span>
+                ) : (
+                  <span className="text-xs text-destructive font-medium">*obrigatório</span>
+                )}
               </span>
             </button>
             {filesCheckout.length > 0 && (
