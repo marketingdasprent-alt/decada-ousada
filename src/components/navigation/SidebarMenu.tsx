@@ -16,6 +16,10 @@ import {
   Mail,
   X,
   ChevronRight,
+  KeyRound,
+  CalendarCheck,
+  ArrowRightLeft,
+  Users,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
@@ -47,6 +51,16 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   { label: 'Dashboard', url: '/dashboard', icon: LayoutDashboard, recurso: 'motoristas_gestao' },
+  {
+    label: 'Renting',
+    icon: KeyRound,
+    subItems: [
+      { label: 'Contratos', url: '/renting/contratos', icon: FileText },
+      { label: 'Reservas', url: '/renting/reservas', icon: CalendarCheck },
+      { label: 'Movimentações', url: '/renting/movimentacoes', icon: ArrowRightLeft },
+      { label: 'Clientes', url: '/renting/clientes', icon: Users },
+    ],
+  },
   { label: 'CRM', url: '/crm', icon: BarChart3, recurso: 'motoristas_crm' },
   { label: 'Meus Tickets', url: '/meus-tickets', icon: Wrench, recurso: 'motoristas_crm' },
   {
