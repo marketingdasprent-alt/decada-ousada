@@ -22,18 +22,22 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    
-    // Create Supabase client
+
+    // Create Supabase client with the caller's JWT so auth.getUser() resolves the session
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { autoRefreshToken: false, persistSession: false },
+      }
     );
 
-    // Verify user is authenticated using the JWT token
+    // Verify user is authenticated
     const {
       data: { user },
       error: userError,
-    } = await supabaseClient.auth.getUser(token);
+    } = await supabaseClient.auth.getUser();
 
     if (userError || !user) {
       console.error('Authentication error:', userError);
