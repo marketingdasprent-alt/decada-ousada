@@ -606,31 +606,21 @@ export function MotoristaTabContratos({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => loadMedia(contrato)}
-                        title="Ver fotos"
+                        onClick={() => handleView(contrato)}
+                        disabled={!contrato.documento_url}
+                        title={contrato.documento_url ? 'Visualizar PDF' : 'PDF não disponível'}
                       >
-                        <Camera className="h-4 w-4" />
+                        <Eye className="h-4 w-4" />
                       </Button>
-                      {contrato.documento_url && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleView(contrato)}
-                            title="Visualizar"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDownload(contrato)}
-                            title="Download"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDownload(contrato)}
+                        disabled={!contrato.documento_url}
+                        title={contrato.documento_url ? 'Download PDF' : 'PDF não disponível'}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
                       {contrato.template_id && (
                         <Button
                           variant="ghost"
@@ -644,6 +634,14 @@ export function MotoristaTabContratos({
                           />
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => loadMedia(contrato)}
+                        title="Ver fotos check-in/check-out"
+                      >
+                        <Camera className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

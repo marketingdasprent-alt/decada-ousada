@@ -171,7 +171,6 @@ export default function ViaturaDetalhe() {
         toast.success('Viatura criada com sucesso!');
         navigate(`/viaturas/${newViatura.id}`);
       } else if (viatura) {
-        console.log('[DEBUG] Payload enviado:', JSON.stringify(data, null, 2));
         const { data: updated, error } = await supabase
           .from('viaturas')
           .update(data)
@@ -179,13 +178,6 @@ export default function ViaturaDetalhe() {
           .select()
           .single();
 
-        console.log('[DEBUG] Resultado update:', { updated, error });
-        console.log(
-          '[DEBUG] tipo_id enviado:',
-          data.tipo_id,
-          '| tipo_id retornado:',
-          updated?.tipo_id
-        );
         if (error) throw error;
         if (!updated) throw new Error('Nenhuma viatura foi atualizada');
         toast.success('Viatura atualizada com sucesso!');
