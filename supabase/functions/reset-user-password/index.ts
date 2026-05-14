@@ -23,26 +23,27 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    // Validate the caller's JWT via raw REST (bypasses gotrue-js session handling)
-    const userResp = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        apikey: anonKey,
-      },
-    });
-
-    if (!userResp.ok) {
-      console.error('Authentication error:', userResp.status, await userResp.text());
+    // Decode JWT payload to extract user_id (sub).
+    // The Supabase Edge runtime already verifies the JWT signature before invoking this function
+    // (verify_jwt defaults to true), so we trust the payload here.
+    let callerUserId: string;
+    try {
+      const payloadB64 = token.split('.')[1];
+      const payloadJson = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
+      const payload = JSON.parse(payloadJson);
+      callerUserId = payload.sub;
+      if (!callerUserId) throw new Error('JWT sem claim sub');
+    } catch (e) {
+      console.error('Failed to decode JWT:', e);
       return new Response(
         JSON.stringify({ error: 'Não autenticado - Token inválido' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const user = await userResp.json();
+    const user = { id: callerUserId };
 
     // Admin client (service role) for DB lookups and password update
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
