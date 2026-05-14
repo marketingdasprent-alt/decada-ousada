@@ -99,9 +99,9 @@ function isNameMatch(pdfName: string, dbName: string): boolean {
   if (a.includes(b) && b.length > 5) return true;
   // 2+ common parts
   const noise = ['da', 'de', 'do', 'das', 'dos', 'e'];
-  const aFiltered = aParts.filter(p => p.length > 2 && !noise.includes(p));
-  const bFiltered = bParts.filter(p => p.length > 2 && !noise.includes(p));
-  const common = aFiltered.filter(p => bFiltered.includes(p));
+  const aFiltered = aParts.filter((p) => p.length > 2 && !noise.includes(p));
+  const bFiltered = bParts.filter((p) => p.length > 2 && !noise.includes(p));
+  const common = aFiltered.filter((p) => bFiltered.includes(p));
   if (common.length >= 2) return true;
   return false;
 }
@@ -118,9 +118,7 @@ async function extractPdfText(file: File): Promise<string> {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    const pageText = content.items
-      .map((item: any) => item.str)
-      .join(' ');
+    const pageText = content.items.map((item: any) => item.str).join(' ');
     fullText += pageText + '\n';
   }
 
@@ -128,7 +126,10 @@ async function extractPdfText(file: File): Promise<string> {
 }
 
 // Parse the structured text from the PDF
-function parseReciboText(text: string, fileName: string): Omit<ParsedRecibo, 'motoristaId' | 'motoristaMatch' | 'status' | 'file'> {
+function parseReciboText(
+  text: string,
+  fileName: string
+): Omit<ParsedRecibo, 'motoristaId' | 'motoristaMatch' | 'status' | 'file'> {
   const getField = (pattern: RegExp): string => {
     const m = text.match(pattern);
     return m ? m[1].trim() : '';
@@ -171,7 +172,8 @@ function parseReciboText(text: string, fileName: string): Omit<ParsedRecibo, 'mo
 
   // PDF extraction pode perder acentos — tentar ambas versões
   const caucaoVal = Math.abs(getValueField('Caucao')) || Math.abs(getValueField('Caução'));
-  const reparacoesVal = Math.abs(getValueField('Reparacoes')) || Math.abs(getValueField('Reparações'));
+  const reparacoesVal =
+    Math.abs(getValueField('Reparacoes')) || Math.abs(getValueField('Reparações'));
 
   // Total and Líquido
   const totalMatch = text.match(/Total a receber:\s*(-?[\d.,]+)\s*€/i);
@@ -239,10 +241,21 @@ export function ImportarRecibosDialog({
           dataInicio: '',
           dataFim: '',
           semanaNumero: null,
-          uber: 0, bolt: 0, aluguer: 0, combustivel: 0, viaVerde: 0,
-          outrasReceitas: 0, outrosCustos: 0, caucao: 0, seguros: 0,
-          reparacoes: 0, valoresAnteriores: 0, totalReceber: 0,
-          iva: 0, irs: 0, liquido: 0,
+          uber: 0,
+          bolt: 0,
+          aluguer: 0,
+          combustivel: 0,
+          viaVerde: 0,
+          outrasReceitas: 0,
+          outrosCustos: 0,
+          caucao: 0,
+          seguros: 0,
+          reparacoes: 0,
+          valoresAnteriores: 0,
+          totalReceber: 0,
+          iva: 0,
+          irs: 0,
+          liquido: 0,
           motoristaId: null,
           motoristaMatch: null,
           status: 'error',
@@ -285,10 +298,21 @@ export function ImportarRecibosDialog({
           dataInicio: '',
           dataFim: '',
           semanaNumero: null,
-          uber: 0, bolt: 0, aluguer: 0, combustivel: 0, viaVerde: 0,
-          outrasReceitas: 0, outrosCustos: 0, caucao: 0, seguros: 0,
-          reparacoes: 0, valoresAnteriores: 0, totalReceber: 0,
-          iva: 0, irs: 0, liquido: 0,
+          uber: 0,
+          bolt: 0,
+          aluguer: 0,
+          combustivel: 0,
+          viaVerde: 0,
+          outrasReceitas: 0,
+          outrosCustos: 0,
+          caucao: 0,
+          seguros: 0,
+          reparacoes: 0,
+          valoresAnteriores: 0,
+          totalReceber: 0,
+          iva: 0,
+          irs: 0,
+          liquido: 0,
           motoristaId: null,
           motoristaMatch: null,
           status: 'error',
@@ -305,7 +329,7 @@ export function ImportarRecibosDialog({
   };
 
   const handleImport = async () => {
-    const toImport = parsedRecibos.filter(r => r.status === 'matched');
+    const toImport = parsedRecibos.filter((r) => r.status === 'matched');
     if (toImport.length === 0) {
       toast.error('Nenhum recibo com motorista identificado para importar');
       return;
@@ -319,7 +343,8 @@ export function ImportarRecibosDialog({
       try {
         // Upload PDF to storage — normalizar nome para evitar caracteres especiais
         const safeFileName = recibo.fileName
-          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
           .replace(/[^a-zA-Z0-9._-]/g, '_');
         const filePath = `recibos-importados/${orgId}/${recibo.dataInicio}/${recibo.motoristaId}_${safeFileName}`;
         const { error: uploadError } = await supabase.storage
@@ -331,9 +356,8 @@ export function ImportarRecibosDialog({
         }
 
         // Upsert record
-        const { error: dbError } = await supabase
-          .from('recibos_importados')
-          .upsert({
+        const { error: dbError } = await supabase.from('recibos_importados').upsert(
+          {
             motorista_id: recibo.motoristaId,
             motorista_nome: recibo.nome,
             semana_inicio: recibo.dataInicio,
@@ -358,9 +382,11 @@ export function ImportarRecibosDialog({
             org_id: orgId,
             importado_por: user?.id,
             updated_at: new Date().toISOString(),
-          }, {
+          },
+          {
             onConflict: 'motorista_id,semana_inicio,org_id',
-          });
+          }
+        );
 
         if (dbError) {
           console.error('DB error:', dbError);
@@ -377,7 +403,9 @@ export function ImportarRecibosDialog({
     setSaving(false);
 
     if (imported > 0) {
-      toast.success(`${imported} recibo${imported !== 1 ? 's' : ''} importado${imported !== 1 ? 's' : ''} com sucesso`);
+      toast.success(
+        `${imported} recibo${imported !== 1 ? 's' : ''} importado${imported !== 1 ? 's' : ''} com sucesso`
+      );
       onImportComplete();
       onOpenChange(false);
       setParsedRecibos([]);
@@ -387,9 +415,9 @@ export function ImportarRecibosDialog({
     }
   };
 
-  const matchedCount = parsedRecibos.filter(r => r.status === 'matched').length;
-  const unmatchedCount = parsedRecibos.filter(r => r.status === 'unmatched').length;
-  const errorCount = parsedRecibos.filter(r => r.status === 'error').length;
+  const matchedCount = parsedRecibos.filter((r) => r.status === 'matched').length;
+  const unmatchedCount = parsedRecibos.filter((r) => r.status === 'unmatched').length;
+  const errorCount = parsedRecibos.filter((r) => r.status === 'error').length;
 
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
@@ -403,7 +431,8 @@ export function ImportarRecibosDialog({
             Importar Recibos Semanais
           </DialogTitle>
           <DialogDescription>
-            Selecione os PDFs dos relatórios semanais. O sistema extrai automaticamente o nome, semana e valores de cada recibo.
+            Selecione os PDFs dos relatórios semanais. O sistema extrai automaticamente o nome,
+            semana e valores de cada recibo.
           </DialogDescription>
         </DialogHeader>
 
@@ -433,13 +462,15 @@ export function ImportarRecibosDialog({
 
             {parsedRecibos.length > 0 && (
               <div className="flex items-center gap-2 text-sm">
-                <Badge variant="default" className="bg-green-600">{matchedCount} identificados</Badge>
+                <Badge variant="default" className="bg-green-600">
+                  {matchedCount} identificados
+                </Badge>
                 {unmatchedCount > 0 && (
-                  <Badge variant="secondary" className="bg-yellow-600 text-white">{unmatchedCount} sem match</Badge>
+                  <Badge variant="secondary" className="bg-yellow-600 text-white">
+                    {unmatchedCount} sem match
+                  </Badge>
                 )}
-                {errorCount > 0 && (
-                  <Badge variant="destructive">{errorCount} erros</Badge>
-                )}
+                {errorCount > 0 && <Badge variant="destructive">{errorCount} erros</Badge>}
               </div>
             )}
           </div>
@@ -464,8 +495,12 @@ export function ImportarRecibosDialog({
                     {parsedRecibos.map((r, i) => (
                       <TableRow key={i} className={r.status === 'error' ? 'opacity-50' : ''}>
                         <TableCell>
-                          {r.status === 'matched' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                          {r.status === 'unmatched' && <AlertCircle className="h-4 w-4 text-yellow-500" />}
+                          {r.status === 'matched' && (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          )}
+                          {r.status === 'unmatched' && (
+                            <AlertCircle className="h-4 w-4 text-yellow-500" />
+                          )}
                           {r.status === 'error' && <X className="h-4 w-4 text-red-500" />}
                         </TableCell>
                         <TableCell className="font-medium">{r.nome || r.fileName}</TableCell>
@@ -488,8 +523,12 @@ export function ImportarRecibosDialog({
                             {formatCurrency(r.liquido)}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right text-sm">{formatCurrency(r.uber)}</TableCell>
-                        <TableCell className="text-right text-sm">{formatCurrency(r.bolt)}</TableCell>
+                        <TableCell className="text-right text-sm">
+                          {formatCurrency(r.uber)}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {formatCurrency(r.bolt)}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -502,22 +541,28 @@ export function ImportarRecibosDialog({
                   {matchedCount > 0
                     ? `${matchedCount} recibo${matchedCount !== 1 ? 's' : ''} pronto${matchedCount !== 1 ? 's' : ''} para importar`
                     : 'Nenhum recibo identificado para importar'}
-                  {unmatchedCount > 0 && ` • ${unmatchedCount} sem correspondência (serão ignorados)`}
+                  {unmatchedCount > 0 &&
+                    ` • ${unmatchedCount} sem correspondência (serão ignorados)`}
                 </p>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => { setParsedRecibos([]); onOpenChange(false); }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setParsedRecibos([]);
+                      onOpenChange(false);
+                    }}
+                  >
                     Cancelar
                   </Button>
-                  <Button
-                    onClick={handleImport}
-                    disabled={saving || matchedCount === 0}
-                  >
+                  <Button onClick={handleImport} disabled={saving || matchedCount === 0}>
                     {saving ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     ) : (
                       <Upload className="h-4 w-4 mr-2" />
                     )}
-                    {saving ? 'A importar...' : `Importar ${matchedCount} recibo${matchedCount !== 1 ? 's' : ''}`}
+                    {saving
+                      ? 'A importar...'
+                      : `Importar ${matchedCount} recibo${matchedCount !== 1 ? 's' : ''}`}
                   </Button>
                 </div>
               </div>

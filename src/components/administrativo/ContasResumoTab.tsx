@@ -620,9 +620,7 @@ export function ContasResumoTab() {
       });
 
       // Guardar lista de motoristas para o dialog de importação
-      setMotoristasList(
-        (todosMotoristas || []).map((m) => ({ id: m.id, nome: m.nome }))
-      );
+      setMotoristasList((todosMotoristas || []).map((m) => ({ id: m.id, nome: m.nome })));
 
       // Mapa: motorista_id → valor semanal de aluguer de viatura
       const aluguerByMotorista: Record<string, number> = {};
@@ -1205,11 +1203,7 @@ export function ContasResumoTab() {
             />
           </div>
 
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={() => setImportDialogOpen(true)}
-          >
+          <Button variant="outline" className="gap-2" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4" />
             Importar Recibos
           </Button>

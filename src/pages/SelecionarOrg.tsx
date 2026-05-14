@@ -25,7 +25,11 @@ const SelecionarOrg = () => {
             <CardHeader className="py-4 px-5">
               <div className="flex items-center gap-3">
                 {org.logo_url ? (
-                  <img src={org.logo_url} alt={org.nome} className="h-10 w-10 rounded-lg object-contain" />
+                  <img
+                    src={org.logo_url}
+                    alt={org.nome}
+                    className="h-10 w-10 rounded-lg object-contain"
+                  />
                 ) : (
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Building2 className="h-5 w-5 text-primary" />

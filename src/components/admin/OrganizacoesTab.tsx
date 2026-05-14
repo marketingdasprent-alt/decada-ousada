@@ -45,10 +45,7 @@ export const OrganizacoesTab: React.FC = () => {
 
   const fetchOrgs = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('organizacoes')
-      .select('*')
-      .order('nome');
+    const { data, error } = await supabase.from('organizacoes').select('*').order('nome');
 
     if (error) {
       console.error('Erro ao carregar organizações:', error);
@@ -199,9 +196,7 @@ export const OrganizacoesTab: React.FC = () => {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>
-                {editingOrg ? 'Editar Organização' : 'Nova Organização'}
-              </DialogTitle>
+              <DialogTitle>{editingOrg ? 'Editar Organização' : 'Nova Organização'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">

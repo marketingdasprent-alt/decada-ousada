@@ -225,34 +225,42 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
   const receitas = {
     bolt: motorista.faturado_bolt,
     uber: motorista.faturado_uber,
-    outras_receitas: isImportado ? 0 : (outrasReceitas || 0),
+    outras_receitas: isImportado ? 0 : outrasReceitas || 0,
   };
   const totalReceitas = receitas.bolt + receitas.uber + receitas.outras_receitas;
 
-  const despesas = isImportado ? {
-    aluguer: motorista.aluguer || 0,
-    combustivel: motorista.combustivel || 0,
-    portagens: motorista.portagens || 0,
-    outros_custos: motorista.outros_custos || 0,
-    caucao: 0,
-    seguros: 0,
-    reparacoes: motorista.reparacoes || 0,
-  } : {
-    aluguer: motorista.aluguer || 0,
-    combustivel: motorista.combustivel || 0,
-    portagens: motorista.portagens || 0,
-    outros_custos: extraCosts.outros,
-    caucao: extraCosts.caucao,
-    seguros: extraCosts.seguros,
-    reparacoes: motorista.reparacoes || 0,
-  };
+  const despesas = isImportado
+    ? {
+        aluguer: motorista.aluguer || 0,
+        combustivel: motorista.combustivel || 0,
+        portagens: motorista.portagens || 0,
+        outros_custos: motorista.outros_custos || 0,
+        caucao: 0,
+        seguros: 0,
+        reparacoes: motorista.reparacoes || 0,
+      }
+    : {
+        aluguer: motorista.aluguer || 0,
+        combustivel: motorista.combustivel || 0,
+        portagens: motorista.portagens || 0,
+        outros_custos: extraCosts.outros,
+        caucao: extraCosts.caucao,
+        seguros: extraCosts.seguros,
+        reparacoes: motorista.reparacoes || 0,
+      };
   const totalDespesas = Object.values(despesas).reduce((a, b) => a + b, 0);
 
   const valoresSemanaAnterior = 0;
 
   // Quando é recibo importado: valores do PDF são finais — usar liquido directamente
-  const receitaAjustada = isImportado ? totalReceitas : (motorista.recibo_verde ? totalReceitas : totalReceitas / 1.06);
-  const totalAReceber = isImportado ? motorista.liquido : (receitaAjustada - totalDespesas + valoresSemanaAnterior);
+  const receitaAjustada = isImportado
+    ? totalReceitas
+    : motorista.recibo_verde
+      ? totalReceitas
+      : totalReceitas / 1.06;
+  const totalAReceber = isImportado
+    ? motorista.liquido
+    : receitaAjustada - totalDespesas + valoresSemanaAnterior;
   const liquido = isImportado ? motorista.liquido : totalAReceber;
 
   const formatCurrency = (value: number) => {

@@ -25,18 +25,18 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TenantProvider>
-        <PermissionsProvider>
-          <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <UpdateNotification />
-              <BrowserRouter>
-                {isNativeDriverOnlyMode() ? <NativeAppRoutes /> : <WebAppRoutes />}
-              </BrowserRouter>
-            </TooltipProvider>
-          </ThemeProvider>
-        </PermissionsProvider>
+          <PermissionsProvider>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <UpdateNotification />
+                <BrowserRouter>
+                  {isNativeDriverOnlyMode() ? <NativeAppRoutes /> : <WebAppRoutes />}
+                </BrowserRouter>
+              </TooltipProvider>
+            </ThemeProvider>
+          </PermissionsProvider>
         </TenantProvider>
       </AuthProvider>
     </QueryClientProvider>
