@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Loader2,
   Pencil,
@@ -102,6 +103,7 @@ export const UsersTab = () => {
   const [resetting, setResetting] = useState(false);
 
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     fetchProfiles();
@@ -421,15 +423,38 @@ export const UsersTab = () => {
         return;
       }
 
-      toast({
-        title: 'Password resetada',
-        description: 'A password foi atualizada com sucesso.',
-      });
+      const wasSelfReset = currentUser?.id === resetPasswordProfile.id;
+      const targetEmail = resetPasswordProfile.email;
 
       setResetPasswordDialogOpen(false);
       setResetPasswordProfile(null);
       setNewPassword('');
       setConfirmPassword('');
+
+      if (wasSelfReset) {
+        // Supabase invalida a sessão atual quando se muda a própria password
+        // — voltar a fazer login com a nova password para repor um JWT válido.
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: targetEmail,
+          password: newPassword,
+        });
+        if (signInError) {
+          toast({
+            title: 'Password alterada — volta a entrar',
+            description: 'Por favor faz login novamente com a nova password.',
+          });
+          await supabase.auth.signOut();
+          window.location.href = '/equipa';
+          return;
+        }
+      }
+
+      toast({
+        title: 'Password resetada',
+        description: 'A password foi atualizada com sucesso.',
+      });
+
+      fetchProfiles();
     } catch (error: any) {
       toast({
         title: 'Erro ao resetar password',
