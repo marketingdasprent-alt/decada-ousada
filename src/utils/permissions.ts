@@ -61,6 +61,12 @@ export const RECURSOS = {
   CALENDARIO_EDITAR_TODOS: 'calendario_editar_todos',
   CALENDARIO_ELIMINAR: 'calendario_eliminar',
   CALENDARIO_RECOLHAS: 'calendario_recolhas',
+
+  // Renting
+  RENTING_RESERVAS: 'renting_reservas',
+  RENTING_CONTRATOS: 'renting_contratos',
+  RENTING_MOVIMENTACOES: 'renting_movimentacoes',
+  RENTING_CLIENTES: 'renting_clientes',
 } as const;
 
 export type RecursoKey = (typeof RECURSOS)[keyof typeof RECURSOS];
