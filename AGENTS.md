@@ -10,38 +10,19 @@ Este documento é a **fonte de verdade** sobre como escrever código neste repos
 ## Índice
 
 **Arquitectura**
+
 1. [Visão geral & fluxo](#1-visão-geral--fluxo)
 2. [Estrutura de ficheiros](#2-estrutura-de-ficheiros)
 3. [Convenções de nomenclatura](#3-convenções-de-nomenclatura)
 4. [Convenções de código](#4-convenções-de-código)
 
-**Padrões por camada**
-5. [Padrão de páginas](#5-padrão-de-páginas)
-6. [Padrão de componentes](#6-padrão-de-componentes)
-7. [Hooks & server state com React Query](#7-hooks--server-state-com-react-query)
-8. [Estado: local vs global vs server](#8-estado-local-vs-global-vs-server)
-9. [Padrão de services (quando criar)](#9-padrão-de-services-quando-criar)
+**Padrões por camada** 5. [Padrão de páginas](#5-padrão-de-páginas) 6. [Padrão de componentes](#6-padrão-de-componentes) 7. [Hooks & server state com React Query](#7-hooks--server-state-com-react-query) 8. [Estado: local vs global vs server](#8-estado-local-vs-global-vs-server) 9. [Padrão de services (quando criar)](#9-padrão-de-services-quando-criar)
 
-**Qualidade transversal**
-10. [Validação com Zod](#10-validação-com-zod)
-11. [Error handling](#11-error-handling)
-12. [Tipos TypeScript](#12-tipos-typescript)
-13. [UX patterns](#13-ux-patterns)
-14. [Segurança](#14-segurança)
-15. [Anti-patterns](#15-anti-patterns)
+**Qualidade transversal** 10. [Validação com Zod](#10-validação-com-zod) 11. [Error handling](#11-error-handling) 12. [Tipos TypeScript](#12-tipos-typescript) 13. [UX patterns](#13-ux-patterns) 14. [Segurança](#14-segurança) 15. [Anti-patterns](#15-anti-patterns)
 
-**Ambiente & tooling**
-16. [Prettier](#16-prettier)
-17. [ESLint](#17-eslint)
-18. [Variáveis de ambiente](#18-variáveis-de-ambiente)
-19. [Autenticação & permissões](#19-autenticação--permissões)
-20. [Capacitor (mobile)](#20-capacitor-mobile)
-21. [Package manager & scripts](#21-package-manager--scripts)
+**Ambiente & tooling** 16. [Prettier](#16-prettier) 17. [ESLint](#17-eslint) 18. [Variáveis de ambiente](#18-variáveis-de-ambiente) 19. [Autenticação & permissões](#19-autenticação--permissões) 20. [Capacitor (mobile)](#20-capacitor-mobile) 21. [Package manager & scripts](#21-package-manager--scripts)
 
-**Workflow**
-22. [Boas práticas para AI Agents](#22-boas-práticas-para-ai-agents)
-23. [Git commit messages](#23-git-commit-messages)
-24. [Checklist antes de commit](#24-checklist-antes-de-commit)
+**Workflow** 22. [Boas práticas para AI Agents](#22-boas-práticas-para-ai-agents) 23. [Git commit messages](#23-git-commit-messages) 24. [Checklist antes de commit](#24-checklist-antes-de-commit)
 
 ---
 
@@ -79,6 +60,7 @@ A aplicação segue uma arquitectura em camadas. **Cada camada tem uma responsab
 ```
 
 **Regras:**
+
 - **Páginas** compõem componentes e hooks. Não fazem queries directas. Não contêm lógica de domínio.
 - **Componentes** recebem dados via props. Podem usar hooks de UI (toast, navigation), mas idealmente não chamam Supabase directamente — se precisarem, é sinal de extrair um hook.
 - **Hooks** são o ponto único de acesso ao server state. Cada feature de domínio tem o seu hook (`useMotoristas`, `useViaturas`, `useEmpresas`).
@@ -164,25 +146,25 @@ src/
 
 ## 3. Convenções de nomenclatura
 
-| Artefacto                          | Convenção                  | Exemplo                                       |
-| ---------------------------------- | -------------------------- | --------------------------------------------- |
-| Componente / página                | `PascalCase.tsx`           | `MotoristaCard.tsx`, `Dashboard.tsx`          |
-| Hook de domínio                    | `camelCase.ts`             | `useMotoristas.ts`, `useViaturas.ts`          |
-| Hook de UI (estilo Shadcn)         | `use-kebab.tsx`            | `use-toast.ts`, `use-mobile.tsx`              |
-| Service                            | `camelCase.ts`             | `motoristaService.ts` (ver §9)                |
-| Helper puro                        | `camelCase.ts`             | `formatters.ts`, `generateContract.ts`        |
-| Helper com integração              | `kebab-case.ts`            | `pt-validators.ts`, `native-bootstrap.ts`     |
-| Tipo de domínio                    | `camelCase.ts`             | `motorista.ts`, `contrato.ts`                 |
-| Subpasta de feature                | `kebab-case` ou `lowercase`| `motorista-portal/`, `admin/`, `crm/`         |
-| Variáveis / funções                | `camelCase`                | `motoristaAtivo`, `fetchMotoristas`           |
-| Componentes React                  | `PascalCase`               | `MotoristaCard`, `EmpresaTable`               |
-| Constantes                         | `SCREAMING_SNAKE_CASE`     | `MAX_RETRIES`, `ROUTES`, `ERROR_MESSAGES`     |
-| Tipos / interfaces                 | `PascalCase`               | `Motorista`, `UseMotoristasOptions`           |
-| Enums (preferir union types)       | `PascalCase` + valores ALL | `type Status = 'ativo' \| 'inativo'`          |
-| `queryKey` (React Query)           | `[domínio, filtros?]`      | `['motoristas', { apenasAtivos: true }]`      |
-| Boolean variables                  | `is/has/should/can` prefix | `isLoading`, `hasError`, `shouldRefetch`      |
-| Event handlers                     | `handle<Event>`            | `handleSubmit`, `handleDelete`                |
-| Props event handlers               | `on<Event>`                | `onSubmit`, `onDelete`                        |
+| Artefacto                    | Convenção                   | Exemplo                                   |
+| ---------------------------- | --------------------------- | ----------------------------------------- |
+| Componente / página          | `PascalCase.tsx`            | `MotoristaCard.tsx`, `Dashboard.tsx`      |
+| Hook de domínio              | `camelCase.ts`              | `useMotoristas.ts`, `useViaturas.ts`      |
+| Hook de UI (estilo Shadcn)   | `use-kebab.tsx`             | `use-toast.ts`, `use-mobile.tsx`          |
+| Service                      | `camelCase.ts`              | `motoristaService.ts` (ver §9)            |
+| Helper puro                  | `camelCase.ts`              | `formatters.ts`, `generateContract.ts`    |
+| Helper com integração        | `kebab-case.ts`             | `pt-validators.ts`, `native-bootstrap.ts` |
+| Tipo de domínio              | `camelCase.ts`              | `motorista.ts`, `contrato.ts`             |
+| Subpasta de feature          | `kebab-case` ou `lowercase` | `motorista-portal/`, `admin/`, `crm/`     |
+| Variáveis / funções          | `camelCase`                 | `motoristaAtivo`, `fetchMotoristas`       |
+| Componentes React            | `PascalCase`                | `MotoristaCard`, `EmpresaTable`           |
+| Constantes                   | `SCREAMING_SNAKE_CASE`      | `MAX_RETRIES`, `ROUTES`, `ERROR_MESSAGES` |
+| Tipos / interfaces           | `PascalCase`                | `Motorista`, `UseMotoristasOptions`       |
+| Enums (preferir union types) | `PascalCase` + valores ALL  | `type Status = 'ativo' \| 'inativo'`      |
+| `queryKey` (React Query)     | `[domínio, filtros?]`       | `['motoristas', { apenasAtivos: true }]`  |
+| Boolean variables            | `is/has/should/can` prefix  | `isLoading`, `hasError`, `shouldRefetch`  |
+| Event handlers               | `handle<Event>`             | `handleSubmit`, `handleDelete`            |
+| Props event handlers         | `on<Event>`                 | `onSubmit`, `onDelete`                    |
 
 ### Vocabulário do domínio (PT-PT)
 
@@ -224,6 +206,7 @@ export const MotoristaCard: React.FC<MotoristaCardProps> = ({
 ```
 
 **Regras-chave:**
+
 - Path alias `@/*` → `src/*`. **Nunca** usar paths relativos com mais de um `../`. Configurado em [vite.config.ts](vite.config.ts) e [tsconfig.json](tsconfig.json).
 - Preferir `export const Foo = ...` (named export) a `export default`. Excepção: páginas em `src/pages/` podem usar default export para compatibilidade com lazy loading.
 - Uma exportação principal por ficheiro (componente, hook, ou helper).
@@ -234,6 +217,7 @@ export const MotoristaCard: React.FC<MotoristaCardProps> = ({
 ## 5. Padrão de páginas
 
 **As páginas compõem — não fazem.** Uma página deve:
+
 - Compor layout (`DashboardLayout`, etc.) + componentes de feature
 - Consumir hooks de domínio (`useMotoristas`, etc.)
 - Tratar routing/params (`useParams`, `useNavigate`)
@@ -266,8 +250,11 @@ export default function MotoristasPage() {
 export default function MotoristasPage() {
   const [data, setData] = useState([]);
   useEffect(() => {
-    supabase.from('motoristas').select('*').then(({ data }) => setData(data));
-  }, []);                              // queries directas — extrair para hook
+    supabase
+      .from('motoristas')
+      .select('*')
+      .then(({ data }) => setData(data));
+  }, []); // queries directas — extrair para hook
   // + 200 linhas de filtros, tabela, modais, etc.
 }
 ```
@@ -372,6 +359,7 @@ export function useMotoristas(options: UseMotoristasOptions = {}) {
 ```
 
 **Convenções:**
+
 - `queryKey` é sempre `[domínio, filtrosObj?]`. O objeto de filtros vai como segundo elemento — permite invalidações granulares.
 - `queryFn` lança o `error` do Supabase com `throw` — React Query trata-o.
 - Retornar o objecto do `useQuery` directamente (`{ data, isLoading, error, refetch, ... }`). Não embrulhar.
@@ -395,11 +383,7 @@ export function useCreateMotorista() {
 
   return useMutation({
     mutationFn: async (motorista: MotoristaInsert) => {
-      const { data, error } = await supabase
-        .from('motoristas')
-        .insert(motorista)
-        .select()
-        .single();
+      const { data, error } = await supabase.from('motoristas').insert(motorista).select().single();
       if (error) throw error;
       return data;
     },
@@ -451,13 +435,13 @@ queryClient.invalidateQueries({ queryKey: ['viaturas'] });
 
 ## 8. Estado: local vs global vs server
 
-| Tipo de estado          | Ferramenta                  | Exemplos                                     |
-| ----------------------- | --------------------------- | -------------------------------------------- |
-| **Server state**        | React Query                 | Motoristas, viaturas, contratos, leads       |
-| **Local UI state**      | `useState` / `useReducer`   | Modal aberto, tab activa, valor de filtro    |
-| **Form state**          | `react-hook-form` + Zod     | Formulários complexos                        |
-| **Global (raro, lento)**| Context API                 | Auth, permissões, tema                       |
-| **URL state**           | `useSearchParams` / params  | Filtros partilháveis, paginação              |
+| Tipo de estado           | Ferramenta                 | Exemplos                                  |
+| ------------------------ | -------------------------- | ----------------------------------------- |
+| **Server state**         | React Query                | Motoristas, viaturas, contratos, leads    |
+| **Local UI state**       | `useState` / `useReducer`  | Modal aberto, tab activa, valor de filtro |
+| **Form state**           | `react-hook-form` + Zod    | Formulários complexos                     |
+| **Global (raro, lento)** | Context API                | Auth, permissões, tema                    |
+| **URL state**            | `useSearchParams` / params | Filtros partilháveis, paginação           |
 
 ### Regras
 
@@ -494,11 +478,7 @@ export const motoristaService = {
   },
 
   criar: async (motorista: MotoristaInsert): Promise<Motorista> => {
-    const { data, error } = await supabase
-      .from('motoristas')
-      .insert(motorista)
-      .select()
-      .single();
+    const { data, error } = await supabase.from('motoristas').insert(motorista).select().single();
     if (error) throw error;
     return data;
   },
@@ -545,6 +525,7 @@ const form = useForm<MotoristaInput>({
 ```
 
 **Convenções:**
+
 - **Schema é fonte de verdade do tipo.** Derivar TypeScript com `z.infer<typeof schema>`, não duplicar.
 - Mensagens de erro em **português europeu**, descritivas.
 - Validações PT (NIF, IBAN, código postal, telemóvel) usar helpers de [src/lib/pt-validators.ts](src/lib/pt-validators.ts).
@@ -598,6 +579,7 @@ interface Paginated<T> {
 ```
 
 **Regras:**
+
 - Para dados do Supabase, **sempre** usar os tipos auto-gerados em [src/integrations/supabase/types.ts](src/integrations/supabase/types.ts). Para regenerar: `supabase gen types typescript ...`. **Nunca editar este ficheiro manualmente** (está no `ignores` do ESLint).
 - Para composições de domínio (ex.: `Motorista` com `viatura_atual` populada), criar tipo em `src/types/<dominio>.ts`.
 - `@typescript-eslint/no-explicit-any` está **off** no projeto, mas preferir sempre tipos específicos. `any` é dívida.
@@ -653,15 +635,16 @@ if (error) {
 
 ### Feedback após acções
 
-| Acção                  | Feedback                                                   |
-| ---------------------- | ---------------------------------------------------------- |
-| Mutation com sucesso   | Toast verde (`title` apenas, sem `variant`)                |
-| Mutation com erro      | Toast destructive (`variant: 'destructive'`) + descrição   |
-| Loading de mutation    | Botão `disabled` + spinner inline                          |
-| Após criar/editar      | Invalidate queries + toast + navigate (se aplicável)       |
-| Após eliminar          | Confirmação prévia (`AlertDialog`) + invalidate + toast    |
+| Acção                | Feedback                                                 |
+| -------------------- | -------------------------------------------------------- |
+| Mutation com sucesso | Toast verde (`title` apenas, sem `variant`)              |
+| Mutation com erro    | Toast destructive (`variant: 'destructive'`) + descrição |
+| Loading de mutation  | Botão `disabled` + spinner inline                        |
+| Após criar/editar    | Invalidate queries + toast + navigate (se aplicável)     |
+| Após eliminar        | Confirmação prévia (`AlertDialog`) + invalidate + toast  |
 
 ### Componentes Toast disponíveis
+
 - `useToast()` de [src/hooks/use-toast.ts](src/hooks/use-toast.ts) — sistema interno, baseado em Radix
 - `<Sonner />` — também montado em [App.tsx](src/App.tsx), API `import { toast } from 'sonner'`
 
@@ -719,31 +702,31 @@ if (data.find(a => a.id === user.id)) { /* ... */ }  // Usar RLS + has_role()
 
 A lista do que **não fazer**, com a alternativa correcta.
 
-| Anti-pattern                                       | Em vez disso                                                  |
-| -------------------------------------------------- | ------------------------------------------------------------- |
-| Query do Supabase dentro do JSX / inline em página | Extrair para hook `useFeature()` com React Query              |
-| `useState + useEffect` para fetch                  | `useQuery` do React Query                                     |
-| `any` por preguiça                                 | Tipo do Supabase auto-gerado ou type custom                   |
-| Componente com 500+ linhas                         | Dividir em sub-componentes na feature folder                  |
-| Context para server state                          | React Query — cache, refetch, invalidation já incluídos       |
-| Context novo para cada feature                     | Hook + React Query; Context só para auth/permissões/tema     |
-| `console.log` em código merged                     | Remover, ou usar `console.warn`/`error` com contexto          |
-| `import { foo } from '../../../utils/foo'`         | `import { foo } from '@/utils/foo'`                           |
-| Validação só no client                             | Validar **também** no Supabase (constraints + RLS)            |
-| Service-role key no client                         | Edge Function com service-role + checks                       |
-| `catch {}` vazio                                   | Log do erro + toast ao utilizador, ou propagar                |
-| Misturar `driver`/`motorista` no mesmo conceito    | Escolher um (motorista) e usar consistentemente               |
-| Lógica de fetch repetida em vários componentes     | Extrair para hook partilhado                                  |
-| Estado de loading manual quando há `useQuery`      | Usar `isLoading`/`isPending` do próprio hook                  |
-| Mutation sem `invalidateQueries`                   | Sempre invalidar as queries afectadas no `onSuccess`          |
-| Edit de `src/integrations/supabase/types.ts`       | Regenerar com `supabase gen types typescript`                 |
+| Anti-pattern                                       | Em vez disso                                                                    |
+| -------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Query do Supabase dentro do JSX / inline em página | Extrair para hook `useFeature()` com React Query                                |
+| `useState + useEffect` para fetch                  | `useQuery` do React Query                                                       |
+| `any` por preguiça                                 | Tipo do Supabase auto-gerado ou type custom                                     |
+| Componente com 500+ linhas                         | Dividir em sub-componentes na feature folder                                    |
+| Context para server state                          | React Query — cache, refetch, invalidation já incluídos                         |
+| Context novo para cada feature                     | Hook + React Query; Context só para auth/permissões/tema                        |
+| `console.log` em código merged                     | Remover, ou usar `console.warn`/`error` com contexto                            |
+| `import { foo } from '../../../utils/foo'`         | `import { foo } from '@/utils/foo'`                                             |
+| Validação só no client                             | Validar **também** no Supabase (constraints + RLS)                              |
+| Service-role key no client                         | Edge Function com service-role + checks                                         |
+| `catch {}` vazio                                   | Log do erro + toast ao utilizador, ou propagar                                  |
+| Misturar `driver`/`motorista` no mesmo conceito    | Escolher um (motorista) e usar consistentemente                                 |
+| Lógica de fetch repetida em vários componentes     | Extrair para hook partilhado                                                    |
+| Estado de loading manual quando há `useQuery`      | Usar `isLoading`/`isPending` do próprio hook                                    |
+| Mutation sem `invalidateQueries`                   | Sempre invalidar as queries afectadas no `onSuccess`                            |
+| Edit de `src/integrations/supabase/types.ts`       | Regenerar com `supabase gen types typescript`                                   |
 | Hardcoded routes em strings                        | Constantes centralizadas (criar `src/lib/routes.ts` quando os routes crescerem) |
-| Default export para componentes não-página         | Named export                                                  |
-| Tipo derivado de outro tipo duplicado à mão        | `z.infer<typeof schema>` ou `Pick<T, K>` / `Omit<T, K>`       |
+| Default export para componentes não-página         | Named export                                                                    |
+| Tipo derivado de outro tipo duplicado à mão        | `z.infer<typeof schema>` ou `Pick<T, K>` / `Omit<T, K>`                         |
 
 ---
 
-## 16. Prettier
+ ## 16. Prettier
 
 Configuração em [.prettierrc](.prettierrc):
 
@@ -769,18 +752,18 @@ pnpm format:check   # Verificação no CI (não altera ficheiros)
 
 Configuração em [eslint.config.js](eslint.config.js).
 
-| Regra                                  | Nível   | Notas                                                 |
-| -------------------------------------- | ------- | ----------------------------------------------------- |
-| `@typescript-eslint/no-explicit-any`   | **off** | Permitido pela escala/integração com Supabase dinâmico|
-| `@typescript-eslint/no-unused-vars`    | **off** | Permitido (legacy)                                    |
-| `@typescript-eslint/no-require-imports`| off     | `require()` em `tailwind.config.ts` é legítimo        |
-| `@typescript-eslint/no-empty-object-type`| off   | Padrão Shadcn (interface estende `Props`)             |
-| `react-hooks/rules-of-hooks`           | warn    | Rebaixado de error — corrigir gradualmente            |
-| `react-hooks/exhaustive-deps`          | warn    | Avisa sobre deps em falta                             |
-| `react-refresh/only-export-components` | warn    | HMR                                                   |
-| `prefer-const`                         | warn    |                                                       |
-| `@typescript-eslint/ban-ts-comment`    | warn    | Preferir `@ts-expect-error` com motivo                |
-| `no-useless-escape`                    | off     | Regexes PT podem ter escapes intencionais             |
+| Regra                                     | Nível   | Notas                                                  |
+| ----------------------------------------- | ------- | ------------------------------------------------------ |
+| `@typescript-eslint/no-explicit-any`      | **off** | Permitido pela escala/integração com Supabase dinâmico |
+| `@typescript-eslint/no-unused-vars`       | **off** | Permitido (legacy)                                     |
+| `@typescript-eslint/no-require-imports`   | off     | `require()` em `tailwind.config.ts` é legítimo         |
+| `@typescript-eslint/no-empty-object-type` | off     | Padrão Shadcn (interface estende `Props`)              |
+| `react-hooks/rules-of-hooks`              | warn    | Rebaixado de error — corrigir gradualmente             |
+| `react-hooks/exhaustive-deps`             | warn    | Avisa sobre deps em falta                              |
+| `react-refresh/only-export-components`    | warn    | HMR                                                    |
+| `prefer-const`                            | warn    |                                                        |
+| `@typescript-eslint/ban-ts-comment`       | warn    | Preferir `@ts-expect-error` com motivo                 |
+| `no-useless-escape`                       | off     | Regexes PT podem ter escapes intencionais              |
 
 **Ignorados:** `dist/`, `android/`, `ios/`, `supabase/` (Edge Functions Deno), `*.js` na raiz, `src/integrations/supabase/types.ts`, `.claude/`.
 
@@ -806,11 +789,11 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxx
 
 ### Origem por ambiente
 
-| Ambiente      | Origem                                    | Disparo            |
-| ------------- | ----------------------------------------- | ------------------ |
-| Local dev     | `.env.local` (git-ignored)                | `pnpm dev`         |
-| CI (Actions)  | GitHub Secrets                            | Workflows em [.github/workflows/](.github/workflows/) |
-| Produção web  | Vercel Dashboard → Environment Variables  | Deploy automático  |
+| Ambiente     | Origem                                   | Disparo                                               |
+| ------------ | ---------------------------------------- | ----------------------------------------------------- |
+| Local dev    | `.env.local` (git-ignored)               | `pnpm dev`                                            |
+| CI (Actions) | GitHub Secrets                           | Workflows em [.github/workflows/](.github/workflows/) |
+| Produção web | Vercel Dashboard → Environment Variables | Deploy automático                                     |
 
 ### Nomes obrigatórios
 
@@ -825,7 +808,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxx
 const url = import.meta.env.VITE_SUPABASE_URL;
 
 // ❌ Service-role no frontend
-const secret = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;   // Não existe — e não devia
+const secret = import.meta.env.SUPABASE_SERVICE_ROLE_KEY; // Não existe — e não devia
 ```
 
 ---
@@ -851,6 +834,7 @@ const { ... } = usePermissions();           // ver implementação para shape ex
 ```
 
 **Hooks de autorização** em [src/hooks/](src/hooks/):
+
 - [useRBAC](src/hooks/useRBAC.ts) — verificações de role
 - [useAdmin](src/hooks/useAdmin.ts) — shortcut para role admin
 - [usePermissions](src/hooks/usePermissions.ts) — permissões granulares
@@ -879,6 +863,7 @@ npx cap open ios
 ```
 
 **Releases CI/CD:**
+
 - [.github/workflows/android-release.yml](.github/workflows/android-release.yml) — trigger por tag `android-v*` ou manual
 - [.github/workflows/ios-release.yml](.github/workflows/ios-release.yml) — trigger por tag `ios-v*` ou manual (envia para TestFlight)
 
@@ -929,12 +914,14 @@ pnpm type-check        # tsc --noEmit
 Quando trabalhares neste repositório como agente:
 
 ### Antes de escrever código
+
 1. **Lê este documento na íntegra.** Especialmente §1, §3, §15.
 2. **Verifica padrões existentes** antes de criar algo novo — grep por feature semelhante (`useViaturas`, `MotoristasTable`, etc.).
 3. **Confirma localização correcta** (§2). Hooks em `src/hooks/`, tipos em `src/types/`, etc.
 4. **Confere se o tipo já existe** em `src/integrations/supabase/types.ts` (auto-gerado) ou `src/types/`.
 
 ### Ao criar código
+
 1. **Hooks para tudo o que toca Supabase.** Nunca queries directas em pages/components (§1, §7).
 2. **React Query é obrigatório** para server state. Não criar `useState + useEffect` para fetching (§7).
 3. **Props sempre tipadas** com interface. Sem `any` em código novo (§4, §12).
@@ -945,6 +932,7 @@ Quando trabalhares neste repositório como agente:
 8. **Path alias `@/`** — nunca `../../`.
 
 ### Ao modificar código
+
 1. **Não introduzir regressões em padrões.** Se o ficheiro usa React Query, manter React Query.
 2. **Não converter named exports em default** sem motivo (e vice-versa).
 3. **Não tocar em `src/integrations/supabase/types.ts`** (auto-gerado).
@@ -953,6 +941,7 @@ Quando trabalhares neste repositório como agente:
 6. **Não adicionar deps** sem confirmar com o utilizador.
 
 ### Antes de declarar tarefa concluída
+
 1. `pnpm type-check` passa.
 2. `pnpm lint` passa (warnings tolerados, errors não).
 3. `pnpm build` passa.
@@ -961,6 +950,7 @@ Quando trabalhares neste repositório como agente:
 6. Tocou em Supabase? **Verificar RLS** das tabelas afectadas (§14).
 
 ### Não fazer
+
 - Não inventar scripts que não existem (`test`, `validate`, `ci`, ...).
 - Não assumir Vitest/Playwright instalados — não estão.
 - Não criar ficheiros `*.test.ts` sem primeiro adicionar Vitest.

@@ -82,6 +82,12 @@ interface Viatura {
   checklist_saida?: any | null;
   extintor_numero?: string | null;
   extintor_validade?: string | null;
+  tipo_id?: string | null;
+  valor_mensal?: number | null;
+  valor_diario?: number | null;
+  limite_km_mensal?: number | null;
+  is_slot?: boolean | null;
+  estacao_id?: string | null;
 }
 
 const TABS = [
@@ -133,10 +139,10 @@ export default function ViaturaDetalhe() {
     setReparacoesAbertas(data || []);
   };
 
-  const loadViatura = async () => {
+  const loadViatura = async (showLoader = true) => {
     if (!id || isNew) return;
 
-    setLoading(true);
+    if (showLoader) setLoading(true);
     try {
       const { data, error } = await supabase.from('viaturas').select('*').eq('id', id).single();
 
@@ -147,7 +153,7 @@ export default function ViaturaDetalhe() {
       toast.error('Erro ao carregar viatura');
       navigate('/viaturas');
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   };
 
@@ -165,11 +171,17 @@ export default function ViaturaDetalhe() {
         toast.success('Viatura criada com sucesso!');
         navigate(`/viaturas/${newViatura.id}`);
       } else if (viatura) {
-        const { error } = await supabase.from('viaturas').update(data).eq('id', viatura.id);
+        const { data: updated, error } = await supabase
+          .from('viaturas')
+          .update(data)
+          .eq('id', viatura.id)
+          .select()
+          .single();
 
         if (error) throw error;
+        if (!updated) throw new Error('Nenhuma viatura foi atualizada');
         toast.success('Viatura atualizada com sucesso!');
-        loadViatura();
+        loadViatura(false);
       }
     } catch (error: any) {
       console.error('Erro ao guardar viatura:', error);

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,6 +9,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -34,6 +41,7 @@ import {
   Trash2,
   AlertCircle,
   CheckCircle2,
+  FolderUp,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -143,6 +151,39 @@ const DOCUMENTOS_VIATURA = [
   { tipo: 'ipo', label: 'IPO - Inspeção Periódica Obrigatória', obrigatorio: true },
 ];
 
+// Mapeamento de prefixo de ficheiro → tipo de documento de viatura
+const BATCH_VIATURA_PREFIX_MAP: Record<string, string> = {
+  DUAF: 'dua_frente',
+  DUAV: 'dua_verso',
+  IPO: 'ipo',
+  DAV: 'dav',
+  AC: 'ac',
+  CV: 'carta_verde',
+};
+
+function detectViaturaTipoFromFilename(filename: string): string {
+  const base = filename.split('.')[0].toUpperCase();
+  const prefixes = Object.keys(BATCH_VIATURA_PREFIX_MAP).sort((a, b) => b.length - a.length);
+  for (const prefix of prefixes) {
+    if (
+      base === prefix ||
+      base.startsWith(prefix + '_') ||
+      base.startsWith(prefix + '-') ||
+      base.startsWith(prefix + ' ')
+    ) {
+      return BATCH_VIATURA_PREFIX_MAP[prefix];
+    }
+  }
+  return '';
+}
+
+interface BatchViaturaEntry {
+  file: File;
+  tipoDetectado: string;
+  labelDetectado: string;
+  reconhecido: boolean;
+}
+
 interface Estacao {
   id: string;
   nome: string;
@@ -160,6 +201,12 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [estacoes, setEstacoes] = useState<Estacao[]>([]);
   const [viaturasTipos, setViaturasTipos] = useState<ViaturasTipo[]>([]);
+
+  // Batch upload
+  const batchInputRef = useRef<HTMLInputElement | null>(null);
+  const [batchEntries, setBatchEntries] = useState<BatchViaturaEntry[]>([]);
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [batchUploading, setBatchUploading] = useState(false);
 
   useEffect(() => {
     supabase
@@ -232,7 +279,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       });
       loadDocuments();
     }
-  }, [viatura, form]);
+  }, [viatura, form, viaturasTipos]);
 
   const loadDocuments = async () => {
     if (!viatura?.id) return;
@@ -337,6 +384,98 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       toast.error('Erro ao anexar documento');
     } finally {
       setUploadingDoc(null);
+    }
+  };
+
+  const handleBatchSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const entries: BatchViaturaEntry[] = files.map((file) => {
+      const tipo = detectViaturaTipoFromFilename(file.name);
+      const docDef =
+        DOCUMENTOS_VIATURA.find((d) => d.tipo === tipo) ||
+        (tipo === 'carta_verde' ? { label: 'Carta Verde' } : null);
+      return {
+        file,
+        tipoDetectado: tipo,
+        labelDetectado: docDef?.label || 'Não reconhecido',
+        reconhecido: !!tipo,
+      };
+    });
+
+    setBatchEntries(entries);
+    setBatchDialogOpen(true);
+    // Reset input so the same files can be re-selected
+    e.target.value = '';
+  };
+
+  const handleBatchUpload = async () => {
+    if (!viatura?.id) return;
+    const validEntries = batchEntries.filter((e) => e.reconhecido);
+    if (validEntries.length === 0) {
+      toast.error('Nenhum ficheiro reconhecido para carregar');
+      return;
+    }
+
+    setBatchUploading(true);
+    let successCount = 0;
+
+    for (const entry of validEntries) {
+      try {
+        const fileExt = entry.file.name.split('.').pop();
+        const fileName = `${viatura.id}/${entry.tipoDetectado}_${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('viatura-documentos')
+          .upload(fileName, entry.file);
+
+        if (uploadError) throw uploadError;
+
+        // Check if document already exists (upsert)
+        const { data: existing } = await supabase
+          .from('viatura_documentos')
+          .select('id')
+          .eq('viatura_id', viatura.id)
+          .eq('tipo_documento', entry.tipoDetectado)
+          .maybeSingle();
+
+        if (existing) {
+          const { error } = await supabase
+            .from('viatura_documentos')
+            .update({
+              ficheiro_url: fileName,
+              nome_ficheiro: entry.file.name,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('viatura_documentos').insert({
+            viatura_id: viatura.id,
+            tipo_documento: entry.tipoDetectado,
+            ficheiro_url: fileName,
+            nome_ficheiro: entry.file.name,
+          });
+          if (error) throw error;
+        }
+
+        successCount++;
+      } catch (error) {
+        console.error(`Erro ao carregar ${entry.file.name}:`, error);
+      }
+    }
+
+    setBatchUploading(false);
+    setBatchDialogOpen(false);
+    setBatchEntries([]);
+
+    if (successCount > 0) {
+      toast.success(`${successCount} documento(s) carregado(s) com sucesso!`);
+      loadDocuments();
+    }
+    if (successCount < validEntries.length) {
+      toast.error(`${validEntries.length - successCount} ficheiro(s) falharam`);
     }
   };
 
@@ -521,30 +660,37 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="categoria"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Categoria</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecionar" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {CATEGORIAS.map((cat) => (
-                              <SelectItem key={cat.value} value={cat.value}>
-                                {cat.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {(() => {
+                    const tipoId = form.watch('tipo_id');
+                    const tipo = viaturasTipos.find((t) => t.id === tipoId);
+                    if (tipo?.nome?.toLowerCase() === 'comercial') return null;
+                    return (
+                      <FormField
+                        control={form.control}
+                        name="categoria"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Categoria</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecionar" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {CATEGORIAS.map((cat) => (
+                                  <SelectItem key={cat.value} value={cat.value}>
+                                    {cat.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    );
+                  })()}
                   <FormField
                     control={form.control}
                     name="combustivel"
@@ -844,11 +990,27 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
 
       {/* Documentos da Viatura */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Documentos
           </CardTitle>
+          {!isNew && (
+            <>
+              <input
+                type="file"
+                multiple
+                className="hidden"
+                ref={batchInputRef}
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={handleBatchSelect}
+              />
+              <Button variant="outline" size="sm" onClick={() => batchInputRef.current?.click()}>
+                <FolderUp className="h-4 w-4 mr-2" />
+                Carregar em Lote
+              </Button>
+            </>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           {isNew ? (
@@ -934,6 +1096,79 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog de carregamento em lote */}
+      <Dialog
+        open={batchDialogOpen}
+        onOpenChange={(open) => {
+          if (!batchUploading) setBatchDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderUp className="h-5 w-5" />
+              Carregar Documentos em Lote
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2 max-h-[400px] overflow-y-auto">
+            {batchEntries.map((entry, i) => (
+              <div
+                key={i}
+                className={`flex items-center gap-3 p-3 border rounded-lg ${
+                  entry.reconhecido ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                }`}
+              >
+                <FileText
+                  className={`h-5 w-5 shrink-0 ${entry.reconhecido ? 'text-green-600' : 'text-red-400'}`}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{entry.file.name}</p>
+                  <p className={`text-xs ${entry.reconhecido ? 'text-green-600' : 'text-red-500'}`}>
+                    {entry.reconhecido
+                      ? `→ ${entry.labelDetectado}`
+                      : 'Tipo não reconhecido — será ignorado'}
+                  </p>
+                </div>
+                {entry.reconhecido && (
+                  <Badge
+                    variant="outline"
+                    className="text-xs shrink-0 border-green-300 text-green-700"
+                  >
+                    {entry.labelDetectado}
+                  </Badge>
+                )}
+              </div>
+            ))}
+          </div>
+          {batchEntries.some((e) => !e.reconhecido) && (
+            <p className="text-xs text-muted-foreground">
+              Prefixos reconhecidos: DUAF, DUAV, IPO, DAV, AC, CV
+            </p>
+          )}
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setBatchDialogOpen(false)}
+              disabled={batchUploading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleBatchUpload}
+              disabled={batchUploading || !batchEntries.some((e) => e.reconhecido)}
+            >
+              {batchUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />A carregar...
+                </>
+              ) : (
+                `Carregar ${batchEntries.filter((e) => e.reconhecido).length} ficheiro(s)`
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

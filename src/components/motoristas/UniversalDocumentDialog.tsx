@@ -154,40 +154,33 @@ export const UniversalDocumentDialog = ({
 
       if (templateError) throw templateError;
 
-      // Se for um contrato, registrar na tabela contratos
+      // Se for um contrato, registrar na tabela contratos (via RPC atómica)
       let contratoId: string | undefined;
       if (templateData.tipo === 'contrato_tvde' || templateData.tipo === 'contrato') {
         const { data: user } = await supabase.auth.getUser();
+        const today = new Date().toISOString().split('T')[0];
 
-        const { data: contratoData, error: contratoError } = await supabase
-          .from('contratos')
-          .insert({
-            motorista_id: motorista.id,
-            motorista_nome: motorista.nome,
-            motorista_nif: motorista.nif,
-            motorista_email: motorista.email,
-            motorista_telefone: motorista.telefone,
-            motorista_morada: motorista.morada,
-            motorista_documento_tipo: motorista.documento_tipo,
-            motorista_documento_numero: motorista.documento_numero,
-            empresa_id: templateData.empresa_id,
-            template_id: templateId,
-            data_inicio:
-              documentData.data_inicio ||
-              motorista.data_contratacao ||
-              new Date().toISOString().split('T')[0],
-            data_assinatura:
-              documentData.data_assinatura ||
-              motorista.data_contratacao ||
-              new Date().toISOString().split('T')[0],
-            cidade_assinatura: 'Leiria',
-            duracao_meses: 12,
-            status: 'ativo',
-            versao: 1,
-            criado_por: user?.user?.id,
-          })
-          .select()
-          .single();
+        const { data: contratoResult, error: contratoError } = await supabase.rpc(
+          'gerar_contrato_atomico',
+          {
+            p_motorista_id: motorista.id,
+            p_empresa_id: templateData.empresa_id,
+            p_motorista_nome: motorista.nome,
+            p_motorista_nif: motorista.nif || null,
+            p_motorista_email: motorista.email || null,
+            p_motorista_telefone: motorista.telefone || null,
+            p_motorista_morada: motorista.morada || null,
+            p_motorista_documento_tipo: motorista.documento_tipo || null,
+            p_motorista_documento_numero: motorista.documento_numero || null,
+            p_cidade_assinatura: 'Leiria',
+            p_data_assinatura: documentData.data_assinatura || motorista.data_contratacao || today,
+            p_data_inicio: documentData.data_inicio || motorista.data_contratacao || today,
+            p_duracao_meses: 12,
+            p_criado_por: user?.user?.id || null,
+            p_force_new_version: false,
+            p_template_id: templateId,
+          }
+        );
 
         if (contratoError) {
           console.error('Erro ao salvar contrato:', contratoError);
@@ -195,13 +188,15 @@ export const UniversalDocumentDialog = ({
           return;
         }
 
+        const contratoData = Array.isArray(contratoResult) ? contratoResult[0] : contratoResult;
         contratoId = contratoData.id;
+        const isExisting = (contratoData as any)?.is_existing;
 
-        // Registrar geração inicial no histórico
+        // Registrar no histórico
         await supabase.from('contratos_reimpressoes').insert({
           contrato_id: contratoId,
           reimpresso_por: user?.user?.id,
-          motivo: 'Geração inicial do documento',
+          motivo: isExisting ? 'Reimpressão de contrato existente' : 'Geração inicial do documento',
         });
       }
 
