@@ -47,10 +47,13 @@ serve(async (req) => {
       );
     }
 
-    // Verificar se é admin
+    // Obter dados do body
+    const { nome, email, password, cargo_id, org_id } = await req.json();
+
+    // Verificar se é admin da org
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("is_admin")
+      .select("is_admin, org_id")
       .eq("id", currentUser.id)
       .single();
 
@@ -61,8 +64,14 @@ serve(async (req) => {
       );
     }
 
-    // Obter dados do body
-    const { nome, email, password, cargo_id } = await req.json();
+    // Usar org_id do request ou do admin que está a criar
+    const targetOrgId = org_id || profile.org_id;
+    if (!targetOrgId) {
+      return new Response(
+        JSON.stringify({ error: "org_id é obrigatório" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Validações
     if (!nome || !email || !password) {
@@ -81,6 +90,7 @@ serve(async (req) => {
 
     // Buscar nome do cargo se fornecido
     let cargoNome = null;
+    let isCargoAdmin = false;
     if (cargo_id) {
       const { data: cargo } = await supabaseAdmin
         .from("cargos")
@@ -88,6 +98,8 @@ serve(async (req) => {
         .eq("id", cargo_id)
         .single();
       cargoNome = cargo?.nome || null;
+      // Detectar se o cargo é de administrador
+      isCargoAdmin = cargoNome?.toLowerCase().includes('admin') || false;
     }
 
     // Criar utilizador com API Admin
@@ -110,19 +122,46 @@ serve(async (req) => {
       );
     }
 
-    // Actualizar o profile com os dados adicionais (o trigger já deve ter criado o profile básico)
+    // Actualizar o profile com os dados adicionais + org_id + is_admin
     const { error: updateError } = await supabaseAdmin
       .from("profiles")
       .update({
         nome: nome,
         cargo_id: cargo_id,
-        cargo: cargoNome
+        cargo: cargoNome,
+        org_id: targetOrgId,
+        is_admin: isCargoAdmin
       })
       .eq("id", newUser.user.id);
 
     if (updateError) {
       console.error("Erro ao actualizar profile:", updateError);
       // Não falhar completamente, o utilizador foi criado
+    }
+
+    // Associar o novo user à org
+    const { error: orgError } = await supabaseAdmin
+      .from("user_organizacoes")
+      .insert({
+        user_id: newUser.user.id,
+        org_id: targetOrgId,
+        role: "member"
+      });
+
+    if (orgError) {
+      console.error("Erro ao associar user à org:", orgError);
+    }
+
+    // Definir org ativa
+    const { error: orgAtivaError } = await supabaseAdmin
+      .from("user_org_ativa")
+      .upsert({
+        user_id: newUser.user.id,
+        org_id: targetOrgId
+      }, { onConflict: "user_id" });
+
+    if (orgAtivaError) {
+      console.error("Erro ao definir org ativa:", orgAtivaError);
     }
 
     return new Response(

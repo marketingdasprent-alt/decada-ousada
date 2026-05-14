@@ -62,6 +62,21 @@ Deno.serve(async (req) => {
 
     console.log(`[uber-auto-map-drivers] Iniciando auto-mapeamento para integração: ${integracao_id}`);
 
+    // 0. Obter org_id da integração para filtrar motoristas da mesma org
+    const { data: integConfig } = await supabase
+      .from("plataformas_configuracao")
+      .select("org_id")
+      .eq("id", integracao_id)
+      .single();
+
+    const orgId = integConfig?.org_id;
+    if (!orgId) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Integração sem org_id associado" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // 1. Buscar todos os uber_drivers sem mapeamento para esta integração
     const { data: unmappedDrivers, error: driversError } = await supabase
       .from("uber_drivers")
@@ -109,24 +124,26 @@ Deno.serve(async (req) => {
         // Note: uber_drivers table doesn't have a phone field directly, but let's see if we can find it in transactions
         // For now, we'll implement fuzzy name matching which is the main target.
 
-        // 3c. Tentar por nome exacto (ignora acentos e case)
+        // 3c. Tentar por nome exacto (ignora acentos e case, filtrar por org)
         if (driverName !== "Sem nome") {
           const { data, error } = await supabase
             .from("motoristas_ativos")
             .select("id, nome")
+            .eq("org_id", orgId)
             .ilike("nome", driverName)
             .maybeSingle();
           
           if (data) existingMotorista = data;
         }
 
-        // 3d. Se não encontrou por nome exacto, tentar por first+last normalizado
+        // 3d. Se não encontrou por nome exacto, tentar por first+last normalizado (filtrar por org)
         if (!existingMotorista && driverName !== "Sem nome") {
           const driverFL = normalizeFirstLast(driverName);
           if (driverFL.includes(" ")) {
             const { data: allMot, error: allErr } = await supabase
               .from("motoristas_ativos")
-              .select("id, nome");
+              .select("id, nome")
+              .eq("org_id", orgId);
             
             if (!allErr && allMot) {
               const match = allMot.find((m: any) => normalizeFirstLast(m.nome) === driverFL);

@@ -21,6 +21,27 @@ Deno.serve(async (req) => {
 
     const today = new Date();
 
+    // ── Multi-tenant: iterar por cada org ativa ──────────────────────────────
+    const { data: orgs } = await supabase
+      .from('organizacoes')
+      .select('id, nome')
+      .eq('ativa', true);
+
+    if (!orgs || orgs.length === 0) {
+      return new Response(
+        JSON.stringify({ success: true, message: 'Sem organizações ativas' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Processar alertas para cada org
+    let totalAlertasGlobal = 0;
+    const allSentTo: string[] = [];
+
+    for (const org of orgs) {
+    const orgId = org.id;
+    const orgNome = org.nome;
+
     // ── Extintores: validade <= today + 15 dias ──────────────────────────────
     const limitExtintor = new Date(today);
     limitExtintor.setDate(limitExtintor.getDate() + 15);
@@ -36,17 +57,16 @@ Deno.serve(async (req) => {
         viaturas ( matricula )
       `)
       .eq('status', 'ativo')
+      .eq('org_id', orgId)
       .not('extintor_validade', 'is', null)
       .lte('extintor_validade', limitExtintorStr)
       .order('extintor_validade', { ascending: true });
 
     // ── Contratos: assinatura + 12 meses <= today + 15 dias ─────────────────
-    // => assinatura <= today + 15 dias - 12 meses
     const upperContrato = new Date(limitExtintor);
     upperContrato.setFullYear(upperContrato.getFullYear() - 1);
     const upperContratoStr = upperContrato.toISOString().split('T')[0];
 
-    // Lower bound: não mostrar contratos expirados há mais de 60 dias
     const lowerContrato = new Date(today);
     lowerContrato.setDate(lowerContrato.getDate() - 60);
     lowerContrato.setFullYear(lowerContrato.getFullYear() - 1);
@@ -61,29 +81,28 @@ Deno.serve(async (req) => {
         viaturas ( matricula )
       `)
       .eq('status', 'ativo')
+      .eq('org_id', orgId)
       .not('contrato_prestacao_assinatura', 'is', null)
       .gte('contrato_prestacao_assinatura', lowerContratoStr)
       .lte('contrato_prestacao_assinatura', upperContratoStr)
       .order('contrato_prestacao_assinatura', { ascending: true });
 
     const totalAlertas = (extintores?.length ?? 0) + (contratos?.length ?? 0);
-    if (totalAlertas === 0) {
-      return new Response(
-        JSON.stringify({ success: true, message: 'Sem alertas para enviar' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    totalAlertasGlobal += totalAlertas;
+    if (totalAlertas === 0) continue;
 
-    // ── Supervisores Gestores TVDE ────────────────────────────────────────────
+    // ── Supervisores Gestores TVDE desta org ─────────────────────────────────
     const { data: supervisoresProfiles } = await supabase
       .from('profiles')
       .select('email, nome')
+      .eq('org_id', orgId)
       .not('email', 'is', null)
       .eq('cargo', 'Supervisor Gestor TVDE');
 
     const { data: supervisoresCargo } = await supabase
       .from('profiles')
       .select('email, nome, cargos ( nome )')
+      .eq('org_id', orgId)
       .not('email', 'is', null);
 
     const supervisorEmails = new Map<string, string>();
@@ -108,6 +127,7 @@ Deno.serve(async (req) => {
       const { data: gestorProfiles } = await supabase
         .from('profiles')
         .select('nome, email')
+        .eq('org_id', orgId)
         .in('nome', [...gestorNomes])
         .not('email', 'is', null);
 
@@ -196,7 +216,7 @@ Deno.serve(async (req) => {
 <body style="font-family:Arial,sans-serif;color:#333;max-width:700px;margin:0 auto;padding:20px;background:#f5f5f5">
   <div style="background:linear-gradient(135deg,#1e3a5f 0%,#2d6a9f 100%);padding:28px;border-radius:12px;text-align:center;margin-bottom:24px">
     <h1 style="color:white;margin:0;font-size:22px">⚠️ Alertas de Renovação</h1>
-    <p style="color:rgba(255,255,255,0.85);margin:8px 0 0">Década Ousada — ${dateStr}</p>
+    <p style="color:rgba(255,255,255,0.85);margin:8px 0 0">${orgNome} — ${dateStr}</p>
   </div>
   <div style="background:white;padding:24px;border-radius:12px;margin-bottom:20px">
     <p style="margin-top:0">${greeting}</p>
@@ -205,7 +225,7 @@ Deno.serve(async (req) => {
   ${extSection}
   ${ctSection}
   <div style="text-align:center;color:#888;font-size:12px;padding:16px">
-    <p>Email automático — Década Ousada CRM. Não responda a esta mensagem.</p>
+    <p>Email automático — ${orgNome} CRM. Não responda a esta mensagem.</p>
   </div>
 </body>
 </html>`;
@@ -221,7 +241,7 @@ Deno.serve(async (req) => {
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          sender: { name: 'Década Ousada CRM', email: 'noreply@dasprent.pt' },
+          sender: { name: `${orgNome} CRM`, email: 'noreply@dasprent.pt' },
           to: [{ email: toEmail, name: toName }],
           subject: `⚠️ Alertas de Renovação — ${today.toLocaleDateString('pt-PT')}`,
           htmlContent: html,
@@ -254,10 +274,13 @@ Deno.serve(async (req) => {
       sentTo.push(email);
     }
 
-    console.log(`Alertas enviados para: ${sentTo.join(', ')}`);
+    allSentTo.push(...sentTo);
+    console.log(`[${orgNome}] Alertas enviados para: ${sentTo.join(', ')}`);
+
+    } // fim do loop de orgs
 
     return new Response(
-      JSON.stringify({ success: true, sentTo, totalAlertas }),
+      JSON.stringify({ success: true, sentTo: allSentTo, totalAlertas: totalAlertasGlobal }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

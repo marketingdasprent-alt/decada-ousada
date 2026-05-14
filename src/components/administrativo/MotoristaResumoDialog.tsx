@@ -46,6 +46,7 @@ interface MotoristaResumoProps {
   outros_custos: number;
   aluguer: number;
   identificador_bolt?: string;
+  tem_recibo_importado?: boolean;
 }
 
 interface Props {
@@ -219,14 +220,24 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
   if (!motorista) return null;
 
   // Cálculos financeiros
+  const isImportado = motorista.tem_recibo_importado === true;
+
   const receitas = {
     bolt: motorista.faturado_bolt,
     uber: motorista.faturado_uber,
-    outras_receitas: outrasReceitas || 0,
+    outras_receitas: isImportado ? 0 : (outrasReceitas || 0),
   };
   const totalReceitas = receitas.bolt + receitas.uber + receitas.outras_receitas;
 
-  const despesas = {
+  const despesas = isImportado ? {
+    aluguer: motorista.aluguer || 0,
+    combustivel: motorista.combustivel || 0,
+    portagens: motorista.portagens || 0,
+    outros_custos: motorista.outros_custos || 0,
+    caucao: 0,
+    seguros: 0,
+    reparacoes: motorista.reparacoes || 0,
+  } : {
     aluguer: motorista.aluguer || 0,
     combustivel: motorista.combustivel || 0,
     portagens: motorista.portagens || 0,
@@ -238,9 +249,11 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
   const totalDespesas = Object.values(despesas).reduce((a, b) => a + b, 0);
 
   const valoresSemanaAnterior = 0;
-  const receitaAjustada = motorista.recibo_verde ? totalReceitas : totalReceitas / 1.06;
-  const totalAReceber = receitaAjustada - totalDespesas + valoresSemanaAnterior;
-  const liquido = totalAReceber;
+
+  // Quando é recibo importado: valores do PDF são finais — usar liquido directamente
+  const receitaAjustada = isImportado ? totalReceitas : (motorista.recibo_verde ? totalReceitas : totalReceitas / 1.06);
+  const totalAReceber = isImportado ? motorista.liquido : (receitaAjustada - totalDespesas + valoresSemanaAnterior);
+  const liquido = isImportado ? motorista.liquido : totalAReceber;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-PT', {
@@ -560,7 +573,7 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
                   {formatCurrency(totalAReceber)}
                 </span>
               </div>
-              {!motorista.recibo_verde && (
+              {!motorista.recibo_verde && !isImportado && (
                 <div className="flex justify-between items-center print:text-xs">
                   <span>Ajuste (÷ 1.06)</span>
                   <span className="text-orange-600">

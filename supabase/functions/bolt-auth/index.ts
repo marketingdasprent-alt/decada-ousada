@@ -71,7 +71,7 @@ serve(async (req) => {
     // Buscar configuração Bolt da base de dados
     const { data: config, error: configError } = await supabase
       .from("bolt_configuracao")
-      .select("*")
+      .select("*, org_id")
       .eq("ativo", true)
       .single();
 
@@ -97,6 +97,7 @@ serve(async (req) => {
       tipo: "auth",
       status: "success",
       mensagem: "Token obtido com sucesso",
+      org_id: config.org_id,
     });
 
     return new Response(
@@ -120,7 +121,7 @@ serve(async (req) => {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
+
       await supabase.from("bolt_sync_logs").insert({
         tipo: "auth",
         status: "error",

@@ -59,7 +59,7 @@ serve(async (req) => {
     // Check if current user is admin
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('is_admin')
+      .select('is_admin, org_id')
       .eq('id', user.id)
       .single();
 
@@ -87,6 +87,21 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Não pode eliminar a sua própria conta' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify target user belongs to same org (prevent cross-org deletion)
+    const { data: targetProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('org_id')
+      .eq('id', userId)
+      .single();
+
+    if (!targetProfile || targetProfile.org_id !== profile.org_id) {
+      console.log('Cross-org deletion attempt:', userId);
+      return new Response(
+        JSON.stringify({ error: 'Não pode eliminar utilizadores de outra organização' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useTenant } from '@/contexts/TenantContext';
 import { computeDefaultRoute } from '@/hooks/useDefaultRoute';
 import { getUnauthenticatedRoute } from '@/lib/native';
 import { Loader2, Shield } from 'lucide-react';
@@ -19,6 +20,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredResource,
 }) => {
   const { user, loading: authLoading } = useAuth();
+  const { orgId, orgs, loading: tenantLoading } = useTenant();
   const {
     isAdmin,
     hasAccessToResource,
@@ -31,7 +33,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
   const unauthenticatedRoute = getUnauthenticatedRoute();
 
-  const loading = authLoading || permissionsLoading;
+  const loading = authLoading || tenantLoading || permissionsLoading;
+
+  // Redirecionar para seleção de org se user tem múltiplas orgs sem seleção
+  useEffect(() => {
+    if (!authLoading && !tenantLoading && user && !orgId && orgs.length > 1) {
+      navigate('/selecionar-org', { replace: true });
+    }
+  }, [authLoading, tenantLoading, user, orgId, orgs, navigate]);
 
   const defaultRoute = useMemo(() => {
     if (loading || !user) {

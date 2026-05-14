@@ -67,6 +67,21 @@ Deno.serve(async (req) => {
 
     console.log(`[bolt-auto-map-drivers] Iniciando auto-mapeamento para integração: ${integracao_id}`);
 
+    // 0. Obter org_id da integração para filtrar motoristas da mesma org
+    const { data: integConfig } = await supabase
+      .from("plataformas_configuracao")
+      .select("org_id")
+      .eq("id", integracao_id)
+      .single();
+
+    const orgId = integConfig?.org_id;
+    if (!orgId) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Integração sem org_id associado" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // 1. Buscar todos os bolt_drivers sem mapeamento para esta integração
     const { data: unmappedDrivers, error: driversError } = await supabase
       .from("bolt_drivers")
@@ -124,24 +139,26 @@ Deno.serve(async (req) => {
         let existingMotorista: { id: string; nome: string } | null = null;
         let searchError: any = null;
 
-        // 3a. Tentar por email primeiro
+        // 3a. Tentar por email primeiro (filtrar por org)
         if (email) {
           const { data, error } = await supabase
             .from("motoristas_ativos")
             .select("id, nome")
+            .eq("org_id", orgId)
             .ilike("email", email)
             .maybeSingle();
           existingMotorista = data;
           searchError = error;
         }
 
-        // 3b. Se não encontrou por email, tentar por telefone
+        // 3b. Se não encontrou por email, tentar por telefone (filtrar por org)
         if (!existingMotorista && !searchError && phone) {
           // Normalizar telefone para comparação (remover espaços e prefixos)
           const phoneNormalized = phone.replace(/\s+/g, '').replace('+351', '');
           const { data, error } = await supabase
             .from("motoristas_ativos")
             .select("id, nome, telefone")
+            .eq("org_id", orgId)
             .not("telefone", "is", null);
           
           if (!error && data) {
@@ -163,24 +180,26 @@ Deno.serve(async (req) => {
         }
 
 
-        // 3c. Se não encontrou por telefone, tentar por nome exacto
+        // 3c. Se não encontrou por telefone, tentar por nome exacto (filtrar por org)
         if (!existingMotorista && !searchError && driverName !== "Sem nome") {
           const { data, error } = await supabase
             .from("motoristas_ativos")
             .select("id, nome")
+            .eq("org_id", orgId)
             .ilike("nome", driverName)
             .maybeSingle();
           existingMotorista = data;
           searchError = error;
         }
 
-        // 3d. Se não encontrou por nome exacto, tentar por first+last normalizado
+        // 3d. Se não encontrou por nome exacto, tentar por first+last normalizado (filtrar por org)
         if (!existingMotorista && !searchError && driverName !== "Sem nome") {
           const driverFL = normalizeFirstLast(driverName);
           if (driverFL.includes(" ")) {
             const { data: allMot, error: allErr } = await supabase
               .from("motoristas_ativos")
-              .select("id, nome");
+              .select("id, nome")
+              .eq("org_id", orgId);
             if (!allErr && allMot) {
               const match = allMot.find((m: any) => normalizeFirstLast(m.nome) === driverFL);
               if (match) existingMotorista = match;
@@ -214,6 +233,7 @@ Deno.serve(async (req) => {
               email: email,
               telefone: driver.phone || null,
               status_ativo: true,
+              org_id: orgId,
               observacoes: "Criado automaticamente via sincronização Bolt",
             })
             .select("id")

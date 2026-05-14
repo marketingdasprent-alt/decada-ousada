@@ -23,13 +23,14 @@ serve(async (req) => {
     if (!campanha_id) throw new Error("campanha_id é obrigatório");
     if (!lista_id) throw new Error("lista_id é obrigatório");
 
-    // Buscar campanha
+    // Buscar campanha (incluir org_id para isolamento multi-tenant)
     const { data: campanha, error: campErr } = await supabase
       .from("marketing_campanhas")
-      .select("*")
+      .select("*, org_id")
       .eq("id", campanha_id)
       .single();
     if (campErr || !campanha) throw new Error("Campanha não encontrada");
+    const orgId = campanha.org_id;
 
     // Determinar assinatura: prioridade ao override do envio, senão usa a da campanha
     const finalAssinaturaId = overrideAssinaturaId !== undefined
@@ -118,6 +119,7 @@ serve(async (req) => {
                   status: "sent",
                   last_event: "sent",
                   last_event_at: new Date().toISOString(),
+                  org_id: orgId,
                 });
               }
 
@@ -180,6 +182,7 @@ serve(async (req) => {
         total_erros: totalErros,
         enviado_por: userId,
         enviado_em: enviadoEm,
+        org_id: orgId,
       }).select("id").single();
 
       // Inserir detalhes por contacto
@@ -187,6 +190,7 @@ serve(async (req) => {
         const detalhesComEnvioId = detalhes.map((d) => ({
           ...d,
           envio_id: envioData.id,
+          org_id: orgId,
         }));
 
         // Inserir em batches de 100

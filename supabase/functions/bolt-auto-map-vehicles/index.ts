@@ -79,6 +79,17 @@ serve(async (req) => {
 
     console.log(`[bolt-auto-map-vehicles] Iniciando auto-mapeamento${integracao_id ? ` para integração ${integracao_id}` : ''}`);
 
+    // Obter org_id da integração
+    let orgId: string | null = null;
+    if (integracao_id) {
+      const { data: integConfig } = await supabase
+        .from("plataformas_configuracao")
+        .select("org_id")
+        .eq("id", integracao_id)
+        .single();
+      orgId = integConfig?.org_id || null;
+    }
+
     const result: AutoMapResult = {
       success: true,
       mapped: 0,
@@ -127,12 +138,13 @@ serve(async (req) => {
         const normalizedPlate = normalizePlate(plateToUse);
         const formattedPlate = formatPlate(plateToUse);
 
-        // Procurar viatura existente por matrícula (normalizada)
-        const { data: existingViatura } = await supabase
+        // Procurar viatura existente por matrícula (normalizada, filtrar por org)
+        let viaturaQuery = supabase
           .from("viaturas")
           .select("id, matricula")
-          .or(`matricula.ilike.${normalizedPlate},matricula.ilike.${formattedPlate},matricula.ilike.${vehicle.license_plate}`)
-          .maybeSingle();
+          .or(`matricula.ilike.${normalizedPlate},matricula.ilike.${formattedPlate},matricula.ilike.${vehicle.license_plate}`);
+        if (orgId) viaturaQuery = viaturaQuery.eq("org_id", orgId);
+        const { data: existingViatura } = await viaturaQuery.maybeSingle();
 
         let viaturaId: string;
 
@@ -158,6 +170,7 @@ serve(async (req) => {
               modelo: modelo,
               ano: vehicle.year || rawData?.year || null,
               cor: cor,
+              ...(orgId ? { org_id: orgId } : {}),
               observacoes: "Criada automaticamente via sincronização Bolt",
             })
             .select("id")

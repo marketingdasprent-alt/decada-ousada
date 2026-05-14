@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     let actorId = config.apify_actor_id;
     let apifyToken = config.apify_api_token;
 
-    // Forçar uso do Actor ID e API Token da integração "mestre/original" se for Uber ou Bolt (Ex: Uber Década Ousada)
+    // Forçar uso do Actor ID e API Token da integração "mestre/original" da MESMA org
     // Isso garante que todas as sub-contas operem sob o mesmo robô e credenciais mais recentes.
     const targetPlatform = config.robot_target_platform || config.plataforma;
     const { data: masterConfig } = await supabase
@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
       .select('apify_actor_id, apify_api_token')
       .eq('plataforma', 'robot')
       .eq('robot_target_platform', targetPlatform)
+      .eq('org_id', config.org_id)
       .not('apify_actor_id', 'is', null)
       .not('apify_api_token', 'is', null)
       .order('created_at', { ascending: true })

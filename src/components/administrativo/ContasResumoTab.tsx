@@ -12,6 +12,8 @@ import {
   Car,
   ChevronLeft,
   ChevronRight,
+  Upload,
+  FileCheck,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -35,6 +37,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { MotoristaResumoDialog } from './MotoristaResumoDialog';
+import { ImportarRecibosDialog } from './ImportarRecibosDialog';
 import { ReparaCartoes } from './ReparaCartoes';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Printer, Mail, Send, FileDown } from 'lucide-react';
@@ -61,6 +64,7 @@ interface MotoristaResumo {
   reparacoes: number;
   outros_custos: number;
   aluguer: number;
+  tem_recibo_importado?: boolean;
 }
 
 interface Integracao {
@@ -95,6 +99,8 @@ export function ContasResumoTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkSending, setIsBulkSending] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [motoristasList, setMotoristasList] = useState<Array<{ id: string; nome: string }>>([]);
   const logoSrc = useThemedLogo();
 
   const handleBulkPrint = async () => {
@@ -537,6 +543,12 @@ export function ContasResumoTab() {
         .lte('data_movimento', weekEndStr)
         .eq('status', 'pendente');
 
+      // 4g. Buscar recibos importados para a semana selecionada
+      const recibosImportadosQuery = supabase
+        .from('recibos_importados')
+        .select('*')
+        .eq('semana_inicio', weekStartStr);
+
       let boltResumosQuery = supabase
         .from('bolt_resumos_semanais')
         .select(
@@ -565,6 +577,7 @@ export function ContasResumoTab() {
         boltResumosResult,
         financeiroResult,
         viaturasResult,
+        recibosImportadosResult,
       ] = await Promise.all([
         boltQuery,
         uberQuery,
@@ -576,6 +589,7 @@ export function ContasResumoTab() {
         boltResumosQuery,
         financeiroQuery,
         viaturasQuery,
+        recibosImportadosQuery,
       ]);
 
       if (boltResult.error) throw boltResult.error;
@@ -596,6 +610,19 @@ export function ContasResumoTab() {
       somarCombustivel(combustivelResult);
       somarCombustivel(repsolResult);
       somarCombustivel(edpResult);
+
+      // Mapa: motorista_id → recibo importado (sobrepõe valores calculados)
+      const recibosImportadosMap: Record<string, any> = {};
+      (recibosImportadosResult.data || []).forEach((r: any) => {
+        if (r.motorista_id) {
+          recibosImportadosMap[r.motorista_id] = r;
+        }
+      });
+
+      // Guardar lista de motoristas para o dialog de importação
+      setMotoristasList(
+        (todosMotoristas || []).map((m) => ({ id: m.id, nome: m.nome }))
+      );
 
       // Mapa: motorista_id → valor semanal de aluguer de viatura
       const aluguerByMotorista: Record<string, number> = {};
@@ -895,6 +922,22 @@ export function ContasResumoTab() {
         }
       }
 
+      // 5b-ter. Garantir que motoristas com recibo importado aparecem mesmo sem transações
+      for (const [motoristaId, recibo] of Object.entries(recibosImportadosMap)) {
+        if (!agrupado[motoristaId]) {
+          const motData = Object.values(nomeToMotoristaMap).find((m) => m.id === motoristaId);
+          agrupado[motoristaId] = {
+            motorista_id: motoristaId,
+            driver_name: motData?.nome || (recibo as any).motorista_nome || 'Desconhecido',
+            driver_uuid: '',
+            faturado_bolt: 0,
+            faturado_uber: 0,
+            viagens_bolt: 0,
+            viagens_uber: 0,
+          };
+        }
+      }
+
       // 5c. Dedup final
       // Primero: agrupar por motorista_id (se disponível)
       const idDedupMap: Record<string, string[]> = {}; // motorista_id -> [keys]
@@ -961,6 +1004,34 @@ export function ContasResumoTab() {
         const reparacoesValor = m.motorista_id ? reparacoesByMotorista[m.motorista_id] || 0 : 0;
         const adhocValor = m.motorista_id ? adhocByMotorista[m.motorista_id] || 0 : 0;
         const liquido = receita - combustivelValor - aluguerValor - reparacoesValor - adhocValor;
+
+        // Verificar se existe recibo importado — sobrepõe valores calculados
+        const recibo = m.motorista_id ? recibosImportadosMap[m.motorista_id] : null;
+        if (recibo) {
+          const rUber = Number(recibo.faturado_uber || 0);
+          const rBolt = Number(recibo.faturado_bolt || 0);
+          const rOutrasReceitas = Number(recibo.outras_receitas || 0);
+          return {
+            driver_name: m.driver_name,
+            driver_uuid: m.driver_uuid,
+            motorista_id: m.motorista_id || undefined,
+            total_faturado: rUber + rBolt + rOutrasReceitas,
+            faturado_bolt: rBolt,
+            faturado_uber: rUber,
+            total_viagens: totalViagens,
+            viagens_bolt: m.viagens_bolt,
+            viagens_uber: m.viagens_uber,
+            recibo_verde: passaReciboVerde,
+            liquido: Number(recibo.liquido || 0),
+            combustivel: Number(recibo.combustivel || 0),
+            portagens: Number(recibo.via_verde || 0),
+            reparacoes: Number(recibo.reparacoes || 0),
+            outros_custos: Number(recibo.outros_custos || 0),
+            aluguer: Number(recibo.aluguer || 0),
+            identificador_bolt: m.identificador_bolt,
+            tem_recibo_importado: true,
+          };
+        }
 
         return {
           driver_name: m.driver_name,
@@ -1134,6 +1205,15 @@ export function ContasResumoTab() {
             />
           </div>
 
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => setImportDialogOpen(true)}
+          >
+            <Upload className="h-4 w-4" />
+            Importar Recibos
+          </Button>
+
           <ReparaCartoes />
         </div>
       </div>
@@ -1184,6 +1264,9 @@ export function ContasResumoTab() {
         </div>
         <div className="flex items-center gap-1">
           <span className="text-red-600 font-bold">●</span> Não passa recibo verde (valor ÷ 1.06)
+        </div>
+        <div className="flex items-center gap-1">
+          <FileCheck className="h-3.5 w-3.5 text-blue-500" /> Recibo importado (valores do PDF)
         </div>
       </div>
 
@@ -1243,7 +1326,12 @@ export function ContasResumoTab() {
                       )}
                       onClick={() => handleRowClick(resumo)}
                     >
-                      {resumo.driver_name}
+                      <span className="flex items-center gap-1.5">
+                        {resumo.driver_name}
+                        {resumo.tem_recibo_importado && (
+                          <FileCheck className="h-4 w-4 text-blue-500" title="Recibo importado" />
+                        )}
+                      </span>
                     </TableCell>
                     <TableCell className="text-center" onClick={() => handleRowClick(resumo)}>
                       <span>{resumo.total_viagens}</span>
@@ -1340,11 +1428,14 @@ export function ContasResumoTab() {
                       <div onClick={() => handleRowClick(resumo)}>
                         <div
                           className={cn(
-                            'font-bold',
+                            'font-bold flex items-center gap-1.5',
                             resumo.recibo_verde ? 'text-green-600' : 'text-red-600'
                           )}
                         >
                           {resumo.driver_name}
+                          {resumo.tem_recibo_importado && (
+                            <FileCheck className="h-4 w-4 text-blue-500" />
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {resumo.total_viagens} viagens
@@ -1476,6 +1567,14 @@ export function ContasResumoTab() {
         onOpenChange={setDialogOpen}
         motorista={selectedMotorista}
         dateRange={{ from: weekStart, to: weekEnd }}
+      />
+
+      {/* Dialog de Importação de Recibos */}
+      <ImportarRecibosDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        motoristas={motoristasList}
+        onImportComplete={() => loadResumos()}
       />
     </div>
   );

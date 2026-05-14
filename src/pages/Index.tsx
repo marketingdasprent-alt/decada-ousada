@@ -2,7 +2,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDefaultRoute } from '@/hooks/useDefaultRoute';
-import { Loader2, Car, Shield } from 'lucide-react';
+import { Loader2, Car, Shield, Building2 } from 'lucide-react';
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
@@ -67,6 +67,21 @@ const Index = () => {
           <div className="text-left">
             <p className="font-semibold text-foreground">Área de Colaboradores</p>
             <p className="text-sm text-muted-foreground">Acesso exclusivo para membros da equipa</p>
+          </div>
+        </Link>
+
+        <div className="w-full border-t border-border/50" />
+
+        <Link
+          to="/registar-org"
+          className="flex w-full items-center gap-4 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-5 transition-colors hover:border-primary hover:bg-primary/10"
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <Building2 className="h-6 w-6 text-primary" />
+          </div>
+          <div className="text-left">
+            <p className="font-semibold text-foreground">Quero usar o sistema</p>
+            <p className="text-sm text-muted-foreground">Registe a sua empresa e comece já</p>
           </div>
         </Link>
       </div>
