@@ -12,18 +12,18 @@ import {
   XCircle,
   Files,
   Briefcase,
-  Pencil,
   Save,
   X,
   Loader2,
   RotateCcw,
-  History,
   CalendarClock,
+  Pencil,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { ContratoStatusBadge } from '@/lib/statusBadges';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
@@ -77,8 +77,11 @@ export function MotoristaTabContratos({
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<string | null>(null);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
-  const [editingContratual, setEditingContratual] = useState(false);
-  const [dataContratacao, setDataContratacao] = useState(motorista.data_contratacao || '');
+  const [definindoPrimeiraData, setDefinindoPrimeiraData] = useState(false);
+  const [renovandoContratacao, setRenovandoContratacao] = useState(false);
+  const [savingContratacao, setSavingContratacao] = useState(false);
+  const [dataContratacaoInput, setDataContratacaoInput] = useState('');
+  const [dataRenovacaoInput, setDataRenovacaoInput] = useState('');
   const [renovarContrato, setRenovarContrato] = useState<Contrato | null>(null);
   const [renovando, setRenovando] = useState(false);
   const [editContrato, setEditContrato] = useState<Contrato | null>(null);
@@ -87,10 +90,11 @@ export function MotoristaTabContratos({
     loadContratos();
   }, [motorista.id]);
 
-  // Sincronizar estado local quando os dados do motorista mudarem (ex: após um save)
+  // Sincronizar inputs quando os dados do motorista mudarem (ex: após um save)
   useEffect(() => {
-    setDataContratacao(sanitizeDate(motorista.data_contratacao));
-  }, [motorista.data_contratacao]);
+    setDataContratacaoInput(sanitizeDate(motorista.data_contratacao));
+    setDataRenovacaoInput(sanitizeDate(motorista.data_renovacao_contratacao));
+  }, [motorista.data_contratacao, motorista.data_renovacao_contratacao]);
 
   const loadContratos = async () => {
     try {
@@ -113,25 +117,6 @@ export function MotoristaTabContratos({
 
   const getEmpresaNome = (empresaId: string) => {
     return getEmpresaById(empresaId)?.nome || empresaId;
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'ativo':
-        return <Badge variant="default">Ativo</Badge>;
-      case 'substituido':
-        return <Badge variant="secondary">Substituído</Badge>;
-      case 'cancelado':
-        return <Badge variant="destructive">Cancelado</Badge>;
-      case 'encerrado':
-        return (
-          <Badge variant="outline" className="text-muted-foreground">
-            Encerrado
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
   };
 
   const handleDownload = async (contrato: Contrato) => {
@@ -283,25 +268,104 @@ export function MotoristaTabContratos({
     return dateString.split('T')[0];
   };
 
-  const handleSaveContratual = async () => {
+  const handleDefinirPrimeiraData = async () => {
+    const formattedDate = sanitizeDate(dataContratacaoInput);
+    if (!formattedDate) {
+      toast.error('Selecione uma data válida');
+      return;
+    }
     try {
-      const formattedDate = sanitizeDate(dataContratacao);
-
+      setSavingContratacao(true);
       const { error } = await supabase
         .from('motoristas_ativos')
-        .update({
-          data_contratacao: formattedDate || null,
-          cidade_assinatura: null,
-        })
+        .update({ data_contratacao: formattedDate })
         .eq('id', motorista.id);
 
       if (error) throw error;
-      toast.success('Informação contratual atualizada');
-      setEditingContratual(false);
+      toast.success('Data de contratação definida');
+      setDefinindoPrimeiraData(false);
       onMotoristaUpdated?.();
     } catch (error) {
-      console.error('Erro ao atualizar:', error);
-      toast.error('Erro ao atualizar informação contratual');
+      console.error('Erro ao definir data de contratação:', error);
+      toast.error('Erro ao definir data de contratação');
+    } finally {
+      setSavingContratacao(false);
+    }
+  };
+
+  const handleRenovarContratacao = async () => {
+    const formattedDate = sanitizeDate(dataRenovacaoInput);
+    if (!formattedDate) {
+      toast.error('Selecione uma data válida para a renovação');
+      return;
+    }
+    try {
+      setSavingContratacao(true);
+
+      const { error: updateMotoristaError } = await supabase
+        .from('motoristas_ativos')
+        .update({ data_renovacao_contratacao: formattedDate })
+        .eq('id', motorista.id);
+
+      if (updateMotoristaError) throw updateMotoristaError;
+
+      // Renovar também o contrato de prestação ativo (se existir),
+      // criando nova versão na tabela `contratos` e sincronizando motorista_viaturas.
+      const contratoAtivo = contratos.find((c) => c.status === 'ativo');
+      let contratoRenovado = false;
+      if (contratoAtivo) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        const { data: result, error: rpcError } = await supabase.rpc('gerar_contrato_atomico', {
+          p_motorista_id: motorista.id,
+          p_empresa_id: contratoAtivo.empresa_id,
+          p_motorista_nome: motorista.nome,
+          p_motorista_nif: motorista.nif || null,
+          p_motorista_email: motorista.email || null,
+          p_motorista_telefone: motorista.telefone || null,
+          p_motorista_morada: motorista.morada || null,
+          p_motorista_documento_tipo: motorista.documento_tipo || null,
+          p_motorista_documento_numero: motorista.documento_numero || null,
+          p_cidade_assinatura: contratoAtivo.cidade_assinatura || 'Leiria',
+          p_data_assinatura: formattedDate,
+          p_data_inicio: formattedDate,
+          p_duracao_meses: contratoAtivo.duracao_meses || 12,
+          p_criado_por: user?.id || null,
+          p_force_new_version: true,
+        });
+
+        if (rpcError) throw rpcError;
+
+        const novoContrato = Array.isArray(result) ? result[0] : result;
+        if (novoContrato?.id && contratoAtivo.viatura_id) {
+          await supabase
+            .from('contratos')
+            .update({ viatura_id: contratoAtivo.viatura_id })
+            .eq('id', novoContrato.id);
+
+          await supabase
+            .from('motorista_viaturas')
+            .update({ contrato_prestacao_assinatura: formattedDate })
+            .eq('motorista_id', motorista.id)
+            .eq('status', 'ativo');
+        }
+        contratoRenovado = true;
+      }
+
+      toast.success(
+        contratoRenovado ? 'Contratação e contrato de prestação renovados' : 'Contratação renovada'
+      );
+      setRenovandoContratacao(false);
+      loadContratos();
+      onMotoristaUpdated?.();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro ao renovar contratação';
+      console.error('Erro ao renovar contratação:', error);
+      toast.error(message);
+    } finally {
+      setSavingContratacao(false);
     }
   };
 
@@ -359,47 +423,134 @@ export function MotoristaTabContratos({
         title="Info Contratual"
         headerClassName="bg-teal-50 dark:bg-teal-950/30"
       >
-        {editingContratual ? (
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Data de Contratação</Label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Data do 1.º contrato — imutável após definida */}
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Briefcase className="h-3.5 w-3.5" />
+              <span>Data do 1.º contrato</span>
+            </div>
+            {motorista.data_contratacao && !definindoPrimeiraData ? (
+              <p className="font-semibold text-base">{formatDate(motorista.data_contratacao)}</p>
+            ) : definindoPrimeiraData ? (
+              <div className="space-y-2">
                 <Input
                   type="date"
-                  value={dataContratacao}
-                  onChange={(e) => setDataContratacao(e.target.value)}
+                  value={dataContratacaoInput}
+                  onChange={(e) => setDataContratacaoInput(e.target.value)}
                 />
+                <div className="flex gap-1 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setDefinindoPrimeiraData(false);
+                      setDataContratacaoInput(sanitizeDate(motorista.data_contratacao));
+                    }}
+                    disabled={savingContratacao}
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" /> Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleDefinirPrimeiraData}
+                    disabled={savingContratacao}
+                  >
+                    {savingContratacao ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    Definir
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setDefinindoPrimeiraData(true)}>
+                <Pencil className="h-3.5 w-3.5 mr-1" /> Definir
+              </Button>
+            )}
+            {motorista.data_contratacao && !definindoPrimeiraData && (
+              <p className="text-[11px] text-muted-foreground">
+                Esta data é o registo original e não pode ser alterada.
+              </p>
+            )}
+          </div>
+
+          {/* Última renovação — pode ser atualizada */}
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <CalendarClock className="h-3.5 w-3.5" />
+                <span>Última renovação</span>
               </div>
             </div>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setEditingContratual(false);
-                  setDataContratacao(motorista.data_contratacao || '');
-                }}
-              >
-                <X className="h-4 w-4 mr-1" /> Cancelar
-              </Button>
-              <Button size="sm" onClick={handleSaveContratual}>
-                <Save className="h-4 w-4 mr-1" /> Guardar
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
-              <div>
-                <span className="text-muted-foreground">Data de Contratação</span>
-                <p className="font-medium">{formatDate(motorista.data_contratacao)}</p>
+            {renovandoContratacao ? (
+              <div className="space-y-2">
+                <Input
+                  type="date"
+                  value={dataRenovacaoInput}
+                  onChange={(e) => setDataRenovacaoInput(e.target.value)}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Vai gerar nova versão do contrato de prestação da viatura ativa, se existir.
+                </p>
+                <div className="flex gap-1 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setRenovandoContratacao(false);
+                      setDataRenovacaoInput(sanitizeDate(motorista.data_renovacao_contratacao));
+                    }}
+                    disabled={savingContratacao}
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" /> Cancelar
+                  </Button>
+                  <Button size="sm" onClick={handleRenovarContratacao} disabled={savingContratacao}>
+                    {savingContratacao ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    Renovar
+                  </Button>
+                </div>
               </div>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => setEditingContratual(true)}>
-              <Pencil className="h-4 w-4" />
-            </Button>
+            ) : (
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-semibold text-base">
+                  {motorista.data_renovacao_contratacao ? (
+                    formatDate(motorista.data_renovacao_contratacao)
+                  ) : (
+                    <span className="text-muted-foreground font-normal text-sm">
+                      Sem renovações
+                    </span>
+                  )}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const todayInput = new Date().toISOString().split('T')[0];
+                    setDataRenovacaoInput(
+                      sanitizeDate(motorista.data_renovacao_contratacao) || todayInput
+                    );
+                    setRenovandoContratacao(true);
+                  }}
+                  disabled={!motorista.data_contratacao}
+                  title={
+                    motorista.data_contratacao
+                      ? 'Renovar contratação'
+                      : 'Defina primeiro a data do 1.º contrato'
+                  }
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" /> Renovar
+                </Button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </SectionCard>
 
       {/* Stats Cards */}
@@ -532,7 +683,9 @@ export function MotoristaTabContratos({
                       );
                     })()}
                   </TableCell>
-                  <TableCell>{getStatusBadge(contrato.status)}</TableCell>
+                  <TableCell>
+                    <ContratoStatusBadge status={contrato.status} />
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {contrato.status === 'ativo' && hasPermission('contratos_criar') && (
