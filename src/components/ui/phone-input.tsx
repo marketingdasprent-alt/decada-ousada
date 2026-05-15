@@ -13,8 +13,9 @@ import {
   CommandList,
 } from '@/components/ui/command';
 
-// Lista de países mais comuns para motoristas em Portugal
+// Lista de países (lusófonos + Europa + principais destinos de emigração)
 const COUNTRIES = [
+  // Portugal e PALOP
   { code: 'PT', name: 'Portugal', dial: '+351', flag: '🇵🇹' },
   { code: 'BR', name: 'Brasil', dial: '+55', flag: '🇧🇷' },
   { code: 'AO', name: 'Angola', dial: '+244', flag: '🇦🇴' },
@@ -22,10 +23,36 @@ const COUNTRIES = [
   { code: 'CV', name: 'Cabo Verde', dial: '+238', flag: '🇨🇻' },
   { code: 'GW', name: 'Guiné-Bissau', dial: '+245', flag: '🇬🇼' },
   { code: 'ST', name: 'São Tomé e Príncipe', dial: '+239', flag: '🇸🇹' },
+  { code: 'TL', name: 'Timor-Leste', dial: '+670', flag: '🇹🇱' },
+  // Europa
   { code: 'ES', name: 'Espanha', dial: '+34', flag: '🇪🇸' },
   { code: 'FR', name: 'França', dial: '+33', flag: '🇫🇷' },
   { code: 'GB', name: 'Reino Unido', dial: '+44', flag: '🇬🇧' },
   { code: 'DE', name: 'Alemanha', dial: '+49', flag: '🇩🇪' },
+  { code: 'IT', name: 'Itália', dial: '+39', flag: '🇮🇹' },
+  { code: 'NL', name: 'Países Baixos', dial: '+31', flag: '🇳🇱' },
+  { code: 'BE', name: 'Bélgica', dial: '+32', flag: '🇧🇪' },
+  { code: 'CH', name: 'Suíça', dial: '+41', flag: '🇨🇭' },
+  { code: 'IE', name: 'Irlanda', dial: '+353', flag: '🇮🇪' },
+  { code: 'LU', name: 'Luxemburgo', dial: '+352', flag: '🇱🇺' },
+  { code: 'AT', name: 'Áustria', dial: '+43', flag: '🇦🇹' },
+  { code: 'SE', name: 'Suécia', dial: '+46', flag: '🇸🇪' },
+  { code: 'NO', name: 'Noruega', dial: '+47', flag: '🇳🇴' },
+  { code: 'DK', name: 'Dinamarca', dial: '+45', flag: '🇩🇰' },
+  { code: 'FI', name: 'Finlândia', dial: '+358', flag: '🇫🇮' },
+  { code: 'PL', name: 'Polónia', dial: '+48', flag: '🇵🇱' },
+  { code: 'RO', name: 'Roménia', dial: '+40', flag: '🇷🇴' },
+  { code: 'UA', name: 'Ucrânia', dial: '+380', flag: '🇺🇦' },
+  // Américas
+  { code: 'US', name: 'Estados Unidos', dial: '+1', flag: '🇺🇸' },
+  { code: 'CA', name: 'Canadá', dial: '+1', flag: '🇨🇦' },
+  // África e Médio Oriente
+  { code: 'MA', name: 'Marrocos', dial: '+212', flag: '🇲🇦' },
+  { code: 'ZA', name: 'África do Sul', dial: '+27', flag: '🇿🇦' },
+  { code: 'AE', name: 'Emirados Árabes Unidos', dial: '+971', flag: '🇦🇪' },
+  // Ásia
+  { code: 'IN', name: 'Índia', dial: '+91', flag: '🇮🇳' },
+  { code: 'CN', name: 'China', dial: '+86', flag: '🇨🇳' },
 ] as const;
 
 type Country = (typeof COUNTRIES)[number];
@@ -166,9 +193,10 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
 
     return (
       <div className={cn('flex', className)}>
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={setOpen} modal>
           <PopoverTrigger asChild>
             <Button
+              type="button"
               variant="outline"
               role="combobox"
               aria-expanded={open}
@@ -186,10 +214,10 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
               <ChevronDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[250px] p-0 z-50" align="start">
+          <PopoverContent className="w-[280px] p-0 z-[100]" align="start" sideOffset={4}>
             <Command>
               <CommandInput placeholder="Procurar país..." className="h-9" />
-              <CommandList>
+              <CommandList className="max-h-[300px]">
                 <CommandEmpty>País não encontrado.</CommandEmpty>
                 <CommandGroup>
                   {COUNTRIES.map((country) => (
