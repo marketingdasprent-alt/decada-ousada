@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { BoltSyncStatusBadge } from '@/lib/statusBadges';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -509,23 +510,6 @@ export const BoltIntegrationPanel: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'success':
-        return (
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Sucesso</Badge>
-        );
-      case 'error':
-        return <Badge variant="destructive">Erro</Badge>;
-      case 'partial':
-        return (
-          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Parcial</Badge>
-        );
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -949,7 +933,9 @@ export const BoltIntegrationPanel: React.FC = () => {
                       <TableCell>
                         <Badge variant="outline">{log.tipo}</Badge>
                       </TableCell>
-                      <TableCell>{getStatusBadge(log.status)}</TableCell>
+                      <TableCell>
+                        <BoltSyncStatusBadge status={log.status} />
+                      </TableCell>
                       <TableCell className="text-green-500">{log.viagens_novas || 0}</TableCell>
                       <TableCell className="text-blue-500">
                         {log.viagens_atualizadas || 0}
