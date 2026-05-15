@@ -3,7 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, X, FileText, CheckCircle2, Loader2 } from 'lucide-react';
+import { Upload, X, CheckCircle2, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface DocumentUploaderProps {
   folder: string;
@@ -12,6 +13,9 @@ interface DocumentUploaderProps {
   onUpload: (url: string) => void;
   accept?: string;
 }
+
+const ACCEPTED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
   folder,
@@ -26,13 +30,21 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
+  const uploadFile = async (file: File) => {
+    if (!user) return;
 
-    // Validar tamanho (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
+    if (!ACCEPTED_MIME_TYPES.includes(file.type)) {
+      toast({
+        title: 'Formato não suportado',
+        description: 'Apenas PDF, JPG ou PNG são permitidos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
       toast({
         title: 'Ficheiro muito grande',
         description: 'O tamanho máximo permitido é 10MB.',
@@ -55,28 +67,53 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 
       if (uploadError) throw uploadError;
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('motorista-documentos').getPublicUrl(filePath);
-
-      // Como o bucket é privado, guardamos o path em vez da URL pública
       onUpload(filePath);
 
       toast({
         title: 'Upload concluído',
         description: 'O documento foi enviado com sucesso.',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Não foi possível enviar o ficheiro.';
       console.error('Erro no upload:', error);
       toast({
         title: 'Erro no upload',
-        description: error.message || 'Não foi possível enviar o ficheiro.',
+        description: message,
         variant: 'destructive',
       });
       setFileName(null);
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) await uploadFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!uploading && !currentUrl) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (uploading || currentUrl) return;
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) await uploadFile(file);
   };
 
   const handleRemove = () => {
@@ -110,15 +147,39 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
       />
 
       {!currentUrl && !uploading && (
-        <Button
-          type="button"
-          variant="outline"
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => inputRef.current?.click()}
-          className="w-full border-dashed"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              inputRef.current?.click();
+            }
+          }}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={cn(
+            'flex flex-col items-center justify-center gap-2 w-full px-4 py-6 rounded-md border-2 border-dashed cursor-pointer transition-colors',
+            'hover:bg-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            isDragging ? 'border-primary bg-primary/10' : 'border-input bg-background'
+          )}
         >
-          <Upload className="mr-2 h-4 w-4" />
-          Escolher ficheiro
-        </Button>
+          <Upload
+            className={cn(
+              'h-5 w-5 transition-colors',
+              isDragging ? 'text-primary' : 'text-muted-foreground'
+            )}
+          />
+          <div className="text-center">
+            <p className="text-sm font-medium">
+              {isDragging ? 'Solte o ficheiro aqui' : 'Arraste o ficheiro ou clique para escolher'}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">PDF, JPG ou PNG · Máx. 10MB</p>
+          </div>
+        </div>
       )}
 
       {uploading && (
@@ -145,8 +206,6 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
           </Button>
         </div>
       )}
-
-      <p className="text-xs text-muted-foreground">PDF, JPG ou PNG. Máximo 10MB.</p>
     </div>
   );
 };
