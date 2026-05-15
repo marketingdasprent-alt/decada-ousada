@@ -43,6 +43,7 @@ import { generateDocumentFromTemplate } from '@/utils/generateDocumentFromTempla
 import { GenerateDocumentsDialog } from '../GenerateDocumentsDialog';
 import { EditContractDialog } from '@/components/contratos/EditContractDialog';
 import { sanitizeDate } from '@/utils/dateValidators';
+import { gerarContratoAtomico } from '@/hooks/useContratos';
 import type { Motorista } from '@/pages/Motoristas';
 
 interface Contrato {
@@ -216,28 +217,25 @@ export function MotoristaTabContratos({
 
       const today = new Date().toISOString().split('T')[0];
 
-      const { data: result, error } = await supabase.rpc('gerar_contrato_atomico', {
-        p_motorista_id: motorista.id,
-        p_empresa_id: renovarContrato.empresa_id,
-        p_motorista_nome: motorista.nome,
-        p_motorista_nif: motorista.nif || null,
-        p_motorista_email: motorista.email || null,
-        p_motorista_telefone: motorista.telefone || null,
-        p_motorista_morada: motorista.morada || null,
-        p_motorista_documento_tipo: motorista.documento_tipo || null,
-        p_motorista_documento_numero: motorista.documento_numero || null,
-        p_cidade_assinatura: renovarContrato.cidade_assinatura || 'Leiria',
-        p_data_assinatura: today,
-        p_data_inicio: today,
-        p_duracao_meses: renovarContrato.duracao_meses || 12,
-        p_criado_por: user?.id || null,
-        p_force_new_version: true,
+      const novoContrato = await gerarContratoAtomico({
+        motoristaId: motorista.id,
+        empresaId: renovarContrato.empresa_id,
+        motoristaNome: motorista.nome,
+        motoristaNif: motorista.nif,
+        motoristaEmail: motorista.email,
+        motoristaTelefone: motorista.telefone,
+        motoristaMorada: motorista.morada,
+        motoristaDocumentoTipo: motorista.documento_tipo,
+        motoristaDocumentoNumero: motorista.documento_numero,
+        cidadeAssinatura: renovarContrato.cidade_assinatura || 'Leiria',
+        dataAssinatura: today,
+        dataInicio: today,
+        duracaoMeses: renovarContrato.duracao_meses || 12,
+        criadoPor: user?.id ?? null,
+        forceNewVersion: true,
       });
 
-      if (error) throw error;
-
       // Se o contrato antigo tinha viatura, associar ao novo + atualizar motorista_viaturas
-      const novoContrato = Array.isArray(result) ? result[0] : result;
       if (novoContrato?.id && renovarContrato.viatura_id) {
         await supabase
           .from('contratos')
@@ -313,27 +311,24 @@ export function MotoristaTabContratos({
           data: { user },
         } = await supabase.auth.getUser();
 
-        const { data: result, error: rpcError } = await supabase.rpc('gerar_contrato_atomico', {
-          p_motorista_id: motorista.id,
-          p_empresa_id: contratoAtivo.empresa_id,
-          p_motorista_nome: motorista.nome,
-          p_motorista_nif: motorista.nif || null,
-          p_motorista_email: motorista.email || null,
-          p_motorista_telefone: motorista.telefone || null,
-          p_motorista_morada: motorista.morada || null,
-          p_motorista_documento_tipo: motorista.documento_tipo || null,
-          p_motorista_documento_numero: motorista.documento_numero || null,
-          p_cidade_assinatura: contratoAtivo.cidade_assinatura || 'Leiria',
-          p_data_assinatura: formattedDate,
-          p_data_inicio: formattedDate,
-          p_duracao_meses: contratoAtivo.duracao_meses || 12,
-          p_criado_por: user?.id || null,
-          p_force_new_version: true,
+        const novoContrato = await gerarContratoAtomico({
+          motoristaId: motorista.id,
+          empresaId: contratoAtivo.empresa_id,
+          motoristaNome: motorista.nome,
+          motoristaNif: motorista.nif,
+          motoristaEmail: motorista.email,
+          motoristaTelefone: motorista.telefone,
+          motoristaMorada: motorista.morada,
+          motoristaDocumentoTipo: motorista.documento_tipo,
+          motoristaDocumentoNumero: motorista.documento_numero,
+          cidadeAssinatura: contratoAtivo.cidade_assinatura || 'Leiria',
+          dataAssinatura: formattedDate,
+          dataInicio: formattedDate,
+          duracaoMeses: contratoAtivo.duracao_meses || 12,
+          criadoPor: user?.id ?? null,
+          forceNewVersion: true,
         });
 
-        if (rpcError) throw rpcError;
-
-        const novoContrato = Array.isArray(result) ? result[0] : result;
         if (novoContrato?.id && contratoAtivo.viatura_id) {
           await supabase
             .from('contratos')
