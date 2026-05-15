@@ -14,7 +14,6 @@ import {
   Wallet,
   CalendarDays,
   Mail,
-  ChevronRight,
   KeyRound,
   CalendarCheck,
   ArrowRightLeft,
@@ -127,7 +126,6 @@ export const SidebarMenu: React.FC = () => {
           )}
         />
         <span>{item.label}</span>
-        {isActive && !isSub && <ChevronRight className="h-3 w-3 ml-auto opacity-50" />}
       </NavLink>
     );
   };
@@ -175,6 +173,7 @@ export const SidebarMenu: React.FC = () => {
                     <button
                       className={cn(
                         'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 w-full group text-sm font-medium',
+                        '[&[data-state=open]>svg.chevron]:rotate-0',
                         isSubActive
                           ? 'text-primary'
                           : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -187,12 +186,7 @@ export const SidebarMenu: React.FC = () => {
                         )}
                       />
                       <span>{item.label}</span>
-                      <ChevronDown
-                        className={cn(
-                          'h-3 w-3 ml-auto transition-transform duration-200',
-                          isSubActive ? '' : '-rotate-90'
-                        )}
-                      />
+                      <ChevronDown className="chevron h-3 w-3 ml-auto -rotate-90 transition-transform duration-200" />
                     </button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1 pt-1">
