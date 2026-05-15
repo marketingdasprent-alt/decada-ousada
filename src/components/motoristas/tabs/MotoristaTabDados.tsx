@@ -66,14 +66,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { validateDateYear, YEAR_RANGE_MESSAGE } from '@/utils/dateValidators';
 
 const CARTA_CATEGORIAS = ['AM', 'A1', 'A2', 'A', 'B1', 'B', 'BE', 'C1', 'C', 'CE', 'D1', 'D', 'DE'];
-
-const validateDateYear = (date: string | undefined): boolean => {
-  if (!date) return true;
-  const year = new Date(date).getFullYear();
-  return year >= 1900 && year <= 2100;
-};
 
 const formSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -86,23 +81,23 @@ const formSchema = z.object({
   documento_tipo: z.string().optional(),
   documento_numero: z.string().optional(),
   documento_validade: z.string().optional().refine(validateDateYear, {
-    message: 'Ano deve estar entre 1900 e 2100',
+    message: YEAR_RANGE_MESSAGE,
   }),
   carta_conducao: z.string().optional(),
   carta_categorias: z.array(z.string()).optional(),
   carta_validade: z.string().optional().refine(validateDateYear, {
-    message: 'Ano deve estar entre 1900 e 2100',
+    message: YEAR_RANGE_MESSAGE,
   }),
   licenca_tvde_numero: z.string().optional(),
   licenca_tvde_validade: z.string().optional().refine(validateDateYear, {
-    message: 'Ano deve estar entre 1900 e 2100',
+    message: YEAR_RANGE_MESSAGE,
   }),
   cartao_frota: z.string().optional(),
   cartao_bp: z.string().optional(),
   cartao_repsol: z.string().optional(),
   cartao_edp: z.string().optional(),
   data_contratacao: z.string().optional().refine(validateDateYear, {
-    message: 'Ano deve estar entre 1900 e 2100',
+    message: YEAR_RANGE_MESSAGE,
   }),
   recibo_verde: z.boolean().default(true),
   is_slot: z.boolean().default(false),

@@ -45,15 +45,7 @@ import { Motorista } from '@/pages/Motoristas';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { DocumentUploader } from '@/components/motorista-portal/DocumentUploader';
 import { Loader2, X, Check, ChevronsUpDown } from 'lucide-react';
-
-// Validar que o ano da data está entre 1900 e 2100
-const validateDateYear = (dateString: string | undefined | null): boolean => {
-  if (!dateString) return true; // Campo opcional
-  const match = dateString.match(/^(\d{4})-\d{2}-\d{2}$/);
-  if (!match) return true; // Formato inválido será tratado pelo input type=date
-  const year = parseInt(match[1], 10);
-  return year >= 1900 && year <= 2100;
-};
+import { validateDateYear } from '@/utils/dateValidators';
 
 const formSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),

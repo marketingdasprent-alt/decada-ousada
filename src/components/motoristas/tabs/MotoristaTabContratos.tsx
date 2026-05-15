@@ -42,6 +42,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { generateDocumentFromTemplate } from '@/utils/generateDocumentFromTemplate';
 import { GenerateDocumentsDialog } from '../GenerateDocumentsDialog';
 import { EditContractDialog } from '@/components/contratos/EditContractDialog';
+import { sanitizeDate } from '@/utils/dateValidators';
 import type { Motorista } from '@/pages/Motoristas';
 
 interface Contrato {
@@ -260,12 +261,6 @@ export function MotoristaTabContratos({
     } finally {
       setRenovando(false);
     }
-  };
-
-  // Função para garantir que a data está no formato YYYY-MM-DD para o input
-  const sanitizeDate = (dateString: string | null) => {
-    if (!dateString) return '';
-    return dateString.split('T')[0];
   };
 
   const handleDefinirPrimeiraData = async () => {
