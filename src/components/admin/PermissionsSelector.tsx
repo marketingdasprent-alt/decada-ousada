@@ -15,6 +15,7 @@ import {
   Megaphone,
   CalendarDays,
   LayoutDashboard,
+  KeyRound,
   Eye,
   Pencil,
   Ban,
@@ -54,6 +55,7 @@ interface PermissionsSelectorProps {
 
 const MODULOS = [
   { key: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { key: 'Renting', label: 'Renting', icon: KeyRound },
   { key: 'CRM', label: 'CRM', icon: BarChart3 },
   { key: 'Tickets', label: 'Meus Tickets', icon: Ticket },
   { key: 'Motoristas', label: 'Motoristas', icon: Users },
@@ -70,6 +72,11 @@ const MODULOS = [
 const RECURSO_LABELS: Record<string, string> = {
   // Dashboard
   dashboard_ver: 'Aceder ao Dashboard',
+  // Renting
+  renting_clientes: 'Gestão de clientes de renting',
+  renting_contratos: 'Gestão de contratos de renting',
+  renting_reservas: 'Gestão de reservas de renting',
+  renting_movimentacoes: 'Entradas, saídas e trocas de viatura',
   // CRM
   crm_ver: 'Ver leads e pipeline',
   crm_exportar: 'Exportar dados de leads',

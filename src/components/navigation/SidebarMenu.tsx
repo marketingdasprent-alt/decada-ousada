@@ -36,6 +36,7 @@ interface SubMenuItem {
   label: string;
   url: string;
   icon?: React.ComponentType<{ className?: string }>;
+  recurso?: string;
 }
 
 interface MenuItem {
@@ -53,10 +54,30 @@ const MENU_ITEMS: MenuItem[] = [
     label: 'Renting',
     icon: KeyRound,
     subItems: [
-      { label: 'Contratos', url: '/renting/contratos', icon: FileText },
-      { label: 'Reservas', url: '/renting/reservas', icon: CalendarCheck },
-      { label: 'Movimentações', url: '/renting/movimentacoes', icon: ArrowRightLeft },
-      { label: 'Clientes', url: '/renting/clientes', icon: Users },
+      {
+        label: 'Contratos',
+        url: '/renting/contratos',
+        icon: FileText,
+        recurso: 'renting_contratos',
+      },
+      {
+        label: 'Reservas',
+        url: '/renting/reservas',
+        icon: CalendarCheck,
+        recurso: 'renting_reservas',
+      },
+      {
+        label: 'Movimentações',
+        url: '/renting/movimentacoes',
+        icon: ArrowRightLeft,
+        recurso: 'renting_movimentacoes',
+      },
+      {
+        label: 'Clientes',
+        url: '/renting/clientes',
+        icon: Users,
+        recurso: 'renting_clientes',
+      },
     ],
   },
   { label: 'CRM', url: '/crm', icon: BarChart3, recurso: 'motoristas_crm' },
@@ -88,9 +109,19 @@ export const SidebarMenu: React.FC = () => {
   const logoSrc = useThemedLogo();
   const location = useLocation();
 
-  const visibleMenuItems = MENU_ITEMS.filter((item) => {
+  const visibleMenuItems = MENU_ITEMS.map((item) => {
+    if (loading) return item;
+    if (!item.subItems) return item;
+    // Submenus com recurso: filtrar pelos que o utilizador pode aceder
+    const filteredSubs = item.subItems.filter(
+      (sub) => !sub.recurso || hasAccessToResource(sub.recurso)
+    );
+    return { ...item, subItems: filteredSubs };
+  }).filter((item) => {
     if (loading) return true;
-    if (item.recurso) return hasAccessToResource(item.recurso);
+    if (item.recurso && !hasAccessToResource(item.recurso)) return false;
+    // Esconder item pai se tinha subItems mas nenhum sobrou visível
+    if (item.subItems && item.subItems.length === 0) return false;
     return true;
   });
 
