@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { ContratoStatusBadge } from '@/lib/statusBadges';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Printer,
@@ -333,15 +334,6 @@ export default function Contratos() {
     setCurrentPage(1);
   }, [searchTerm, empresaFilter, statusFilter, showSubstituidos]);
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
-      ativo: 'default',
-      expirado: 'secondary',
-      cancelado: 'destructive',
-    };
-    return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
-  };
-
   const getEmpresaNome = (empresaId: string) => {
     return empresaId === 'decada_ousada' ? 'WeGest' : 'Distância Arrojada';
   };
@@ -472,7 +464,9 @@ export default function Contratos() {
                         <TableCell>
                           {format(new Date(contrato.data_inicio), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>
-                        <TableCell>{getStatusBadge(contrato.status)}</TableCell>
+                        <TableCell>
+                          <ContratoStatusBadge status={contrato.status} />
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline">v{contrato.versao || 1}</Badge>
                         </TableCell>

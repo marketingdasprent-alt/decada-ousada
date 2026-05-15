@@ -47,28 +47,43 @@ export function MotoristaFullModal({
   initialTab = 'dados',
 }: MotoristaFullModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const [dadosDraft, setDadosDraft] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (open) {
       setActiveTab(initialTab);
+      setDadosDraft(null);
     }
   }, [initialTab, open]);
+
+  useEffect(() => {
+    setDadosDraft(null);
+  }, [motorista?.id]);
 
   if (!motorista) return null;
 
   const handleSave = () => {
+    setDadosDraft(null);
     onMotoristaUpdated?.();
   };
 
   const handleClose = () => {
-    setActiveTab('dados'); // Reset to first tab
+    setActiveTab('dados');
+    setDadosDraft(null);
     onOpenChange(false);
   };
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dados':
-        return <MotoristaTabDados motorista={motorista} onSave={handleSave} />;
+        return (
+          <MotoristaTabDados
+            motorista={motorista}
+            onSave={handleSave}
+            draft={dadosDraft}
+            onDraftChange={setDadosDraft}
+          />
+        );
       case 'documentos':
         return <MotoristaTabDocumentos motorista={motorista} />;
       case 'financeiro':
