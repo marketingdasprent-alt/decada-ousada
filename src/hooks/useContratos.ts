@@ -60,13 +60,12 @@ export async function gerarContratoAtomico(
   if (params.checkoutPendente !== undefined)
     rpcParams.p_checkout_pendente = params.checkoutPendente;
 
-  const { data, error } = await (supabase.rpc as (
-    fn: string,
-    params: Record<string, unknown>
-  ) => Promise<{ data: GerarContratoResult | GerarContratoResult[] | null; error: Error | null }>)(
-    'gerar_contrato_atomico',
-    rpcParams
-  );
+  const { data, error } = await (
+    supabase.rpc as (
+      fn: string,
+      params: Record<string, unknown>
+    ) => Promise<{ data: GerarContratoResult | GerarContratoResult[] | null; error: Error | null }>
+  )('gerar_contrato_atomico', rpcParams);
   if (error) throw error;
   if (!data) throw new Error('RPC gerar_contrato_atomico não retornou dados');
   return Array.isArray(data) ? data[0] : data;

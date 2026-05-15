@@ -1,12 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 
 // ── CONTRATOS ────────────────────────────────────────────────────
-export type ContratoStatus =
-  | 'ativo'
-  | 'substituido'
-  | 'cancelado'
-  | 'encerrado'
-  | 'expirado';
+export type ContratoStatus = 'ativo' | 'substituido' | 'cancelado' | 'encerrado' | 'expirado';
 
 interface ContratoStatusBadgeProps {
   status: string | null | undefined;
@@ -43,9 +38,7 @@ interface ReciboStatusBadgeProps {
 export function ReciboStatusBadge({ status }: ReciboStatusBadgeProps) {
   switch (status) {
     case 'validado':
-      return (
-        <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Validado</Badge>
-      );
+      return <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Validado</Badge>;
     case 'rejeitado':
       return <Badge className="bg-red-500/10 text-red-500 border-red-500/20">Rejeitado</Badge>;
     case 'submetido':
@@ -91,9 +84,7 @@ interface BoltSyncStatusBadgeProps {
 export function BoltSyncStatusBadge({ status }: BoltSyncStatusBadgeProps) {
   switch (status) {
     case 'success':
-      return (
-        <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Sucesso</Badge>
-      );
+      return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Sucesso</Badge>;
     case 'error':
       return <Badge variant="destructive">Erro</Badge>;
     case 'partial':

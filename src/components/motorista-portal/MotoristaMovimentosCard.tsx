@@ -56,7 +56,6 @@ export function MotoristaMovimentosCard({ motoristaId }: MotoristaMovimentosCard
     }).format(value);
   }
 
-
   if (loading) {
     return (
       <Card>
