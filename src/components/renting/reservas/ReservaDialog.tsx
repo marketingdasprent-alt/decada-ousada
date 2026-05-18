@@ -3,17 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-
 import { useClientes } from '@/hooks/useClientes';
 import { useViaturas } from '@/hooks/useViaturas';
 import { useEstacoes } from '@/hooks/useEstacoes';
@@ -32,24 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 import type { Reserva, ReservaInsert } from '@/types/reserva';
 import {
@@ -58,6 +31,8 @@ import {
   reservaDialogSchema,
   type ReservaFormValues,
 } from './reservaDialog.schema';
+import { ReservaFormFields } from './ReservaFormFields';
+import { ReservaDeleteConfirm } from './ReservaDeleteConfirm';
 
 interface ReservaDialogProps {
   open: boolean;
@@ -66,7 +41,22 @@ interface ReservaDialogProps {
   reserva?: Reserva | null;
 }
 
-const SENTINEL_NONE = '__none__';
+const DEFAULT_VALUES: ReservaFormValues = {
+  viatura_id: null,
+  matricula: '',
+  grupo: '',
+  estacao_entrega_id: null,
+  estacao_recolha_id: null,
+  data_inicio: '',
+  data_fim: '',
+  cliente_id: null,
+  cliente_nome: '',
+  condutor_id: null,
+  condutor_nome: '',
+  estado: 'pendente',
+  valor_total: null,
+  observacoes: '',
+};
 
 export const ReservaDialog: React.FC<ReservaDialogProps> = ({
   open,
@@ -89,62 +79,32 @@ export const ReservaDialog: React.FC<ReservaDialogProps> = ({
 
   const form = useForm<ReservaFormValues>({
     resolver: zodResolver(reservaDialogSchema),
-    defaultValues: {
-      viatura_id: null,
-      matricula: '',
-      grupo: '',
-      estacao_entrega_id: null,
-      estacao_recolha_id: null,
-      data_inicio: '',
-      data_fim: '',
-      cliente_id: null,
-      cliente_nome: '',
-      condutor_id: null,
-      condutor_nome: '',
-      estado: 'pendente',
-      valor_total: null,
-      observacoes: '',
-    },
+    defaultValues: DEFAULT_VALUES,
   });
 
   // Reset do formulário quando abrir/mudar reserva
   useEffect(() => {
     if (!open) return;
-    if (reserva) {
-      form.reset({
-        viatura_id: reserva.viatura_id,
-        matricula: reserva.matricula ?? '',
-        grupo: reserva.grupo ?? '',
-        estacao_entrega_id: reserva.estacao_entrega_id,
-        estacao_recolha_id: reserva.estacao_recolha_id,
-        data_inicio: isoToLocalInput(reserva.data_inicio),
-        data_fim: isoToLocalInput(reserva.data_fim),
-        cliente_id: reserva.cliente_id,
-        cliente_nome: reserva.cliente_nome ?? '',
-        condutor_id: reserva.condutor_id,
-        condutor_nome: reserva.condutor_nome ?? '',
-        estado: reserva.estado,
-        valor_total: reserva.valor_total,
-        observacoes: reserva.observacoes ?? '',
-      });
-    } else {
-      form.reset({
-        viatura_id: null,
-        matricula: '',
-        grupo: '',
-        estacao_entrega_id: null,
-        estacao_recolha_id: null,
-        data_inicio: '',
-        data_fim: '',
-        cliente_id: null,
-        cliente_nome: '',
-        condutor_id: null,
-        condutor_nome: '',
-        estado: 'pendente',
-        valor_total: null,
-        observacoes: '',
-      });
-    }
+    form.reset(
+      reserva
+        ? {
+            viatura_id: reserva.viatura_id,
+            matricula: reserva.matricula ?? '',
+            grupo: reserva.grupo ?? '',
+            estacao_entrega_id: reserva.estacao_entrega_id,
+            estacao_recolha_id: reserva.estacao_recolha_id,
+            data_inicio: isoToLocalInput(reserva.data_inicio),
+            data_fim: isoToLocalInput(reserva.data_fim),
+            cliente_id: reserva.cliente_id,
+            cliente_nome: reserva.cliente_nome ?? '',
+            condutor_id: reserva.condutor_id,
+            condutor_nome: reserva.condutor_nome ?? '',
+            estado: reserva.estado,
+            valor_total: reserva.valor_total,
+            observacoes: reserva.observacoes ?? '',
+          }
+        : DEFAULT_VALUES
+    );
   }, [open, reserva, form]);
 
   // Pré-check de conflito — só UX. Gate real é o EXCLUDE na BD.
@@ -235,271 +195,11 @@ export const ReservaDialog: React.FC<ReservaDialogProps> = ({
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="cliente_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cliente</FormLabel>
-                      <Select
-                        value={field.value ?? SENTINEL_NONE}
-                        onValueChange={(v) => {
-                          const newId = v === SENTINEL_NONE ? null : v;
-                          field.onChange(newId);
-                          // snapshot do nome para histórico
-                          const cli = clientes.find((c) => c.id === newId);
-                          if (cli) form.setValue('cliente_nome', cli.nome);
-                        }}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue placeholder="Sem cliente" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value={SENTINEL_NONE}>— Sem cliente —</SelectItem>
-                          {clientes.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.nome} {c.codigo ? `(#${c.codigo})` : ''}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="viatura_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Viatura</FormLabel>
-                      <Select
-                        value={field.value ?? SENTINEL_NONE}
-                        onValueChange={(v) => {
-                          const newId = v === SENTINEL_NONE ? null : v;
-                          field.onChange(newId);
-                          const via = viaturas.find((x) => x.id === newId);
-                          if (via) form.setValue('matricula', via.matricula);
-                        }}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue placeholder="Sem viatura atribuída" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value={SENTINEL_NONE}>— Sem viatura —</SelectItem>
-                          {viaturas.map((v) => (
-                            <SelectItem key={v.id} value={v.id}>
-                              {v.matricula} — {v.marca} {v.modelo}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="data_inicio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data início</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="datetime-local"
-                          className="bg-background"
-                          {...field}
-                          value={field.value ?? ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="data_fim"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data fim</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="datetime-local"
-                          className="bg-background"
-                          {...field}
-                          value={field.value ?? ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="estacao_entrega_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estação entrega</FormLabel>
-                      <Select
-                        value={field.value ?? SENTINEL_NONE}
-                        onValueChange={(v) => field.onChange(v === SENTINEL_NONE ? null : v)}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue placeholder="Sem estação" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value={SENTINEL_NONE}>— Sem estação —</SelectItem>
-                          {estacoes.map((e) => (
-                            <SelectItem key={e.id} value={e.id}>
-                              {e.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="estacao_recolha_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estação recolha</FormLabel>
-                      <Select
-                        value={field.value ?? SENTINEL_NONE}
-                        onValueChange={(v) => field.onChange(v === SENTINEL_NONE ? null : v)}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue placeholder="Sem estação" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value={SENTINEL_NONE}>— Sem estação —</SelectItem>
-                          {estacoes.map((e) => (
-                            <SelectItem key={e.id} value={e.id}>
-                              {e.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="estado"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estado</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="pendente">Pendente</SelectItem>
-                          <SelectItem value="confirmada">Confirmada</SelectItem>
-                          <SelectItem value="em_curso">Em Curso</SelectItem>
-                          <SelectItem value="concluida">Concluída</SelectItem>
-                          <SelectItem value="cancelada">Cancelada</SelectItem>
-                          <SelectItem value="expirada">Expirada</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="valor_total"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor total (€)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="bg-background"
-                          value={field.value ?? ''}
-                          onChange={(e) =>
-                            field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="grupo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Grupo</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="bg-background"
-                          {...field}
-                          value={field.value ?? ''}
-                          placeholder="ex.: Económico, SUV"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="condutor_nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Condutor (nome)</FormLabel>
-                      <FormControl>
-                        <Input className="bg-background" {...field} value={field.value ?? ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="observacoes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Observações</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        className="bg-background min-h-[80px]"
-                        {...field}
-                        value={field.value ?? ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              <ReservaFormFields
+                form={form}
+                clientes={clientes}
+                viaturas={viaturas}
+                estacoes={estacoes}
               />
 
               {temConflito && (
@@ -542,37 +242,13 @@ export const ReservaDialog: React.FC<ReservaDialogProps> = ({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={confirmDeleteOpen} onOpenChange={handleConfirmDeleteOpenChange}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar reserva?</AlertDialogTitle>
-            <AlertDialogDescription>
-              A reserva <strong>#{reserva?.codigo}</strong>
-              {reserva?.cliente_nome ? (
-                <>
-                  {' '}
-                  de <strong>{reserva.cliente_nome}</strong>
-                </>
-              ) : null}{' '}
-              será removida da lista. Para recuperar, contacta o administrador técnico.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteMutation.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                confirmDelete();
-              }}
-            >
-              {deleteMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ReservaDeleteConfirm
+        open={confirmDeleteOpen}
+        onOpenChange={handleConfirmDeleteOpenChange}
+        reserva={reserva}
+        isPending={deleteMutation.isPending}
+        onConfirm={confirmDelete}
+      />
     </>
   );
 };

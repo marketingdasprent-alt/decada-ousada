@@ -4,3 +4,4 @@ export * from './lead';
 export * from './contrato';
 export * from './convites';
 export * from './reserva';
+export * from './contratoRenting';
