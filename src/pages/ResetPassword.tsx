@@ -30,10 +30,13 @@ const ResetPassword = () => {
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setHasSession(!!session);
-      setChecking(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setHasSession(!!session);
+        setChecking(false);
+      })
+      .catch(() => setChecking(false));
 
     return () => subscription.unsubscribe();
   }, []);

@@ -220,6 +220,7 @@ export const RecolhaCheckinStep: React.FC<RecolhaCheckinStepProps> = ({
             viaturaId,
             userId,
             tipo: 'checkin',
+            motoristaId,
           });
         }
 

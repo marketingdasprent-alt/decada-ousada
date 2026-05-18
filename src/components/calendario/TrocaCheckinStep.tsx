@@ -256,6 +256,7 @@ export const TrocaCheckinStep: React.FC<{
             viaturaId: viaturaAtual.id,
             userId,
             tipo: 'checkin',
+            motoristaId,
           });
           if (filesCheckin.length > 0) await uploadFiles(filesCheckin, contratoAtual.id, 'checkin');
         }
@@ -292,6 +293,7 @@ export const TrocaCheckinStep: React.FC<{
           viaturaId: novaViatura.id,
           userId,
           tipo: 'checkout',
+          motoristaId,
         });
         if (filesCheckout.length > 0) await uploadFiles(filesCheckout, newCt.id, 'checkout');
       }
