@@ -18,6 +18,7 @@ import {
   RotateCcw,
   CalendarClock,
   Pencil,
+  Camera,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,6 +88,27 @@ export function MotoristaTabContratos({
   const [renovarContrato, setRenovarContrato] = useState<Contrato | null>(null);
   const [renovando, setRenovando] = useState(false);
   const [editContrato, setEditContrato] = useState<Contrato | null>(null);
+  const [mediaContrato, setMediaContrato] = useState<Contrato | null>(null);
+  const [mediaItems, setMediaItems] = useState<
+    { id: string; tipo: string; url: string; nome_ficheiro: string; created_at: string }[]
+  >([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+
+  const loadMedia = async (contratoId: string) => {
+    setMediaLoading(true);
+    const { data } = await supabase
+      .from('contrato_media')
+      .select('id, tipo, url, nome_ficheiro, created_at')
+      .eq('contrato_id', contratoId)
+      .order('created_at');
+    setMediaItems(data || []);
+    setMediaLoading(false);
+  };
+
+  const getMediaUrl = (path: string) => {
+    const { data } = supabase.storage.from('contrato-media').getPublicUrl(path);
+    return data.publicUrl;
+  };
 
   useEffect(() => {
     loadContratos();
@@ -702,6 +724,17 @@ export function MotoristaTabContratos({
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => {
+                          setMediaContrato(contrato);
+                          loadMedia(contrato.id);
+                        }}
+                        title="Fotos checkout/checkin"
+                      >
+                        <Camera className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleView(contrato)}
                         disabled={!contrato.documento_url}
                         title={contrato.documento_url ? 'Visualizar PDF' : 'PDF não disponível'}
@@ -843,6 +876,77 @@ export function MotoristaTabContratos({
         }}
         motorista={motorista}
       />
+
+      {/* Dialog de fotos checkout/checkin */}
+      <Dialog
+        open={!!mediaContrato}
+        onOpenChange={(open) => {
+          if (!open) setMediaContrato(null);
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Fotos — CT-
+              {mediaContrato?.numero_contrato != null
+                ? String(mediaContrato.numero_contrato).padStart(4, '0')
+                : '—'}
+            </DialogTitle>
+          </DialogHeader>
+          {mediaLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : mediaItems.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              Nenhuma foto registada neste contrato.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {['checkout', 'checkin'].map((tipo) => {
+                const items = mediaItems.filter((m) => m.tipo === tipo);
+                if (items.length === 0) return null;
+                return (
+                  <div key={tipo}>
+                    <h4 className="text-sm font-semibold mb-2 capitalize">{tipo}</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {items.map((item) => {
+                        const isVideo =
+                          item.nome_ficheiro?.match(/\.(mp4|webm|mov)$/i) ||
+                          item.url.match(/\.(mp4|webm|mov)$/i);
+                        const publicUrl = getMediaUrl(item.url);
+                        return (
+                          <a
+                            key={item.id}
+                            href={publicUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block rounded-lg overflow-hidden border hover:ring-2 hover:ring-primary transition-all"
+                          >
+                            {isVideo ? (
+                              <video src={publicUrl} className="w-full h-32 object-cover" muted />
+                            ) : (
+                              <img
+                                src={publicUrl}
+                                alt={item.nome_ficheiro || tipo}
+                                className="w-full h-32 object-cover"
+                              />
+                            )}
+                            <div className="p-1 text-[10px] text-muted-foreground truncate">
+                              {item.nome_ficheiro || 'Ficheiro'}
+                            </div>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

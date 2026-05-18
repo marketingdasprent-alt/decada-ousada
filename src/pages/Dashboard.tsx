@@ -173,7 +173,8 @@ const Dashboard = () => {
       .order('nome', { ascending: true })
       .then(({ data }) => {
         if (data) setGestores(data.filter((p) => p.nome));
-      });
+      })
+      .catch((err) => console.error('Erro ao carregar gestores:', err));
   }, []);
 
   // ── Period change ────────────────────────────────────────────────────────

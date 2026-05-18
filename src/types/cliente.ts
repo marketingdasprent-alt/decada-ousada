@@ -45,6 +45,7 @@ export type Genero = 'M' | 'F' | 'Outro';
 
 export type Cliente = {
   id: string;
+  org_id: string;
   codigo: number;
   is_empresa: boolean;
   nome: string; // pessoa: nome completo · empresa: denominação social
