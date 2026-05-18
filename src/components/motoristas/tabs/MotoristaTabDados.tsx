@@ -66,14 +66,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { validateDateYear, YEAR_RANGE_MESSAGE } from '@/utils/dateValidators';
 
 const CARTA_CATEGORIAS = ['AM', 'A1', 'A2', 'A', 'B1', 'B', 'BE', 'C1', 'C', 'CE', 'D1', 'D', 'DE'];
-
-const validateDateYear = (date: string | undefined): boolean => {
-  if (!date) return true;
-  const year = new Date(date).getFullYear();
-  return year >= 1900 && year <= 2100;
-};
 
 const formSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -86,23 +81,23 @@ const formSchema = z.object({
   documento_tipo: z.string().optional(),
   documento_numero: z.string().optional(),
   documento_validade: z.string().optional().refine(validateDateYear, {
-    message: 'Ano deve estar entre 1900 e 2100',
+    message: YEAR_RANGE_MESSAGE,
   }),
   carta_conducao: z.string().optional(),
   carta_categorias: z.array(z.string()).optional(),
   carta_validade: z.string().optional().refine(validateDateYear, {
-    message: 'Ano deve estar entre 1900 e 2100',
+    message: YEAR_RANGE_MESSAGE,
   }),
   licenca_tvde_numero: z.string().optional(),
   licenca_tvde_validade: z.string().optional().refine(validateDateYear, {
-    message: 'Ano deve estar entre 1900 e 2100',
+    message: YEAR_RANGE_MESSAGE,
   }),
   cartao_frota: z.string().optional(),
   cartao_bp: z.string().optional(),
   cartao_repsol: z.string().optional(),
   cartao_edp: z.string().optional(),
   data_contratacao: z.string().optional().refine(validateDateYear, {
-    message: 'Ano deve estar entre 1900 e 2100',
+    message: YEAR_RANGE_MESSAGE,
   }),
   recibo_verde: z.boolean().default(true),
   is_slot: z.boolean().default(false),
@@ -128,11 +123,18 @@ type FormData = z.infer<typeof formSchema>;
 interface MotoristaTabDadosProps {
   motorista: Motorista;
   onSave: () => void;
+  draft?: Record<string, unknown> | null;
+  onDraftChange?: (draft: Record<string, unknown> | null) => void;
 }
 
 // SectionCard imported from @/components/ui/section-card
 
-export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps) {
+export function MotoristaTabDados({
+  motorista,
+  onSave,
+  draft,
+  onDraftChange,
+}: MotoristaTabDadosProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [gestores, setGestores] = useState<{ nome: string }[]>([]);
   const [gestorPopoverOpen, setGestorPopoverOpen] = useState(false);
@@ -209,56 +211,74 @@ export function MotoristaTabDados({ motorista, onSave }: MotoristaTabDadosProps)
   });
 
   useEffect(() => {
-    if (motorista) {
-      form.reset({
-        nome: motorista.nome || '',
-        nif: motorista.nif || '',
-        email: motorista.email || '',
-        telefone: motorista.telefone || '',
-        morada: motorista.morada || '',
-        codigo_postal: motorista.codigo_postal || '',
-        cidade: motorista.cidade || '',
-        documento_tipo: motorista.documento_tipo || '',
-        documento_numero: motorista.documento_numero || '',
-        documento_validade: motorista.documento_validade
-          ? format(new Date(motorista.documento_validade), 'yyyy-MM-dd')
-          : '',
-        carta_conducao: motorista.carta_conducao || '',
-        carta_categorias: motorista.carta_categorias || [],
-        carta_validade: motorista.carta_validade
-          ? format(new Date(motorista.carta_validade), 'yyyy-MM-dd')
-          : '',
-        licenca_tvde_numero: motorista.licenca_tvde_numero || '',
-        licenca_tvde_validade: motorista.licenca_tvde_validade
-          ? format(new Date(motorista.licenca_tvde_validade), 'yyyy-MM-dd')
-          : '',
-        cartao_frota: motorista.cartao_frota || '',
-        cartao_bp: motorista.cartao_bp || '',
-        cartao_repsol: motorista.cartao_repsol || '',
-        cartao_edp: motorista.cartao_edp || '',
-        data_contratacao: motorista.data_contratacao
-          ? format(new Date(motorista.data_contratacao), 'yyyy-MM-dd')
-          : '',
-        recibo_verde: motorista.recibo_verde ?? true,
-        is_slot: motorista.is_slot ?? false,
-        slot_valor_semanal: motorista.slot_valor_semanal ?? null,
-        status_ativo: motorista.status_ativo ?? true,
-        observacoes: motorista.observacoes || '',
-        iban: motorista.iban || '',
-        gestor_responsavel: motorista.gestor_responsavel || '',
-        uber_uuid: motorista.uber_uuid || '',
-        bolt_id: motorista.bolt_id || '',
-        documento_ficheiro_url: motorista.documento_ficheiro_url || '',
-        documento_identificacao_verso_url: motorista.documento_identificacao_verso_url || '',
-        carta_ficheiro_url: motorista.carta_ficheiro_url || '',
-        carta_conducao_verso_url: motorista.carta_conducao_verso_url || '',
-        licenca_tvde_ficheiro_url: motorista.licenca_tvde_ficheiro_url || '',
-        registo_criminal_url: motorista.registo_criminal_url || '',
-        comprovativo_morada_url: motorista.comprovativo_morada_url || '',
-        comprovativo_iban_url: motorista.comprovativo_iban_url || '',
-      });
+    if (!motorista) return;
+
+    if (draft) {
+      form.reset(draft as FormData);
+      return;
     }
+
+    form.reset({
+      nome: motorista.nome || '',
+      nif: motorista.nif || '',
+      email: motorista.email || '',
+      telefone: motorista.telefone || '',
+      morada: motorista.morada || '',
+      codigo_postal: motorista.codigo_postal || '',
+      cidade: motorista.cidade || '',
+      documento_tipo: motorista.documento_tipo || '',
+      documento_numero: motorista.documento_numero || '',
+      documento_validade: motorista.documento_validade
+        ? format(new Date(motorista.documento_validade), 'yyyy-MM-dd')
+        : '',
+      carta_conducao: motorista.carta_conducao || '',
+      carta_categorias: motorista.carta_categorias || [],
+      carta_validade: motorista.carta_validade
+        ? format(new Date(motorista.carta_validade), 'yyyy-MM-dd')
+        : '',
+      licenca_tvde_numero: motorista.licenca_tvde_numero || '',
+      licenca_tvde_validade: motorista.licenca_tvde_validade
+        ? format(new Date(motorista.licenca_tvde_validade), 'yyyy-MM-dd')
+        : '',
+      cartao_frota: motorista.cartao_frota || '',
+      cartao_bp: motorista.cartao_bp || '',
+      cartao_repsol: motorista.cartao_repsol || '',
+      cartao_edp: motorista.cartao_edp || '',
+      data_contratacao: motorista.data_contratacao
+        ? format(new Date(motorista.data_contratacao), 'yyyy-MM-dd')
+        : '',
+      recibo_verde: motorista.recibo_verde ?? true,
+      is_slot: motorista.is_slot ?? false,
+      slot_valor_semanal: motorista.slot_valor_semanal ?? null,
+      status_ativo: motorista.status_ativo ?? true,
+      observacoes: motorista.observacoes || '',
+      iban: motorista.iban || '',
+      gestor_responsavel: motorista.gestor_responsavel || '',
+      uber_uuid: motorista.uber_uuid || '',
+      bolt_id: motorista.bolt_id || '',
+      documento_ficheiro_url: motorista.documento_ficheiro_url || '',
+      documento_identificacao_verso_url: motorista.documento_identificacao_verso_url || '',
+      carta_ficheiro_url: motorista.carta_ficheiro_url || '',
+      carta_conducao_verso_url: motorista.carta_conducao_verso_url || '',
+      licenca_tvde_ficheiro_url: motorista.licenca_tvde_ficheiro_url || '',
+      registo_criminal_url: motorista.registo_criminal_url || '',
+      comprovativo_morada_url: motorista.comprovativo_morada_url || '',
+      comprovativo_iban_url: motorista.comprovativo_iban_url || '',
+    });
+    // Intencionalmente sem `draft` nas deps — o draft só hidrata na montagem;
+    // edições posteriores são propagadas via watch (não devem re-resetar o form).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [motorista, form]);
+
+  useEffect(() => {
+    if (!onDraftChange) return;
+    const subscription = form.watch((values) => {
+      if (form.formState.isDirty) {
+        onDraftChange(values as Record<string, unknown>);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onDraftChange]);
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);

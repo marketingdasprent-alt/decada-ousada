@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -265,23 +264,6 @@ export function MotoristaRecibosCard({
       style: 'currency',
       currency: 'EUR',
     }).format(value);
-  }
-
-  function getStatusBadge(status: string) {
-    switch (status) {
-      case 'validado':
-        return (
-          <Badge variant="default" className="bg-green-600">
-            Validado
-          </Badge>
-        );
-      case 'submetido':
-        return <Badge variant="secondary">Pendente</Badge>;
-      case 'rejeitado':
-        return <Badge variant="destructive">Rejeitado</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
   }
 
   function formatCodigo(codigo: number | null) {

@@ -22,6 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, FileText, CheckCircle2, Search, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { gerarContratoAtomico } from '@/hooks/useContratos';
 import jsPDF from 'jspdf';
 import {
   generateDocumentFromTemplate,
@@ -298,34 +299,28 @@ export const GenerateDocumentsDialog = ({
       let contratoId: string | null = null;
       if (contratoTemplates.length > 0) {
         try {
-          const { data: contratoResult, error: contratoError } = await supabase.rpc(
-            'gerar_contrato_atomico',
-            {
-              p_motorista_id: activeMotorista.id,
-              p_empresa_id: selectedEmpresa,
-              p_motorista_nome: activeMotorista.nome,
-              p_motorista_nif: activeMotorista.nif || null,
-              p_motorista_email: activeMotorista.email || null,
-              p_motorista_telefone: activeMotorista.telefone || null,
-              p_motorista_morada: activeMotorista.morada || null,
-              p_motorista_documento_tipo: activeMotorista.documento_tipo || null,
-              p_motorista_documento_numero: activeMotorista.documento_numero || null,
-              p_cidade_assinatura: cidadeAssinatura,
-              p_data_assinatura: activeMotorista.data_contratacao || today,
-              p_data_inicio: activeMotorista.data_contratacao || today,
-              p_duracao_meses: 12,
-              p_criado_por: user?.user?.id || null,
-              p_force_new_version: forceNewVersion,
-              ...(viaturaId ? { p_viatura_id: viaturaId } : {}),
-              ...(calendarioEventoId ? { p_calendario_evento_id: calendarioEventoId } : {}),
-              ...(checkoutPendente !== undefined ? { p_checkout_pendente: checkoutPendente } : {}),
-            }
-          );
+          const contratoData = await gerarContratoAtomico({
+            motoristaId: activeMotorista.id,
+            empresaId: selectedEmpresa,
+            motoristaNome: activeMotorista.nome,
+            motoristaNif: activeMotorista.nif,
+            motoristaEmail: activeMotorista.email,
+            motoristaTelefone: activeMotorista.telefone,
+            motoristaMorada: activeMotorista.morada,
+            motoristaDocumentoTipo: activeMotorista.documento_tipo,
+            motoristaDocumentoNumero: activeMotorista.documento_numero,
+            cidadeAssinatura,
+            dataAssinatura: activeMotorista.data_contratacao || today,
+            dataInicio: activeMotorista.data_contratacao || today,
+            duracaoMeses: 12,
+            criadoPor: user?.user?.id ?? null,
+            forceNewVersion,
+            ...(viaturaId ? { viaturaId } : {}),
+            ...(calendarioEventoId ? { calendarioEventoId } : {}),
+            ...(checkoutPendente !== undefined ? { checkoutPendente } : {}),
+          });
 
-          if (contratoError) throw contratoError;
-
-          const contratoData = Array.isArray(contratoResult) ? contratoResult[0] : contratoResult;
-          const isExisting = (contratoData as any)?.is_existing;
+          const isExisting = contratoData?.is_existing as boolean | undefined;
           contratoId = contratoData?.id || null;
 
           if (contratoId) {

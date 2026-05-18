@@ -1,5 +1,11 @@
 export const getRecursoLabel = (nome: string): string => {
   const labels: Record<string, string> = {
+    // Renting
+    renting_clientes: 'Gestão de clientes de renting',
+    renting_contratos: 'Gestão de contratos de renting',
+    renting_reservas: 'Gestão de reservas de renting',
+    renting_movimentacoes: 'Entradas, saídas e trocas de viatura',
+
     // CRM
     crm_ver: 'Ver leads e pipeline',
     crm_exportar: 'Exportar dados de leads',

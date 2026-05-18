@@ -1,5 +1,6 @@
 ﻿import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { ContratoStatusBadge } from '@/lib/statusBadges';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -120,16 +121,6 @@ export const ContratosGroupedView = ({
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      ativo: 'default',
-      expirado: 'secondary',
-      cancelado: 'destructive',
-      substituido: 'outline',
-    };
-    return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
-  };
-
   return (
     <div className="rounded-md border">
       <Table>
@@ -183,7 +174,9 @@ export const ContratosGroupedView = ({
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(group.ultimo_contrato.status)}</TableCell>
+                      <TableCell>
+                        <ContratoStatusBadge status={group.ultimo_contrato.status} />
+                      </TableCell>
                       <TableCell className="text-right">
                         <div
                           className="flex justify-end gap-2"
@@ -239,7 +232,9 @@ export const ContratosGroupedView = ({
                             </TableCell>
                             <TableCell>{getEmpresaNome(contrato.empresa_id)}</TableCell>
                             <TableCell></TableCell>
-                            <TableCell>{getStatusBadge(contrato.status)}</TableCell>
+                            <TableCell>
+                              <ContratoStatusBadge status={contrato.status} />
+                            </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
                                 <Button

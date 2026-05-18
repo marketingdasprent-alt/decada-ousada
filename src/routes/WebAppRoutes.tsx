@@ -49,6 +49,10 @@ const Index = lazy(() => import('@/pages/Index'));
 const EliminarConta = lazy(() => import('@/pages/EliminarConta'));
 const SelecionarOrg = lazy(() => import('@/pages/SelecionarOrg'));
 const RegistarOrg = lazy(() => import('@/pages/RegistarOrg'));
+const RentingContratos = lazy(() => import('@/pages/renting/RentingContratos'));
+const RentingReservas = lazy(() => import('@/pages/renting/RentingReservas'));
+const RentingMovimentacoes = lazy(() => import('@/pages/renting/RentingMovimentacoes'));
+const RentingClientes = lazy(() => import('@/pages/renting/RentingClientes'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -346,6 +350,46 @@ const WebAppRoutes = () => {
               <ProtectedRoute>
                 <DashboardLayout>
                   <MyAccount />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/contratos"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <RentingContratos />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/reservas"
+            element={
+              <ProtectedRoute requiredResource="renting_reservas">
+                <DashboardLayout>
+                  <RentingReservas />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/movimentacoes"
+            element={
+              <ProtectedRoute requiredResource="renting_movimentacoes">
+                <DashboardLayout>
+                  <RentingMovimentacoes />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/clientes"
+            element={
+              <ProtectedRoute requiredResource="renting_clientes">
+                <DashboardLayout>
+                  <RentingClientes />
                 </DashboardLayout>
               </ProtectedRoute>
             }

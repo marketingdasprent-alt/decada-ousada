@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,38 +22,33 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    // Verify user is authenticated using the JWT token
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser(token);
-
-    if (userError || !user) {
-      console.error('Authentication error:', userError);
+    // Decode JWT payload to extract user_id (sub).
+    // The Supabase Edge runtime already verifies the JWT signature before invoking this function
+    // (verify_jwt defaults to true), so we trust the payload here.
+    let callerUserId: string;
+    try {
+      const payloadB64 = token.split('.')[1];
+      const payloadJson = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
+      const payload = JSON.parse(payloadJson);
+      callerUserId = payload.sub;
+      if (!callerUserId) throw new Error('JWT sem claim sub');
+    } catch (e) {
+      console.error('Failed to decode JWT:', e);
       return new Response(
         JSON.stringify({ error: 'Não autenticado - Token inválido' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create admin client with service role key to bypass RLS
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    const user = { id: callerUserId };
+
+    // Admin client (service role) for DB lookups and password update
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     // Check if user is admin using service role (bypasses RLS)
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -92,14 +87,6 @@ Deno.serve(async (req) => {
     if (newPassword.length > 72) {
       return new Response(
         JSON.stringify({ error: 'A password deve ter no máximo 72 caracteres' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Prevent admin from resetting their own password via this method
-    if (userId === user.id) {
-      return new Response(
-        JSON.stringify({ error: 'Não pode resetar a sua própria password por este método' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

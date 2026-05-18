@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { MovimentoStatusBadge } from '@/lib/statusBadges';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -54,23 +54,6 @@ export function MotoristaMovimentosCard({ motoristaId }: MotoristaMovimentosCard
       style: 'currency',
       currency: 'EUR',
     }).format(value);
-  }
-
-  function getStatusBadge(status: string) {
-    switch (status) {
-      case 'pago':
-        return (
-          <Badge variant="default" className="bg-green-600">
-            Pago
-          </Badge>
-        );
-      case 'pendente':
-        return <Badge variant="secondary">Pendente</Badge>;
-      case 'cancelado':
-        return <Badge variant="destructive">Cancelado</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
   }
 
   if (loading) {
