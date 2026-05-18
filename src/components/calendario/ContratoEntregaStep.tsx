@@ -34,6 +34,7 @@ import {
   emptyCheckinDados,
   validateCheckinDados,
   saveCheckinDados,
+  gerarFolhaDanos,
 } from './CheckinDadosSection';
 import type { CheckinDadosState } from './CheckinDadosSection';
 
@@ -111,6 +112,20 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
     enabled: !!motoristaId,
   });
 
+  const { data: danosExistentes = [] } = useQuery({
+    queryKey: ['viatura-danos-entrega', viaturaId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('viatura_danos')
+        .select('id, descricao, localizacao, estado, data_registo')
+        .eq('viatura_id', viaturaId)
+        .neq('estado', 'reparado')
+        .order('data_registo', { ascending: false });
+      return data || [];
+    },
+    enabled: !!viaturaId,
+  });
+
   const toggleTemplate = (id: string) => {
     setSelectedTemplates((prev) => {
       const next = new Set(prev);
@@ -130,7 +145,6 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
         preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
       })),
     ]);
-    setShowFilesError(false);
     e.target.value = '';
   };
 
@@ -197,19 +211,21 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
       const eventoId = evResult.data.id;
 
       // 2. Associar viatura ao motorista
-      await supabase.from('motorista_viaturas').insert({
+      const { error: mvErr } = await supabase.from('motorista_viaturas').insert({
         motorista_id: motoristaId,
         viatura_id: viaturaId,
         data_inicio: data,
         status: 'ativo',
         observacoes: observacoes.trim() || null,
       });
+      if (mvErr) throw mvErr;
 
       // 3. Viatura → em_uso + estação
-      await supabase
+      const { error: vErr } = await supabase
         .from('viaturas')
         .update({ status: 'em_uso', estacao_id: estacaoId || null })
         .eq('id', viaturaId);
+      if (vErr) throw vErr;
 
       // 4. Notificação (fire & forget)
       try {
@@ -259,6 +275,7 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
           viaturaId,
           userId,
           tipo: 'checkout',
+          motoristaId,
         });
 
         // 7. Upload checkout media
@@ -291,7 +308,7 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
           data_assinatura: dataInicio,
           data_inicio: dataInicio,
           cidade_assinatura: cidadeAssinatura,
-          duracao_meses: '12',
+          duracao_meses: 12,
           empresaData: empresa
             ? {
                 nomeCompleto: empresa.nomeCompleto,
@@ -313,6 +330,7 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
 
         // Upload do primeiro template ao storage
         let firstDocUrl: string | null = null;
+        let successCount = 0;
         for (const templateId of templateIds) {
           try {
             if (!firstDocUrl) {
@@ -333,6 +351,7 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
               skipOutput: isMultiple,
               existingPdf: combinedPdf || undefined,
             });
+            successCount++;
           } catch {
             /* PDF non-critical */
           }
@@ -346,8 +365,29 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
             .eq('id', contratoId);
         }
 
+        // Adicionar folha de danos ao PDF (existentes + novos)
+        if (danosExistentes.length > 0 || checkinDados.novosDanos.length > 0) {
+          const targetPdf = isMultiple && combinedPdf ? combinedPdf : undefined;
+          gerarFolhaDanos({
+            matricula: viatura.matricula,
+            motoristaNome,
+            tipo: 'checkout',
+            tipoCombustivel: viatura.combustivel ?? '',
+            km: checkinDados.km,
+            combustivel: checkinDados.combustivel,
+            nivelEletrico: checkinDados.nivelEletrico,
+            nivelGpl: checkinDados.nivelGpl,
+            danosExistentes,
+            novosDanos: checkinDados.novosDanos,
+            dataEvento: dataInicio,
+            contratoNumero: ct.numero_contrato,
+            existingPdf: targetPdf,
+          });
+          if (targetPdf) successCount++;
+        }
+
         // Abrir PDF combinado quando múltiplos documentos
-        if (isMultiple && combinedPdf) {
+        if (isMultiple && combinedPdf && successCount > 0) {
           combinedPdf.deletePage(1);
           combinedPdf.autoPrint();
           window.open(combinedPdf.output('bloburl') as string, '_blank');

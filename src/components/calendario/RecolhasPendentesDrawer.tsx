@@ -129,6 +129,7 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
         contratoId: ct.id,
         contratoNumero: ct.numero_contrato as number | null,
         motoristaNome,
+        motoristaId: ct.motorista_id as string | null,
       };
     },
     enabled: !!selected?.id,
@@ -209,6 +210,7 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
           viaturaId: selected.id,
           userId,
           tipo: 'checkin',
+          motoristaId: contrato.motoristaId || undefined,
         });
 
         // 4. Upload fotos se existirem

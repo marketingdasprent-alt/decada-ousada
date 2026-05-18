@@ -149,6 +149,7 @@ export const CheckOutPendentesDrawer: React.FC<CheckOutPendentesDrawerProps> = (
         viaturaId: viatura.id,
         userId,
         tipo: 'checkout',
+        motoristaId: selected.motorista_id || undefined,
       });
 
       if (files.length > 0) {
