@@ -45,7 +45,8 @@ export type ContratoRenting = {
   org_id: string;
   codigo: number;
 
-  reserva_id: string | null;
+  /** FK obrigatória — todo contrato começa em reserva. */
+  reserva_id: string;
 
   cliente_id: string;
 

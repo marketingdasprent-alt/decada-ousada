@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
+import { AlertTriangle, FileText, Loader2, Trash2 } from 'lucide-react';
 
 import { useClientes } from '@/hooks/useClientes';
 import { useViaturas } from '@/hooks/useViaturas';
@@ -64,6 +65,7 @@ export const ReservaDialog: React.FC<ReservaDialogProps> = ({
   reserva = null,
 }) => {
   const isEdit = !!reserva;
+  const navigate = useNavigate();
 
   const { data: clientes = [] } = useClientes();
   const { data: viaturas = [] } = useViaturas();
@@ -229,6 +231,24 @@ export const ReservaDialog: React.FC<ReservaDialogProps> = ({
                     <span className="ml-1">Eliminar</span>
                   </Button>
                 )}
+                {isEdit &&
+                  reserva &&
+                  reserva.cliente_id &&
+                  reserva.viatura_id &&
+                  (reserva.estado === 'confirmada' || reserva.estado === 'em_curso') && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        onOpenChange(false);
+                        navigate(`/renting/contratos/novo?reserva_id=${reserva.id}`);
+                      }}
+                      className="gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Criar Contrato
+                    </Button>
+                  )}
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Cancelar
                 </Button>

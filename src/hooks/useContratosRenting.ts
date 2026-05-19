@@ -83,6 +83,39 @@ export function useContratosRenting(options: UseContratosRentingOptions = {}) {
   });
 }
 
+// ────────────────────────────────────────────────────────────
+// Totais (view contrato_renting_totais)
+// ────────────────────────────────────────────────────────────
+
+export interface ContratoTotais {
+  contrato_id: string;
+  dias: number;
+  estado_financeiro: string;
+  subtotal: number;
+  iva: number;
+  total: number;
+  facturado_em: string | null;
+  is_snapshot: boolean;
+}
+
+export function useContratoTotais(id: string | null | undefined) {
+  return useQuery({
+    queryKey: [...QUERY_KEY_BASE, 'totais', id],
+    queryFn: async (): Promise<ContratoTotais | null> => {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from('contrato_renting_totais')
+        .select('*')
+        .eq('contrato_id', id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as ContratoTotais | null;
+    },
+    enabled: !!id,
+    staleTime: 10_000,
+  });
+}
+
 export function useContratoRenting(id: string | null | undefined) {
   return useQuery({
     queryKey: [...QUERY_KEY_BASE, 'detail', id],

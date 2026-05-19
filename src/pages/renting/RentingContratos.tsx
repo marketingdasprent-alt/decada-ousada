@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Download, FileText, Plus, Search } from 'lucide-react';
 
@@ -21,6 +22,7 @@ import {
   type SortColumn,
   type SortDir,
 } from '@/components/renting/contratos/ContratosTabela';
+import { ContratoSelectorReserva } from '@/components/renting/contratos/ContratoSelectorReserva';
 import {
   csvEscape,
   formatCurrency,
@@ -46,6 +48,7 @@ const HARD_LIMIT = 1000;
 
 const RentingContratos = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
   const { data: clientes = [] } = useClientes();
   const { data: contratos = [], isLoading } = useContratosRenting({ limit: HARD_LIMIT });
@@ -54,6 +57,7 @@ const RentingContratos = () => {
   const [filtros, setFiltros] = useState<ContratosFiltrosState>(FILTROS_INICIAIS);
   const [sortColumn, setSortColumn] = useState<SortColumn>('codigo');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [selectorOpen, setSelectorOpen] = useState(false);
 
   const estacaoNomeById = useMemo(() => {
     const m = new Map<string, string>();
@@ -144,19 +148,11 @@ const RentingContratos = () => {
   };
 
   const handleRowClick = (c: ContratoRenting) => {
-    // MVP.3 — navegação para página de edição. Por agora, toast informativo.
-    toast({
-      title: `Contrato #${c.codigo}`,
-      description: 'Página de edição em desenvolvimento (Sprint MVP.3).',
-    });
+    navigate(`/renting/contratos/${c.id}`);
   };
 
   const handleCreateClick = () => {
-    // MVP.3 — navegação para página de criação. Por agora, toast informativo.
-    toast({
-      title: 'Criar contrato',
-      description: 'Página de criação em desenvolvimento (Sprint MVP.3).',
-    });
+    setSelectorOpen(true);
   };
 
   const handleExport = () => {
@@ -270,6 +266,8 @@ const RentingContratos = () => {
           </div>
         </CardContent>
       </Card>
+
+      <ContratoSelectorReserva open={selectorOpen} onOpenChange={setSelectorOpen} />
     </div>
   );
 };

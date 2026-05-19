@@ -64,6 +64,25 @@ export function useReservas(options: UseReservasOptions = {}) {
   });
 }
 
+/** Carregar uma única reserva por ID (ex.: ao gerar contrato a partir de reserva). */
+export function useReserva(id: string | null | undefined) {
+  return useQuery({
+    queryKey: [...QUERY_KEY_BASE, 'detail', id],
+    queryFn: async (): Promise<Reserva | null> => {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from('reservas')
+        .select(SELECT_COLUMNS)
+        .eq('id', id)
+        .is('deleted_at', null)
+        .maybeSingle();
+      if (error) throw error;
+      return data as Reserva | null;
+    },
+    enabled: !!id,
+  });
+}
+
 // ────────────────────────────────────────────────────────────
 // Helpers de erro — identificar overbooking (SQLSTATE 23P01)
 // ────────────────────────────────────────────────────────────
