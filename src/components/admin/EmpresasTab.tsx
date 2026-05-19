@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -273,7 +273,9 @@ export const EmpresasTab: React.FC = () => {
             {/* Basic info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Nome Curto *</Label>
+                <Label>
+                  Nome Curto <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   value={form.nome}
                   onChange={(e) => handleNomeChange(e.target.value)}

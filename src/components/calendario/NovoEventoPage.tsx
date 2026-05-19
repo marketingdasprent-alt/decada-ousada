@@ -757,7 +757,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5">
                   <Car className="h-3.5 w-3.5 text-muted-foreground" />
-                  Marca e Modelo <span className="text-destructive ml-1">*</span>
+                  Marca e Modelo <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <SearchableDropdown
                   items={marcaModeloOptions}
@@ -875,7 +875,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
               <div className="space-y-1.5">
                 <div className="flex items-center h-5">
                   <Label htmlFor="data">
-                    Data <span className="text-destructive">*</span>
+                    Data <span className="text-red-500">*</span>
                   </Label>
                 </div>
                 <DatePickerField id="data" value={data} onChange={setData} />
@@ -899,7 +899,7 @@ export const NovoEventoPage: React.FC<Props> = ({ userId, defaultDate, onClose }
 
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5">
-                Estação <span className="text-destructive">*</span>
+                Estação <span className="text-red-500">*</span>
               </Label>
               <SearchableDropdown
                 items={estacoes.map((e) => ({

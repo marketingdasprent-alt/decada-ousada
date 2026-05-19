@@ -192,7 +192,9 @@ export function ViaturasTiposTab() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="tipo-nome">Nome *</Label>
+              <Label htmlFor="tipo-nome">
+                Nome <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="tipo-nome"
                 placeholder="Ex: Ligeira TVDE"

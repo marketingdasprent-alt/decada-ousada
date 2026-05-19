@@ -223,7 +223,9 @@ export function ViaturaTabAnexos({ viaturaId }: ViaturaTabAnexosProps) {
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <div>
-                <Label>Ficheiro *</Label>
+                <Label>
+                  Ficheiro <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"

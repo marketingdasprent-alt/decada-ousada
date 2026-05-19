@@ -234,7 +234,9 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
                 name="matricula"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Matrícula *</FormLabel>
+                    <FormLabel>
+                      Matrícula <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="AA-00-BB" {...field} className="uppercase" />
                     </FormControl>
@@ -278,7 +280,9 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
                 name="marca"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Marca *</FormLabel>
+                    <FormLabel>
+                      Marca <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="Tesla" {...field} />
                     </FormControl>
@@ -292,7 +296,9 @@ export function ViaturaDialog({ viatura, open, onOpenChange, onSuccess }: Viatur
                 name="modelo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Modelo *</FormLabel>
+                    <FormLabel>
+                      Modelo <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="Model 3" {...field} />
                     </FormControl>

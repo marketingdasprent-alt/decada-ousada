@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -325,7 +325,9 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
                 Introduza as credenciais da sua conta {selectedPlatform.name}.
               </p>
               <div className="space-y-2">
-                <Label htmlFor="login">Email *</Label>
+                <Label htmlFor="login">
+                  Email <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="login"
                   type="email"
@@ -335,7 +337,9 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
+                <Label htmlFor="password">
+                  Password <span className="text-red-500">*</span>
+                </Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -382,7 +386,9 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
 
             {/* Name */}
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome da Integração *</Label>
+              <Label htmlFor="nome">
+                Nome da Integração <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="nome"
                 placeholder={`Ex: ${selectedPlatform.name} WeGest`}
