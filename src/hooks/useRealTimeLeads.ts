@@ -98,28 +98,31 @@ export const useRealTimeLeads = (onRealtimeEvent?: (payload: any) => void) => {
 
             if (gestorFoiAtribuido) {
               // Verificar se o gestor atual é o novo responsável
-              supabase.auth.getUser().then(async ({ data: { user } }) => {
-                if (!user) return;
+              supabase.auth
+                .getUser()
+                .then(async ({ data: { user } }) => {
+                  if (!user) return;
 
-                const { data: profile } = await supabase
-                  .from('profiles')
-                  .select('nome')
-                  .eq('id', user.id)
-                  .single();
+                  const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('nome')
+                    .eq('id', user.id)
+                    .single();
 
-                if (profile?.nome !== updatedLead.gestor_responsavel) {
-                  // Remover o lead da lista (foi atribuído a outro gestor)
-                  console.log(
-                    `🚫 Lead "${updatedLead.nome}" foi atribuído a ${updatedLead.gestor_responsavel}, removendo da lista`
-                  );
-                  setLeads((current) => current.filter((lead) => lead.id !== updatedLead.id));
-                } else {
-                  // É o gestor atual, atualizar normalmente
-                  setLeads((current) =>
-                    current.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead))
-                  );
-                }
-              });
+                  if (profile?.nome !== updatedLead.gestor_responsavel) {
+                    // Remover o lead da lista (foi atribuído a outro gestor)
+                    console.log(
+                      `Lead "${updatedLead.nome}" foi atribuído a ${updatedLead.gestor_responsavel}, removendo da lista`
+                    );
+                    setLeads((current) => current.filter((lead) => lead.id !== updatedLead.id));
+                  } else {
+                    // É o gestor atual, atualizar normalmente
+                    setLeads((current) =>
+                      current.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead))
+                    );
+                  }
+                })
+                .catch((err) => console.error('Erro ao verificar gestor:', err));
             } else {
               // Atualização normal (sem mudança de gestor)
               setLeads((current) =>

@@ -22,9 +22,32 @@ const SELECT_COLUMNS = `
   data_inicio, data_fim,
   cliente_id, cliente_nome,
   condutor_id, condutor_nome,
-  estado, valor_total, observacoes,
+  estado, valor_total,
+  observacoes, observacoes_internas,
+  aluguer_longa_duracao, renovacao_opcao, renovacao_intervalo_dias,
+  franquia_valor, caucao_valor, kms_incluidos, km_adicional_valor,
   deleted_at, created_by, updated_by, created_at, updated_at
 `;
+
+/** Carrega uma reserva específica por ID (não soft-deleted). */
+export function useReserva(id: string | null | undefined) {
+  return useQuery({
+    queryKey: [...QUERY_KEY_BASE, 'single', id ?? null],
+    queryFn: async (): Promise<Reserva | null> => {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from('reservas')
+        .select(SELECT_COLUMNS)
+        .eq('id', id)
+        .is('deleted_at', null)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as Reserva | null) ?? null;
+    },
+    enabled: !!id,
+    staleTime: 30_000,
+  });
+}
 
 export function useReservas(options: UseReservasOptions = {}) {
   const { from, to, estado, viaturaId, limit = 1000, enabled = true } = options;
@@ -61,25 +84,6 @@ export function useReservas(options: UseReservasOptions = {}) {
     placeholderData: keepPreviousData,
     staleTime: 30_000,
     enabled,
-  });
-}
-
-/** Carregar uma única reserva por ID (ex.: ao gerar contrato a partir de reserva). */
-export function useReserva(id: string | null | undefined) {
-  return useQuery({
-    queryKey: [...QUERY_KEY_BASE, 'detail', id],
-    queryFn: async (): Promise<Reserva | null> => {
-      if (!id) return null;
-      const { data, error } = await supabase
-        .from('reservas')
-        .select(SELECT_COLUMNS)
-        .eq('id', id)
-        .is('deleted_at', null)
-        .maybeSingle();
-      if (error) throw error;
-      return data as Reserva | null;
-    },
-    enabled: !!id,
   });
 }
 

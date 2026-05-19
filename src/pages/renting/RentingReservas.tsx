@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { CalendarCheck, Download, Plus, Search } from 'lucide-react';
 
@@ -20,7 +21,6 @@ import {
   type SortColumn,
   type SortDir,
 } from '@/components/renting/reservas/ReservasTabela';
-import { ReservaDialog } from '@/components/renting/reservas/ReservaDialog';
 import {
   csvEscape,
   formatDateTime,
@@ -39,6 +39,7 @@ const FILTROS_INICIAIS: ReservasFiltrosState = {
 const HARD_LIMIT = 1000;
 
 const RentingReservas = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
 
@@ -48,9 +49,6 @@ const RentingReservas = () => {
   const [filtros, setFiltros] = useState<ReservasFiltrosState>(FILTROS_INICIAIS);
   const [sortColumn, setSortColumn] = useState<SortColumn>('codigo');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingReserva, setEditingReserva] = useState<Reserva | null>(null);
 
   const estacaoNomeById = useMemo(() => {
     const m = new Map<string, string>();
@@ -126,13 +124,11 @@ const RentingReservas = () => {
   };
 
   const handleRowClick = (r: Reserva) => {
-    setEditingReserva(r);
-    setDialogOpen(true);
+    navigate(`/renting/reservas/${r.id}`);
   };
 
   const handleCreateClick = () => {
-    setEditingReserva(null);
-    setDialogOpen(true);
+    navigate('/renting/reservas/nova');
   };
 
   const handleExport = () => {
@@ -244,8 +240,6 @@ const RentingReservas = () => {
           </div>
         </CardContent>
       </Card>
-
-      <ReservaDialog open={dialogOpen} onOpenChange={setDialogOpen} reserva={editingReserva} />
     </div>
   );
 };
