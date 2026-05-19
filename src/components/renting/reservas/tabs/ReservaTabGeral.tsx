@@ -115,7 +115,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
         <div className="flex items-center justify-between gap-2 pb-2 border-b mb-4">
           <div className="flex items-center gap-2">
             <h3 className="text-base font-semibold">Cliente da Reserva</h3>
-            <span className="text-destructive text-sm">*</span>
+            <span className="text-red-500 text-sm">*</span>
           </div>
           <span className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground">
             Quem encomendou
@@ -190,7 +190,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Estação Início <span className="text-destructive">*</span>
+                  Estação Início <span className="text-red-500">*</span>
                 </FormLabel>
                 <Select
                   value={field.value ?? SENTINEL_NONE}
@@ -220,7 +220,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Data Início <span className="text-destructive">*</span>
+                  Data Início <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -263,7 +263,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Estação Fim <span className="text-destructive">*</span>
+                  Estação Fim <span className="text-red-500">*</span>
                 </FormLabel>
                 <Select
                   value={field.value ?? SENTINEL_NONE}
@@ -293,7 +293,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Data Fim <span className="text-destructive">*</span>
+                  Data Fim <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -438,7 +438,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
               return (
                 <FormItem>
                   <FormLabel>
-                    Viatura <span className="text-destructive">*</span>
+                    Viatura <span className="text-red-500">*</span>
                   </FormLabel>
                   <Popover
                     open={viaturaPopoverOpen}
