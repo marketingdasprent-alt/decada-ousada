@@ -19,10 +19,23 @@ export const RESERVA_ESTADOS_ACTIVOS: readonly ReservaEstado[] = [
 export const ESTADO_LABELS: Record<ReservaEstado, string> = {
   pendente: 'Pendente',
   confirmada: 'Confirmada',
-  em_curso: 'Em Curso',
+  em_curso: 'Em Contrato',
   concluida: 'Concluída',
   cancelada: 'Cancelada',
   expirada: 'Expirada',
+};
+
+export const RENOVACAO_OPCOES = [
+  'primeiro_dia_mes',
+  'mesmo_dia_cada_mes',
+  'intervalo_dias',
+] as const;
+export type RenovacaoOpcao = (typeof RENOVACAO_OPCOES)[number];
+
+export const RENOVACAO_OPCAO_LABELS: Record<RenovacaoOpcao, string> = {
+  primeiro_dia_mes: 'Ao primeiro dia de cada mês',
+  mesmo_dia_cada_mes: 'No mesmo dia em cada mês',
+  intervalo_dias: 'A cada intervalo específico de dias',
 };
 
 export type Reserva = {
@@ -43,6 +56,16 @@ export type Reserva = {
   estado: ReservaEstado;
   valor_total: number | null;
   observacoes: string | null;
+  observacoes_internas: string | null;
+  // Longa duração / renovação
+  aluguer_longa_duracao: boolean;
+  renovacao_opcao: RenovacaoOpcao | null;
+  renovacao_intervalo_dias: number | null;
+  // Financeiro / kms
+  franquia_valor: number | null;
+  caucao_valor: number | null;
+  kms_incluidos: number | null;
+  km_adicional_valor: number | null;
   deleted_at: string | null;
   created_by: string | null;
   updated_by: string | null;

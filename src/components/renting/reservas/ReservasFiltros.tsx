@@ -118,12 +118,9 @@ export const ReservasFiltros: React.FC<ReservasFiltrosProps> = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="pendente">Pendente</SelectItem>
               <SelectItem value="confirmada">Confirmada</SelectItem>
-              <SelectItem value="em_curso">Em Curso</SelectItem>
-              <SelectItem value="concluida">Concluída</SelectItem>
+              <SelectItem value="em_curso">Em Contrato</SelectItem>
               <SelectItem value="cancelada">Cancelada</SelectItem>
-              <SelectItem value="expirada">Expirada</SelectItem>
             </SelectContent>
           </Select>
           {hasActive && (
