@@ -1,13 +1,20 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Search, Eraser, ChevronDown, SlidersHorizontal } from 'lucide-react';
-import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { ChevronDown, Eraser, Plus, Search, SlidersHorizontal, Users } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Skeleton } from '@/components/ui/skeleton';
+import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -16,15 +23,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+
 import { useClientes } from '@/hooks/useClientes';
-import { normalizeString } from '@/lib/utils';
-import { cn } from '@/lib/utils';
+
+import { cn, normalizeString } from '@/lib/utils';
+
 import type { ClienteComDocumentos } from '@/types/cliente';
 
 function formatDate(iso: string | null): string {

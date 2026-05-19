@@ -12,11 +12,6 @@ import {
   User,
 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Form } from '@/components/ui/form';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +22,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Form } from '@/components/ui/form';
+import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 import {
   useClientes,
@@ -34,8 +34,10 @@ import {
   useUpdateCliente,
   useDeleteCliente,
 } from '@/hooks/useClientes';
+
 import { ClienteAnexosTab } from '@/components/renting/ClienteAnexosTab';
 import { ClienteReservasContratosTab } from '@/components/renting/ClienteReservasContratosTab';
+import { RequiredMark } from '@/components/renting/ValidatedTextField';
 import {
   DocTipoChangeWatcher,
   SeccaoCarta,
@@ -43,7 +45,6 @@ import {
   SeccaoDocumento,
   SeccaoMorada,
 } from '@/components/renting/ClienteDialog';
-import { RequiredMark } from '@/components/renting/ValidatedTextField';
 import {
   buildCartaPayload,
   buildClientePayload,

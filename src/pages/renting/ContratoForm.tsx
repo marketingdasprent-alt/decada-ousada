@@ -10,9 +10,6 @@ import { Form } from '@/components/ui/form';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
 import { useClientes } from '@/hooks/useClientes';
-import { useViaturas } from '@/hooks/useViaturas';
-import { useEstacoes } from '@/hooks/useEstacoes';
-import { useReserva } from '@/hooks/useReservas';
 import {
   useContratoConflito,
   useContratoRenting,
@@ -20,18 +17,22 @@ import {
   useDeleteContratoRenting,
   useUpdateContratoRenting,
 } from '@/hooks/useContratosRenting';
+import { useEstacoes } from '@/hooks/useEstacoes';
+import { useReserva } from '@/hooks/useReservas';
+import { useViaturas } from '@/hooks/useViaturas';
 
+import { ContratoDeleteConfirm } from '@/components/renting/contratos/ContratoDeleteConfirm';
 import { ContratoFormSecoes } from '@/components/renting/contratos/ContratoFormSecoes';
 import { ContratoTabsPlaceholder } from '@/components/renting/contratos/ContratoTabsPlaceholder';
-import { ContratoDeleteConfirm } from '@/components/renting/contratos/ContratoDeleteConfirm';
 import { ResumoContrato } from '@/components/renting/contratos/ResumoContrato';
 import {
-  contratoFormSchema,
   DEFAULT_CONTRATO_VALUES,
+  contratoFormSchema,
   isoToLocalInput,
   localInputToIso,
   type ContratoFormValues,
 } from '@/components/renting/contratos/contratoForm.schema';
+
 import type { ContratoRentingInsert } from '@/types/contratoRenting';
 
 const ContratoForm = () => {

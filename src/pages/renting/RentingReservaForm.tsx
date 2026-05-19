@@ -7,32 +7,32 @@ import { AlertTriangle, ArrowLeft, CalendarCheck, FileText, Loader2, Trash2 } fr
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { useClientes } from '@/hooks/useClientes';
-import { useViaturas } from '@/hooks/useViaturas';
 import { useEstacoes } from '@/hooks/useEstacoes';
 import {
-  useReserva,
   useCreateReserva,
-  useUpdateReserva,
   useDeleteReserva,
+  useReserva,
   useReservaConflito,
+  useUpdateReserva,
 } from '@/hooks/useReservas';
+import { useViaturas } from '@/hooks/useViaturas';
 
+import { ReservaDeleteConfirm } from '@/components/renting/reservas/ReservaDeleteConfirm';
+import { ReservaResumoSidebar } from '@/components/renting/reservas/ReservaResumoSidebar';
+import { ReservaTabAnexos } from '@/components/renting/reservas/tabs/ReservaTabAnexos';
+import { ReservaTabCaixa } from '@/components/renting/reservas/tabs/ReservaTabCaixa';
+import { ReservaTabCondutores } from '@/components/renting/reservas/tabs/ReservaTabCondutores';
+import { ReservaTabGeral } from '@/components/renting/reservas/tabs/ReservaTabGeral';
 import {
   isoToLocalInput,
   localInputToIso,
   reservaDialogSchema,
   type ReservaFormValues,
 } from '@/components/renting/reservas/reservaDialog.schema';
-import { ReservaDeleteConfirm } from '@/components/renting/reservas/ReservaDeleteConfirm';
-import { ReservaResumoSidebar } from '@/components/renting/reservas/ReservaResumoSidebar';
-import { ReservaTabGeral } from '@/components/renting/reservas/tabs/ReservaTabGeral';
-import { ReservaTabCondutores } from '@/components/renting/reservas/tabs/ReservaTabCondutores';
-import { ReservaTabCaixa } from '@/components/renting/reservas/tabs/ReservaTabCaixa';
-import { ReservaTabAnexos } from '@/components/renting/reservas/tabs/ReservaTabAnexos';
 
 import type { ReservaInsert } from '@/types/reserva';
 

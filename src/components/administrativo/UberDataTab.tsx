@@ -346,7 +346,6 @@ export const UberDataTab: React.FC = () => {
 
       let successCount = 0;
       for (const config of uberConfigs) {
-        console.log(`Rescuing Uber for: ${config.nome}`);
         const { data, error } = await supabase.functions.invoke('uber-rescue-apify', {
           body: { integracao_id: config.id },
         });

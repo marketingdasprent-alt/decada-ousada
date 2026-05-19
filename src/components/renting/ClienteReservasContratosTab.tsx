@@ -78,7 +78,6 @@ export const ClienteReservasContratosTab: React.FC<ClienteReservasContratosTabPr
 
   const hasReservas = reservas.length > 0;
   const hasContratos = contratos.length > 0;
-  const hasAmbos = hasReservas && hasContratos;
 
   // Determina a aba inicial e o grid das abas
   let defaultTab = 'reservas';
@@ -100,14 +99,12 @@ export const ClienteReservasContratosTab: React.FC<ClienteReservasContratosTabPr
         )}
       </TabsList>
 
-      {/* Reservas */}
       {hasReservas && (
         <TabsContent value="reservas" className="mt-4">
           <ReservasTable reservas={reservas} navigate={navigate} />
         </TabsContent>
       )}
 
-      {/* Contratos */}
       {hasContratos && (
         <TabsContent value="contratos" className="mt-4">
           <ContratosTable contratos={contratos} navigate={navigate} />
