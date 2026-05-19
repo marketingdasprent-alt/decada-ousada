@@ -156,3 +156,20 @@ export type ContratoCondutor = {
   created_by: string | null;
   created_at: string;
 };
+
+// ============================================================
+// Anexos (1:n por contrato)
+// ============================================================
+export type ContratoAnexo = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  nome: string;
+  ficheiro_url: string;
+  tamanho_bytes: number | null;
+  mime_type: string | null;
+  descricao: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};

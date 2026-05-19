@@ -6,6 +6,8 @@ interface ContratoTabsPlaceholderProps {
   geralContent: React.ReactNode;
   /** Conteúdo da tab "Condutores" — passado pela página pai. */
   condutoresContent: React.ReactNode;
+  /** Conteúdo da tab "Anexos" — passado pela página pai. */
+  anexosContent: React.ReactNode;
 }
 
 const PLACEHOLDER_TABS = [
@@ -14,13 +16,13 @@ const PLACEHOLDER_TABS = [
   { value: 'coberturas', label: 'Coberturas' },
   { value: 'pacotes', label: 'Pacotes' },
   { value: 'fecho', label: 'Fecho' },
-  { value: 'anexos', label: 'Anexos' },
   { value: 'outros', label: 'Outros' },
 ] as const;
 
 export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = ({
   geralContent,
   condutoresContent,
+  anexosContent,
 }) => {
   const [active, setActive] = useState<string>('geral');
 
@@ -34,6 +36,7 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
             {t.label}
           </TabsTrigger>
         ))}
+        <TabsTrigger value="anexos">Anexos</TabsTrigger>
       </TabsList>
 
       <TabsContent value="geral" className="mt-4">
@@ -56,6 +59,10 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
           </div>
         </TabsContent>
       ))}
+
+      <TabsContent value="anexos" className="mt-4">
+        {anexosContent}
+      </TabsContent>
     </Tabs>
   );
 };

@@ -24,6 +24,7 @@ import { useViaturas } from '@/hooks/useViaturas';
 
 import { ContratoDeleteConfirm } from '@/components/renting/contratos/ContratoDeleteConfirm';
 import { ContratoFormSecoes } from '@/components/renting/contratos/ContratoFormSecoes';
+import { ContratoTabAnexos } from '@/components/renting/contratos/ContratoTabAnexos';
 import { ContratoTabsPlaceholder } from '@/components/renting/contratos/ContratoTabsPlaceholder';
 import { ResumoContrato } from '@/components/renting/contratos/ResumoContrato';
 import { CondutoresFields } from '@/components/renting/shared/CondutoresFields';
@@ -368,6 +369,7 @@ const ContratoForm = () => {
                       clientePrincipalLabel="Cliente do contrato também conduz"
                     />
                   }
+                  anexosContent={<ContratoTabAnexos contratoId={contrato?.id ?? null} />}
                 />
 
                 {temConflito && (
