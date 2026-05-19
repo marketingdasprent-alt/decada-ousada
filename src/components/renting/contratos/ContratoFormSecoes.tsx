@@ -4,10 +4,10 @@ import type { UseFormReturn } from 'react-hook-form';
 import type { ClienteComDocumentos } from '@/types/cliente';
 import type { Estacao } from '@/hooks/useEstacoes';
 import type { ViaturaBasic } from '@/hooks/useViaturas';
+import { ALDFields } from '@/components/renting/shared/ALDFields';
+import { FranquiaKmsFields } from '@/components/renting/shared/FranquiaKmsFields';
 import type { ContratoFormValues } from './contratoForm.schema';
-import { SectionALD } from './SectionALD';
 import { SectionEntregaRecolha } from './SectionEntregaRecolha';
-import { SectionFranquiaKms } from './SectionFranquiaKms';
 import { SectionInfoAdicional } from './SectionInfoAdicional';
 import { SectionGeral } from './SectionGeral';
 import { SectionViatura } from './SectionViatura';
@@ -31,10 +31,10 @@ export const ContratoFormSecoes: React.FC<ContratoFormSecoesProps> = ({
 }) => (
   <div className="space-y-6">
     <SectionEntregaRecolha form={form} estacoes={estacoes} />
-    <SectionALD form={form} />
+    <ALDFields idPrefix="contrato" />
     <SectionViatura form={form} viaturas={viaturas} estacoes={estacoes} />
     <SectionGeral form={form} clientes={clientes} />
-    <SectionFranquiaKms form={form} />
+    <FranquiaKmsFields />
     <SectionInfoAdicional form={form} />
   </div>
 );

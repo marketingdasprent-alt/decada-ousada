@@ -1,6 +1,4 @@
-import type React from 'react';
-import type { UseFormReturn } from 'react-hook-form';
-
+import { useFormContext, type FieldValues } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,20 +11,36 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
-import {
-  CONTRATO_RENOVACAO_OPCAO_LABELS,
-  CONTRATO_RENOVACAO_OPCOES,
-} from '@/types/contratoRenting';
-import type { ContratoFormValues } from './contratoForm.schema';
-import { SENTINEL_NONE } from './contratoFormConstants';
+import { RENOVACAO_OPCAO_LABELS, RENOVACAO_OPCOES, type RenovacaoOpcao } from '@/types/reserva';
 
-interface SectionALDProps {
-  form: UseFormReturn<ContratoFormValues>;
+const SENTINEL_NONE = '__none__';
+
+/**
+ * Campos partilhados de "Aluguer de Longa Duração" entre Reserva e Contrato.
+ * Usa useFormContext — basta o form pai estar dentro de <FormProvider>.
+ *
+ * O form pai deve ter as seguintes chaves:
+ *   - is_longa_duracao: boolean
+ *   - renovacao_opcao: RenovacaoOpcao | null
+ *   - renovacao_intervalo_dias: number | null
+ */
+interface ALDFieldsShape extends FieldValues {
+  is_longa_duracao: boolean;
+  renovacao_opcao: RenovacaoOpcao | null;
+  renovacao_intervalo_dias: number | null;
 }
 
-export const SectionALD: React.FC<SectionALDProps> = ({ form }) => {
+interface ALDFieldsProps {
+  /** Prefix opcional para o id do checkbox (evita colisões quando há vários no mesmo ecrã). */
+  idPrefix?: string;
+}
+
+export const ALDFields: React.FC<ALDFieldsProps> = ({ idPrefix = 'ald' }) => {
+  const form = useFormContext<ALDFieldsShape>();
   const longaDuracao = form.watch('is_longa_duracao');
   const renovacaoOpcao = form.watch('renovacao_opcao');
+
+  const checkboxId = `${idPrefix}-longa-duracao`;
 
   return (
     <div
@@ -51,13 +65,10 @@ export const SectionALD: React.FC<SectionALDProps> = ({ form }) => {
                     form.setValue('renovacao_intervalo_dias', null);
                   }
                 }}
-                id="contrato-longa-duracao"
+                id={checkboxId}
               />
             </FormControl>
-            <FormLabel
-              htmlFor="contrato-longa-duracao"
-              className="cursor-pointer font-semibold m-0"
-            >
+            <FormLabel htmlFor={checkboxId} className="cursor-pointer font-semibold m-0">
               Aluguer de Longa Duração
             </FormLabel>
           </FormItem>
@@ -90,10 +101,7 @@ export const SectionALD: React.FC<SectionALDProps> = ({ form }) => {
                 <Select
                   value={field.value ?? SENTINEL_NONE}
                   onValueChange={(v) => {
-                    const next =
-                      v === SENTINEL_NONE
-                        ? null
-                        : (v as (typeof CONTRATO_RENOVACAO_OPCOES)[number]);
+                    const next = v === SENTINEL_NONE ? null : (v as RenovacaoOpcao);
                     field.onChange(next);
                     if (next !== 'intervalo_dias') {
                       form.setValue('renovacao_intervalo_dias', null);
@@ -107,9 +115,9 @@ export const SectionALD: React.FC<SectionALDProps> = ({ form }) => {
                   </FormControl>
                   <SelectContent>
                     <SelectItem value={SENTINEL_NONE}>—</SelectItem>
-                    {CONTRATO_RENOVACAO_OPCOES.map((opt) => (
+                    {RENOVACAO_OPCOES.map((opt) => (
                       <SelectItem key={opt} value={opt}>
-                        {CONTRATO_RENOVACAO_OPCAO_LABELS[opt]}
+                        {RENOVACAO_OPCAO_LABELS[opt]}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -132,7 +140,7 @@ export const SectionALD: React.FC<SectionALDProps> = ({ form }) => {
                       type="number"
                       min={1}
                       className="h-8 w-20 bg-background text-center"
-                      value={field.value ?? ''}
+                      value={(field.value as number | null) ?? ''}
                       onChange={(e) =>
                         field.onChange(e.target.value === '' ? null : Number(e.target.value))
                       }

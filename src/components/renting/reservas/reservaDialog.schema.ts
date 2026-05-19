@@ -42,7 +42,7 @@ export const reservaDialogSchema = z
     kms_incluidos: optionalNumber,
     km_adicional_valor: optionalNumber,
 
-    aluguer_longa_duracao: z.boolean().default(false),
+    is_longa_duracao: z.boolean().default(false),
     renovacao_opcao: z.enum(RENOVACAO_OPCOES).nullable().optional(),
     renovacao_intervalo_dias: optionalNumber,
 

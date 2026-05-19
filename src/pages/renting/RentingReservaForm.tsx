@@ -59,7 +59,7 @@ const DEFAULT_VALUES: ReservaFormValues = {
   caucao_valor: null,
   kms_incluidos: null,
   km_adicional_valor: null,
-  aluguer_longa_duracao: false,
+  is_longa_duracao: false,
   renovacao_opcao: null,
   renovacao_intervalo_dias: null,
   observacoes: '',
@@ -139,7 +139,7 @@ const RentingReservaForm = () => {
       caucao_valor: reserva.caucao_valor,
       kms_incluidos: reserva.kms_incluidos,
       km_adicional_valor: reserva.km_adicional_valor,
-      aluguer_longa_duracao: reserva.aluguer_longa_duracao,
+      is_longa_duracao: reserva.is_longa_duracao,
       renovacao_opcao: reserva.renovacao_opcao,
       renovacao_intervalo_dias: reserva.renovacao_intervalo_dias,
       observacoes: reserva.observacoes ?? '',
@@ -199,10 +199,10 @@ const RentingReservaForm = () => {
         caucao_valor: values.caucao_valor,
         kms_incluidos: values.kms_incluidos,
         km_adicional_valor: values.km_adicional_valor,
-        aluguer_longa_duracao: values.aluguer_longa_duracao,
-        renovacao_opcao: values.aluguer_longa_duracao ? (values.renovacao_opcao ?? null) : null,
+        is_longa_duracao: values.is_longa_duracao,
+        renovacao_opcao: values.is_longa_duracao ? (values.renovacao_opcao ?? null) : null,
         renovacao_intervalo_dias:
-          values.aluguer_longa_duracao && values.renovacao_opcao === 'intervalo_dias'
+          values.is_longa_duracao && values.renovacao_opcao === 'intervalo_dias'
             ? values.renovacao_intervalo_dias
             : null,
         observacoes: values.observacoes || null,

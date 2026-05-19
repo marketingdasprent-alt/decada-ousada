@@ -145,8 +145,8 @@ const ContratoForm = () => {
         origem: 'sistema',
         // Orçamento da reserva → override do total no contrato
         valor_total_manual: reservaFromQuery.valor_total,
-        // ALD da reserva (mapping: reserva.aluguer_longa_duracao → contrato.is_longa_duracao)
-        is_longa_duracao: reservaFromQuery.aluguer_longa_duracao ?? false,
+        // ALD da reserva
+        is_longa_duracao: reservaFromQuery.is_longa_duracao ?? false,
         renovacao_opcao: reservaFromQuery.renovacao_opcao ?? null,
         renovacao_intervalo_dias: reservaFromQuery.renovacao_intervalo_dias,
         // Financeiro extra da reserva
