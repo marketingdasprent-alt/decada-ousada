@@ -106,6 +106,15 @@ const ContratoForm = () => {
         desconto_percentagem: contrato.desconto_percentagem,
         taxa_iva: contrato.taxa_iva,
         valor_total_manual: contrato.valor_total_manual,
+        // ALD
+        aluguer_longa_duracao: contrato.aluguer_longa_duracao,
+        renovacao_opcao: contrato.renovacao_opcao,
+        renovacao_intervalo_dias: contrato.renovacao_intervalo_dias,
+        // Financeiro extra
+        franquia_valor: contrato.franquia_valor,
+        caucao_valor: contrato.caucao_valor,
+        kms_incluidos: contrato.kms_incluidos,
+        km_adicional_valor: contrato.km_adicional_valor,
         voucher_codigo: contrato.voucher_codigo ?? '',
         numero_processo: contrato.numero_processo ?? '',
         voo_referencia: contrato.voo_referencia ?? '',
@@ -114,10 +123,13 @@ const ContratoForm = () => {
         comentarios_entrega: contrato.comentarios_entrega ?? '',
         comentarios_recolha: contrato.comentarios_recolha ?? '',
         observacoes: contrato.observacoes ?? '',
+        observacoes_internas: contrato.observacoes_internas ?? '',
       });
       return;
     }
     if (!isEdit && reservaFromQuery) {
+      // Conversão reserva → contrato: copia TUDO o que faz sentido.
+      // O orçamento da reserva (valor_total) torna-se valor_total_manual no contrato.
       form.reset({
         ...DEFAULT_CONTRATO_VALUES,
         reserva_id: reservaFromQuery.id,
@@ -130,6 +142,19 @@ const ContratoForm = () => {
         data_inicio: isoToLocalInput(reservaFromQuery.data_inicio),
         data_fim: isoToLocalInput(reservaFromQuery.data_fim),
         origem: 'sistema',
+        // Orçamento da reserva → override do total no contrato
+        valor_total_manual: reservaFromQuery.valor_total,
+        // ALD da reserva
+        aluguer_longa_duracao: reservaFromQuery.aluguer_longa_duracao ?? false,
+        renovacao_opcao: reservaFromQuery.renovacao_opcao ?? null,
+        renovacao_intervalo_dias: reservaFromQuery.renovacao_intervalo_dias,
+        // Financeiro extra da reserva
+        franquia_valor: reservaFromQuery.franquia_valor,
+        caucao_valor: reservaFromQuery.caucao_valor,
+        kms_incluidos: reservaFromQuery.kms_incluidos,
+        km_adicional_valor: reservaFromQuery.km_adicional_valor,
+        observacoes: reservaFromQuery.observacoes ?? '',
+        observacoes_internas: reservaFromQuery.observacoes_internas ?? '',
       });
     }
   }, [isEdit, contrato, reservaFromQuery, form]);
@@ -165,7 +190,7 @@ const ContratoForm = () => {
     const matriculaFinal = values.matricula || viatura?.matricula || null;
 
     const payload: ContratoRentingInsert = {
-      reserva_id: values.reserva_id || null,
+      reserva_id: values.reserva_id,
       cliente_id: values.cliente_id,
       viatura_id: values.viatura_id,
       matricula: matriculaFinal,
@@ -182,6 +207,15 @@ const ContratoForm = () => {
       desconto_percentagem: values.desconto_percentagem,
       taxa_iva: values.taxa_iva,
       valor_total_manual: values.valor_total_manual,
+      // ALD
+      aluguer_longa_duracao: values.aluguer_longa_duracao,
+      renovacao_opcao: values.renovacao_opcao ?? null,
+      renovacao_intervalo_dias: values.renovacao_intervalo_dias,
+      // Financeiro extra
+      franquia_valor: values.franquia_valor,
+      caucao_valor: values.caucao_valor,
+      kms_incluidos: values.kms_incluidos,
+      km_adicional_valor: values.km_adicional_valor,
       voucher_codigo: values.voucher_codigo || null,
       numero_processo: values.numero_processo || null,
       voo_referencia: values.voo_referencia || null,
@@ -190,14 +224,14 @@ const ContratoForm = () => {
       comentarios_entrega: values.comentarios_entrega || null,
       comentarios_recolha: values.comentarios_recolha || null,
       observacoes: values.observacoes || null,
+      observacoes_internas: values.observacoes_internas || null,
     };
 
     if (isEdit && contrato) {
-      updateMutation.mutate(
-        { id: contrato.id, ...payload },
-        { onSuccess: () => navigate('/renting/contratos') }
-      );
+      // Editar: ficar na própria página (utilizador vê toast e continua a trabalhar).
+      updateMutation.mutate({ id: contrato.id, ...payload });
     } else {
+      // Criar: navegar para modo edição do novo contrato.
       createMutation.mutate(payload, {
         onSuccess: (created) => navigate(`/renting/contratos/${created.id}`),
       });
@@ -236,10 +270,45 @@ const ContratoForm = () => {
   return (
     <div className="w-full">
       <StickyPageHeader
-        title={isEdit ? `Editar Contrato #${contrato?.codigo}` : 'Criar Contrato'}
-        description={isEdit ? 'Actualizar dados do contrato' : 'Novo contrato de renting'}
+        title={isEdit ? `Contrato #${contrato?.codigo}` : 'Novo Contrato'}
+        description={isEdit ? 'Editar dados do contrato existente' : 'Novo contrato de renting'}
         icon={FileText}
-      />
+      >
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => navigate('/renting/contratos')}
+          className="gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
+        </Button>
+        {isEdit && contrato && (
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+            className="gap-2"
+          >
+            {deleteMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            Eliminar
+          </Button>
+        )}
+        <Button
+          type="button"
+          onClick={form.handleSubmit(onSubmit)}
+          disabled={isPending}
+          className="gap-2"
+        >
+          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isEdit ? 'Guardar' : 'Abrir Contrato'}
+        </Button>
+      </StickyPageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
         <Card className="bg-card border-border">
@@ -266,38 +335,6 @@ const ContratoForm = () => {
                     </p>
                   </div>
                 )}
-
-                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate('/renting/contratos')}
-                    className="gap-2"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Voltar
-                  </Button>
-                  {isEdit && contrato && (
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={handleDelete}
-                      disabled={deleteMutation.isPending}
-                      className="gap-2"
-                    >
-                      {deleteMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                      Eliminar
-                    </Button>
-                  )}
-                  <Button type="submit" disabled={isPending} className="ml-auto">
-                    {isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-                    {isEdit ? 'Guardar Alterações' : 'Abrir Contrato'}
-                  </Button>
-                </div>
               </form>
             </Form>
           </CardContent>

@@ -31,11 +31,13 @@ const SELECT_COLUMNS = `
   estado_operacional, estado_financeiro, origem,
   tarifa_diaria, desconto_percentagem, taxa_iva, valor_total_manual,
   total_subtotal, total_iva, total_final, facturado_em,
+  aluguer_longa_duracao, renovacao_opcao, renovacao_intervalo_dias,
+  franquia_valor, caucao_valor, kms_incluidos, km_adicional_valor,
   voucher_codigo,
   numero_processo, voo_referencia,
   local_entrega, local_recolha,
   comentarios_entrega, comentarios_recolha,
-  observacoes,
+  observacoes, observacoes_internas,
   deleted_at, created_by, updated_by, created_at, updated_at
 `;
 

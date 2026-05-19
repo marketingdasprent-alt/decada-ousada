@@ -1,14 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import {
-  Users,
-  Plus,
-  Pencil,
-  Trash2,
-  Search,
-  Eraser,
-  ChevronDown,
-  SlidersHorizontal,
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Plus, Search, Eraser, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,23 +17,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ClienteDialog } from '@/components/renting/ClienteDialog';
-import { useClientes, useDeleteCliente } from '@/hooks/useClientes';
+import { useClientes } from '@/hooks/useClientes';
 import { normalizeString } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import type { ClienteComDocumentos } from '@/types/cliente';
@@ -215,12 +196,9 @@ const RentingClientes = () => {
     );
   };
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [clienteToEdit, setClienteToEdit] = useState<ClienteComDocumentos | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<ClienteComDocumentos | null>(null);
+  const navigate = useNavigate();
 
   const { data: clientes = [], isLoading } = useClientes();
-  const deleteMutation = useDeleteCliente();
 
   // Opções dinâmicas dos selects (extraídas dos dados existentes)
   const paisOptions = useMemo(() => {
@@ -378,18 +356,11 @@ const RentingClientes = () => {
   };
 
   const handleNew = () => {
-    setClienteToEdit(null);
-    setDialogOpen(true);
+    navigate('/renting/clientes/novo');
   };
 
   const handleEdit = (cliente: ClienteComDocumentos) => {
-    setClienteToEdit(cliente);
-    setDialogOpen(true);
-  };
-
-  const handleDialogClose = (open: boolean) => {
-    setDialogOpen(open);
-    if (!open) setClienteToEdit(null);
+    navigate(`/renting/clientes/${cliente.id}`);
   };
 
   const generoLabel = (g: 'M' | 'F' | 'Outro' | null): string => {
@@ -686,12 +657,15 @@ const RentingClientes = () => {
                 <TableHead className="w-24">NIF</TableHead>
                 <TableHead className="w-28">Val. Doc.</TableHead>
                 <TableHead className="w-28">Val. Carta</TableHead>
-                <TableHead className="w-20 sticky right-0 bg-background" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((cliente) => (
-                <TableRow key={cliente.id} className="hover:bg-muted/50">
+                <TableRow
+                  key={cliente.id}
+                  className="hover:bg-muted/50 cursor-pointer"
+                  onClick={() => handleEdit(cliente)}
+                >
                   <TableCell className="font-mono text-sm">{cliente.codigo}</TableCell>
                   <TableCell>
                     <Badge
@@ -772,67 +746,12 @@ const RentingClientes = () => {
                       <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="py-2 sticky right-0 bg-background">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(cliente);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteTarget(cliente);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
       )}
-
-      <ClienteDialog open={dialogOpen} onOpenChange={handleDialogClose} cliente={clienteToEdit} />
-
-      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar cliente?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acção não pode ser desfeita. O cliente <strong>{deleteTarget?.nome}</strong> será
-              removido permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (deleteTarget) {
-                  deleteMutation.mutate(deleteTarget.id, {
-                    onSuccess: () => setDeleteTarget(null),
-                  });
-                }
-              }}
-            >
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

@@ -145,7 +145,11 @@ export function useCreateCliente() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ cliente, documentoIdentificacao, cartaConducao }: ClienteFormPayload) => {
+    mutationFn: async ({
+      cliente,
+      documentoIdentificacao,
+      cartaConducao,
+    }: ClienteFormPayload): Promise<{ id: string }> => {
       // 1. Criar cliente
       const { data: novoCliente, error: errCliente } = await supabase
         .from('clientes')
@@ -161,6 +165,8 @@ export function useCreateCliente() {
         upsertDocumento(clienteId, null, documentoIdentificacao),
         upsertDocumento(clienteId, null, cartaConducao),
       ]);
+
+      return { id: clienteId };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEY });

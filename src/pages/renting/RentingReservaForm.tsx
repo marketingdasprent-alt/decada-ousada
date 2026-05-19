@@ -166,13 +166,13 @@ const RentingReservaForm = () => {
     };
 
     if (isEdit && reserva) {
-      updateMutation.mutate(
-        { id: reserva.id, ...payload },
-        { onSuccess: () => navigate('/renting/reservas') }
-      );
+      // Editar: ficar na própria página (utilizador vê toast e continua a trabalhar).
+      updateMutation.mutate({ id: reserva.id, ...payload });
     } else {
+      // Criar: navegar para modo edição da nova reserva.
+      // Permite clicar logo "Criar Contrato" sem voltar à lista.
       createMutation.mutate(payload, {
-        onSuccess: () => navigate('/renting/reservas'),
+        onSuccess: (created) => navigate(`/renting/reservas/${created.id}`),
       });
     }
   };

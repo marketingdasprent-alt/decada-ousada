@@ -38,6 +38,22 @@ export const CONTRATO_ORIGEM_LABELS: Record<ContratoOrigem, string> = {
 };
 
 // ============================================================
+// Renovação (ALD — espelha reserva)
+// ============================================================
+export const CONTRATO_RENOVACAO_OPCOES = [
+  'primeiro_dia_mes',
+  'mesmo_dia_cada_mes',
+  'intervalo_dias',
+] as const;
+export type ContratoRenovacaoOpcao = (typeof CONTRATO_RENOVACAO_OPCOES)[number];
+
+export const CONTRATO_RENOVACAO_OPCAO_LABELS: Record<ContratoRenovacaoOpcao, string> = {
+  primeiro_dia_mes: 'Ao primeiro dia de cada mês',
+  mesmo_dia_cada_mes: 'No mesmo dia em cada mês',
+  intervalo_dias: 'A cada intervalo específico de dias',
+};
+
+// ============================================================
 // Tipo principal
 // ============================================================
 export type ContratoRenting = {
@@ -78,6 +94,17 @@ export type ContratoRenting = {
   total_final: number | null;
   facturado_em: string | null;
 
+  // Longa duração / renovação (espelha reserva)
+  aluguer_longa_duracao: boolean;
+  renovacao_opcao: ContratoRenovacaoOpcao | null;
+  renovacao_intervalo_dias: number | null;
+
+  // Financeiro / kms (copiado da reserva, editável no contrato)
+  franquia_valor: number | null;
+  caucao_valor: number | null;
+  kms_incluidos: number | null;
+  km_adicional_valor: number | null;
+
   voucher_codigo: string | null;
 
   numero_processo: string | null;
@@ -88,6 +115,7 @@ export type ContratoRenting = {
   comentarios_recolha: string | null;
 
   observacoes: string | null;
+  observacoes_internas: string | null;
 
   deleted_at: string | null;
   created_by: string | null;

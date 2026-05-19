@@ -55,6 +55,7 @@ const RentingReservas = lazy(() => import('@/pages/renting/RentingReservas'));
 const RentingReservaForm = lazy(() => import('@/pages/renting/RentingReservaForm'));
 const RentingMovimentacoes = lazy(() => import('@/pages/renting/RentingMovimentacoes'));
 const RentingClientes = lazy(() => import('@/pages/renting/RentingClientes'));
+const RentingClienteForm = lazy(() => import('@/pages/renting/RentingClienteForm'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -432,6 +433,26 @@ const WebAppRoutes = () => {
               <ProtectedRoute requiredResource="renting_clientes">
                 <DashboardLayout>
                   <RentingClientes />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/clientes/novo"
+            element={
+              <ProtectedRoute requiredResource="renting_clientes">
+                <DashboardLayout>
+                  <RentingClienteForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/clientes/:id"
+            element={
+              <ProtectedRoute requiredResource="renting_clientes">
+                <DashboardLayout>
+                  <RentingClienteForm />
                 </DashboardLayout>
               </ProtectedRoute>
             }

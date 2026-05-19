@@ -3,6 +3,7 @@ import {
   CONTRATO_ESTADOS_FIN,
   CONTRATO_ESTADOS_OP,
   CONTRATO_ORIGENS,
+  CONTRATO_RENOVACAO_OPCOES,
 } from '@/types/contratoRenting';
 
 const datetimeLocal = z
@@ -69,6 +70,17 @@ export const contratoFormSchema = z
       .pipe(z.number().min(0, 'Mínimo 0%').max(100, 'Máximo 100%')),
     valor_total_manual: optionalNonNegativeNumber,
 
+    // Longa duração / renovação
+    aluguer_longa_duracao: z.boolean().default(false),
+    renovacao_opcao: z.enum(CONTRATO_RENOVACAO_OPCOES).nullable().optional(),
+    renovacao_intervalo_dias: optionalNonNegativeNumber,
+
+    // Financeiro extra (espelha reserva)
+    franquia_valor: optionalNonNegativeNumber,
+    caucao_valor: optionalNonNegativeNumber,
+    kms_incluidos: optionalNonNegativeNumber,
+    km_adicional_valor: optionalNonNegativeNumber,
+
     // Voucher + info adicional
     voucher_codigo: z.string().max(50).optional().nullable(),
     numero_processo: z.string().max(100).optional().nullable(),
@@ -79,6 +91,7 @@ export const contratoFormSchema = z
     comentarios_recolha: z.string().max(2000).optional().nullable(),
 
     observacoes: z.string().max(2000).optional().nullable(),
+    observacoes_internas: z.string().max(2000).optional().nullable(),
   })
   .refine((d) => new Date(d.data_fim).getTime() > new Date(d.data_inicio).getTime(), {
     message: 'Data fim tem que ser posterior à data início',
@@ -105,6 +118,13 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   desconto_percentagem: null,
   taxa_iva: 23,
   valor_total_manual: null,
+  aluguer_longa_duracao: false,
+  renovacao_opcao: null,
+  renovacao_intervalo_dias: null,
+  franquia_valor: null,
+  caucao_valor: null,
+  kms_incluidos: null,
+  km_adicional_valor: null,
   voucher_codigo: '',
   numero_processo: '',
   voo_referencia: '',
@@ -113,6 +133,7 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   comentarios_entrega: '',
   comentarios_recolha: '',
   observacoes: '',
+  observacoes_internas: '',
 };
 
 /** Converte ISO timestamp para input[type=datetime-local] no fuso do browser. */
