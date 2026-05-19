@@ -21,7 +21,7 @@ import {
 import { Car, Calendar, MapPin, User, Phone, Mail, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import DasprentNavigation from '@/components/DasprentNavigation';
+import { DasprentNavigation } from '@/components/DasprentNavigation';
 
 interface Lead {
   id: string;

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import NovaListaDialog from './NovaListaDialog';
+import { NovaListaDialog } from './NovaListaDialog';
 import ContactosListaDialog from './ContactosListaDialog';
 import {
   AlertDialog,
@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const ListasTab = () => {
+export const ListasTab = () => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLista, setEditingLista] = useState<any>(null);
@@ -151,5 +151,3 @@ const ListasTab = () => {
     </div>
   );
 };
-
-export default ListasTab;

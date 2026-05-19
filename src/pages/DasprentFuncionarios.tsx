@@ -22,7 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Users, Plus, Edit, Trash2 } from 'lucide-react';
-import DasprentNavigation from '@/components/DasprentNavigation';
+import { DasprentNavigation } from '@/components/DasprentNavigation';
 
 interface Funcionario {
   id: string;

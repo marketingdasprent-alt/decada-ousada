@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import RichTextEditor, { RichTextEditorRef } from './RichTextEditor';
+import { RichTextEditor, RichTextEditorRef } from './RichTextEditor';
 import {
   Select,
   SelectContent,
