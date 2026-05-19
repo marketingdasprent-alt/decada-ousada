@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,62 @@ import {
 import { Camera, Upload, Loader2, Eye, Trash2, ImageIcon, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+const BUCKET = 'viatura-documentos';
+
+/**
+ * Aceita um valor guardado em ficheiro_url e retorna apenas o path
+ * relativo ao bucket. Suporta dados antigos (publicUrl/signedUrl completa)
+ * e dados novos (path puro).
+ */
+function extractStoragePath(urlOrPath: string): string {
+  if (!urlOrPath.startsWith('http')) return urlOrPath;
+  const match = urlOrPath.match(
+    /\/storage\/v1\/object\/(?:public|sign)\/viatura-documentos\/([^?]+)/
+  );
+  return match ? decodeURIComponent(match[1]) : urlOrPath;
+}
+
+/** <img> com signed URL on-demand. Resolve src independente do que está em BD. */
+function DanoFotoImage({
+  ficheiroUrl,
+  alt,
+  onClick,
+  className,
+}: {
+  ficheiroUrl: string;
+  alt: string;
+  onClick?: () => void;
+  className?: string;
+}) {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const path = extractStoragePath(ficheiroUrl);
+    supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(path, 60 * 10)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data?.signedUrl) {
+          // Fallback: tenta o valor original (pode ser publicUrl válida)
+          setSrc(ficheiroUrl);
+        } else {
+          setSrc(data.signedUrl);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ficheiroUrl]);
+
+  if (!src) {
+    return <div className={`${className} bg-muted animate-pulse`} aria-label={alt} />;
+  }
+  return <img src={src} alt={alt} className={className} onClick={onClick} />;
+}
+
 interface DanoFoto {
   id: string;
   ficheiro_url: string;
@@ -139,8 +195,8 @@ export function DanoFotosGallery({
               key={foto.id}
               className="relative group w-20 h-20 rounded-lg overflow-hidden border bg-muted"
             >
-              <img
-                src={foto.ficheiro_url}
+              <DanoFotoImage
+                ficheiroUrl={foto.ficheiro_url}
                 alt={foto.nome_ficheiro || 'Foto do dano'}
                 className="w-full h-full object-cover cursor-pointer"
                 onClick={() => openLightbox(foto)}
@@ -252,8 +308,8 @@ export function DanoFotosGallery({
           </DialogHeader>
           {selectedFoto && (
             <div className="flex flex-col items-center gap-4">
-              <img
-                src={selectedFoto.ficheiro_url}
+              <DanoFotoImage
+                ficheiroUrl={selectedFoto.ficheiro_url}
                 alt={selectedFoto.nome_ficheiro || 'Foto do dano'}
                 className="max-h-[60vh] max-w-full object-contain rounded-lg"
               />
