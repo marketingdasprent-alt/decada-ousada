@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import type { ReservaFormValues } from '../reservaDialog.schema';
 import type { ViaturaBasic } from '@/hooks/useViaturas';
 import type { Estacao } from '@/hooks/useEstacoes';
+import type { ClienteComDocumentos } from '@/types/cliente';
 import {
   ESTADO_LABELS,
   RENOVACAO_OPCAO_LABELS,
@@ -46,6 +47,7 @@ interface ReservaTabGeralProps {
   form: UseFormReturn<ReservaFormValues>;
   viaturas: ViaturaBasic[];
   estacoes: Estacao[];
+  clientes: ClienteComDocumentos[];
 }
 
 function diferencaDias(inicio: string, fim: string): number | null {
@@ -65,14 +67,22 @@ function addDaysToLocalInput(localInput: string, days: number): string | null {
   return `${novo.getFullYear()}-${pad(novo.getMonth() + 1)}-${pad(novo.getDate())}T${pad(novo.getHours())}:${pad(novo.getMinutes())}`;
 }
 
-export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({ form, viaturas, estacoes }) => {
+export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
+  form,
+  viaturas,
+  estacoes,
+  clientes,
+}) => {
   const [viaturaPopoverOpen, setViaturaPopoverOpen] = useState(false);
 
+  const clienteId = form.watch('cliente_id');
   const estadoAtual = form.watch('estado');
   const dataInicio = form.watch('data_inicio');
   const dataFim = form.watch('data_fim');
   const longaDuracao = form.watch('aluguer_longa_duracao');
   const renovacaoOpcao = form.watch('renovacao_opcao');
+
+  const cliente = clienteId ? (clientes.find((c) => c.id === clienteId) ?? null) : null;
 
   const dias = useMemo(() => diferencaDias(dataInicio, dataFim), [dataInicio, dataFim]);
 
@@ -100,6 +110,74 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({ form, viaturas
 
   return (
     <div className="space-y-8">
+      {/* === Cliente da Reserva === */}
+      <div>
+        <div className="flex items-center justify-between gap-2 pb-2 border-b mb-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-semibold">Cliente da Reserva</h3>
+            <span className="text-destructive text-sm">*</span>
+          </div>
+          <span className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground">
+            Quem encomendou
+          </span>
+        </div>
+
+        <FormField
+          control={form.control}
+          name="cliente_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="sr-only">Cliente</FormLabel>
+              <Select
+                value={field.value ?? SENTINEL_NONE}
+                onValueChange={(v) => {
+                  const newId = v === SENTINEL_NONE ? null : v;
+                  field.onChange(newId);
+                  const cli = clientes.find((c) => c.id === newId);
+                  form.setValue('cliente_nome', cli?.nome ?? '');
+                }}
+              >
+                <FormControl>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Clique para escolher cliente..." />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value={SENTINEL_NONE}>— Sem cliente —</SelectItem>
+                  {clientes.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome} {c.codigo ? `(#${c.codigo})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {cliente && (
+          <div className="mt-3 p-3 rounded-md border bg-muted/20 text-sm grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div>
+              <p className="text-xs text-muted-foreground">Nome</p>
+              <p className="font-medium">{cliente.nome}</p>
+            </div>
+            {cliente.nif && (
+              <div>
+                <p className="text-xs text-muted-foreground">NIF</p>
+                <p className="font-mono">{cliente.nif}</p>
+              </div>
+            )}
+            {cliente.telefone && (
+              <div>
+                <p className="text-xs text-muted-foreground">Telemóvel</p>
+                <p>{cliente.telefone}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* === Entrega | Recolha === */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
