@@ -24,6 +24,7 @@ export type Motorista = {
   email: string | null;
   telefone: string | null;
   data_contratacao: string | null;
+  data_renovacao_contratacao: string | null;
   cidade: string | null;
   cidade_assinatura: string | null;
   status_ativo: boolean | null;

@@ -11,6 +11,7 @@ import { formatMatricula } from './EventoCard';
 import { cn } from '@/lib/utils';
 import type { CalendarioEvento } from '@/pages/Calendario';
 import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 
 const TIPOS_CONFIG = [
   {
@@ -532,21 +533,11 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
     }
   };
 
-  // ── EXCEL (CSV) EXPORT ──────────────────────────────────────────
+  // ── EXCEL (.xlsx) EXPORT ────────────────────────────────────────
   const exportarExcel = () => {
     setExportExcelLoading(true);
     try {
-      const escape = (v: string | null | undefined) => {
-        const s = v ?? '';
-        // In European locales (PT), semicolon is the standard CSV separator
-        if (s.includes(';') || s.includes('"') || s.includes('\n') || s.includes(',')) {
-          return '"' + s.replace(/"/g, '""') + '"';
-        }
-        return s;
-      };
-
       const headers = [
-        'ID',
         'Data',
         'Hora',
         'Tipo',
@@ -560,28 +551,44 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
       const rows = eventosFiltrados.map((ev) => {
         const dt = new Date(ev.data_inicio);
         return [
-          escape(ev.id),
-          escape(format(dt, 'dd/MM/yyyy', { locale: pt })),
-          escape(ev.dia_todo ? 'Dia inteiro' : format(dt, 'HH:mm', { locale: pt })),
-          escape(TIPO_LABELS[ev.tipo] || ev.tipo),
-          escape(formatMatricula(ev.titulo)),
-          escape(ev.matricula_devolver ? formatMatricula(ev.matricula_devolver) : ''),
-          escape(ev.cidade || ''),
-          escape(ev.profiles?.nome || ''),
-          escape(ev.descricao || ''),
-        ].join(';');
+          format(dt, 'dd/MM/yyyy', { locale: pt }),
+          ev.dia_todo ? 'Dia inteiro' : format(dt, 'HH:mm', { locale: pt }),
+          TIPO_LABELS[ev.tipo] || ev.tipo,
+          formatMatricula(ev.titulo),
+          ev.matricula_devolver ? formatMatricula(ev.matricula_devolver) : '',
+          ev.cidade || '',
+          ev.profiles?.nome || '',
+          ev.descricao || '',
+        ];
       });
 
-      // UTF-8 BOM so Excel reads accents correctly
-      const csvContent = '\uFEFF' + [headers.map(escape).join(';'), ...rows].join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
+      const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+      worksheet['!cols'] = [
+        { wch: 12 }, // Data
+        { wch: 12 }, // Hora
+        { wch: 14 }, // Tipo
+        { wch: 14 }, // Matrícula
+        { wch: 18 }, // Matrícula Devolver
+        { wch: 20 }, // Cidade
+        { wch: 22 }, // Responsável
+        { wch: 60 }, // Observações
+      ];
+
+      const headerRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+      for (let c = headerRange.s.c; c <= headerRange.e.c; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r: 0, c });
+        const cell = worksheet[cellRef];
+        if (cell) {
+          cell.s = { font: { bold: true } };
+        }
+      }
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Eventos');
+
       const periodoNome = `${format(new Date(dataInicio + 'T00:00:00'), 'dd-MM-yyyy')}_${format(new Date(dataFim + 'T00:00:00'), 'dd-MM-yyyy')}`;
-      link.download = `calendario_${periodoNome}.csv`;
-      link.click();
-      URL.revokeObjectURL(url);
+      XLSX.writeFile(workbook, `calendario_${periodoNome}.xlsx`);
     } finally {
       setExportExcelLoading(false);
     }

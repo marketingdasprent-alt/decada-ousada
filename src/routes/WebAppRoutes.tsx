@@ -357,7 +357,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/contratos"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredResource="renting_contratos">
                 <DashboardLayout>
                   <RentingContratos />
                 </DashboardLayout>
@@ -367,7 +367,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/reservas"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredResource="renting_reservas">
                 <DashboardLayout>
                   <RentingReservas />
                 </DashboardLayout>
@@ -377,7 +377,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/movimentacoes"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredResource="renting_movimentacoes">
                 <DashboardLayout>
                   <RentingMovimentacoes />
                 </DashboardLayout>
@@ -387,7 +387,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/clientes"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredResource="renting_clientes">
                 <DashboardLayout>
                   <RentingClientes />
                 </DashboardLayout>

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { gerarContratoAtomico } from '@/hooks/useContratos';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -255,34 +256,33 @@ export const TrocaCheckinStep: React.FC<{
             viaturaId: viaturaAtual.id,
             userId,
             tipo: 'checkin',
+            motoristaId,
           });
           if (filesCheckin.length > 0) await uploadFiles(filesCheckin, contratoAtual.id, 'checkin');
         }
       }
 
       // 6. Criar novo contrato para a nova viatura (via RPC atómica)
-      const { data: ctResult, error: ctErr } = await supabase.rpc('gerar_contrato_atomico', {
-        p_motorista_id: motoristaId,
-        p_empresa_id: empresaId,
-        p_motorista_nome: motoristaNome,
-        p_motorista_nif: motoristaFull?.nif || null,
-        p_motorista_email: motoristaFull?.email || null,
-        p_motorista_telefone: motoristaFull?.telefone || null,
-        p_motorista_morada: motoristaFull?.morada || null,
-        p_motorista_documento_tipo: motoristaFull?.documento_tipo || null,
-        p_motorista_documento_numero: motoristaFull?.documento_numero || null,
-        p_cidade_assinatura: cidadeAssinatura,
-        p_data_assinatura: dataInicio,
-        p_data_inicio: dataInicio,
-        p_duracao_meses: 12,
-        p_criado_por: userId,
-        p_force_new_version: true,
-        p_viatura_id: novaViatura.id,
-        p_calendario_evento_id: eventoId,
-        p_checkout_pendente: fazerDepois || false,
+      const newCt = await gerarContratoAtomico({
+        motoristaId,
+        empresaId,
+        motoristaNome,
+        motoristaNif: motoristaFull?.nif,
+        motoristaEmail: motoristaFull?.email,
+        motoristaTelefone: motoristaFull?.telefone,
+        motoristaMorada: motoristaFull?.morada,
+        motoristaDocumentoTipo: motoristaFull?.documento_tipo,
+        motoristaDocumentoNumero: motoristaFull?.documento_numero,
+        cidadeAssinatura,
+        dataAssinatura: dataInicio,
+        dataInicio,
+        duracaoMeses: 12,
+        criadoPor: userId,
+        forceNewVersion: true,
+        viaturaId: novaViatura.id,
+        calendarioEventoId: eventoId,
+        checkoutPendente: fazerDepois || false,
       });
-      if (ctErr) throw ctErr;
-      const newCt = Array.isArray(ctResult) ? ctResult[0] : ctResult;
       setContratoNumero(newCt.numero_contrato);
 
       // 7. KM/fuel/danos checkout da nova viatura + fotos
@@ -293,6 +293,7 @@ export const TrocaCheckinStep: React.FC<{
           viaturaId: novaViatura.id,
           userId,
           tipo: 'checkout',
+          motoristaId,
         });
         if (filesCheckout.length > 0) await uploadFiles(filesCheckout, newCt.id, 'checkout');
       }

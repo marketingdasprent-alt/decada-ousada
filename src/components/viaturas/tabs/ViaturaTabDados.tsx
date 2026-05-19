@@ -214,13 +214,15 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       .select('id, nome, cidade')
       .eq('ativa', true)
       .order('nome')
-      .then(({ data }) => setEstacoes(data || []));
+      .then(({ data }) => setEstacoes(data || []))
+      .catch((err) => console.error('Erro ao carregar estações:', err));
     supabase
       .from('viatura_tipos')
       .select('id, nome')
       .eq('ativo', true)
       .order('nome')
-      .then(({ data }) => setViaturasTipos(data || []));
+      .then(({ data }) => setViaturasTipos(data || []))
+      .catch((err) => console.error('Erro ao carregar tipos:', err));
   }, []);
 
   const form = useForm<ViaturaFormData>({

@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.bolt-import-csv]
 verify_jwt = false
+
+[functions.primavera-api]
+verify_jwt = false

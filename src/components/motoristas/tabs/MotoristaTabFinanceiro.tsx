@@ -15,6 +15,7 @@ import {
   Paperclip,
   HandCoins,
   FileText,
+  Pencil,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Motorista } from '@/pages/Motoristas';
 import { cn } from '@/lib/utils';
+import { useCanEditFinanceiro } from '@/hooks/useCanEditFinanceiro';
 
 interface MovimentoFinanceiro {
   id: string;
@@ -78,6 +80,8 @@ interface NovoMovimentoOverlayProps {
   motoristaId: string;
   /** Se fornecido, estamos a definir o acordo de uma reparação pendente */
   reparacaoPendente?: MovimentoFinanceiro;
+  /** Se fornecido, estamos a editar um movimento existente */
+  movimentoParaEditar?: MovimentoFinanceiro;
   /** URL da fatura vinda do ticket (fallback se não estiver embebida no referencia) */
   faturaUrlExterna?: string | null;
   onClose: () => void;
@@ -87,20 +91,31 @@ interface NovoMovimentoOverlayProps {
 function NovoMovimentoOverlay({
   motoristaId,
   reparacaoPendente,
+  movimentoParaEditar,
   faturaUrlExterna,
   onClose,
   onSuccess,
 }: NovoMovimentoOverlayProps) {
   const isAcordo = !!reparacaoPendente;
+  const isEdicao = !!movimentoParaEditar;
+  // Movimento base para pré-preencher: edição tem prioridade sobre acordo
+  const movimentoBase = movimentoParaEditar ?? reparacaoPendente;
 
-  const [tipo, setTipo] = useState<'credito' | 'debito'>(reparacaoPendente?.tipo ?? 'debito');
-  const [categoria, setCategoria] = useState(reparacaoPendente?.categoria ?? '');
+  const [tipo, setTipo] = useState<'credito' | 'debito'>(movimentoBase?.tipo ?? 'debito');
+  const [categoria, setCategoria] = useState(movimentoBase?.categoria ?? '');
   const [descricao, setDescricao] = useState(
-    reparacaoPendente ? `Acordo de pagamento: ${reparacaoPendente.descricao}` : ''
+    movimentoParaEditar
+      ? movimentoParaEditar.descricao
+      : reparacaoPendente
+        ? `Acordo de pagamento: ${reparacaoPendente.descricao}`
+        : ''
   );
-  const [valor, setValor] = useState(reparacaoPendente ? String(reparacaoPendente.valor) : '');
+  const [valor, setValor] = useState(movimentoBase ? String(movimentoBase.valor) : '');
+  const [status, setStatus] = useState<'pendente' | 'pago' | 'cancelado'>(
+    movimentoParaEditar?.status ?? 'pendente'
+  );
   // Separar referência (ex: "Ticket #13") de URL de fatura (ex: "Ticket #13 | https://...")
-  const refRaw = reparacaoPendente?.referencia ?? '';
+  const refRaw = movimentoBase?.referencia ?? '';
   const faturaUrlEmReferencia = refRaw.includes(' | http')
     ? (refRaw.split(' | ').find((p) => p.startsWith('http')) ?? null)
     : null;
@@ -113,7 +128,9 @@ function NovoMovimentoOverlay({
   const [referencia, setReferencia] = useState(refLimpa);
   const [numSemanas, setNumSemanas] = useState('1');
   const [semanaInicio, setSemanaInicio] = useState(
-    format(startOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd')
+    movimentoParaEditar
+      ? movimentoParaEditar.data_movimento
+      : format(startOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd')
   );
   const [faturaFile, setFaturaFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -145,6 +162,33 @@ function NovoMovimentoOverlay({
           data: { publicUrl },
         } = supabase.storage.from('assistencia-anexos').getPublicUrl(fileName);
         faturaRef = faturaRef ? `${faturaRef} | ${publicUrl}` : publicUrl;
+      } else if (isEdicao && faturaUrlEmReferencia) {
+        // Em edição: preservar URL de fatura embebida se não houve novo upload
+        faturaRef = faturaRef ? `${faturaRef} | ${faturaUrlEmReferencia}` : faturaUrlEmReferencia;
+      }
+
+      // Modo edição: update direto, sem parcelamento
+      if (isEdicao && movimentoParaEditar) {
+        const { error } = await supabase
+          .from('motorista_financeiro')
+          .update({
+            tipo,
+            categoria: categoria || null,
+            descricao: descricao.trim(),
+            valor: valorNum,
+            data_movimento: semanaInicio,
+            referencia: faturaRef,
+            status,
+            data_pagamento:
+              status === 'pago'
+                ? (movimentoParaEditar.data_pagamento ?? new Date().toISOString())
+                : null,
+          })
+          .eq('id', movimentoParaEditar.id);
+        if (error) throw error;
+        toast.success('Movimento atualizado com sucesso!');
+        onSuccess();
+        return;
       }
 
       if (semanas <= 1) {
@@ -215,14 +259,20 @@ function NovoMovimentoOverlay({
         </Button>
         <div className="flex-1 min-w-0">
           <h1 className="text-base font-semibold leading-tight">
-            {isAcordo ? 'Definir Acordo de Pagamento' : 'Novo Movimento Financeiro'}
+            {isEdicao
+              ? 'Editar Movimento Financeiro'
+              : isAcordo
+                ? 'Definir Acordo de Pagamento'
+                : 'Novo Movimento Financeiro'}
           </h1>
           <p className="text-xs text-muted-foreground">
-            {isAcordo
-              ? `Reparação · €${Number(reparacaoPendente!.valor).toFixed(2)} a parcelar`
-              : isRecurring
-                ? `Gerar ${numSemanas} lançamentos semanais`
-                : 'Lançamento único'}
+            {isEdicao
+              ? 'Correção de lançamento existente'
+              : isAcordo
+                ? `Reparação · €${Number(reparacaoPendente!.valor).toFixed(2)} a parcelar`
+                : isRecurring
+                  ? `Gerar ${numSemanas} lançamentos semanais`
+                  : 'Lançamento único'}
           </p>
         </div>
         <Button onClick={handleSubmit} disabled={!canSubmit || submitting} className="shrink-0">
@@ -230,6 +280,8 @@ function NovoMovimentoOverlay({
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />A guardar...
             </>
+          ) : isEdicao ? (
+            'Guardar Alterações'
           ) : isAcordo && isRecurring ? (
             `Criar ${numSemanas} Parcelas`
           ) : isAcordo ? (
@@ -262,7 +314,7 @@ function NovoMovimentoOverlay({
             </div>
           )}
 
-          {/* Tipo — só se não for acordo */}
+          {/* Tipo — só se não for acordo (edição também permite mudar tipo) */}
           {!isAcordo && (
             <div className="space-y-2">
               <Label>Tipo</Label>
@@ -404,51 +456,86 @@ function NovoMovimentoOverlay({
             </div>
           </div>
 
-          {/* Parcelamento */}
-          <div className="space-y-4 rounded-lg border border-border p-4">
-            <h2 className="text-sm font-semibold">
-              {isAcordo ? 'Plano de Parcelamento Semanal' : 'Recorrência Semanal'}
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {isAcordo
-                ? 'Defina em quantas semanas o motorista irá pagar. O valor total será dividido igualmente.'
-                : 'Se este custo se repete semanalmente (ex: caução, seguros), defina o número de semanas.'}
-            </p>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Nº de Semanas / Parcelas</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={numSemanas}
-                  onChange={(e) => setNumSemanas(e.target.value)}
-                  autoFocus={isAcordo}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{isRecurring ? 'Semana de Início' : 'Data do Movimento'}</Label>
-                <Input
-                  type="date"
-                  value={semanaInicio}
-                  onChange={(e) => setSemanaInicio(e.target.value)}
-                />
+          {/* Estado — só em edição */}
+          {isEdicao && (
+            <div className="space-y-4 rounded-lg border border-border p-4">
+              <h2 className="text-sm font-semibold">Estado e Data</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Estado</Label>
+                  <Select
+                    value={status}
+                    onValueChange={(v) => setStatus(v as 'pendente' | 'pago' | 'cancelado')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                      <SelectItem value="pago">Pago</SelectItem>
+                      <SelectItem value="cancelado">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Data do Movimento</Label>
+                  <Input
+                    type="date"
+                    value={semanaInicio}
+                    onChange={(e) => setSemanaInicio(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
+          )}
 
-            {isRecurring && valorNum > 0 && (
-              <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 p-3">
-                <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
-                  {numSemanas}x parcelas de{' '}
-                  <strong>€{(valorNum / parseInt(numSemanas)).toFixed(2)}</strong> = €
-                  {valorNum.toFixed(2)} total
-                </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                  Início: {format(parseISO(semanaInicio), 'dd/MM/yyyy', { locale: pt })}
-                </p>
+          {/* Parcelamento — só na criação */}
+          {!isEdicao && (
+            <div className="space-y-4 rounded-lg border border-border p-4">
+              <h2 className="text-sm font-semibold">
+                {isAcordo ? 'Plano de Parcelamento Semanal' : 'Recorrência Semanal'}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {isAcordo
+                  ? 'Defina em quantas semanas o motorista irá pagar. O valor total será dividido igualmente.'
+                  : 'Se este custo se repete semanalmente (ex: caução, seguros), defina o número de semanas.'}
+              </p>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Nº de Semanas / Parcelas</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={numSemanas}
+                    onChange={(e) => setNumSemanas(e.target.value)}
+                    autoFocus={isAcordo}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{isRecurring ? 'Semana de Início' : 'Data do Movimento'}</Label>
+                  <Input
+                    type="date"
+                    value={semanaInicio}
+                    onChange={(e) => setSemanaInicio(e.target.value)}
+                  />
+                </div>
               </div>
-            )}
-          </div>
+
+              {isRecurring && valorNum > 0 && (
+                <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 p-3">
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                    {numSemanas}x parcelas de{' '}
+                    <strong>€{(valorNum / parseInt(numSemanas)).toFixed(2)}</strong> = €
+                    {valorNum.toFixed(2)} total
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    Início: {format(parseISO(semanaInicio), 'dd/MM/yyyy', { locale: pt })}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -462,9 +549,11 @@ export function MotoristaTabFinanceiro({ motorista }: MotoristaTabFinanceiroProp
   const [loading, setLoading] = useState(true);
   const [novoMovimentoOpen, setNovoMovimentoOpen] = useState(false);
   const [reparacaoParaAcordo, setReparacaoParaAcordo] = useState<MovimentoFinanceiro | null>(null);
+  const [movimentoParaEditar, setMovimentoParaEditar] = useState<MovimentoFinanceiro | null>(null);
   const [faturaUrlAcordo, setFaturaUrlAcordo] = useState<string | null>(null);
   // mapa: movimento.id → URL da fatura do ticket associado
   const [movimentoFaturaMap, setMovimentoFaturaMap] = useState<Map<string, string>>(new Map());
+  const { canEdit } = useCanEditFinanceiro();
 
   useEffect(() => {
     loadMovimentos();
@@ -595,9 +684,16 @@ export function MotoristaTabFinanceiro({ motorista }: MotoristaTabFinanceiroProp
     setNovoMovimentoOpen(true);
   };
 
+  const handleOpenEditar = (mov: MovimentoFinanceiro) => {
+    setMovimentoParaEditar(mov);
+    setFaturaUrlAcordo(movimentoFaturaMap.get(mov.id) ?? null);
+    setNovoMovimentoOpen(true);
+  };
+
   const handleCloseOverlay = () => {
     setNovoMovimentoOpen(false);
     setReparacaoParaAcordo(null);
+    setMovimentoParaEditar(null);
     setFaturaUrlAcordo(null);
   };
 
@@ -615,6 +711,7 @@ export function MotoristaTabFinanceiro({ motorista }: MotoristaTabFinanceiroProp
         <NovoMovimentoOverlay
           motoristaId={motorista.id}
           reparacaoPendente={reparacaoParaAcordo ?? undefined}
+          movimentoParaEditar={movimentoParaEditar ?? undefined}
           faturaUrlExterna={faturaUrlAcordo}
           onClose={handleCloseOverlay}
           onSuccess={() => {
@@ -809,42 +906,56 @@ export function MotoristaTabFinanceiro({ motorista }: MotoristaTabFinanceiroProp
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {/* Reparação pendente (sem acordo definido) → apenas "Definir Acordo" */}
-                      {movimento.categoria === 'reparacao' &&
-                      movimento.status === 'pendente' &&
-                      !movimento.descricao.startsWith('Acordo de pagamento') ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-amber-500 text-amber-700 hover:bg-amber-50 hover:text-amber-700 whitespace-nowrap"
-                          onClick={() => handleOpenAcordo(movimento)}
-                        >
-                          <HandCoins className="h-4 w-4 mr-1" />
-                          Definir Acordo
-                        </Button>
-                      ) : movimento.status === 'pendente' ? (
-                        /* Outros pendentes → ✓ / ✗ */
-                        <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-end gap-1">
+                        {/* Reparação pendente (sem acordo definido) → apenas "Definir Acordo" */}
+                        {movimento.categoria === 'reparacao' &&
+                        movimento.status === 'pendente' &&
+                        !movimento.descricao.startsWith('Acordo de pagamento') ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-amber-500 text-amber-700 hover:bg-amber-50 hover:text-amber-700 whitespace-nowrap"
+                            onClick={() => handleOpenAcordo(movimento)}
+                          >
+                            <HandCoins className="h-4 w-4 mr-1" />
+                            Definir Acordo
+                          </Button>
+                        ) : movimento.status === 'pendente' ? (
+                          /* Outros pendentes → ✓ / ✗ */
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleMarcarPago(movimento.id)}
+                              title="Marcar como pago"
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleCancelar(movimento.id)}
+                              title="Cancelar"
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </>
+                        ) : null}
+                        {/* Botão editar — só visível para admin/Supervisor Gestor TVDE */}
+                        {canEdit && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleMarcarPago(movimento.id)}
-                            title="Marcar como pago"
-                            className="text-green-600 hover:text-green-700"
+                            onClick={() => handleOpenEditar(movimento)}
+                            title="Editar movimento"
+                            className="text-blue-600 hover:text-blue-700"
                           >
-                            <Check className="h-4 w-4" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleCancelar(movimento.id)}
-                            title="Cancelar"
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : null}
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

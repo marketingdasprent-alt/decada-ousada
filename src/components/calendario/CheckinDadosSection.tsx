@@ -80,9 +80,17 @@ interface SaveParams {
   viaturaId: string;
   userId: string;
   tipo: 'checkout' | 'checkin';
+  motoristaId?: string;
 }
 
-export async function saveCheckinDados({ dados, contratoId, viaturaId, userId, tipo }: SaveParams) {
+export async function saveCheckinDados({
+  dados,
+  contratoId,
+  viaturaId,
+  userId,
+  tipo,
+  motoristaId,
+}: SaveParams) {
   const kmNum = Number(dados.km);
   const isOut = tipo === 'checkout';
 
@@ -105,7 +113,7 @@ export async function saveCheckinDados({ dados, contratoId, viaturaId, userId, t
   // 2. Atualizar km_atual da viatura
   await supabase.from('viaturas').update({ km_atual: kmNum }).eq('id', viaturaId);
 
-  // 3. Guardar novos danos + fotos
+  // 3. Guardar novos danos + fotos (ligados à viatura, contrato E motorista)
   for (const dano of dados.novosDanos) {
     if (!dano.descricao.trim()) continue;
     const { data: newDano, error: dErr } = await supabase
@@ -116,7 +124,9 @@ export async function saveCheckinDados({ dados, contratoId, viaturaId, userId, t
         localizacao: dano.localizacao.trim() || null,
         estado: 'pendente',
         registado_por: userId,
+        contrato_id: contratoId,
         contrato_id_origem: contratoId,
+        motorista_id: motoristaId || null,
       })
       .select('id')
       .single();
@@ -163,10 +173,12 @@ interface FolhaDanosParams {
   novosDanos: NovoDanoState[];
   dataEvento: string;
   contratoNumero?: number | null;
+  existingPdf?: jsPDF;
 }
 
 export function gerarFolhaDanos(p: FolhaDanosParams) {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const doc = p.existingPdf || new jsPDF({ unit: 'mm', format: 'a4' });
+  if (p.existingPdf) doc.addPage();
   const W = 210;
   let y = 20;
 
@@ -359,7 +371,10 @@ export function gerarFolhaDanos(p: FolhaDanosParams) {
   text('Assinatura do Motorista', 14, y);
   text('Assinatura do Responsável', 120, y);
 
-  doc.save(`folha-danos-${p.matricula.replace(/[^A-Z0-9]/gi, '')}-${p.dataEvento}.pdf`);
+  if (!p.existingPdf) {
+    doc.save(`folha-danos-${p.matricula.replace(/[^A-Z0-9]/gi, '')}-${p.dataEvento}.pdf`);
+  }
+  return doc;
 }
 
 // ── UI Component ──────────────────────────────────────────────────────────────

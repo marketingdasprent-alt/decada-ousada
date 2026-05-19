@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { ReciboStatusBadge } from '@/lib/statusBadges';
 import {
   Table,
   TableBody,
@@ -66,22 +66,6 @@ export function RecibosTable({ recibos, onReciboUpdated }: RecibosTableProps) {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
-
-  const getStatusBadge = (status: string | null) => {
-    switch (status) {
-      case 'validado':
-        return (
-          <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Validado</Badge>
-        );
-      case 'rejeitado':
-        return <Badge className="bg-red-500/10 text-red-500 border-red-500/20">Recusado</Badge>;
-      case 'submetido':
-      default:
-        return (
-          <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Pendente</Badge>
-        );
-    }
   };
 
   async function handleValidar(id: string) {
@@ -152,7 +136,7 @@ export function RecibosTable({ recibos, onReciboUpdated }: RecibosTableProps) {
                         {recibo.motoristas_ativos?.nome || 'Motorista desconhecido'}
                       </p>
                     </div>
-                    {getStatusBadge(recibo.status)}
+                    <ReciboStatusBadge status={recibo.status} />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-sm">
@@ -279,7 +263,9 @@ export function RecibosTable({ recibos, onReciboUpdated }: RecibosTableProps) {
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDate(recibo.created_at)}
                   </TableCell>
-                  <TableCell>{getStatusBadge(recibo.status)}</TableCell>
+                  <TableCell>
+                    <ReciboStatusBadge status={recibo.status} />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
                       <Button

@@ -109,7 +109,8 @@ export default function Viaturas() {
       .select('id, nome')
       .eq('ativo', true)
       .order('nome')
-      .then(({ data }) => setTipos(data || []));
+      .then(({ data }) => setTipos(data || []))
+      .catch((err) => console.error('Erro ao carregar tipos:', err));
   }, []);
 
   const loadViaturas = async () => {

@@ -12,18 +12,19 @@ import {
   XCircle,
   Files,
   Briefcase,
-  Pencil,
   Save,
   X,
   Loader2,
   RotateCcw,
-  History,
   CalendarClock,
+  Pencil,
+  Camera,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { ContratoStatusBadge } from '@/lib/statusBadges';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
@@ -42,6 +43,8 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { generateDocumentFromTemplate } from '@/utils/generateDocumentFromTemplate';
 import { GenerateDocumentsDialog } from '../GenerateDocumentsDialog';
 import { EditContractDialog } from '@/components/contratos/EditContractDialog';
+import { sanitizeDate } from '@/utils/dateValidators';
+import { gerarContratoAtomico } from '@/hooks/useContratos';
 import type { Motorista } from '@/pages/Motoristas';
 
 interface Contrato {
@@ -77,20 +80,45 @@ export function MotoristaTabContratos({
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<string | null>(null);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
-  const [editingContratual, setEditingContratual] = useState(false);
-  const [dataContratacao, setDataContratacao] = useState(motorista.data_contratacao || '');
+  const [definindoPrimeiraData, setDefinindoPrimeiraData] = useState(false);
+  const [renovandoContratacao, setRenovandoContratacao] = useState(false);
+  const [savingContratacao, setSavingContratacao] = useState(false);
+  const [dataContratacaoInput, setDataContratacaoInput] = useState('');
+  const [dataRenovacaoInput, setDataRenovacaoInput] = useState('');
   const [renovarContrato, setRenovarContrato] = useState<Contrato | null>(null);
   const [renovando, setRenovando] = useState(false);
   const [editContrato, setEditContrato] = useState<Contrato | null>(null);
+  const [mediaContrato, setMediaContrato] = useState<Contrato | null>(null);
+  const [mediaItems, setMediaItems] = useState<
+    { id: string; tipo: string; url: string; nome_ficheiro: string; created_at: string }[]
+  >([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+
+  const loadMedia = async (contratoId: string) => {
+    setMediaLoading(true);
+    const { data } = await supabase
+      .from('contrato_media')
+      .select('id, tipo, url, nome_ficheiro, created_at')
+      .eq('contrato_id', contratoId)
+      .order('created_at');
+    setMediaItems(data || []);
+    setMediaLoading(false);
+  };
+
+  const getMediaUrl = (path: string) => {
+    const { data } = supabase.storage.from('contrato-media').getPublicUrl(path);
+    return data.publicUrl;
+  };
 
   useEffect(() => {
     loadContratos();
   }, [motorista.id]);
 
-  // Sincronizar estado local quando os dados do motorista mudarem (ex: após um save)
+  // Sincronizar inputs quando os dados do motorista mudarem (ex: após um save)
   useEffect(() => {
-    setDataContratacao(sanitizeDate(motorista.data_contratacao));
-  }, [motorista.data_contratacao]);
+    setDataContratacaoInput(sanitizeDate(motorista.data_contratacao));
+    setDataRenovacaoInput(sanitizeDate(motorista.data_renovacao_contratacao));
+  }, [motorista.data_contratacao, motorista.data_renovacao_contratacao]);
 
   const loadContratos = async () => {
     try {
@@ -113,25 +141,6 @@ export function MotoristaTabContratos({
 
   const getEmpresaNome = (empresaId: string) => {
     return getEmpresaById(empresaId)?.nome || empresaId;
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'ativo':
-        return <Badge variant="default">Ativo</Badge>;
-      case 'substituido':
-        return <Badge variant="secondary">Substituído</Badge>;
-      case 'cancelado':
-        return <Badge variant="destructive">Cancelado</Badge>;
-      case 'encerrado':
-        return (
-          <Badge variant="outline" className="text-muted-foreground">
-            Encerrado
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
   };
 
   const handleDownload = async (contrato: Contrato) => {
@@ -230,28 +239,25 @@ export function MotoristaTabContratos({
 
       const today = new Date().toISOString().split('T')[0];
 
-      const { data: result, error } = await supabase.rpc('gerar_contrato_atomico', {
-        p_motorista_id: motorista.id,
-        p_empresa_id: renovarContrato.empresa_id,
-        p_motorista_nome: motorista.nome,
-        p_motorista_nif: motorista.nif || null,
-        p_motorista_email: motorista.email || null,
-        p_motorista_telefone: motorista.telefone || null,
-        p_motorista_morada: motorista.morada || null,
-        p_motorista_documento_tipo: motorista.documento_tipo || null,
-        p_motorista_documento_numero: motorista.documento_numero || null,
-        p_cidade_assinatura: renovarContrato.cidade_assinatura || 'Leiria',
-        p_data_assinatura: today,
-        p_data_inicio: today,
-        p_duracao_meses: renovarContrato.duracao_meses || 12,
-        p_criado_por: user?.id || null,
-        p_force_new_version: true,
+      const novoContrato = await gerarContratoAtomico({
+        motoristaId: motorista.id,
+        empresaId: renovarContrato.empresa_id,
+        motoristaNome: motorista.nome,
+        motoristaNif: motorista.nif,
+        motoristaEmail: motorista.email,
+        motoristaTelefone: motorista.telefone,
+        motoristaMorada: motorista.morada,
+        motoristaDocumentoTipo: motorista.documento_tipo,
+        motoristaDocumentoNumero: motorista.documento_numero,
+        cidadeAssinatura: renovarContrato.cidade_assinatura || 'Leiria',
+        dataAssinatura: today,
+        dataInicio: today,
+        duracaoMeses: renovarContrato.duracao_meses || 12,
+        criadoPor: user?.id ?? null,
+        forceNewVersion: true,
       });
 
-      if (error) throw error;
-
       // Se o contrato antigo tinha viatura, associar ao novo + atualizar motorista_viaturas
-      const novoContrato = Array.isArray(result) ? result[0] : result;
       if (novoContrato?.id && renovarContrato.viatura_id) {
         await supabase
           .from('contratos')
@@ -277,31 +283,101 @@ export function MotoristaTabContratos({
     }
   };
 
-  // Função para garantir que a data está no formato YYYY-MM-DD para o input
-  const sanitizeDate = (dateString: string | null) => {
-    if (!dateString) return '';
-    return dateString.split('T')[0];
-  };
-
-  const handleSaveContratual = async () => {
+  const handleDefinirPrimeiraData = async () => {
+    const formattedDate = sanitizeDate(dataContratacaoInput);
+    if (!formattedDate) {
+      toast.error('Selecione uma data válida');
+      return;
+    }
     try {
-      const formattedDate = sanitizeDate(dataContratacao);
-
+      setSavingContratacao(true);
       const { error } = await supabase
         .from('motoristas_ativos')
-        .update({
-          data_contratacao: formattedDate || null,
-          cidade_assinatura: null,
-        })
+        .update({ data_contratacao: formattedDate })
         .eq('id', motorista.id);
 
       if (error) throw error;
-      toast.success('Informação contratual atualizada');
-      setEditingContratual(false);
+      toast.success('Data de contratação definida');
+      setDefinindoPrimeiraData(false);
       onMotoristaUpdated?.();
     } catch (error) {
-      console.error('Erro ao atualizar:', error);
-      toast.error('Erro ao atualizar informação contratual');
+      console.error('Erro ao definir data de contratação:', error);
+      toast.error('Erro ao definir data de contratação');
+    } finally {
+      setSavingContratacao(false);
+    }
+  };
+
+  const handleRenovarContratacao = async () => {
+    const formattedDate = sanitizeDate(dataRenovacaoInput);
+    if (!formattedDate) {
+      toast.error('Selecione uma data válida para a renovação');
+      return;
+    }
+    try {
+      setSavingContratacao(true);
+
+      const { error: updateMotoristaError } = await supabase
+        .from('motoristas_ativos')
+        .update({ data_renovacao_contratacao: formattedDate })
+        .eq('id', motorista.id);
+
+      if (updateMotoristaError) throw updateMotoristaError;
+
+      // Renovar também o contrato de prestação ativo (se existir),
+      // criando nova versão na tabela `contratos` e sincronizando motorista_viaturas.
+      const contratoAtivo = contratos.find((c) => c.status === 'ativo');
+      let contratoRenovado = false;
+      if (contratoAtivo) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        const novoContrato = await gerarContratoAtomico({
+          motoristaId: motorista.id,
+          empresaId: contratoAtivo.empresa_id,
+          motoristaNome: motorista.nome,
+          motoristaNif: motorista.nif,
+          motoristaEmail: motorista.email,
+          motoristaTelefone: motorista.telefone,
+          motoristaMorada: motorista.morada,
+          motoristaDocumentoTipo: motorista.documento_tipo,
+          motoristaDocumentoNumero: motorista.documento_numero,
+          cidadeAssinatura: contratoAtivo.cidade_assinatura || 'Leiria',
+          dataAssinatura: formattedDate,
+          dataInicio: formattedDate,
+          duracaoMeses: contratoAtivo.duracao_meses || 12,
+          criadoPor: user?.id ?? null,
+          forceNewVersion: true,
+        });
+
+        if (novoContrato?.id && contratoAtivo.viatura_id) {
+          await supabase
+            .from('contratos')
+            .update({ viatura_id: contratoAtivo.viatura_id })
+            .eq('id', novoContrato.id);
+
+          await supabase
+            .from('motorista_viaturas')
+            .update({ contrato_prestacao_assinatura: formattedDate })
+            .eq('motorista_id', motorista.id)
+            .eq('status', 'ativo');
+        }
+        contratoRenovado = true;
+      }
+
+      toast.success(
+        contratoRenovado ? 'Contratação e contrato de prestação renovados' : 'Contratação renovada'
+      );
+      setRenovandoContratacao(false);
+      loadContratos();
+      onMotoristaUpdated?.();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro ao renovar contratação';
+      console.error('Erro ao renovar contratação:', error);
+      toast.error(message);
+    } finally {
+      setSavingContratacao(false);
     }
   };
 
@@ -359,47 +435,134 @@ export function MotoristaTabContratos({
         title="Info Contratual"
         headerClassName="bg-teal-50 dark:bg-teal-950/30"
       >
-        {editingContratual ? (
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Data de Contratação</Label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Data do 1.º contrato — imutável após definida */}
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Briefcase className="h-3.5 w-3.5" />
+              <span>Data do 1.º contrato</span>
+            </div>
+            {motorista.data_contratacao && !definindoPrimeiraData ? (
+              <p className="font-semibold text-base">{formatDate(motorista.data_contratacao)}</p>
+            ) : definindoPrimeiraData ? (
+              <div className="space-y-2">
                 <Input
                   type="date"
-                  value={dataContratacao}
-                  onChange={(e) => setDataContratacao(e.target.value)}
+                  value={dataContratacaoInput}
+                  onChange={(e) => setDataContratacaoInput(e.target.value)}
                 />
+                <div className="flex gap-1 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setDefinindoPrimeiraData(false);
+                      setDataContratacaoInput(sanitizeDate(motorista.data_contratacao));
+                    }}
+                    disabled={savingContratacao}
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" /> Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleDefinirPrimeiraData}
+                    disabled={savingContratacao}
+                  >
+                    {savingContratacao ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    Definir
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setDefinindoPrimeiraData(true)}>
+                <Pencil className="h-3.5 w-3.5 mr-1" /> Definir
+              </Button>
+            )}
+            {motorista.data_contratacao && !definindoPrimeiraData && (
+              <p className="text-[11px] text-muted-foreground">
+                Esta data é o registo original e não pode ser alterada.
+              </p>
+            )}
+          </div>
+
+          {/* Última renovação — pode ser atualizada */}
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <CalendarClock className="h-3.5 w-3.5" />
+                <span>Última renovação</span>
               </div>
             </div>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setEditingContratual(false);
-                  setDataContratacao(motorista.data_contratacao || '');
-                }}
-              >
-                <X className="h-4 w-4 mr-1" /> Cancelar
-              </Button>
-              <Button size="sm" onClick={handleSaveContratual}>
-                <Save className="h-4 w-4 mr-1" /> Guardar
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
-              <div>
-                <span className="text-muted-foreground">Data de Contratação</span>
-                <p className="font-medium">{formatDate(motorista.data_contratacao)}</p>
+            {renovandoContratacao ? (
+              <div className="space-y-2">
+                <Input
+                  type="date"
+                  value={dataRenovacaoInput}
+                  onChange={(e) => setDataRenovacaoInput(e.target.value)}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Vai gerar nova versão do contrato de prestação da viatura ativa, se existir.
+                </p>
+                <div className="flex gap-1 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setRenovandoContratacao(false);
+                      setDataRenovacaoInput(sanitizeDate(motorista.data_renovacao_contratacao));
+                    }}
+                    disabled={savingContratacao}
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" /> Cancelar
+                  </Button>
+                  <Button size="sm" onClick={handleRenovarContratacao} disabled={savingContratacao}>
+                    {savingContratacao ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    Renovar
+                  </Button>
+                </div>
               </div>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => setEditingContratual(true)}>
-              <Pencil className="h-4 w-4" />
-            </Button>
+            ) : (
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-semibold text-base">
+                  {motorista.data_renovacao_contratacao ? (
+                    formatDate(motorista.data_renovacao_contratacao)
+                  ) : (
+                    <span className="text-muted-foreground font-normal text-sm">
+                      Sem renovações
+                    </span>
+                  )}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const todayInput = new Date().toISOString().split('T')[0];
+                    setDataRenovacaoInput(
+                      sanitizeDate(motorista.data_renovacao_contratacao) || todayInput
+                    );
+                    setRenovandoContratacao(true);
+                  }}
+                  disabled={!motorista.data_contratacao}
+                  title={
+                    motorista.data_contratacao
+                      ? 'Renovar contratação'
+                      : 'Defina primeiro a data do 1.º contrato'
+                  }
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" /> Renovar
+                </Button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </SectionCard>
 
       {/* Stats Cards */}
@@ -532,7 +695,9 @@ export function MotoristaTabContratos({
                       );
                     })()}
                   </TableCell>
-                  <TableCell>{getStatusBadge(contrato.status)}</TableCell>
+                  <TableCell>
+                    <ContratoStatusBadge status={contrato.status} />
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {contrato.status === 'ativo' && hasPermission('contratos_criar') && (
@@ -556,6 +721,17 @@ export function MotoristaTabContratos({
                           <Pencil className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setMediaContrato(contrato);
+                          loadMedia(contrato.id);
+                        }}
+                        title="Fotos checkout/checkin"
+                      >
+                        <Camera className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -700,6 +876,77 @@ export function MotoristaTabContratos({
         }}
         motorista={motorista}
       />
+
+      {/* Dialog de fotos checkout/checkin */}
+      <Dialog
+        open={!!mediaContrato}
+        onOpenChange={(open) => {
+          if (!open) setMediaContrato(null);
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Fotos — CT-
+              {mediaContrato?.numero_contrato != null
+                ? String(mediaContrato.numero_contrato).padStart(4, '0')
+                : '—'}
+            </DialogTitle>
+          </DialogHeader>
+          {mediaLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : mediaItems.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              Nenhuma foto registada neste contrato.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {['checkout', 'checkin'].map((tipo) => {
+                const items = mediaItems.filter((m) => m.tipo === tipo);
+                if (items.length === 0) return null;
+                return (
+                  <div key={tipo}>
+                    <h4 className="text-sm font-semibold mb-2 capitalize">{tipo}</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {items.map((item) => {
+                        const isVideo =
+                          item.nome_ficheiro?.match(/\.(mp4|webm|mov)$/i) ||
+                          item.url.match(/\.(mp4|webm|mov)$/i);
+                        const publicUrl = getMediaUrl(item.url);
+                        return (
+                          <a
+                            key={item.id}
+                            href={publicUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block rounded-lg overflow-hidden border hover:ring-2 hover:ring-primary transition-all"
+                          >
+                            {isVideo ? (
+                              <video src={publicUrl} className="w-full h-32 object-cover" muted />
+                            ) : (
+                              <img
+                                src={publicUrl}
+                                alt={item.nome_ficheiro || tipo}
+                                className="w-full h-32 object-cover"
+                              />
+                            )}
+                            <div className="p-1 text-[10px] text-muted-foreground truncate">
+                              {item.nome_ficheiro || 'Ficheiro'}
+                            </div>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

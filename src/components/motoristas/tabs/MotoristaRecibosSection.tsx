@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ReciboStatusBadge } from '@/lib/statusBadges';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { format, addDays, startOfWeek, endOfWeek, addWeeks, isBefore, isEqual } from 'date-fns';
@@ -509,34 +510,6 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'submetido':
-        return (
-          <Badge
-            variant="outline"
-            className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-          >
-            Pendente
-          </Badge>
-        );
-      case 'validado':
-        return (
-          <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-            Validado
-          </Badge>
-        );
-      case 'rejeitado':
-        return (
-          <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">
-            Rejeitado
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
   // Filtrar recibos por semana e status
   const recibosFiltrados = recibos.filter((recibo) => {
     if (filtroStatus !== 'todos' && recibo.status !== filtroStatus) return false;
@@ -712,7 +685,9 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
                     <TableCell className="text-right font-medium text-sm">
                       {recibo.valor_total ? formatCurrency(recibo.valor_total) : '-'}
                     </TableCell>
-                    <TableCell>{getStatusBadge(recibo.status)}</TableCell>
+                    <TableCell>
+                      <ReciboStatusBadge status={recibo.status} />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
                         <Button
