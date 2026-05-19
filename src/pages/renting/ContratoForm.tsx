@@ -108,7 +108,7 @@ const ContratoForm = () => {
         taxa_iva: contrato.taxa_iva,
         valor_total_manual: contrato.valor_total_manual,
         // ALD
-        aluguer_longa_duracao: contrato.aluguer_longa_duracao,
+        is_longa_duracao: contrato.is_longa_duracao,
         renovacao_opcao: contrato.renovacao_opcao,
         renovacao_intervalo_dias: contrato.renovacao_intervalo_dias,
         // Financeiro extra
@@ -145,8 +145,8 @@ const ContratoForm = () => {
         origem: 'sistema',
         // Orçamento da reserva → override do total no contrato
         valor_total_manual: reservaFromQuery.valor_total,
-        // ALD da reserva
-        aluguer_longa_duracao: reservaFromQuery.aluguer_longa_duracao ?? false,
+        // ALD da reserva (mapping: reserva.aluguer_longa_duracao → contrato.is_longa_duracao)
+        is_longa_duracao: reservaFromQuery.aluguer_longa_duracao ?? false,
         renovacao_opcao: reservaFromQuery.renovacao_opcao ?? null,
         renovacao_intervalo_dias: reservaFromQuery.renovacao_intervalo_dias,
         // Financeiro extra da reserva
@@ -209,7 +209,7 @@ const ContratoForm = () => {
       taxa_iva: values.taxa_iva,
       valor_total_manual: values.valor_total_manual,
       // ALD
-      aluguer_longa_duracao: values.aluguer_longa_duracao,
+      is_longa_duracao: values.is_longa_duracao,
       renovacao_opcao: values.renovacao_opcao ?? null,
       renovacao_intervalo_dias: values.renovacao_intervalo_dias,
       // Financeiro extra

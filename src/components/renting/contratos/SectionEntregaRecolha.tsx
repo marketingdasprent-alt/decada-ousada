@@ -36,7 +36,9 @@ export const SectionEntregaRecolha: React.FC<SectionEntregaRecolhaProps> = ({ fo
           name="data_inicio"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Data Início *</FormLabel>
+              <FormLabel>
+                Data Início <span className="text-red-500">*</span>
+              </FormLabel>
               <FormControl>
                 <Input
                   type="datetime-local"
@@ -72,7 +74,9 @@ export const SectionEntregaRecolha: React.FC<SectionEntregaRecolhaProps> = ({ fo
           name="data_fim"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Data Fim *</FormLabel>
+              <FormLabel>
+                Data Fim <span className="text-red-500">*</span>
+              </FormLabel>
               <FormControl>
                 <Input
                   type="datetime-local"

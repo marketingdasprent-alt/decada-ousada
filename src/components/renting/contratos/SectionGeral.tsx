@@ -36,7 +36,9 @@ export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes }) =>
         name="cliente_id"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Cliente *</FormLabel>
+            <FormLabel>
+              Cliente <span className="text-red-500">*</span>
+            </FormLabel>
             <Select
               value={field.value || SENTINEL_NONE}
               onValueChange={(v) => field.onChange(v === SENTINEL_NONE ? '' : v)}

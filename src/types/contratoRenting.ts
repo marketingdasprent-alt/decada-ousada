@@ -95,7 +95,7 @@ export type ContratoRenting = {
   facturado_em: string | null;
 
   // Longa duração / renovação (espelha reserva)
-  aluguer_longa_duracao: boolean;
+  is_longa_duracao: boolean;
   renovacao_opcao: ContratoRenovacaoOpcao | null;
   renovacao_intervalo_dias: number | null;
 

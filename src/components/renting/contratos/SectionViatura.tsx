@@ -46,7 +46,9 @@ export const SectionViatura: React.FC<SectionViaturaProps> = ({ form, viaturas, 
         name="viatura_id"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Viatura *</FormLabel>
+            <FormLabel>
+              Viatura <span className="text-red-500">*</span>
+            </FormLabel>
             <Select
               value={field.value || SENTINEL_NONE}
               onValueChange={(v) => {

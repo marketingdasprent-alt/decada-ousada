@@ -71,7 +71,7 @@ export const contratoFormSchema = z
     valor_total_manual: optionalNonNegativeNumber,
 
     // Longa duração / renovação
-    aluguer_longa_duracao: z.boolean().default(false),
+    is_longa_duracao: z.boolean().default(false),
     renovacao_opcao: z.enum(CONTRATO_RENOVACAO_OPCOES).nullable().optional(),
     renovacao_intervalo_dias: optionalNonNegativeNumber,
 
@@ -118,7 +118,7 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   desconto_percentagem: null,
   taxa_iva: 23,
   valor_total_manual: null,
-  aluguer_longa_duracao: false,
+  is_longa_duracao: false,
   renovacao_opcao: null,
   renovacao_intervalo_dias: null,
   franquia_valor: null,

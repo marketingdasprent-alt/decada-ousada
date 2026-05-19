@@ -5,7 +5,9 @@ import type { ClienteComDocumentos } from '@/types/cliente';
 import type { Estacao } from '@/hooks/useEstacoes';
 import type { ViaturaBasic } from '@/hooks/useViaturas';
 import type { ContratoFormValues } from './contratoForm.schema';
+import { SectionALD } from './SectionALD';
 import { SectionEntregaRecolha } from './SectionEntregaRecolha';
+import { SectionFranquiaKms } from './SectionFranquiaKms';
 import { SectionInfoAdicional } from './SectionInfoAdicional';
 import { SectionGeral } from './SectionGeral';
 import { SectionViatura } from './SectionViatura';
@@ -29,8 +31,10 @@ export const ContratoFormSecoes: React.FC<ContratoFormSecoesProps> = ({
 }) => (
   <div className="space-y-6">
     <SectionEntregaRecolha form={form} estacoes={estacoes} />
+    <SectionALD form={form} />
     <SectionViatura form={form} viaturas={viaturas} estacoes={estacoes} />
     <SectionGeral form={form} clientes={clientes} />
+    <SectionFranquiaKms form={form} />
     <SectionInfoAdicional form={form} />
   </div>
 );
