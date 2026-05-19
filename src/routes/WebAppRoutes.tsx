@@ -51,6 +51,7 @@ const SelecionarOrg = lazy(() => import('@/pages/SelecionarOrg'));
 const RegistarOrg = lazy(() => import('@/pages/RegistarOrg'));
 const RentingContratos = lazy(() => import('@/pages/renting/RentingContratos'));
 const RentingReservas = lazy(() => import('@/pages/renting/RentingReservas'));
+const RentingReservaForm = lazy(() => import('@/pages/renting/RentingReservaForm'));
 const RentingMovimentacoes = lazy(() => import('@/pages/renting/RentingMovimentacoes'));
 const RentingClientes = lazy(() => import('@/pages/renting/RentingClientes'));
 
@@ -370,6 +371,26 @@ const WebAppRoutes = () => {
               <ProtectedRoute requiredResource="renting_reservas">
                 <DashboardLayout>
                   <RentingReservas />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/reservas/nova"
+            element={
+              <ProtectedRoute requiredResource="renting_reservas">
+                <DashboardLayout>
+                  <RentingReservaForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/reservas/:id"
+            element={
+              <ProtectedRoute requiredResource="renting_reservas">
+                <DashboardLayout>
+                  <RentingReservaForm />
                 </DashboardLayout>
               </ProtectedRoute>
             }
