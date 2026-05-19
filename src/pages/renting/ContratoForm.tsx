@@ -10,6 +10,7 @@ import { Form } from '@/components/ui/form';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
 import { useClientes } from '@/hooks/useClientes';
+import { useContratoCondutores, useSyncContratoCondutores } from '@/hooks/useContratoCondutores';
 import {
   useContratoConflito,
   useContratoRenting,
@@ -25,6 +26,7 @@ import { ContratoDeleteConfirm } from '@/components/renting/contratos/ContratoDe
 import { ContratoFormSecoes } from '@/components/renting/contratos/ContratoFormSecoes';
 import { ContratoTabsPlaceholder } from '@/components/renting/contratos/ContratoTabsPlaceholder';
 import { ResumoContrato } from '@/components/renting/contratos/ResumoContrato';
+import { CondutoresFields } from '@/components/renting/shared/CondutoresFields';
 import {
   DEFAULT_CONTRATO_VALUES,
   contratoFormSchema,
@@ -54,7 +56,10 @@ const ContratoForm = () => {
   const createMutation = useCreateContratoRenting();
   const updateMutation = useUpdateContratoRenting();
   const deleteMutation = useDeleteContratoRenting();
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const syncCondutoresMutation = useSyncContratoCondutores();
+  const { data: condutoresDb = [] } = useContratoCondutores(contrato?.id ?? null);
+  const isPending =
+    createMutation.isPending || updateMutation.isPending || syncCondutoresMutation.isPending;
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
@@ -160,6 +165,19 @@ const ContratoForm = () => {
     }
   }, [isEdit, contrato, reservaFromQuery, form]);
 
+  // Hidratação dos condutores (vem em request separado — só em modo edit)
+  useEffect(() => {
+    if (!isEdit || !contrato) return;
+    form.setValue(
+      'condutores',
+      condutoresDb.map((c) => ({
+        cliente_id: c.cliente_id,
+        is_principal: c.is_principal,
+      })),
+      { shouldDirty: false }
+    );
+  }, [isEdit, contrato, condutoresDb, form]);
+
   // Valores reactivos (conflito + resumo de preço)
   const viaturaId = form.watch('viatura_id');
   const dataInicio = form.watch('data_inicio');
@@ -230,11 +248,30 @@ const ContratoForm = () => {
 
     if (isEdit && contrato) {
       // Editar: ficar na própria página (utilizador vê toast e continua a trabalhar).
-      updateMutation.mutate({ id: contrato.id, ...payload });
+      updateMutation.mutate(
+        { id: contrato.id, ...payload },
+        {
+          onSuccess: () => {
+            syncCondutoresMutation.mutate({
+              contratoId: contrato.id,
+              desejados: values.condutores,
+            });
+          },
+        }
+      );
     } else {
-      // Criar: navegar para modo edição do novo contrato.
+      // Criar: navegar para modo edição do novo contrato após sincronizar condutores.
       createMutation.mutate(payload, {
-        onSuccess: (created) => navigate(`/renting/contratos/${created.id}`),
+        onSuccess: (created) => {
+          if (values.condutores.length > 0) {
+            syncCondutoresMutation.mutate(
+              { contratoId: created.id, desejados: values.condutores },
+              { onSettled: () => navigate(`/renting/contratos/${created.id}`) }
+            );
+          } else {
+            navigate(`/renting/contratos/${created.id}`);
+          }
+        },
       });
     }
   };
@@ -323,6 +360,12 @@ const ContratoForm = () => {
                       clientes={clientes}
                       viaturas={viaturas}
                       estacoes={estacoes}
+                    />
+                  }
+                  condutoresContent={
+                    <CondutoresFields
+                      clientes={clientes}
+                      clientePrincipalLabel="Cliente do contrato também conduz"
                     />
                   }
                 />

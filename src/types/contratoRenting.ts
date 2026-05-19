@@ -143,3 +143,16 @@ export type ContratoRentingInsert = Omit<
 export type ContratoRentingUpdate = Partial<ContratoRentingInsert> & {
   deleted_at?: string | null;
 };
+
+// ============================================================
+// Condutores (m:n entre contratos_renting e clientes)
+// ============================================================
+export type ContratoCondutor = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  cliente_id: string;
+  is_principal: boolean;
+  created_by: string | null;
+  created_at: string;
+};

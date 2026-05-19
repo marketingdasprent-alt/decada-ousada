@@ -92,6 +92,25 @@ export const contratoFormSchema = z
 
     observacoes: z.string().max(2000).optional().nullable(),
     observacoes_internas: z.string().max(2000).optional().nullable(),
+
+    condutores: z
+      .array(
+        z.object({
+          cliente_id: z.string().uuid('Cliente inválido'),
+          is_principal: z.boolean().default(false),
+        })
+      )
+      .default([])
+      .refine(
+        (lista) => {
+          const ids = lista.map((c) => c.cliente_id);
+          return new Set(ids).size === ids.length;
+        },
+        { message: 'Cada cliente só pode aparecer uma vez como condutor.' }
+      )
+      .refine((lista) => lista.filter((c) => c.is_principal).length <= 1, {
+        message: 'Apenas um condutor pode ser principal.',
+      }),
   })
   .refine((d) => new Date(d.data_fim).getTime() > new Date(d.data_inicio).getTime(), {
     message: 'Data fim tem que ser posterior à data início',
@@ -134,6 +153,7 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   comentarios_recolha: '',
   observacoes: '',
   observacoes_internas: '',
+  condutores: [],
 };
 
 /** Converte ISO timestamp para input[type=datetime-local] no fuso do browser. */
