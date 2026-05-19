@@ -79,3 +79,39 @@ export type ReservaInsert = Omit<
 >;
 
 export type ReservaUpdate = Partial<ReservaInsert> & { deleted_at?: string | null };
+
+// ============================================================
+// Condutores (m:n entre reservas e clientes)
+// ============================================================
+export type ReservaCondutor = {
+  id: string;
+  org_id: string;
+  reserva_id: string;
+  cliente_id: string;
+  is_principal: boolean;
+  created_by: string | null;
+  created_at: string;
+};
+
+/** Forma usada no formulário antes da reserva ter ID na BD. */
+export type CondutorFormItem = {
+  cliente_id: string;
+  is_principal: boolean;
+};
+
+// ============================================================
+// Anexos
+// ============================================================
+export type ReservaAnexo = {
+  id: string;
+  org_id: string;
+  reserva_id: string;
+  nome: string;
+  ficheiro_url: string;
+  tamanho_bytes: number | null;
+  mime_type: string | null;
+  descricao: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};

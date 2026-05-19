@@ -19,11 +19,16 @@ import {
   useReservaConflito,
   useUpdateReserva,
 } from '@/hooks/useReservas';
+import { useReservaCondutores, useSyncReservaCondutores } from '@/hooks/useReservaCondutores';
+import { uploadReservaAnexoSync } from '@/hooks/useReservaAnexos';
 import { useViaturas } from '@/hooks/useViaturas';
 
 import { ReservaDeleteConfirm } from '@/components/renting/reservas/ReservaDeleteConfirm';
 import { ReservaResumoSidebar } from '@/components/renting/reservas/ReservaResumoSidebar';
-import { ReservaTabAnexos } from '@/components/renting/reservas/tabs/ReservaTabAnexos';
+import {
+  ReservaTabAnexos,
+  type AnexoPendente,
+} from '@/components/renting/reservas/tabs/ReservaTabAnexos';
 import { ReservaTabCaixa } from '@/components/renting/reservas/tabs/ReservaTabCaixa';
 import { ReservaTabCondutores } from '@/components/renting/reservas/tabs/ReservaTabCondutores';
 import { ReservaTabGeral } from '@/components/renting/reservas/tabs/ReservaTabGeral';
@@ -59,6 +64,7 @@ const DEFAULT_VALUES: ReservaFormValues = {
   renovacao_intervalo_dias: null,
   observacoes: '',
   observacoes_internas: '',
+  condutores: [],
 };
 
 const RentingReservaForm = () => {
@@ -67,6 +73,7 @@ const RentingReservaForm = () => {
   const isEdit = !!id && id !== 'nova';
 
   const { data: reserva, isLoading: loadingReserva } = useReserva(isEdit ? id : null);
+  const { data: condutoresAtuais = [] } = useReservaCondutores(isEdit ? id : null);
 
   const { data: clientes = [] } = useClientes();
   const { data: viaturas = [] } = useViaturas({ apenasDisponiveis: !isEdit });
@@ -75,10 +82,35 @@ const RentingReservaForm = () => {
   const createMutation = useCreateReserva();
   const updateMutation = useUpdateReserva();
   const deleteMutation = useDeleteReserva();
+  const syncCondutoresMutation = useSyncReservaCondutores();
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [anexosPendentes, setAnexosPendentes] = useState<AnexoPendente[]>([]);
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const adicionarAnexosPendentes = (files: File[]) => {
+    setAnexosPendentes((prev) => [
+      ...prev,
+      ...files.map((file) => ({
+        id:
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random()}`,
+        file,
+        nome: file.name,
+      })),
+    ]);
+  };
+
+  const renomearAnexoPendente = (id: string, nome: string) => {
+    setAnexosPendentes((prev) => prev.map((p) => (p.id === id ? { ...p, nome } : p)));
+  };
+
+  const removerAnexoPendente = (id: string) => {
+    setAnexosPendentes((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const isPending =
+    createMutation.isPending || updateMutation.isPending || syncCondutoresMutation.isPending;
 
   const form = useForm<ReservaFormValues>({
     resolver: zodResolver(reservaDialogSchema),
@@ -112,8 +144,12 @@ const RentingReservaForm = () => {
       renovacao_intervalo_dias: reserva.renovacao_intervalo_dias,
       observacoes: reserva.observacoes ?? '',
       observacoes_internas: reserva.observacoes_internas ?? '',
+      condutores: condutoresAtuais.map((c) => ({
+        cliente_id: c.cliente_id,
+        is_principal: c.is_principal,
+      })),
     });
-  }, [isEdit, reserva, form]);
+  }, [isEdit, reserva, condutoresAtuais, form]);
 
   // Pré-check de conflito de datas (UX-only — o gate real é o EXCLUDE na BD).
   const viaturaId = form.watch('viatura_id');
@@ -133,47 +169,74 @@ const RentingReservaForm = () => {
 
   const { data: temConflito } = useReservaConflito(conflitoArgs);
 
-  const onSubmit = (values: ReservaFormValues) => {
-    const viaturaSelecionada = viaturas.find((v) => v.id === values.viatura_id);
-    const matriculaFinal = values.matricula || viaturaSelecionada?.matricula || null;
+  const onSubmit = async (values: ReservaFormValues) => {
+    try {
+      const viaturaSelecionada = viaturas.find((v) => v.id === values.viatura_id);
+      const matriculaFinal = values.matricula || viaturaSelecionada?.matricula || null;
 
-    const payload: ReservaInsert = {
-      viatura_id: values.viatura_id || null,
-      matricula: matriculaFinal,
-      grupo: values.grupo || null,
-      estacao_entrega_id: values.estacao_entrega_id || null,
-      estacao_recolha_id: values.estacao_recolha_id || null,
-      data_inicio: localInputToIso(values.data_inicio),
-      data_fim: localInputToIso(values.data_fim),
-      cliente_id: values.cliente_id || null,
-      cliente_nome: values.cliente_nome || null,
-      condutor_id: values.condutor_id || null,
-      condutor_nome: values.condutor_nome || null,
-      estado: values.estado,
-      valor_total: values.valor_total,
-      franquia_valor: values.franquia_valor,
-      caucao_valor: values.caucao_valor,
-      kms_incluidos: values.kms_incluidos,
-      km_adicional_valor: values.km_adicional_valor,
-      aluguer_longa_duracao: values.aluguer_longa_duracao,
-      renovacao_opcao: values.aluguer_longa_duracao ? (values.renovacao_opcao ?? null) : null,
-      renovacao_intervalo_dias:
-        values.aluguer_longa_duracao && values.renovacao_opcao === 'intervalo_dias'
-          ? values.renovacao_intervalo_dias
-          : null,
-      observacoes: values.observacoes || null,
-      observacoes_internas: values.observacoes_internas || null,
-    };
+      // Condutor principal — derivado da lista para snapshot legado em reservas.
+      const condutorPrincipal = values.condutores.find((c) => c.is_principal) ?? null;
+      const condutorPrincipalCliente = condutorPrincipal
+        ? (clientes.find((c) => c.id === condutorPrincipal.cliente_id) ?? null)
+        : null;
 
-    if (isEdit && reserva) {
-      // Editar: ficar na própria página (utilizador vê toast e continua a trabalhar).
-      updateMutation.mutate({ id: reserva.id, ...payload });
-    } else {
-      // Criar: navegar para modo edição da nova reserva.
-      // Permite clicar logo "Criar Contrato" sem voltar à lista.
-      createMutation.mutate(payload, {
-        onSuccess: (created) => navigate(`/renting/reservas/${created.id}`),
-      });
+      const payload: ReservaInsert = {
+        viatura_id: values.viatura_id || null,
+        matricula: matriculaFinal,
+        grupo: values.grupo || null,
+        estacao_entrega_id: values.estacao_entrega_id || null,
+        estacao_recolha_id: values.estacao_recolha_id || null,
+        data_inicio: localInputToIso(values.data_inicio),
+        data_fim: localInputToIso(values.data_fim),
+        cliente_id: values.cliente_id || null,
+        cliente_nome: values.cliente_nome || null,
+        // condutor_id refere motoristas_ativos (não clientes) — fica null
+        condutor_id: null,
+        condutor_nome: condutorPrincipalCliente?.nome ?? null,
+        estado: values.estado,
+        valor_total: values.valor_total,
+        franquia_valor: values.franquia_valor,
+        caucao_valor: values.caucao_valor,
+        kms_incluidos: values.kms_incluidos,
+        km_adicional_valor: values.km_adicional_valor,
+        aluguer_longa_duracao: values.aluguer_longa_duracao,
+        renovacao_opcao: values.aluguer_longa_duracao ? (values.renovacao_opcao ?? null) : null,
+        renovacao_intervalo_dias:
+          values.aluguer_longa_duracao && values.renovacao_opcao === 'intervalo_dias'
+            ? values.renovacao_intervalo_dias
+            : null,
+        observacoes: values.observacoes || null,
+        observacoes_internas: values.observacoes_internas || null,
+      };
+
+      if (isEdit && reserva) {
+        // Editar: ficar na própria página (utilizador vê toast e continua a trabalhar).
+        updateMutation.mutate({ id: reserva.id, ...payload });
+      } else {
+        // Criar: navegar para modo edição da nova reserva.
+        // Permite clicar logo "Criar Contrato" sem voltar à lista.
+        createMutation.mutate(payload, {
+          onSuccess: (created) => navigate(`/renting/reservas/${created.id}`),
+        });
+
+        // Upload em batch dos anexos pendentes (modo criar) — best-effort
+        if (!isEdit && anexosPendentes.length > 0) {
+          for (const p of anexosPendentes) {
+            try {
+              await uploadReservaAnexoSync(reservaId, p.file, p.nome);
+            } catch (err) {
+              // Log + continua para os próximos. O utilizador pode re-anexar
+              // em edição se algum falhar.
+              console.error(`Falha a anexar ${p.nome}:`, err);
+            }
+          }
+          setAnexosPendentes([]);
+        }
+
+        navigate('/renting/reservas');
+      }
+    } catch {
+      // Erros são reportados via toast pelas mutations
     }
   };
 
@@ -292,7 +355,7 @@ const RentingReservaForm = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-4 items-start">
+            <div className="grid grid-cols-1 xl:grid-cols-[1fr_240px] gap-4 items-start">
               <Card className="bg-card border-border">
                 <CardContent className="p-4 sm:p-6">
                   <Tabs defaultValue="geral" className="w-full">
@@ -304,7 +367,12 @@ const RentingReservaForm = () => {
                     </TabsList>
 
                     <TabsContent value="geral" className="pt-4">
-                      <ReservaTabGeral form={form} viaturas={viaturas} estacoes={estacoes} />
+                      <ReservaTabGeral
+                        form={form}
+                        viaturas={viaturas}
+                        estacoes={estacoes}
+                        clientes={clientes}
+                      />
                     </TabsContent>
 
                     <TabsContent value="condutores" className="pt-4">
@@ -312,11 +380,21 @@ const RentingReservaForm = () => {
                     </TabsContent>
 
                     <TabsContent value="caixa" className="pt-4">
-                      <ReservaTabCaixa form={form} estacoes={estacoes} />
+                      <ReservaTabCaixa
+                        form={form}
+                        estacoes={estacoes}
+                        reservaCodigo={reserva?.codigo ?? null}
+                      />
                     </TabsContent>
 
                     <TabsContent value="anexos" className="pt-4">
-                      <ReservaTabAnexos reservaId={isEdit ? (id ?? null) : null} />
+                      <ReservaTabAnexos
+                        reservaId={isEdit ? (id ?? null) : null}
+                        pendentes={anexosPendentes}
+                        onAdicionarPendentes={adicionarAnexosPendentes}
+                        onRenomearPendente={renomearAnexoPendente}
+                        onRemoverPendente={removerAnexoPendente}
+                      />
                     </TabsContent>
                   </Tabs>
                 </CardContent>
