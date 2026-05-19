@@ -1,5 +1,15 @@
 import { z } from 'zod';
-import { RESERVA_ESTADOS } from '@/types/reserva';
+import { RENOVACAO_OPCOES, RESERVA_ESTADOS } from '@/types/reserva';
+
+const optionalNumber = z
+  .union([z.number(), z.string()])
+  .optional()
+  .nullable()
+  .transform((v) => {
+    if (v === '' || v === null || v === undefined) return null;
+    const n = typeof v === 'number' ? v : Number(v);
+    return Number.isFinite(n) ? n : null;
+  });
 
 const datetimeLocal = z
   .string()
@@ -26,17 +36,37 @@ export const reservaDialogSchema = z
 
     estado: z.enum(RESERVA_ESTADOS),
 
-    valor_total: z
-      .union([z.number(), z.string()])
-      .optional()
-      .nullable()
-      .transform((v) => {
-        if (v === '' || v === null || v === undefined) return null;
-        const n = typeof v === 'number' ? v : Number(v);
-        return Number.isFinite(n) ? n : null;
-      }),
+    valor_total: optionalNumber,
+    franquia_valor: optionalNumber,
+    caucao_valor: optionalNumber,
+    kms_incluidos: optionalNumber,
+    km_adicional_valor: optionalNumber,
+
+    aluguer_longa_duracao: z.boolean().default(false),
+    renovacao_opcao: z.enum(RENOVACAO_OPCOES).nullable().optional(),
+    renovacao_intervalo_dias: optionalNumber,
 
     observacoes: z.string().max(2000).optional().nullable(),
+    observacoes_internas: z.string().max(2000).optional().nullable(),
+
+    condutores: z
+      .array(
+        z.object({
+          cliente_id: z.string().uuid('Cliente inválido'),
+          is_principal: z.boolean().default(false),
+        })
+      )
+      .default([])
+      .refine(
+        (lista) => {
+          const ids = lista.map((c) => c.cliente_id);
+          return new Set(ids).size === ids.length;
+        },
+        { message: 'Cada cliente só pode aparecer uma vez como condutor.' }
+      )
+      .refine((lista) => lista.filter((c) => c.is_principal).length <= 1, {
+        message: 'Apenas um condutor pode ser principal.',
+      }),
   })
   .refine((d) => new Date(d.data_fim).getTime() > new Date(d.data_inicio).getTime(), {
     message: 'Data fim tem que ser posterior à data início',
