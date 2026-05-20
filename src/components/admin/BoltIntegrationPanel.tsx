@@ -583,7 +583,9 @@ export const BoltIntegrationPanel: React.FC = () => {
           <TabsContent value="config" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="client_id">Client ID *</Label>
+                <Label htmlFor="client_id">
+                  Client ID <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="client_id"
                   value={formData.client_id}
@@ -593,7 +595,9 @@ export const BoltIntegrationPanel: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="client_secret">Client Secret *</Label>
+                <Label htmlFor="client_secret">
+                  Client Secret <span className="text-red-500">*</span>
+                </Label>
                 <div className="relative">
                   <Input
                     id="client_secret"
@@ -617,7 +621,9 @@ export const BoltIntegrationPanel: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="company_id">Company ID *</Label>
+                <Label htmlFor="company_id">
+                  Company ID <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="company_id"
                   value={formData.company_id}

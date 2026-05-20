@@ -428,7 +428,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
       {/* Form */}
       <div className="max-w-4xl mx-auto px-4 pb-8 space-y-6">
         <p className="text-xs text-muted-foreground">
-          <span className="text-destructive font-semibold">*</span> Campos obrigatórios
+          <span className="text-red-500 font-semibold">*</span> Campos obrigatórios
         </p>
         {/* Dados Pessoais */}
         <Card className="border-border overflow-hidden">
@@ -442,7 +442,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="nome">
-                Nome Completo <span className="text-destructive">*</span>
+                Nome Completo <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="nome"
@@ -453,7 +453,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">
-                Email <span className="text-destructive">*</span>
+                Email <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="email"
@@ -476,7 +476,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="telefone">
-                Telefone <span className="text-destructive">*</span>
+                Telefone <span className="text-red-500">*</span>
               </Label>
               <PhoneInput
                 id="telefone"
@@ -493,7 +493,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="nif">
-                NIF <span className="text-destructive">*</span>
+                NIF <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="nif"
@@ -516,7 +516,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="morada">
-                Morada <span className="text-destructive">*</span>
+                Morada <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="morada"
@@ -535,7 +535,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="cidade">
-                Cidade <span className="text-destructive">*</span>
+                Cidade <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="cidade"
@@ -554,7 +554,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="codigoPostal">
-                Código Postal <span className="text-destructive">*</span>
+                Código Postal <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="codigoPostal"
@@ -584,7 +584,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             <div className="space-y-2 sm:col-span-2">
               <Label className="flex items-center gap-2 text-foreground">
                 <Home className="h-4 w-4 text-muted-foreground" />
-                Comprovativo de Morada <span className="text-destructive">*</span>
+                Comprovativo de Morada <span className="text-red-500">*</span>
               </Label>
               <DocumentUploader
                 folder="comprovativo-morada"
@@ -611,7 +611,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>
-                Tipo de Documento <span className="text-destructive">*</span>
+                Tipo de Documento <span className="text-red-500">*</span>
               </Label>
               <Select
                 value={documentoTipo}
@@ -638,7 +638,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="documentoNumero">
-                Número do Documento <span className="text-destructive">*</span>
+                Número do Documento <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="documentoNumero"
@@ -664,7 +664,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="documentoValidade">
-                Data de Validade <span className="text-destructive">*</span>
+                Data de Validade <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="documentoValidade"
@@ -675,7 +675,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label>
-                Documento de Identificação <span className="text-destructive">*</span>
+                Documento de Identificação <span className="text-red-500">*</span>
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -713,7 +713,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="cartaConducao">
-                Número da Carta <span className="text-destructive">*</span>
+                Número da Carta <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="cartaConducao"
@@ -737,7 +737,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="cartaValidade">
-                Data de Validade <span className="text-destructive">*</span>
+                Data de Validade <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="cartaValidade"
@@ -748,7 +748,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label>
-                Categorias <span className="text-destructive">*</span>
+                Categorias <span className="text-red-500">*</span>
               </Label>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIAS_CARTA.map((cat) => (
@@ -770,7 +770,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label>
-                Upload da Carta de Condução <span className="text-destructive">*</span>
+                Upload da Carta de Condução <span className="text-red-500">*</span>
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -808,7 +808,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="licencaTvdeNumero">
-                Número da Licença TVDE <span className="text-destructive">*</span>
+                Número da Licença TVDE <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="licencaTvdeNumero"
@@ -819,7 +819,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="licencaTvdeValidade">
-                Data de Validade <span className="text-destructive">*</span>
+                Data de Validade <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="licencaTvdeValidade"
@@ -830,7 +830,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label>
-                Upload da Licença TVDE <span className="text-destructive">*</span>
+                Upload da Licença TVDE <span className="text-red-500">*</span>
               </Label>
               <DocumentUploader
                 folder="licenca-tvde"
@@ -855,7 +855,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-foreground">
                 <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                Registo Criminal <span className="text-destructive">*</span>
+                Registo Criminal <span className="text-red-500">*</span>
               </Label>
               <DocumentUploader
                 folder="registo-criminal"
@@ -871,7 +871,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-foreground">
                 <Building2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                Comprovativo de IBAN <span className="text-destructive">*</span>
+                Comprovativo de IBAN <span className="text-red-500">*</span>
               </Label>
               <DocumentUploader
                 folder="comprovativo-iban"

@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { Check, ChevronsUpDown, Coins, EyeOff, FileText, Gauge, Lock, Shield } from 'lucide-react';
+import { Check, ChevronsUpDown, Coins, EyeOff, FileText } from 'lucide-react';
 
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
@@ -25,16 +24,14 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
+import { ALDFields } from '@/components/renting/shared/ALDFields';
+import { FranquiaKmsFields } from '@/components/renting/shared/FranquiaKmsFields';
+
 import type { ReservaFormValues } from '../reservaDialog.schema';
 import type { ViaturaBasic } from '@/hooks/useViaturas';
 import type { Estacao } from '@/hooks/useEstacoes';
 import type { ClienteComDocumentos } from '@/types/cliente';
-import {
-  ESTADO_LABELS,
-  RENOVACAO_OPCAO_LABELS,
-  RENOVACAO_OPCOES,
-  type ReservaEstado,
-} from '@/types/reserva';
+import { ESTADO_LABELS, type ReservaEstado } from '@/types/reserva';
 
 const SENTINEL_NONE = '__none__';
 
@@ -79,8 +76,6 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
   const estadoAtual = form.watch('estado');
   const dataInicio = form.watch('data_inicio');
   const dataFim = form.watch('data_fim');
-  const longaDuracao = form.watch('aluguer_longa_duracao');
-  const renovacaoOpcao = form.watch('renovacao_opcao');
 
   const cliente = clienteId ? (clientes.find((c) => c.id === clienteId) ?? null) : null;
 
@@ -115,7 +110,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
         <div className="flex items-center justify-between gap-2 pb-2 border-b mb-4">
           <div className="flex items-center gap-2">
             <h3 className="text-base font-semibold">Cliente da Reserva</h3>
-            <span className="text-destructive text-sm">*</span>
+            <span className="text-red-500 text-sm">*</span>
           </div>
           <span className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground">
             Quem encomendou
@@ -190,7 +185,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Estação Início <span className="text-destructive">*</span>
+                  Estação Início <span className="text-red-500">*</span>
                 </FormLabel>
                 <Select
                   value={field.value ?? SENTINEL_NONE}
@@ -220,7 +215,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Data Início <span className="text-destructive">*</span>
+                  Data Início <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -263,7 +258,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Estação Fim <span className="text-destructive">*</span>
+                  Estação Fim <span className="text-red-500">*</span>
                 </FormLabel>
                 <Select
                   value={field.value ?? SENTINEL_NONE}
@@ -293,7 +288,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Data Fim <span className="text-destructive">*</span>
+                  Data Fim <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -310,119 +305,8 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
         </div>
       </div>
 
-      {/* === Linha única: Aluguer de Longa Duração + opções === */}
-      <div
-        className={cn(
-          'flex flex-wrap items-center gap-3 p-3 rounded-md border bg-muted/20 transition-colors',
-          longaDuracao && 'border-primary/40 bg-primary/5'
-        )}
-      >
-        <FormField
-          control={form.control}
-          name="aluguer_longa_duracao"
-          render={({ field }) => (
-            <FormItem className="flex items-center gap-2 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(v) => {
-                    const next = v === true;
-                    field.onChange(next);
-                    if (!next) {
-                      form.setValue('renovacao_opcao', null);
-                      form.setValue('renovacao_intervalo_dias', null);
-                    }
-                  }}
-                  id="longa-duracao"
-                />
-              </FormControl>
-              <FormLabel htmlFor="longa-duracao" className="cursor-pointer font-semibold m-0">
-                Aluguer de Longa Duração
-              </FormLabel>
-            </FormItem>
-          )}
-        />
-
-        <span
-          className={cn(
-            'text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full',
-            longaDuracao
-              ? 'bg-primary/15 text-primary border border-primary/30'
-              : 'bg-muted text-muted-foreground border border-border'
-          )}
-        >
-          {longaDuracao ? 'Longa duração' : 'Curta duração'}
-        </span>
-
-        {longaDuracao && (
-          <>
-            <div className="h-5 w-px bg-border hidden sm:block" />
-
-            <FormField
-              control={form.control}
-              name="renovacao_opcao"
-              render={({ field }) => (
-                <FormItem className="flex items-center gap-2 space-y-0 flex-1 min-w-[200px]">
-                  <FormLabel className="text-xs uppercase tracking-wide font-semibold text-muted-foreground m-0 shrink-0">
-                    Renovação
-                  </FormLabel>
-                  <Select
-                    value={field.value ?? SENTINEL_NONE}
-                    onValueChange={(v) => {
-                      const next =
-                        v === SENTINEL_NONE ? null : (v as (typeof RENOVACAO_OPCOES)[number]);
-                      field.onChange(next);
-                      if (next !== 'intervalo_dias') {
-                        form.setValue('renovacao_intervalo_dias', null);
-                      }
-                    }}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="h-8 bg-background flex-1">
-                        <SelectValue placeholder="Escolhe..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value={SENTINEL_NONE}>—</SelectItem>
-                      {RENOVACAO_OPCOES.map((opt) => (
-                        <SelectItem key={opt} value={opt}>
-                          {RENOVACAO_OPCAO_LABELS[opt]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-
-            {renovacaoOpcao === 'intervalo_dias' && (
-              <FormField
-                control={form.control}
-                name="renovacao_intervalo_dias"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2 space-y-0 shrink-0">
-                    <FormLabel className="text-xs uppercase tracking-wide font-semibold text-muted-foreground m-0">
-                      a cada
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        className="h-8 w-20 bg-background text-center"
-                        value={field.value ?? ''}
-                        onChange={(e) =>
-                          field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                        }
-                      />
-                    </FormControl>
-                    <span className="text-xs text-muted-foreground">dias</span>
-                  </FormItem>
-                )}
-              />
-            )}
-          </>
-        )}
-      </div>
+      {/* === Aluguer Longa Duração + Renovação (shared) === */}
+      <ALDFields idPrefix="reserva" />
 
       {/* === Viatura === */}
       <div className="space-y-4">
@@ -438,7 +322,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
               return (
                 <FormItem>
                   <FormLabel>
-                    Viatura <span className="text-destructive">*</span>
+                    Viatura <span className="text-red-500">*</span>
                   </FormLabel>
                   <Popover
                     open={viaturaPopoverOpen}
@@ -575,142 +459,8 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
         </div>
       </div>
 
-      {/* === Bloco do meio: Franquia / Caução / Kms === */}
-      <div className="rounded-lg border bg-gradient-to-br from-muted/40 to-muted/10 p-5 space-y-5">
-        <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary" />
-          <h3 className="text-base font-semibold">Franquia, Caução & Quilometragem</h3>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <FormField
-            control={form.control}
-            name="franquia_valor"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-                  <Coins className="h-3.5 w-3.5" />
-                  Franquia
-                </FormLabel>
-                <div className="relative">
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      placeholder="0,00"
-                      className="bg-background pr-8"
-                      value={field.value ?? ''}
-                      onChange={(e) =>
-                        field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                      }
-                    />
-                  </FormControl>
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    €
-                  </span>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="caucao_valor"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-                  <Lock className="h-3.5 w-3.5" />
-                  Caução
-                </FormLabel>
-                <div className="relative">
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      placeholder="0,00"
-                      className="bg-background pr-8"
-                      value={field.value ?? ''}
-                      onChange={(e) =>
-                        field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                      }
-                    />
-                  </FormControl>
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    €
-                  </span>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="kms_incluidos"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-                  <Gauge className="h-3.5 w-3.5" />
-                  Kms Incluídos
-                </FormLabel>
-                <div className="relative">
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      placeholder="Ilimitado"
-                      className="bg-background pr-12"
-                      value={field.value ?? ''}
-                      onChange={(e) =>
-                        field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                      }
-                    />
-                  </FormControl>
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                    km
-                  </span>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="km_adicional_valor"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-                  <Gauge className="h-3.5 w-3.5" />
-                  Km Adicional
-                </FormLabel>
-                <div className="relative">
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      step="0.0001"
-                      placeholder="0,00"
-                      className="bg-background pr-12"
-                      value={field.value ?? ''}
-                      onChange={(e) =>
-                        field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                      }
-                    />
-                  </FormControl>
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                    €/km
-                  </span>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      </div>
+      {/* === Franquia / Caução / Kms (shared) === */}
+      <FranquiaKmsFields />
 
       {/* === Tarifa (placeholder) === */}
       <div className="rounded-lg border border-dashed bg-muted/10 p-6">

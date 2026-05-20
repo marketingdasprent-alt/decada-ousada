@@ -22,7 +22,7 @@ interface Props {
   campanha?: any;
 }
 
-const NovaCampanhaDialog = ({ open, onOpenChange, campanha }: Props) => {
+export const NovaCampanhaDialog = ({ open, onOpenChange, campanha }: Props) => {
   const queryClient = useQueryClient();
   const [nome, setNome] = useState('');
   const [assunto, setAssunto] = useState('');
@@ -165,5 +165,3 @@ const NovaCampanhaDialog = ({ open, onOpenChange, campanha }: Props) => {
     </Dialog>
   );
 };
-
-export default NovaCampanhaDialog;

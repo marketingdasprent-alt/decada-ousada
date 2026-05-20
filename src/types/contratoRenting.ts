@@ -38,6 +38,22 @@ export const CONTRATO_ORIGEM_LABELS: Record<ContratoOrigem, string> = {
 };
 
 // ============================================================
+// Renovação (ALD — espelha reserva)
+// ============================================================
+export const CONTRATO_RENOVACAO_OPCOES = [
+  'primeiro_dia_mes',
+  'mesmo_dia_cada_mes',
+  'intervalo_dias',
+] as const;
+export type ContratoRenovacaoOpcao = (typeof CONTRATO_RENOVACAO_OPCOES)[number];
+
+export const CONTRATO_RENOVACAO_OPCAO_LABELS: Record<ContratoRenovacaoOpcao, string> = {
+  primeiro_dia_mes: 'Ao primeiro dia de cada mês',
+  mesmo_dia_cada_mes: 'No mesmo dia em cada mês',
+  intervalo_dias: 'A cada intervalo específico de dias',
+};
+
+// ============================================================
 // Tipo principal
 // ============================================================
 export type ContratoRenting = {
@@ -45,7 +61,8 @@ export type ContratoRenting = {
   org_id: string;
   codigo: number;
 
-  reserva_id: string | null;
+  /** FK obrigatória — todo contrato começa em reserva. */
+  reserva_id: string;
 
   cliente_id: string;
 
@@ -77,6 +94,20 @@ export type ContratoRenting = {
   total_final: number | null;
   facturado_em: string | null;
 
+  // Longa duração / renovação (espelha reserva)
+  is_longa_duracao: boolean;
+  renovacao_opcao: ContratoRenovacaoOpcao | null;
+  renovacao_intervalo_dias: number | null;
+
+  // Financeiro / kms (copiado da reserva, editável no contrato)
+  franquia_valor: number | null;
+  caucao_valor: number | null;
+  kms_incluidos: number | null;
+  km_adicional_valor: number | null;
+
+  // Cobertura (FK única ao catálogo — MVP)
+  cobertura_id: string | null;
+
   voucher_codigo: string | null;
 
   numero_processo: string | null;
@@ -87,6 +118,7 @@ export type ContratoRenting = {
   comentarios_recolha: string | null;
 
   observacoes: string | null;
+  observacoes_internas: string | null;
 
   deleted_at: string | null;
   created_by: string | null;
@@ -113,4 +145,34 @@ export type ContratoRentingInsert = Omit<
 
 export type ContratoRentingUpdate = Partial<ContratoRentingInsert> & {
   deleted_at?: string | null;
+};
+
+// ============================================================
+// Condutores (m:n entre contratos_renting e clientes)
+// ============================================================
+export type ContratoCondutor = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  cliente_id: string;
+  is_principal: boolean;
+  created_by: string | null;
+  created_at: string;
+};
+
+// ============================================================
+// Anexos (1:n por contrato)
+// ============================================================
+export type ContratoAnexo = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  nome: string;
+  ficheiro_url: string;
+  tamanho_bytes: number | null;
+  mime_type: string | null;
+  descricao: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 };

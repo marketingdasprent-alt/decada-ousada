@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Mail, Users, Upload, PenTool, BarChart3 } from 'lucide-react';
-import CampanhasTab from '@/components/marketing/CampanhasTab';
-import ListasTab from '@/components/marketing/ListasTab';
-import ImportarTab from '@/components/marketing/ImportarTab';
-import AssinaturasTab from '@/components/marketing/AssinaturasTab';
-import EstatisticasTab from '@/components/marketing/EstatisticasTab';
+import { CampanhasTab } from '@/components/marketing/CampanhasTab';
+import { ListasTab } from '@/components/marketing/ListasTab';
+import { ImportarTab } from '@/components/marketing/ImportarTab';
+import { AssinaturasTab } from '@/components/marketing/AssinaturasTab';
+import { EstatisticasTab } from '@/components/marketing/EstatisticasTab';
 
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import { Megaphone } from 'lucide-react';

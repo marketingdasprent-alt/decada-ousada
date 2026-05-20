@@ -572,7 +572,9 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Viatura *</Label>
+              <Label>
+                Viatura <span className="text-red-500">*</span>
+              </Label>
               {viaturasDisponiveis.length === 0 ? (
                 <div className="flex items-center gap-2 p-3 rounded-md border border-dashed border-amber-400 bg-amber-50 dark:bg-amber-950/20 text-sm text-amber-700 dark:text-amber-400">
                   <Car className="h-4 w-4 shrink-0" />

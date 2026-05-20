@@ -24,7 +24,7 @@ const SELECT_COLUMNS = `
   condutor_id, condutor_nome,
   estado, valor_total,
   observacoes, observacoes_internas,
-  aluguer_longa_duracao, renovacao_opcao, renovacao_intervalo_dias,
+  is_longa_duracao, renovacao_opcao, renovacao_intervalo_dias,
   franquia_valor, caucao_valor, kms_incluidos, km_adicional_valor,
   deleted_at, created_by, updated_by, created_at, updated_at
 `;

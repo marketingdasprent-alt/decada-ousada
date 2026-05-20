@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 
 // Asterisco vermelho para campos obrigatórios
-export const RequiredMark = () => <span className="text-destructive ml-0.5">*</span>;
+// Nota: usa text-red-500 (vermelho vivo, fixo) em vez de text-destructive
+// porque no tema escuro o destructive é demasiado escuro (#7f1d1d) e parece preto.
+export const RequiredMark = () => <span className="text-red-500 ml-0.5">*</span>;
 
 export type FieldStatus = 'valid' | 'invalid' | 'neutro';
 

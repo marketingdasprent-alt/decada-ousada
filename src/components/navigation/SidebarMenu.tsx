@@ -25,6 +25,7 @@ import {
   Percent,
   Fuel,
   CarFront,
+  Library,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
@@ -103,6 +104,12 @@ const MENU_ITEMS: MenuItem[] = [
           { label: 'Extras', url: '/renting/tarifas/extras', icon: PackagePlus, recurso: 'renting_contratos' },
           { label: 'Taxas', url: '/renting/tarifas/taxas', icon: Percent, recurso: 'renting_contratos' },
         ],
+      },
+      {
+        label: 'Catálogos',
+        url: '/renting/catalogos',
+        icon: Library,
+        recurso: 'renting_contratos',
       },
     ],
   },

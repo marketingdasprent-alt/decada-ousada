@@ -440,7 +440,9 @@ export function MotoristaTabDados({
                 name="nome"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel>Nome Completo *</FormLabel>
+                    <FormLabel>
+                      Nome Completo <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>

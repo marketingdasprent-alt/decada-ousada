@@ -582,7 +582,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                     name="matricula"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Matrícula *</FormLabel>
+                        <FormLabel>
+                          Matrícula <span className="text-red-500">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="AA-00-BB"
@@ -664,7 +666,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                     name="marca_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Marca *</FormLabel>
+                        <FormLabel>
+                          Marca <span className="text-red-500">*</span>
+                        </FormLabel>
                         <Select
                           onValueChange={(v) => {
                             field.onChange(v);
@@ -693,7 +697,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                     name="modelo_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Modelo *</FormLabel>
+                        <FormLabel>
+                          Modelo <span className="text-red-500">*</span>
+                        </FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}

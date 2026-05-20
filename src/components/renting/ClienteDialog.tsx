@@ -112,7 +112,7 @@ const TelemovelField = ({ control }: { control: Control<ClienteFormData> }) => {
 };
 
 /** Secção "Dados Pessoais / Dados da Empresa". Recebe is_empresa por props para evitar watch no parent. */
-const SeccaoDadosPrincipais = ({
+export const SeccaoDadosPrincipais = ({
   control,
   isEmpresa,
   disabledTipo,
@@ -296,7 +296,7 @@ const SeccaoDadosPrincipais = ({
 };
 
 /** Secção Morada — sem dependência de is_empresa. */
-const SeccaoMorada = ({ control }: { control: Control<ClienteFormData> }) => (
+export const SeccaoMorada = ({ control }: { control: Control<ClienteFormData> }) => (
   <section className="space-y-5">
     <SectionHeader title="Morada" />
 
@@ -354,7 +354,7 @@ const SeccaoMorada = ({ control }: { control: Control<ClienteFormData> }) => (
 );
 
 /** Secção Documento de Identificação. */
-const SeccaoDocumento = ({ control }: { control: Control<ClienteFormData> }) => (
+export const SeccaoDocumento = ({ control }: { control: Control<ClienteFormData> }) => (
   <section className="space-y-5">
     <SectionHeader title="Documento de Identificação" />
 
@@ -445,7 +445,7 @@ const SeccaoDocumento = ({ control }: { control: Control<ClienteFormData> }) => 
 );
 
 /** Secção Carta de Condução — só para pessoa. */
-const SeccaoCarta = ({ control }: { control: Control<ClienteFormData> }) => (
+export const SeccaoCarta = ({ control }: { control: Control<ClienteFormData> }) => (
   <section className="space-y-5">
     <SectionHeader title="Carta de Condução" />
 
@@ -516,7 +516,7 @@ const SeccaoCarta = ({ control }: { control: Control<ClienteFormData> }) => (
  * Limpa erros stale de `doc_numero` e revalida com o novo tipo.
  * Evita ter um useWatch + useEffect no componente principal.
  */
-const DocTipoChangeWatcher = ({ control }: { control: Control<ClienteFormData> }) => {
+export const DocTipoChangeWatcher = ({ control }: { control: Control<ClienteFormData> }) => {
   const docTipo = useWatch({ control, name: 'doc_tipo' });
   const { getValues, trigger, clearErrors } = useFormContext<ClienteFormData>();
 

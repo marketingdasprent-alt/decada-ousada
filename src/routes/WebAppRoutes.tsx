@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import ScrollToTop from '@/components/ScrollToTop';
+import { ScrollToTop } from '@/components/ScrollToTop';
 import { usePageTracking } from '@/hooks/usePageTracking';
 import { RECURSOS } from '@/utils/permissions';
 import { Loader2 } from 'lucide-react';
@@ -50,10 +50,13 @@ const EliminarConta = lazy(() => import('@/pages/EliminarConta'));
 const SelecionarOrg = lazy(() => import('@/pages/SelecionarOrg'));
 const RegistarOrg = lazy(() => import('@/pages/RegistarOrg'));
 const RentingContratos = lazy(() => import('@/pages/renting/RentingContratos'));
+const ContratoForm = lazy(() => import('@/pages/renting/ContratoForm'));
 const RentingReservas = lazy(() => import('@/pages/renting/RentingReservas'));
 const RentingReservaForm = lazy(() => import('@/pages/renting/RentingReservaForm'));
 const RentingMovimentacoes = lazy(() => import('@/pages/renting/RentingMovimentacoes'));
 const RentingClientes = lazy(() => import('@/pages/renting/RentingClientes'));
+const RentingClienteForm = lazy(() => import('@/pages/renting/RentingClienteForm'));
+const RentingCatalogos = lazy(() => import('@/pages/renting/RentingCatalogos'));
 const RentingGrupos = lazy(() => import('@/pages/renting/RentingGrupos'));
 const RentingGrupoForm = lazy(() => import('@/pages/renting/RentingGrupoForm'));
 const RentingTarifas = lazy(() => import('@/pages/renting/RentingTarifas'));
@@ -376,6 +379,36 @@ const WebAppRoutes = () => {
             }
           />
           <Route
+            path="/renting/contratos/novo"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <ContratoForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/contratos/:id"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <ContratoForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/catalogos"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <RentingCatalogos />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/renting/reservas"
             element={
               <ProtectedRoute requiredResource="renting_reservas">
@@ -421,6 +454,16 @@ const WebAppRoutes = () => {
               <ProtectedRoute requiredResource="renting_clientes">
                 <DashboardLayout>
                   <RentingClientes />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/clientes/novo"
+            element={
+              <ProtectedRoute requiredResource="renting_clientes">
+                <DashboardLayout>
+                  <RentingClienteForm />
                 </DashboardLayout>
               </ProtectedRoute>
             }
@@ -518,6 +561,16 @@ const WebAppRoutes = () => {
             element={
               <ProtectedRoute requiredResource="renting_contratos">
                 <DashboardLayout><RentingTaxas /></DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/clientes/:id"
+            element={
+              <ProtectedRoute requiredResource="renting_clientes">
+                <DashboardLayout>
+                  <RentingClienteForm />
+                </DashboardLayout>
               </ProtectedRoute>
             }
           />

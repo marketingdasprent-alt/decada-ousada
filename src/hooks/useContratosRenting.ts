@@ -31,11 +31,13 @@ const SELECT_COLUMNS = `
   estado_operacional, estado_financeiro, origem,
   tarifa_diaria, desconto_percentagem, taxa_iva, valor_total_manual,
   total_subtotal, total_iva, total_final, facturado_em,
+  is_longa_duracao, renovacao_opcao, renovacao_intervalo_dias,
+  franquia_valor, caucao_valor, kms_incluidos, km_adicional_valor,
   voucher_codigo,
   numero_processo, voo_referencia,
   local_entrega, local_recolha,
   comentarios_entrega, comentarios_recolha,
-  observacoes,
+  observacoes, observacoes_internas,
   deleted_at, created_by, updated_by, created_at, updated_at
 `;
 
@@ -80,6 +82,39 @@ export function useContratosRenting(options: UseContratosRentingOptions = {}) {
     placeholderData: keepPreviousData,
     staleTime: 30_000,
     enabled,
+  });
+}
+
+// ────────────────────────────────────────────────────────────
+// Totais (view contrato_renting_totais)
+// ────────────────────────────────────────────────────────────
+
+export interface ContratoTotais {
+  contrato_id: string;
+  dias: number;
+  estado_financeiro: string;
+  subtotal: number;
+  iva: number;
+  total: number;
+  facturado_em: string | null;
+  is_snapshot: boolean;
+}
+
+export function useContratoTotais(id: string | null | undefined) {
+  return useQuery({
+    queryKey: [...QUERY_KEY_BASE, 'totais', id],
+    queryFn: async (): Promise<ContratoTotais | null> => {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from('contrato_renting_totais')
+        .select('*')
+        .eq('contrato_id', id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as ContratoTotais | null;
+    },
+    enabled: !!id,
+    staleTime: 10_000,
   });
 }
 

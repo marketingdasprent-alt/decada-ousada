@@ -748,7 +748,9 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
           <div className="space-y-4 pt-2">
             {/* Semana de referência */}
             <div className="space-y-1.5">
-              <Label>Semana de referência *</Label>
+              <Label>
+                Semana de referência <span className="text-red-500">*</span>
+              </Label>
               <Select value={semanaSeleccionada} onValueChange={setSemanaSeleccionada}>
                 <SelectTrigger className="h-10">
                   <SelectValue placeholder="Seleciona a semana…" />
@@ -767,7 +769,9 @@ export const MotoristaRecibosSection: React.FC<MotoristaRecibosSectionProps> = (
 
             {/* Ficheiro */}
             <div className="space-y-1.5">
-              <Label>Ficheiro (PDF ou imagem) *</Label>
+              <Label>
+                Ficheiro (PDF ou imagem) <span className="text-red-500">*</span>
+              </Label>
               <div
                 className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/40 transition-colors"
                 onClick={() => fileInputRef.current?.click()}

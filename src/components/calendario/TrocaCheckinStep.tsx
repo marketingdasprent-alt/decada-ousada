@@ -476,7 +476,7 @@ export const TrocaCheckinStep: React.FC<{
                 {fazerDepois ? (
                   <span className="text-xs text-muted-foreground font-medium">opcional</span>
                 ) : (
-                  <span className="text-xs text-destructive font-medium">*obrigatório</span>
+                  <span className="text-xs text-red-500 font-medium">*obrigatório</span>
                 )}
               </span>
             </button>
@@ -554,7 +554,7 @@ export const TrocaCheckinStep: React.FC<{
                 {fazerDepois ? (
                   <span className="text-xs text-muted-foreground font-medium">opcional</span>
                 ) : (
-                  <span className="text-xs text-destructive font-medium">*obrigatório</span>
+                  <span className="text-xs text-red-500 font-medium">*obrigatório</span>
                 )}
               </span>
             </button>

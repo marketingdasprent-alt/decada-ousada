@@ -326,12 +326,9 @@ export function ReparaCartoes() {
           if (edp.length) updates.cartao_edp = edp.join(' / ');
 
           if (Object.keys(updates).length > 0) {
-            console.log(`Updating ${match.nome} com:`, updates);
             await supabase.from('motoristas_ativos').update(updates).eq('id', match.id);
             updated++;
           }
-        } else {
-          console.warn(`Motorista não encontrado: ${nomeRaw}`);
         }
       }
 

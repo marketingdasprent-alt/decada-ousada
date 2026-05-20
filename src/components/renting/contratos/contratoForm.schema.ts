@@ -1,0 +1,174 @@
+import { z } from 'zod';
+import {
+  CONTRATO_ESTADOS_FIN,
+  CONTRATO_ESTADOS_OP,
+  CONTRATO_ORIGENS,
+  CONTRATO_RENOVACAO_OPCOES,
+} from '@/types/contratoRenting';
+
+const datetimeLocal = z
+  .string()
+  .min(1, 'Data obrigatória')
+  .refine((v) => !Number.isNaN(new Date(v).getTime()), 'Data inválida');
+
+const optionalNumber = z
+  .union([z.number(), z.string()])
+  .optional()
+  .nullable()
+  .transform((v) => {
+    if (v === '' || v === null || v === undefined) return null;
+    const n = typeof v === 'number' ? v : Number(v);
+    return Number.isFinite(n) ? n : null;
+  });
+
+/** Number opcional não-negativo (campos monetários). */
+const optionalNonNegativeNumber = optionalNumber.pipe(
+  z.number().min(0, 'Valor não pode ser negativo').nullable()
+);
+
+/** Percentagem opcional entre 0 e 100. */
+const optionalPercentage = optionalNumber.pipe(
+  z.number().min(0, 'Mínimo 0%').max(100, 'Máximo 100%').nullable()
+);
+
+export const contratoFormSchema = z
+  .object({
+    // Cliente + Viatura (obrigatórios)
+    cliente_id: z.string().uuid('Cliente inválido'),
+    viatura_id: z.string().uuid('Viatura inválida'),
+    grupo: z.string().max(50).optional().nullable(),
+    matricula: z.string().max(20).optional().nullable(),
+
+    // Reserva associada (obrigatória — contrato sempre origina de reserva)
+    reserva_id: z.string().uuid('Reserva inválida'),
+
+    // Entrega
+    estacao_entrega_id: z.string().uuid().nullable().optional(),
+    data_inicio: datetimeLocal,
+
+    // Recolha
+    estacao_recolha_id: z.string().uuid().nullable().optional(),
+    data_fim: datetimeLocal,
+
+    // Estação origem da viatura
+    estacao_origem_viatura_id: z.string().uuid().nullable().optional(),
+
+    // Estados
+    estado_operacional: z.enum(CONTRATO_ESTADOS_OP),
+    estado_financeiro: z.enum(CONTRATO_ESTADOS_FIN),
+    origem: z.enum(CONTRATO_ORIGENS),
+
+    // Tarifário simples
+    tarifa_diaria: optionalNonNegativeNumber,
+    desconto_percentagem: optionalPercentage,
+    taxa_iva: z
+      .union([z.number(), z.string()])
+      .transform((v) => {
+        const n = typeof v === 'number' ? v : Number(v);
+        return Number.isFinite(n) ? n : 23;
+      })
+      .pipe(z.number().min(0, 'Mínimo 0%').max(100, 'Máximo 100%')),
+    valor_total_manual: optionalNonNegativeNumber,
+
+    // Longa duração / renovação
+    is_longa_duracao: z.boolean().default(false),
+    renovacao_opcao: z.enum(CONTRATO_RENOVACAO_OPCOES).nullable().optional(),
+    renovacao_intervalo_dias: optionalNonNegativeNumber,
+
+    // Financeiro extra (espelha reserva)
+    franquia_valor: optionalNonNegativeNumber,
+    caucao_valor: optionalNonNegativeNumber,
+    kms_incluidos: optionalNonNegativeNumber,
+    km_adicional_valor: optionalNonNegativeNumber,
+
+    // Cobertura (FK ao catálogo)
+    cobertura_id: z.string().uuid().nullable().optional(),
+
+    // Voucher + info adicional
+    voucher_codigo: z.string().max(50).optional().nullable(),
+    numero_processo: z.string().max(100).optional().nullable(),
+    voo_referencia: z.string().max(100).optional().nullable(),
+    local_entrega: z.string().max(255).optional().nullable(),
+    local_recolha: z.string().max(255).optional().nullable(),
+    comentarios_entrega: z.string().max(2000).optional().nullable(),
+    comentarios_recolha: z.string().max(2000).optional().nullable(),
+
+    observacoes: z.string().max(2000).optional().nullable(),
+    observacoes_internas: z.string().max(2000).optional().nullable(),
+
+    condutores: z
+      .array(
+        z.object({
+          cliente_id: z.string().uuid('Cliente inválido'),
+          is_principal: z.boolean().default(false),
+        })
+      )
+      .default([])
+      .refine(
+        (lista) => {
+          const ids = lista.map((c) => c.cliente_id);
+          return new Set(ids).size === ids.length;
+        },
+        { message: 'Cada cliente só pode aparecer uma vez como condutor.' }
+      )
+      .refine((lista) => lista.filter((c) => c.is_principal).length <= 1, {
+        message: 'Apenas um condutor pode ser principal.',
+      }),
+  })
+  .refine((d) => new Date(d.data_fim).getTime() > new Date(d.data_inicio).getTime(), {
+    message: 'Data fim tem que ser posterior à data início',
+    path: ['data_fim'],
+  });
+
+export type ContratoFormValues = z.infer<typeof contratoFormSchema>;
+
+export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
+  cliente_id: '',
+  viatura_id: '',
+  grupo: '',
+  matricula: '',
+  reserva_id: '',
+  estacao_entrega_id: null,
+  data_inicio: '',
+  estacao_recolha_id: null,
+  data_fim: '',
+  estacao_origem_viatura_id: null,
+  estado_operacional: 'agendado',
+  estado_financeiro: 'pendente',
+  origem: 'sistema',
+  tarifa_diaria: null,
+  desconto_percentagem: null,
+  taxa_iva: 23,
+  valor_total_manual: null,
+  is_longa_duracao: false,
+  renovacao_opcao: null,
+  renovacao_intervalo_dias: null,
+  franquia_valor: null,
+  caucao_valor: null,
+  kms_incluidos: null,
+  km_adicional_valor: null,
+  cobertura_id: null,
+  voucher_codigo: '',
+  numero_processo: '',
+  voo_referencia: '',
+  local_entrega: '',
+  local_recolha: '',
+  comentarios_entrega: '',
+  comentarios_recolha: '',
+  observacoes: '',
+  observacoes_internas: '',
+  condutores: [],
+};
+
+/** Converte ISO timestamp para input[type=datetime-local] no fuso do browser. */
+export function isoToLocalInput(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export function localInputToIso(local: string): string {
+  return new Date(local).toISOString();
+}

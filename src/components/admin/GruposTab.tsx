@@ -403,7 +403,9 @@ export const GruposTab = () => {
             {/* Nome + Descrição */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="nome">Nome do grupo *</Label>
+                <Label htmlFor="nome">
+                  Nome do grupo <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="nome"
                   value={formData.nome}

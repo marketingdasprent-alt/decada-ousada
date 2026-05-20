@@ -58,7 +58,7 @@ export type Reserva = {
   observacoes: string | null;
   observacoes_internas: string | null;
   // Longa duração / renovação
-  aluguer_longa_duracao: boolean;
+  is_longa_duracao: boolean;
   renovacao_opcao: RenovacaoOpcao | null;
   renovacao_intervalo_dias: number | null;
   // Financeiro / kms

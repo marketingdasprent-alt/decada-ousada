@@ -27,7 +27,13 @@ interface Props {
   isSending: boolean;
 }
 
-const EnviarCampanhaDialog = ({ open, onOpenChange, campanha, onConfirm, isSending }: Props) => {
+export const EnviarCampanhaDialog = ({
+  open,
+  onOpenChange,
+  campanha,
+  onConfirm,
+  isSending,
+}: Props) => {
   const [listaId, setListaId] = useState('');
   const [assinaturaId, setAssinaturaId] = useState('');
 
@@ -169,5 +175,3 @@ const EnviarCampanhaDialog = ({ open, onOpenChange, campanha, onConfirm, isSendi
     </Dialog>
   );
 };
-
-export default EnviarCampanhaDialog;

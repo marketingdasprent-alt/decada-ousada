@@ -42,7 +42,7 @@ export const reservaDialogSchema = z
     kms_incluidos: optionalNumber,
     km_adicional_valor: optionalNumber,
 
-    aluguer_longa_duracao: z.boolean().default(false),
+    is_longa_duracao: z.boolean().default(false),
     renovacao_opcao: z.enum(RENOVACAO_OPCOES).nullable().optional(),
     renovacao_intervalo_dias: optionalNumber,
 
@@ -80,7 +80,42 @@ export const reservaDialogSchema = z
       return diffDays <= 365;
     },
     { message: 'Duração máxima: 365 dias', path: ['data_fim'] }
-  );
+  )
+  // Validação condicional: estado confirmada/em_curso exige dados completos.
+  // Reserva pendente pode ser rascunho com cliente/viatura/estações por preencher.
+  .superRefine((d, ctx) => {
+    const exigeCompleto = d.estado === 'confirmada' || d.estado === 'em_curso';
+    if (!exigeCompleto) return;
+
+    if (!d.cliente_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['cliente_id'],
+        message: 'Cliente obrigatório quando a reserva é confirmada ou está em curso',
+      });
+    }
+    if (!d.viatura_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['viatura_id'],
+        message: 'Viatura obrigatória quando a reserva é confirmada ou está em curso',
+      });
+    }
+    if (!d.estacao_entrega_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['estacao_entrega_id'],
+        message: 'Estação de entrega obrigatória',
+      });
+    }
+    if (!d.estacao_recolha_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['estacao_recolha_id'],
+        message: 'Estação de recolha obrigatória',
+      });
+    }
+  });
 
 export type ReservaFormValues = z.infer<typeof reservaDialogSchema>;
 

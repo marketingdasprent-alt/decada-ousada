@@ -733,7 +733,9 @@ export const IntegracoesTab: React.FC = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="wh-nome">Nome *</Label>
+              <Label htmlFor="wh-nome">
+                Nome <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="wh-nome"
                 placeholder="Ex: n8n Tickets"
@@ -754,7 +756,9 @@ export const IntegracoesTab: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="wh-url">URL do Webhook *</Label>
+              <Label htmlFor="wh-url">
+                URL do Webhook <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="wh-url"
                 type="url"
@@ -764,7 +768,9 @@ export const IntegracoesTab: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="wh-evento">Evento *</Label>
+              <Label htmlFor="wh-evento">
+                Evento <span className="text-red-500">*</span>
+              </Label>
               <Select
                 value={webhookFormData.evento}
                 onValueChange={(value) =>
