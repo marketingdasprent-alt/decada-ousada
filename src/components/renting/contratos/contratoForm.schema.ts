@@ -100,6 +100,26 @@ export const contratoFormSchema = z
         { message: 'Cada cobertura só pode aparecer uma vez.' }
       ),
 
+    // Extras (m:n com renting_extras — vários por contrato, com snapshot + quantidade)
+    extras: z
+      .array(
+        z.object({
+          extra_id: z.string().uuid('Extra inválido'),
+          extra_nome: z.string(),
+          preco_unidade: z.number(),
+          tipo_calculo: z.enum(['dia', 'fixo']),
+          quantidade: z.number().int().min(1, 'Quantidade mínima: 1'),
+        })
+      )
+      .default([])
+      .refine(
+        (lista) => {
+          const ids = lista.map((e) => e.extra_id);
+          return new Set(ids).size === ids.length;
+        },
+        { message: 'Cada extra só pode aparecer uma vez.' }
+      ),
+
     // Voucher + info adicional
     voucher_codigo: z.string().max(50).optional().nullable(),
     numero_processo: z.string().max(100).optional().nullable(),
@@ -164,6 +184,7 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   kms_incluidos: null,
   km_adicional_valor: null,
   coberturas: [],
+  extras: [],
   voucher_codigo: '',
   numero_processo: '',
   voo_referencia: '',

@@ -11,6 +11,7 @@ import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
 import { useClientes } from '@/hooks/useClientes';
 import { useContratoCoberturas, useSyncContratoCoberturas } from '@/hooks/useContratoCoberturas';
+import { useContratoExtras, useSyncContratoExtras } from '@/hooks/useContratoExtras';
 import { useContratoCondutores, useSyncContratoCondutores } from '@/hooks/useContratoCondutores';
 import {
   useContratoConflito,
@@ -21,6 +22,7 @@ import {
 } from '@/hooks/useContratosRenting';
 import { useEstacoes } from '@/hooks/useEstacoes';
 import { useRentingCoberturas } from '@/hooks/useRentingCoberturas';
+import { useRentingExtras } from '@/hooks/useRentingExtras';
 import { useReserva } from '@/hooks/useReservas';
 import { useViaturas } from '@/hooks/useViaturas';
 
@@ -28,6 +30,7 @@ import { ContratoDeleteConfirm } from '@/components/renting/contratos/ContratoDe
 import { ContratoFormSecoes } from '@/components/renting/contratos/ContratoFormSecoes';
 import { ContratoTabAnexos } from '@/components/renting/contratos/ContratoTabAnexos';
 import { ContratoTabCobertura } from '@/components/renting/contratos/ContratoTabCobertura';
+import { ContratoTabExtras } from '@/components/renting/contratos/ContratoTabExtras';
 import { ContratoTabsPlaceholder } from '@/components/renting/contratos/ContratoTabsPlaceholder';
 import { ResumoContrato } from '@/components/renting/contratos/ResumoContrato';
 import { CondutoresFields } from '@/components/renting/shared/CondutoresFields';
@@ -52,6 +55,7 @@ const ContratoForm = () => {
   const { data: viaturas = [] } = useViaturas();
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
   const { data: coberturas = [] } = useRentingCoberturas({ apenasAtivas: true });
+  const { data: extrasCatalogo = [] } = useRentingExtras({ apenasAtivos: true });
   const { data: contrato, isLoading: loadingContrato } = useContratoRenting(id ?? null);
 
   // Carrega reserva quando vier no query string (?reserva_id=X) e estamos a criar
@@ -63,13 +67,16 @@ const ContratoForm = () => {
   const deleteMutation = useDeleteContratoRenting();
   const syncCondutoresMutation = useSyncContratoCondutores();
   const syncCoberturasMutation = useSyncContratoCoberturas();
+  const syncExtrasMutation = useSyncContratoExtras();
   const { data: condutoresDb } = useContratoCondutores(contrato?.id ?? null);
   const { data: coberturasDb } = useContratoCoberturas(contrato?.id ?? null);
+  const { data: extrasDb } = useContratoExtras(contrato?.id ?? null);
   const isPending =
     createMutation.isPending ||
     updateMutation.isPending ||
     syncCondutoresMutation.isPending ||
-    syncCoberturasMutation.isPending;
+    syncCoberturasMutation.isPending ||
+    syncExtrasMutation.isPending;
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
@@ -203,6 +210,22 @@ const ContratoForm = () => {
     );
   }, [isEdit, contrato, coberturasDb, form]);
 
+  // Hidratação dos extras (request separado — só em modo edit)
+  useEffect(() => {
+    if (!isEdit || !contrato || !extrasDb) return;
+    form.setValue(
+      'extras',
+      extrasDb.map((e) => ({
+        extra_id: e.extra_id,
+        extra_nome: e.extra_nome,
+        preco_unidade: e.preco_unidade,
+        tipo_calculo: e.tipo_calculo,
+        quantidade: e.quantidade,
+      })),
+      { shouldDirty: false }
+    );
+  }, [isEdit, contrato, extrasDb, form]);
+
   // Valores reactivos (conflito + resumo de preço)
   const viaturaId = form.watch('viatura_id');
   const dataInicio = form.watch('data_inicio');
@@ -212,6 +235,7 @@ const ContratoForm = () => {
   const descontoPercentagem = form.watch('desconto_percentagem');
   const taxaIva = form.watch('taxa_iva');
   const coberturasForm = form.watch('coberturas');
+  const extrasForm = form.watch('extras');
 
   // Soma do preço/dia das coberturas seleccionadas (× dias no ResumoContrato)
   const coberturasPrecoDia = useMemo(
@@ -278,10 +302,20 @@ const ContratoForm = () => {
       observacoes_internas: values.observacoes_internas || null,
     };
 
-    // Sincroniza condutores + coberturas (tabelas de junção) após o contrato existir.
+    // Nº de dias do contrato — necessário para o total dos extras 'dia'.
+    const msDia = 86400000;
+    const diasContrato = Math.max(
+      1,
+      Math.ceil(
+        (new Date(values.data_fim).getTime() - new Date(values.data_inicio).getTime()) / msDia
+      )
+    );
+
+    // Sincroniza condutores + coberturas + extras (junções) após o contrato existir.
     const syncRelacoes = (contratoId: string) => {
       syncCondutoresMutation.mutate({ contratoId, desejados: values.condutores });
       syncCoberturasMutation.mutate({ contratoId, desejadas: values.coberturas });
+      syncExtrasMutation.mutate({ contratoId, desejados: values.extras, dias: diasContrato });
     };
 
     if (isEdit && contrato) {
@@ -394,6 +428,7 @@ const ContratoForm = () => {
                     />
                   }
                   coberturasContent={<ContratoTabCobertura form={form} coberturas={coberturas} />}
+                  extrasContent={<ContratoTabExtras form={form} extras={extrasCatalogo} />}
                   anexosContent={<ContratoTabAnexos contratoId={contrato?.id ?? null} />}
                 />
 
@@ -420,6 +455,7 @@ const ContratoForm = () => {
             descontoPercentagem={descontoPercentagem}
             taxaIva={taxaIva}
             coberturasPrecoDia={coberturasPrecoDia}
+            extras={extrasForm}
             isFacturado={isFacturado}
             totalSnapshot={contrato?.total_final}
             subtotalSnapshot={contrato?.total_subtotal}

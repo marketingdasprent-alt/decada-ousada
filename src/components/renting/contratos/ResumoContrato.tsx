@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { Lock } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { calcExtraTotal } from '@/hooks/useContratoExtras';
+import type { ExtraFormItem } from '@/types/contratoRenting';
 import { formatCurrency } from './contratosUtils';
 
 interface ResumoContratoProps {
@@ -13,6 +15,8 @@ interface ResumoContratoProps {
   taxaIva: number;
   /** Soma do preço/dia das coberturas seleccionadas (× dias = custo total) */
   coberturasPrecoDia?: number;
+  /** Extras seleccionados — custo calculado por tipo (dia/fixo) */
+  extras?: ExtraFormItem[];
   /** Se o contrato está facturado, totais estão congelados — UI mostra cadeado */
   isFacturado?: boolean;
   /** Snapshot do total final quando facturado (vem da BD, não recalcula) */
@@ -39,6 +43,7 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
   descontoPercentagem,
   taxaIva,
   coberturasPrecoDia = 0,
+  extras = [],
   isFacturado = false,
   totalSnapshot,
   subtotalSnapshot,
@@ -50,6 +55,7 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
         dias: 0,
         baseAluguer: subtotalSnapshot ?? 0,
         custoCoberturas: 0,
+        custoExtras: 0,
         subtotalBruto: subtotalSnapshot ?? 0,
         desconto: 0,
         subtotal: subtotalSnapshot ?? 0,
@@ -63,6 +69,7 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
         dias: 0,
         baseAluguer: 0,
         custoCoberturas: 0,
+        custoExtras: 0,
         subtotalBruto: 0,
         desconto: 0,
         subtotal: 0,
@@ -77,7 +84,8 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
         ? valorTotalManual
         : (tarifaDiaria ?? 0) * dias;
     const custoCoberturas = coberturasPrecoDia * dias;
-    const subtotalBruto = baseAluguer + custoCoberturas;
+    const custoExtras = extras.reduce((soma, e) => soma + calcExtraTotal(e, dias), 0);
+    const subtotalBruto = baseAluguer + custoCoberturas + custoExtras;
     const descontoPct = descontoPercentagem ?? 0;
     const desconto = subtotalBruto * (descontoPct / 100);
     const subtotal = subtotalBruto - desconto;
@@ -88,6 +96,7 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
       dias,
       baseAluguer: Math.round(baseAluguer * 100) / 100,
       custoCoberturas: Math.round(custoCoberturas * 100) / 100,
+      custoExtras: Math.round(custoExtras * 100) / 100,
       subtotalBruto: Math.round(subtotalBruto * 100) / 100,
       desconto: Math.round(desconto * 100) / 100,
       subtotal: Math.round(subtotal * 100) / 100,
@@ -102,6 +111,7 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
     descontoPercentagem,
     taxaIva,
     coberturasPrecoDia,
+    extras,
     isFacturado,
     totalSnapshot,
     subtotalSnapshot,
@@ -146,6 +156,10 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
 
           {!isFacturado && calculo.custoCoberturas > 0 && (
             <Row label="Coberturas" value={formatCurrency(calculo.custoCoberturas)} muted />
+          )}
+
+          {!isFacturado && calculo.custoExtras > 0 && (
+            <Row label="Extras" value={formatCurrency(calculo.custoExtras)} muted />
           )}
 
           {!isFacturado && (descontoPercentagem ?? 0) > 0 && (

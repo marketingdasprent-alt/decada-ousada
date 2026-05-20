@@ -1,3 +1,5 @@
+import type { ExtraTipoCalculo } from './rentingExtra';
+
 // ============================================================
 // Estado operacional (ciclo físico da viatura)
 // ============================================================
@@ -178,6 +180,32 @@ export type CoberturaFormItem = {
   cobertura_nome: string;
   preco_dia: number;
   franquia_valor: number | null;
+};
+
+// ============================================================
+// Extras (m:n entre contratos_renting e renting_extras)
+// ============================================================
+export type ContratoExtra = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  extra_id: string;
+  extra_nome: string;
+  preco_unidade: number;
+  tipo_calculo: ExtraTipoCalculo;
+  quantidade: number;
+  total: number;
+  created_by: string | null;
+  created_at: string;
+};
+
+/** Forma usada no formulário — carrega o snapshot do catálogo + quantidade. */
+export type ExtraFormItem = {
+  extra_id: string;
+  extra_nome: string;
+  preco_unidade: number;
+  tipo_calculo: ExtraTipoCalculo;
+  quantidade: number;
 };
 
 // ============================================================
