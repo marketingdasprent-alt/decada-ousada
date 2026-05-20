@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import type {
   Cliente,
   Documento,
@@ -22,9 +23,10 @@ const TIPO_CARTA: TipoDocumento = 'Carta de Condução';
 
 // ── Tipos de input ───────────────────────────────────────────
 
+// org_id é preenchido por trigger na BD — fica de fora do payload do formulário.
 type ClienteInsert = Omit<
   Cliente,
-  'id' | 'codigo' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
+  'id' | 'codigo' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by' | 'org_id'
 >;
 type DocumentoInsert = Omit<
   Documento,
@@ -85,6 +87,7 @@ export function useClientes() {
                 id: ligDoc.id,
                 cliente_id: ligDoc.cliente_id,
                 documento_id: ligDoc.documento_id,
+                created_by: ligDoc.created_by,
                 created_at: ligDoc.created_at,
               }
             : null,
@@ -93,6 +96,7 @@ export function useClientes() {
                 id: ligCarta.id,
                 cliente_id: ligCarta.cliente_id,
                 documento_id: ligCarta.documento_id,
+                created_by: ligCarta.created_by,
                 created_at: ligCarta.created_at,
               }
             : null,
@@ -145,11 +149,15 @@ export function useCreateCliente() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ cliente, documentoIdentificacao, cartaConducao }: ClienteFormPayload) => {
-      // 1. Criar cliente
+    mutationFn: async ({
+      cliente,
+      documentoIdentificacao,
+      cartaConducao,
+    }: ClienteFormPayload): Promise<{ id: string }> => {
+      // 1. Criar cliente (org_id preenchido por trigger — daí o cast)
       const { data: novoCliente, error: errCliente } = await supabase
         .from('clientes')
-        .insert(cliente)
+        .insert(cliente as TablesInsert<'clientes'>)
         .select('id')
         .single();
       if (errCliente) throw errCliente;
@@ -161,6 +169,8 @@ export function useCreateCliente() {
         upsertDocumento(clienteId, null, documentoIdentificacao),
         upsertDocumento(clienteId, null, cartaConducao),
       ]);
+
+      return { id: clienteId };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEY });

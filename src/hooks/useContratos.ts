@@ -61,7 +61,7 @@ export async function gerarContratoAtomico(
     rpcParams.p_checkout_pendente = params.checkoutPendente;
 
   const { data, error } = await (
-    supabase.rpc as (
+    supabase.rpc as unknown as (
       fn: string,
       params: Record<string, unknown>
     ) => Promise<{ data: GerarContratoResult | GerarContratoResult[] | null; error: Error | null }>

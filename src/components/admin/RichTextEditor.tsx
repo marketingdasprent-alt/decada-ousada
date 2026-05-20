@@ -75,7 +75,7 @@ interface RichTextEditorProps {
   onChange: (content: string) => void;
 }
 
-const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
+export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
   ({ content, onChange }, ref) => {
     const isInternalUpdate = useRef(false);
     const lastContent = useRef(content);
@@ -473,5 +473,3 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
 );
 
 RichTextEditor.displayName = 'RichTextEditor';
-
-export default RichTextEditor;

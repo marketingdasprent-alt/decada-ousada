@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import ScrollToTop from '@/components/ScrollToTop';
+import { ScrollToTop } from '@/components/ScrollToTop';
 import { usePageTracking } from '@/hooks/usePageTracking';
 import { RECURSOS } from '@/utils/permissions';
 import { Loader2 } from 'lucide-react';
@@ -50,10 +50,22 @@ const EliminarConta = lazy(() => import('@/pages/EliminarConta'));
 const SelecionarOrg = lazy(() => import('@/pages/SelecionarOrg'));
 const RegistarOrg = lazy(() => import('@/pages/RegistarOrg'));
 const RentingContratos = lazy(() => import('@/pages/renting/RentingContratos'));
+const ContratoForm = lazy(() => import('@/pages/renting/ContratoForm'));
 const RentingReservas = lazy(() => import('@/pages/renting/RentingReservas'));
 const RentingReservaForm = lazy(() => import('@/pages/renting/RentingReservaForm'));
 const RentingMovimentacoes = lazy(() => import('@/pages/renting/RentingMovimentacoes'));
 const RentingClientes = lazy(() => import('@/pages/renting/RentingClientes'));
+const RentingClienteForm = lazy(() => import('@/pages/renting/RentingClienteForm'));
+const RentingGrupos = lazy(() => import('@/pages/renting/RentingGrupos'));
+const RentingGrupoForm = lazy(() => import('@/pages/renting/RentingGrupoForm'));
+const RentingTarifas = lazy(() => import('@/pages/renting/RentingTarifas'));
+const RentingTarifaForm = lazy(() => import('@/pages/renting/RentingTarifaForm'));
+const RentingCoberturas = lazy(() => import('@/pages/renting/RentingCoberturas'));
+const RentingExtras = lazy(() => import('@/pages/renting/RentingExtras'));
+const RentingTaxas = lazy(() => import('@/pages/renting/RentingTaxas'));
+const ViaturaMarcasModelos = lazy(() => import('@/pages/viaturas/ViaturaMarcasModelos'));
+const ViaturaCombustiveis = lazy(() => import('@/pages/viaturas/ViaturaCombustiveis'));
+const ViaturaTipos = lazy(() => import('@/pages/viaturas/ViaturaTipos'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -366,6 +378,26 @@ const WebAppRoutes = () => {
             }
           />
           <Route
+            path="/renting/contratos/novo"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <ContratoForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/contratos/:id"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <ContratoForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/renting/reservas"
             element={
               <ProtectedRoute requiredResource="renting_reservas">
@@ -411,6 +443,146 @@ const WebAppRoutes = () => {
               <ProtectedRoute requiredResource="renting_clientes">
                 <DashboardLayout>
                   <RentingClientes />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/clientes/novo"
+            element={
+              <ProtectedRoute requiredResource="renting_clientes">
+                <DashboardLayout>
+                  <RentingClienteForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/clientes/:id"
+            element={
+              <ProtectedRoute requiredResource="renting_clientes">
+                <DashboardLayout>
+                  <RentingClienteForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/viaturas/grupos"
+            element={
+              <ProtectedRoute requiredResource="viaturas_ver">
+                <DashboardLayout>
+                  <RentingGrupos />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/viaturas/grupos/novo"
+            element={
+              <ProtectedRoute requiredResource="viaturas_ver">
+                <DashboardLayout>
+                  <RentingGrupoForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/viaturas/grupos/:id"
+            element={
+              <ProtectedRoute requiredResource="viaturas_ver">
+                <DashboardLayout>
+                  <RentingGrupoForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/viaturas/marcas-modelos"
+            element={
+              <ProtectedRoute requiredResource="viaturas_ver">
+                <DashboardLayout>
+                  <ViaturaMarcasModelos />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/viaturas/combustiveis"
+            element={
+              <ProtectedRoute requiredResource="viaturas_ver">
+                <DashboardLayout>
+                  <ViaturaCombustiveis />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/viaturas/tipos"
+            element={
+              <ProtectedRoute requiredResource="viaturas_ver">
+                <DashboardLayout>
+                  <ViaturaTipos />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/tarifas"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <RentingTarifas />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/tarifas/nova"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <RentingTarifaForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/tarifas/:id"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <RentingTarifaForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/tarifas/coberturas"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <RentingCoberturas />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/tarifas/extras"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <RentingExtras />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/tarifas/taxas"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <RentingTaxas />
                 </DashboardLayout>
               </ProtectedRoute>
             }

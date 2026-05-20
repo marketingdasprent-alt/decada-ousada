@@ -35,7 +35,7 @@ import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { toast } from 'sonner';
 
-const EstatisticasTab = () => {
+export const EstatisticasTab = () => {
   const [campanhaId, setCampanhaId] = useState<string>('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -300,5 +300,3 @@ const EstatisticasTab = () => {
     </div>
   );
 };
-
-export default EstatisticasTab;

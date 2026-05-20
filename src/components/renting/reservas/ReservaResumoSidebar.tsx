@@ -60,7 +60,7 @@ export const ReservaResumoSidebar: React.FC<ReservaResumoSidebarProps> = ({
   const kmsIncluidos = form.watch('kms_incluidos');
   const franquiaValor = form.watch('franquia_valor');
   const caucaoValor = form.watch('caucao_valor');
-  const longaDuracao = form.watch('aluguer_longa_duracao');
+  const longaDuracao = form.watch('is_longa_duracao');
 
   const estacaoEntrega = useMemo(
     () => estacoes.find((e) => e.id === estacaoEntregaId),

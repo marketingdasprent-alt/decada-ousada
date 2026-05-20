@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const AssinaturasTab = () => {
+export const AssinaturasTab = () => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
@@ -134,5 +134,3 @@ const AssinaturasTab = () => {
     </div>
   );
 };
-
-export default AssinaturasTab;

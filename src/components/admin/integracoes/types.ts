@@ -34,6 +34,7 @@ export interface IntegracaoConfig {
   cookies_json?: string | null;
   logo_url?: string | null;
   robot_target_platform?: string | null;
+  webhook_signing_key?: string | null;
 }
 
 // Pre-configured defaults for Uber integrations (stored as robot internally)

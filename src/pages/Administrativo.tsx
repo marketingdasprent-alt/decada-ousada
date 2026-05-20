@@ -79,6 +79,7 @@ export default function Administrativo() {
           )
         `
         )
+        .eq('tipo', 'recibo')
         .order('created_at', { ascending: false });
 
       if (recibosError) throw recibosError;

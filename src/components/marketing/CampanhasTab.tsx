@@ -8,9 +8,9 @@ import { Plus, Send, Eye, Trash2, Loader2, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import NovaCampanhaDialog from './NovaCampanhaDialog';
-import PreviewEmailDialog from './PreviewEmailDialog';
-import EnviarCampanhaDialog from './EnviarCampanhaDialog';
+import { NovaCampanhaDialog } from './NovaCampanhaDialog';
+import { PreviewEmailDialog } from './PreviewEmailDialog';
+import { EnviarCampanhaDialog } from './EnviarCampanhaDialog';
 import HistoricoEnviosDialog from './HistoricoEnviosDialog';
 import {
   AlertDialog,
@@ -37,7 +37,7 @@ const statusLabels: Record<string, string> = {
   erro: 'Erro',
 };
 
-const CampanhasTab = () => {
+export const CampanhasTab = () => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCampanha, setEditingCampanha] = useState<any>(null);
@@ -256,5 +256,3 @@ const CampanhasTab = () => {
     </div>
   );
 };
-
-export default CampanhasTab;

@@ -333,7 +333,9 @@ export const CategoriasAssistenciaTab = () => {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome *</Label>
+              <Label htmlFor="nome">
+                Nome <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="nome"
                 placeholder="Ex: Reparação Motor"

@@ -161,7 +161,6 @@ export function MotoristaDialog({
       codigo_postal: '',
       data_contratacao: '',
       cidade: '',
-      cidade_assinatura: '',
       status_ativo: true,
       observacoes: '',
       iban: '',
@@ -480,7 +479,9 @@ export function MotoristaDialog({
                   name="nome"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nome Completo *</FormLabel>
+                      <FormLabel>
+                        Nome Completo <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: João Silva" {...field} className="h-11" />
                       </FormControl>
@@ -495,7 +496,9 @@ export function MotoristaDialog({
                     name="nif"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>NIF *</FormLabel>
+                        <FormLabel>
+                          NIF <span className="text-red-500">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="123456789" {...field} className="h-11" />
                         </FormControl>
@@ -597,7 +600,9 @@ export function MotoristaDialog({
                     name="data_contratacao"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Data de Contratação *</FormLabel>
+                        <FormLabel>
+                          Data de Contratação <span className="text-red-500">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input type="date" {...field} className="h-11" />
                         </FormControl>
@@ -677,7 +682,9 @@ export function MotoristaDialog({
                       name="documento_tipo"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Tipo *</FormLabel>
+                          <FormLabel>
+                            Tipo <span className="text-red-500">*</span>
+                          </FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger className="bg-background">
@@ -699,7 +706,9 @@ export function MotoristaDialog({
                       name="documento_numero"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Número *</FormLabel>
+                          <FormLabel>
+                            Número <span className="text-red-500">*</span>
+                          </FormLabel>
                           <FormControl>
                             <Input placeholder="Número" {...field} className="bg-background" />
                           </FormControl>
@@ -777,7 +786,9 @@ export function MotoristaDialog({
                       name="carta_conducao"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Número *</FormLabel>
+                          <FormLabel>
+                            Número <span className="text-red-500">*</span>
+                          </FormLabel>
                           <FormControl>
                             <Input placeholder="Número" {...field} className="bg-background" />
                           </FormControl>

@@ -82,7 +82,8 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
           .eq('org_id', orgId)
           .single();
 
-        profile = fallbackProfile;
+        // A BD legada não tem a coluna tipo_utilizador — o cast mantém o tipo.
+        profile = fallbackProfile as typeof profile;
         profileError = fallbackError;
       }
 

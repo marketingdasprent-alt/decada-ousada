@@ -92,4 +92,4 @@ SELECT
   ],
   NULL
 FROM organizacoes o
-WHERE o.slug IN ('decada_ousada', 'distancia_arrojada');
+WHERE o.codigo IN ('decada', 'distancia');

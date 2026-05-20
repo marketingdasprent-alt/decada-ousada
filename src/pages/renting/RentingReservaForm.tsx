@@ -2,42 +2,42 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertTriangle, ArrowLeft, CalendarCheck, Loader2, Trash2 } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CalendarCheck, FileText, Loader2, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { useClientes } from '@/hooks/useClientes';
-import { useViaturas } from '@/hooks/useViaturas';
 import { useEstacoes } from '@/hooks/useEstacoes';
 import {
-  useReserva,
   useCreateReserva,
-  useUpdateReserva,
   useDeleteReserva,
+  useReserva,
   useReservaConflito,
+  useUpdateReserva,
 } from '@/hooks/useReservas';
 import { useReservaCondutores, useSyncReservaCondutores } from '@/hooks/useReservaCondutores';
 import { uploadReservaAnexoSync } from '@/hooks/useReservaAnexos';
+import { useViaturas } from '@/hooks/useViaturas';
 
+import { ReservaDeleteConfirm } from '@/components/renting/reservas/ReservaDeleteConfirm';
+import { ReservaResumoSidebar } from '@/components/renting/reservas/ReservaResumoSidebar';
+import {
+  ReservaTabAnexos,
+  type AnexoPendente,
+} from '@/components/renting/reservas/tabs/ReservaTabAnexos';
+import { ReservaTabCaixa } from '@/components/renting/reservas/tabs/ReservaTabCaixa';
+import { ReservaTabCondutores } from '@/components/renting/reservas/tabs/ReservaTabCondutores';
+import { ReservaTabGeral } from '@/components/renting/reservas/tabs/ReservaTabGeral';
 import {
   isoToLocalInput,
   localInputToIso,
   reservaDialogSchema,
   type ReservaFormValues,
 } from '@/components/renting/reservas/reservaDialog.schema';
-import { ReservaDeleteConfirm } from '@/components/renting/reservas/ReservaDeleteConfirm';
-import { ReservaResumoSidebar } from '@/components/renting/reservas/ReservaResumoSidebar';
-import { ReservaTabGeral } from '@/components/renting/reservas/tabs/ReservaTabGeral';
-import { ReservaTabCondutores } from '@/components/renting/reservas/tabs/ReservaTabCondutores';
-import { ReservaTabCaixa } from '@/components/renting/reservas/tabs/ReservaTabCaixa';
-import {
-  ReservaTabAnexos,
-  type AnexoPendente,
-} from '@/components/renting/reservas/tabs/ReservaTabAnexos';
 
 import type { ReservaInsert } from '@/types/reserva';
 
@@ -54,12 +54,13 @@ const DEFAULT_VALUES: ReservaFormValues = {
   condutor_id: null,
   condutor_nome: '',
   estado: 'confirmada',
+  modalidade: 'rent_a_car',
   valor_total: null,
   franquia_valor: null,
   caucao_valor: null,
   kms_incluidos: null,
   km_adicional_valor: null,
-  aluguer_longa_duracao: false,
+  is_longa_duracao: false,
   renovacao_opcao: null,
   renovacao_intervalo_dias: null,
   observacoes: '',
@@ -134,12 +135,13 @@ const RentingReservaForm = () => {
       condutor_id: reserva.condutor_id,
       condutor_nome: reserva.condutor_nome ?? '',
       estado: reserva.estado,
+      modalidade: reserva.modalidade,
       valor_total: reserva.valor_total,
       franquia_valor: reserva.franquia_valor,
       caucao_valor: reserva.caucao_valor,
       kms_incluidos: reserva.kms_incluidos,
       km_adicional_valor: reserva.km_adicional_valor,
-      aluguer_longa_duracao: reserva.aluguer_longa_duracao,
+      is_longa_duracao: reserva.is_longa_duracao,
       renovacao_opcao: reserva.renovacao_opcao,
       renovacao_intervalo_dias: reserva.renovacao_intervalo_dias,
       observacoes: reserva.observacoes ?? '',
@@ -170,74 +172,71 @@ const RentingReservaForm = () => {
   const { data: temConflito } = useReservaConflito(conflitoArgs);
 
   const onSubmit = async (values: ReservaFormValues) => {
-    const viaturaSelecionada = viaturas.find((v) => v.id === values.viatura_id);
-    const matriculaFinal = values.matricula || viaturaSelecionada?.matricula || null;
-
-    // Condutor principal — derivado da lista para snapshot legado em reservas.
-    const condutorPrincipal = values.condutores.find((c) => c.is_principal) ?? null;
-    const condutorPrincipalCliente = condutorPrincipal
-      ? (clientes.find((c) => c.id === condutorPrincipal.cliente_id) ?? null)
-      : null;
-
-    const payload: ReservaInsert = {
-      viatura_id: values.viatura_id || null,
-      matricula: matriculaFinal,
-      grupo: values.grupo || null,
-      estacao_entrega_id: values.estacao_entrega_id || null,
-      estacao_recolha_id: values.estacao_recolha_id || null,
-      data_inicio: localInputToIso(values.data_inicio),
-      data_fim: localInputToIso(values.data_fim),
-      cliente_id: values.cliente_id || null,
-      cliente_nome: values.cliente_nome || null,
-      // condutor_id refere motoristas_ativos (não clientes) — fica null
-      condutor_id: null,
-      condutor_nome: condutorPrincipalCliente?.nome ?? null,
-      estado: values.estado,
-      valor_total: values.valor_total,
-      franquia_valor: values.franquia_valor,
-      caucao_valor: values.caucao_valor,
-      kms_incluidos: values.kms_incluidos,
-      km_adicional_valor: values.km_adicional_valor,
-      aluguer_longa_duracao: values.aluguer_longa_duracao,
-      renovacao_opcao: values.aluguer_longa_duracao ? (values.renovacao_opcao ?? null) : null,
-      renovacao_intervalo_dias:
-        values.aluguer_longa_duracao && values.renovacao_opcao === 'intervalo_dias'
-          ? values.renovacao_intervalo_dias
-          : null,
-      observacoes: values.observacoes || null,
-      observacoes_internas: values.observacoes_internas || null,
-    };
-
     try {
-      let reservaId: string;
+      const viaturaSelecionada = viaturas.find((v) => v.id === values.viatura_id);
+      const matriculaFinal = values.matricula || viaturaSelecionada?.matricula || null;
+
+      // Condutor principal — derivado da lista para snapshot legado em reservas.
+      const condutorPrincipal = values.condutores.find((c) => c.is_principal) ?? null;
+      const condutorPrincipalCliente = condutorPrincipal
+        ? (clientes.find((c) => c.id === condutorPrincipal.cliente_id) ?? null)
+        : null;
+
+      const payload: ReservaInsert = {
+        viatura_id: values.viatura_id || null,
+        matricula: matriculaFinal,
+        grupo: values.grupo || null,
+        estacao_entrega_id: values.estacao_entrega_id || null,
+        estacao_recolha_id: values.estacao_recolha_id || null,
+        data_inicio: localInputToIso(values.data_inicio),
+        data_fim: localInputToIso(values.data_fim),
+        cliente_id: values.cliente_id || null,
+        cliente_nome: values.cliente_nome || null,
+        // condutor_id refere motoristas_ativos (não clientes) — fica null
+        condutor_id: null,
+        condutor_nome: condutorPrincipalCliente?.nome ?? null,
+        estado: values.estado,
+        modalidade: values.modalidade,
+        valor_total: values.valor_total,
+        franquia_valor: values.franquia_valor,
+        caucao_valor: values.caucao_valor,
+        kms_incluidos: values.kms_incluidos,
+        km_adicional_valor: values.km_adicional_valor,
+        is_longa_duracao: values.is_longa_duracao,
+        renovacao_opcao: values.is_longa_duracao ? (values.renovacao_opcao ?? null) : null,
+        renovacao_intervalo_dias:
+          values.is_longa_duracao && values.renovacao_opcao === 'intervalo_dias'
+            ? values.renovacao_intervalo_dias
+            : null,
+        observacoes: values.observacoes || null,
+        observacoes_internas: values.observacoes_internas || null,
+      };
+
       if (isEdit && reserva) {
-        const updated = await updateMutation.mutateAsync({ id: reserva.id, ...payload });
-        reservaId = updated.id;
+        // Editar: ficar na própria página (utilizador vê toast e continua a trabalhar).
+        updateMutation.mutate({ id: reserva.id, ...payload });
       } else {
-        const created = await createMutation.mutateAsync(payload);
-        reservaId = created.id;
+        // Criar: navegar para modo edição da nova reserva.
+        // Permite clicar logo "Criar Contrato" sem voltar à lista.
+        createMutation.mutate(payload, {
+          onSuccess: async (created) => {
+            // Upload em batch dos anexos pendentes — best-effort.
+            if (anexosPendentes.length > 0) {
+              for (const p of anexosPendentes) {
+                try {
+                  await uploadReservaAnexoSync(created.id, p.file, p.nome);
+                } catch (err) {
+                  // Log + continua para os próximos. O utilizador pode re-anexar
+                  // em edição se algum falhar.
+                  console.error(`Falha a anexar ${p.nome}:`, err);
+                }
+              }
+              setAnexosPendentes([]);
+            }
+            navigate(`/renting/reservas/${created.id}`);
+          },
+        });
       }
-
-      await syncCondutoresMutation.mutateAsync({
-        reservaId,
-        desejados: values.condutores,
-      });
-
-      // Upload em batch dos anexos pendentes (modo criar) — best-effort
-      if (!isEdit && anexosPendentes.length > 0) {
-        for (const p of anexosPendentes) {
-          try {
-            await uploadReservaAnexoSync(reservaId, p.file, p.nome);
-          } catch (err) {
-            // Log + continua para os próximos. O utilizador pode re-anexar
-            // em edição se algum falhar.
-            console.error(`Falha a anexar ${p.nome}:`, err);
-          }
-        }
-        setAnexosPendentes([]);
-      }
-
-      navigate('/renting/reservas');
     } catch {
       // Erros são reportados via toast pelas mutations
     }
@@ -320,6 +319,21 @@ const RentingReservaForm = () => {
               Eliminar
             </Button>
           )}
+          {isEdit &&
+            reserva &&
+            reserva.cliente_id &&
+            reserva.viatura_id &&
+            (reserva.estado === 'confirmada' || reserva.estado === 'em_curso') && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => navigate(`/renting/contratos/novo?reserva_id=${reserva.id}`)}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Criar Contrato
+              </Button>
+            )}
           <Button
             type="button"
             onClick={form.handleSubmit(onSubmit)}

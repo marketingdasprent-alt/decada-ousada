@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/dialog';
 import { SectionCard } from '@/components/ui/section-card';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Motorista } from '@/pages/Motoristas';
@@ -306,7 +307,7 @@ export function MotoristaTabDocumentos({
       if (tipoDef?.field) {
         const { error: updateMotoristaError } = await supabase
           .from('motoristas_ativos')
-          .update({ [tipoDef.field]: filePath })
+          .update({ [tipoDef.field]: filePath } as TablesUpdate<'motoristas_ativos'>)
           .eq('id', motorista.id);
 
         if (updateMotoristaError) {
@@ -317,7 +318,7 @@ export function MotoristaTabDocumentos({
         if (dataValidade && tipoDef.validityField) {
           await supabase
             .from('motoristas_ativos')
-            .update({ [tipoDef.validityField]: dataValidade })
+            .update({ [tipoDef.validityField]: dataValidade } as TablesUpdate<'motoristas_ativos'>)
             .eq('id', motorista.id);
         }
         toast.success(`${tipoDef.label} atualizado com sucesso!`);
@@ -413,7 +414,7 @@ export function MotoristaTabDocumentos({
       if (tipoDef?.field) {
         const { error: updateMotoristaError } = await supabase
           .from('motoristas_ativos')
-          .update({ [tipoDef.field]: null })
+          .update({ [tipoDef.field]: null } as TablesUpdate<'motoristas_ativos'>)
           .eq('id', motorista.id);
 
         if (updateMotoristaError) throw updateMotoristaError;
@@ -497,7 +498,7 @@ export function MotoristaTabDocumentos({
                 // Campo oficial em motoristas_ativos
                 const { error: e } = await supabase
                   .from('motoristas_ativos')
-                  .update({ [validityField]: data.date })
+                  .update({ [validityField]: data.date } as TablesUpdate<'motoristas_ativos'>)
                   .eq('id', motorista.id);
                 updErr = e;
               } else if (tipoDocumento) {

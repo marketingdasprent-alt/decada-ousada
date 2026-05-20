@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
-const RentCarLanding = () => {
+export const RentCarLanding = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [showForm, setShowForm] = useState(false);
@@ -597,4 +597,3 @@ const RentCarLanding = () => {
     </div>
   );
 };
-export default RentCarLanding;

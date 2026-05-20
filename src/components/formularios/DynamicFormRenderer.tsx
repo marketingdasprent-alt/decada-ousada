@@ -183,7 +183,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
         <div key={field.id} className="space-y-2">
           <Label htmlFor={field.id} className="text-gray-300 font-medium">
             {field.label}
-            {field.required && <span className="text-red-400 ml-1">*</span>}
+            {field.required && <span className="text-red-500 ml-1">*</span>}
           </Label>
           {renderField(field)}
           {errors[field.id] && <p className="text-red-400 text-sm">{errors[field.id]}</p>}

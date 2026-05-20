@@ -129,7 +129,7 @@ export const BPDataTab: React.FC = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      setTransacoes((data || []) as BpTransacao[]);
+      setTransacoes((data || []) as unknown as BpTransacao[]);
     } catch (error: any) {
       console.error('Erro ao carregar transações BP:', error);
       toast({

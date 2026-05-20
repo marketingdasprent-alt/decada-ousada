@@ -35,7 +35,7 @@ interface RawRow {
 
 const STEP_LABELS = ['Carregar Ficheiro', 'Mapear Dados', 'Selecionar Lista', 'Finalizar'];
 
-const ImportarTab = () => {
+export const ImportarTab = () => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -527,5 +527,3 @@ const ImportarTab = () => {
     </div>
   );
 };
-
-export default ImportarTab;

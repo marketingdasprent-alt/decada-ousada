@@ -217,7 +217,9 @@ export const EstacoesTab = () => {
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="nome">Nome *</Label>
+              <Label htmlFor="nome">
+                Nome <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="nome"
                 placeholder="Ex: Estação Lisboa Norte"

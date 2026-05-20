@@ -210,7 +210,7 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
           viaturaId: selected.id,
           userId,
           tipo: 'checkin',
-          motoristaId: contrato.motoristaId || undefined,
+          motoristaId: (contrato as { motoristaId?: string }).motoristaId || undefined,
         });
 
         // 4. Upload fotos se existirem
@@ -307,7 +307,7 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                Estação de Chegada <span className="text-destructive ml-1">*</span>
+                Estação de Chegada <span className="text-red-500 ml-1">*</span>
               </Label>
               <SearchableDropdown
                 items={estacoes.map((e) => ({

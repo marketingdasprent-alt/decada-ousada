@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import type { ReservaAnexo } from '@/types/reserva';
 
 const BUCKET = 'reserva-anexos';
@@ -43,13 +44,14 @@ export async function uploadReservaAnexoSync(
     .upload(path, file, { contentType: file.type, upsert: false });
   if (uploadError) throw uploadError;
 
+  // org_id é preenchido por trigger na BD — daí o cast.
   const { error: insertError } = await supabase.from('reserva_anexos').insert({
     reserva_id: reservaId,
     nome: (nomeOverride ?? file.name).trim() || file.name,
     ficheiro_url: path,
     tamanho_bytes: file.size,
     mime_type: file.type,
-  });
+  } as TablesInsert<'reserva_anexos'>);
   if (insertError) {
     await supabase.storage.from(BUCKET).remove([path]);
     throw insertError;

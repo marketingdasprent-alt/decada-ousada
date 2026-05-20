@@ -403,7 +403,7 @@ export const GenerateDocumentsDialog = ({
 
         if (action === 'print') {
           combinedPdf.autoPrint();
-          window.open(combinedPdf.output('bloburl') as string, '_blank');
+          window.open(combinedPdf.output('bloburl'), '_blank');
         } else {
           const today_str = new Date().toISOString().split('T')[0].replace(/-/g, '');
           const fileName = `Documentos_${activeMotorista.nome}_${today_str}.pdf`;
