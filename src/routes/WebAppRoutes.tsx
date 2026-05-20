@@ -56,6 +56,7 @@ const RentingReservaForm = lazy(() => import('@/pages/renting/RentingReservaForm
 const RentingMovimentacoes = lazy(() => import('@/pages/renting/RentingMovimentacoes'));
 const RentingClientes = lazy(() => import('@/pages/renting/RentingClientes'));
 const RentingClienteForm = lazy(() => import('@/pages/renting/RentingClienteForm'));
+const RentingCatalogos = lazy(() => import('@/pages/renting/RentingCatalogos'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -383,6 +384,16 @@ const WebAppRoutes = () => {
               <ProtectedRoute requiredResource="renting_contratos">
                 <DashboardLayout>
                   <ContratoForm />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renting/catalogos"
+            element={
+              <ProtectedRoute requiredResource="renting_contratos">
+                <DashboardLayout>
+                  <RentingCatalogos />
                 </DashboardLayout>
               </ProtectedRoute>
             }

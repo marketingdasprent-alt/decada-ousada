@@ -10,6 +10,7 @@ import { Form } from '@/components/ui/form';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
 import { useClientes } from '@/hooks/useClientes';
+import { useCoberturas } from '@/hooks/useCoberturas';
 import { useContratoCondutores, useSyncContratoCondutores } from '@/hooks/useContratoCondutores';
 import {
   useContratoConflito,
@@ -48,6 +49,7 @@ const ContratoForm = () => {
   const { data: clientes = [] } = useClientes();
   const { data: viaturas = [] } = useViaturas();
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
+  const { data: coberturas = [] } = useCoberturas({ apenasAtivas: true });
   const { data: contrato, isLoading: loadingContrato } = useContratoRenting(id ?? null);
 
   // Carrega reserva quando vier no query string (?reserva_id=X) e estamos a criar
@@ -122,6 +124,7 @@ const ContratoForm = () => {
         caucao_valor: contrato.caucao_valor,
         kms_incluidos: contrato.kms_incluidos,
         km_adicional_valor: contrato.km_adicional_valor,
+        cobertura_id: contrato.cobertura_id,
         voucher_codigo: contrato.voucher_codigo ?? '',
         numero_processo: contrato.numero_processo ?? '',
         voo_referencia: contrato.voo_referencia ?? '',
@@ -236,6 +239,7 @@ const ContratoForm = () => {
       caucao_valor: values.caucao_valor,
       kms_incluidos: values.kms_incluidos,
       km_adicional_valor: values.km_adicional_valor,
+      cobertura_id: values.cobertura_id || null,
       voucher_codigo: values.voucher_codigo || null,
       numero_processo: values.numero_processo || null,
       voo_referencia: values.voo_referencia || null,
@@ -361,6 +365,7 @@ const ContratoForm = () => {
                       clientes={clientes}
                       viaturas={viaturas}
                       estacoes={estacoes}
+                      coberturas={coberturas}
                     />
                   }
                   condutoresContent={

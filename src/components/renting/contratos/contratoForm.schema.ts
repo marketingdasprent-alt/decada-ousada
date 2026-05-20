@@ -81,6 +81,9 @@ export const contratoFormSchema = z
     kms_incluidos: optionalNonNegativeNumber,
     km_adicional_valor: optionalNonNegativeNumber,
 
+    // Cobertura (FK ao catálogo)
+    cobertura_id: z.string().uuid().nullable().optional(),
+
     // Voucher + info adicional
     voucher_codigo: z.string().max(50).optional().nullable(),
     numero_processo: z.string().max(100).optional().nullable(),
@@ -144,6 +147,7 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   caucao_valor: null,
   kms_incluidos: null,
   km_adicional_valor: null,
+  cobertura_id: null,
   voucher_codigo: '',
   numero_processo: '',
   voo_referencia: '',

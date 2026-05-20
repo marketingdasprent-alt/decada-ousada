@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 
 import type { ClienteComDocumentos } from '@/types/cliente';
+import type { Cobertura } from '@/types/cobertura';
 import type { ContratoFormValues } from './contratoForm.schema';
 import { SectionTitle } from './SectionTitle';
 import {
@@ -25,9 +26,10 @@ import {
 interface SectionGeralProps {
   form: UseFormReturn<ContratoFormValues>;
   clientes: ClienteComDocumentos[];
+  coberturas: Cobertura[];
 }
 
-export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes }) => (
+export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes, coberturas }) => (
   <div>
     <SectionTitle>Geral</SectionTitle>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -234,9 +236,39 @@ export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes }) =>
 
       <FormField
         control={form.control}
+        name="cobertura_id"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Cobertura</FormLabel>
+            <Select
+              value={field.value || SENTINEL_NONE}
+              onValueChange={(v) => field.onChange(v === SENTINEL_NONE ? null : v)}
+            >
+              <FormControl>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Sem cobertura" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value={SENTINEL_NONE}>— Sem cobertura —</SelectItem>
+                {coberturas.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nome}
+                    {c.valor_diario != null ? ` (${c.valor_diario.toFixed(2)} €/dia)` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
         name="voucher_codigo"
         render={({ field }) => (
-          <FormItem className="sm:col-span-2">
+          <FormItem>
             <FormLabel>Voucher</FormLabel>
             <FormControl>
               <Input
