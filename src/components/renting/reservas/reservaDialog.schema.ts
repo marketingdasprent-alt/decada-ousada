@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { RENOVACAO_OPCOES, RESERVA_ESTADOS } from '@/types/reserva';
+import { CONTRATO_MODALIDADES } from '@/types/contratoRenting';
 
 const optionalNumber = z
   .union([z.number(), z.string()])
@@ -35,6 +36,9 @@ export const reservaDialogSchema = z
     condutor_nome: z.string().max(255).optional().nullable(),
 
     estado: z.enum(RESERVA_ESTADOS),
+
+    // Modalidade — determina a taxa de IVA (rent-a-car vs TVDE)
+    modalidade: z.enum(CONTRATO_MODALIDADES),
 
     valor_total: optionalNumber,
     franquia_valor: optionalNumber,

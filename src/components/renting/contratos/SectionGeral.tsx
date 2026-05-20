@@ -17,6 +17,7 @@ import { SectionTitle } from './SectionTitle';
 import {
   SENTINEL_NONE,
   ORIGEM_OPTIONS,
+  MODALIDADE_OPTIONS,
   ESTADO_OP_OPTIONS,
   ESTADO_FIN_OPTIONS,
   DEFAULT_IVA_PERCENTAGE,
@@ -78,6 +79,31 @@ export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes }) =>
               </FormControl>
               <SelectContent>
                 {ORIGEM_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="modalidade"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Modalidade</FormLabel>
+            <Select value={field.value} onValueChange={field.onChange}>
+              <FormControl>
+                <SelectTrigger className="bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {MODALIDADE_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
@@ -219,14 +245,15 @@ export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes }) =>
             <FormControl>
               <Input
                 type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                className="bg-background"
+                readOnly
+                tabIndex={-1}
+                className="bg-muted/50 cursor-not-allowed"
                 value={field.value ?? DEFAULT_IVA_PERCENTAGE}
-                onChange={(e) => field.onChange(Number(e.target.value))}
               />
             </FormControl>
+            <p className="text-xs text-muted-foreground">
+              Definido pela modalidade e pelas taxas da organização (Definições › Fiscal).
+            </p>
             <FormMessage />
           </FormItem>
         )}

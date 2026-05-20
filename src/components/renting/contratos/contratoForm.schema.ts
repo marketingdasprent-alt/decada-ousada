@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   CONTRATO_ESTADOS_FIN,
   CONTRATO_ESTADOS_OP,
+  CONTRATO_MODALIDADES,
   CONTRATO_ORIGENS,
   CONTRATO_RENOVACAO_OPCOES,
 } from '@/types/contratoRenting';
@@ -57,6 +58,9 @@ export const contratoFormSchema = z
     estado_operacional: z.enum(CONTRATO_ESTADOS_OP),
     estado_financeiro: z.enum(CONTRATO_ESTADOS_FIN),
     origem: z.enum(CONTRATO_ORIGENS),
+
+    // Modalidade — determina a taxa de IVA (rent-a-car vs TVDE)
+    modalidade: z.enum(CONTRATO_MODALIDADES),
 
     // Tarifário simples
     tarifa_diaria: optionalNonNegativeNumber,
@@ -191,6 +195,7 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   estado_operacional: 'agendado',
   estado_financeiro: 'pendente',
   origem: 'sistema',
+  modalidade: 'rent_a_car',
   tarifa_diaria: null,
   desconto_percentagem: null,
   taxa_iva: 23,

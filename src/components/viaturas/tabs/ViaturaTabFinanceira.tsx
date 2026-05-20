@@ -417,7 +417,11 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
             ...(repsolRes.data || []),
             ...(edpRes.data || []),
           ].filter((f) => {
-            const ff = f as { transaction_date?: string; data_movimento?: string; motorista_id?: string };
+            const ff = f as {
+              transaction_date?: string;
+              data_movimento?: string;
+              motorista_id?: string;
+            };
             const d = new Date(ff.transaction_date || ff.data_movimento || '');
             return f.motorista_id === assoc.motorista_id && d >= inicio && d <= fim;
           });

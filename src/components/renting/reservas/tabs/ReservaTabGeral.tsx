@@ -32,6 +32,7 @@ import type { ViaturaBasic } from '@/hooks/useViaturas';
 import type { Estacao } from '@/hooks/useEstacoes';
 import type { ClienteComDocumentos } from '@/types/cliente';
 import { ESTADO_LABELS, type ReservaEstado } from '@/types/reserva';
+import { CONTRATO_MODALIDADES, CONTRATO_MODALIDADE_LABELS } from '@/types/contratoRenting';
 
 const SENTINEL_NONE = '__none__';
 
@@ -450,6 +451,30 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
                     )}
                     <SelectItem value="confirmada">Confirmada</SelectItem>
                     <SelectItem value="cancelada">Cancelada</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="modalidade"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Modalidade</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {CONTRATO_MODALIDADES.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {CONTRATO_MODALIDADE_LABELS[m]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />

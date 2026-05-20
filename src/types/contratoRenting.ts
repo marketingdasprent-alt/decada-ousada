@@ -40,6 +40,17 @@ export const CONTRATO_ORIGEM_LABELS: Record<ContratoOrigem, string> = {
 };
 
 // ============================================================
+// Modalidade (rent-a-car vs TVDE — determina a taxa de IVA)
+// ============================================================
+export const CONTRATO_MODALIDADES = ['rent_a_car', 'tvde'] as const;
+export type ContratoModalidade = (typeof CONTRATO_MODALIDADES)[number];
+
+export const CONTRATO_MODALIDADE_LABELS: Record<ContratoModalidade, string> = {
+  rent_a_car: 'Rent-a-car',
+  tvde: 'TVDE',
+};
+
+// ============================================================
 // Renovação (ALD — espelha reserva)
 // ============================================================
 export const CONTRATO_RENOVACAO_OPCOES = [
@@ -84,9 +95,13 @@ export type ContratoRenting = {
   estado_financeiro: ContratoEstadoFinanceiro;
   origem: ContratoOrigem;
 
+  /** rent_a_car ou tvde — determina a taxa de IVA (ver org_definicoes). */
+  modalidade: ContratoModalidade;
+
   // Tarifário simples (MVP)
   tarifa_diaria: number | null;
   desconto_percentagem: number | null;
+  /** Taxa de IVA aplicada — derivada da modalidade + config da org. */
   taxa_iva: number;
   valor_total_manual: number | null;
 

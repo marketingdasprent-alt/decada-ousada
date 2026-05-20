@@ -26,6 +26,7 @@ import {
   useUpdateContratoRenting,
 } from '@/hooks/useContratosRenting';
 import { useEstacoes } from '@/hooks/useEstacoes';
+import { useOrgDefinicoes, ivaParaModalidade } from '@/hooks/useOrgDefinicoes';
 import { useRentingCoberturas } from '@/hooks/useRentingCoberturas';
 import { useRentingExtras } from '@/hooks/useRentingExtras';
 import { useRentingTaxas } from '@/hooks/useRentingTaxas';
@@ -70,6 +71,7 @@ const ContratoForm = () => {
   const { data: coberturas = [] } = useRentingCoberturas({ apenasAtivas: true });
   const { data: extrasCatalogo = [] } = useRentingExtras({ apenasAtivos: true });
   const { data: taxasCatalogo = [] } = useRentingTaxas({ apenasAtivas: true });
+  const { data: orgDefinicoes } = useOrgDefinicoes();
   const { data: contrato, isLoading: loadingContrato } = useContratoRenting(id ?? null);
 
   // Carrega reserva quando vier no query string (?reserva_id=X) e estamos a criar
@@ -142,6 +144,7 @@ const ContratoForm = () => {
         estado_operacional: contrato.estado_operacional,
         estado_financeiro: contrato.estado_financeiro,
         origem: contrato.origem,
+        modalidade: contrato.modalidade,
         tarifa_diaria: contrato.tarifa_diaria,
         desconto_percentagem: contrato.desconto_percentagem,
         taxa_iva: contrato.taxa_iva,
@@ -182,6 +185,7 @@ const ContratoForm = () => {
         data_inicio: isoToLocalInput(reservaFromQuery.data_inicio),
         data_fim: isoToLocalInput(reservaFromQuery.data_fim),
         origem: 'sistema',
+        modalidade: reservaFromQuery.modalidade,
         // Orçamento da reserva → override do total no contrato
         valor_total_manual: reservaFromQuery.valor_total,
         // ALD da reserva
@@ -266,9 +270,18 @@ const ContratoForm = () => {
   const valorTotalManual = form.watch('valor_total_manual');
   const descontoPercentagem = form.watch('desconto_percentagem');
   const taxaIva = form.watch('taxa_iva');
+  const modalidade = form.watch('modalidade');
   const coberturasForm = form.watch('coberturas');
   const extrasForm = form.watch('extras') as ExtraFormItem[];
   const taxasForm = form.watch('taxas') as TaxaFormItem[];
+
+  // O IVA não é editável no contrato — é derivado da modalidade
+  // (rent-a-car / TVDE) e das taxas configuradas na organização.
+  useEffect(() => {
+    form.setValue('taxa_iva', ivaParaModalidade(orgDefinicoes, modalidade), {
+      shouldDirty: false,
+    });
+  }, [modalidade, orgDefinicoes, form]);
 
   // Soma do preço/dia das coberturas seleccionadas (× dias no ResumoContrato)
   const coberturasPrecoDia = useMemo(
@@ -311,6 +324,7 @@ const ContratoForm = () => {
       estado_operacional: values.estado_operacional,
       estado_financeiro: values.estado_financeiro,
       origem: values.origem,
+      modalidade: values.modalidade,
       tarifa_diaria: values.tarifa_diaria,
       desconto_percentagem: values.desconto_percentagem,
       taxa_iva: values.taxa_iva,

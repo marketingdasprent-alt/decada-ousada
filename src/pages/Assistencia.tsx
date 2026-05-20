@@ -274,8 +274,7 @@ const Assistencia = () => {
     }
 
     // Visibility rule: Only managers, admins or the creator can see pending tickets
-    const canSeePendente =
-      isAdmin || isAssistanceManager || ticket.criador?.id === user?.id;
+    const canSeePendente = isAdmin || isAssistanceManager || ticket.criador?.id === user?.id;
     if (ticket.status === 'pendente' && !canSeePendente) return false;
 
     return (

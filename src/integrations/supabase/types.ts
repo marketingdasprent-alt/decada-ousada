@@ -2404,6 +2404,7 @@ export type Database = {
           local_entrega: string | null
           local_recolha: string | null
           matricula: string | null
+          modalidade: Database["public"]["Enums"]["contrato_modalidade_enum"]
           numero_processo: string | null
           observacoes: string | null
           observacoes_internas: string | null
@@ -2464,6 +2465,7 @@ export type Database = {
           local_entrega?: string | null
           local_recolha?: string | null
           matricula?: string | null
+          modalidade?: Database["public"]["Enums"]["contrato_modalidade_enum"]
           numero_processo?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
@@ -2524,6 +2526,7 @@ export type Database = {
           local_entrega?: string | null
           local_recolha?: string | null
           matricula?: string | null
+          modalidade?: Database["public"]["Enums"]["contrato_modalidade_enum"]
           numero_processo?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
@@ -4365,6 +4368,38 @@ export type Database = {
           },
         ]
       }
+      org_definicoes: {
+        Row: {
+          created_at: string
+          iva_rent_a_car: number
+          iva_tvde: number
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          iva_rent_a_car?: number
+          iva_tvde?: number
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          iva_rent_a_car?: number
+          iva_tvde?: number
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_definicoes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizacoes: {
         Row: {
           ativa: boolean
@@ -5675,6 +5710,7 @@ export type Database = {
           km_adicional_valor: number | null
           kms_incluidos: number | null
           matricula: string | null
+          modalidade: Database["public"]["Enums"]["contrato_modalidade_enum"]
           observacoes: string | null
           observacoes_internas: string | null
           org_id: string
@@ -5718,6 +5754,7 @@ export type Database = {
           km_adicional_valor?: number | null
           kms_incluidos?: number | null
           matricula?: string | null
+          modalidade?: Database["public"]["Enums"]["contrato_modalidade_enum"]
           observacoes?: string | null
           observacoes_internas?: string | null
           org_id?: string
@@ -5761,6 +5798,7 @@ export type Database = {
           km_adicional_valor?: number | null
           kms_incluidos?: number | null
           matricula?: string | null
+          modalidade?: Database["public"]["Enums"]["contrato_modalidade_enum"]
           observacoes?: string | null
           observacoes_internas?: string | null
           org_id?: string
@@ -8273,6 +8311,7 @@ export type Database = {
         | "em_curso"
         | "devolvido"
         | "cancelado"
+      contrato_modalidade_enum: "rent_a_car" | "tvde"
       contrato_origem_enum: "sistema" | "online" | "telefone" | "balcao"
       contrato_regime_enum: "rent_a_car" | "tvde"
       contrato_renovacao_opcao_enum:
@@ -8434,6 +8473,7 @@ export const Constants = {
         "devolvido",
         "cancelado",
       ],
+      contrato_modalidade_enum: ["rent_a_car", "tvde"],
       contrato_origem_enum: ["sistema", "online", "telefone", "balcao"],
       contrato_regime_enum: ["rent_a_car", "tvde"],
       contrato_renovacao_opcao_enum: [

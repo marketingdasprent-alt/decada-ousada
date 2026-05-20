@@ -70,9 +70,7 @@ export const ContratoTabTaxas: React.FC<ContratoTabTaxasProps> = ({ form, taxas 
           {taxas.map((t) => {
             const checked = indexByTaxa.get(t.id) !== undefined;
             const valorLabel =
-              t.percentagem != null
-                ? `${t.percentagem}%`
-                : `${(t.valor_fixo ?? 0).toFixed(2)} €`;
+              t.percentagem != null ? `${t.percentagem}%` : `${(t.valor_fixo ?? 0).toFixed(2)} €`;
             return (
               <div
                 key={t.id}
