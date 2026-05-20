@@ -71,6 +71,7 @@ export default function Financeiro() {
           )
         `
         )
+        .eq('tipo', 'recibo')
         .order('created_at', { ascending: false });
 
       if (recibosError) throw recibosError;
