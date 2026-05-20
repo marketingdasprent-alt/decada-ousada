@@ -2,7 +2,6 @@ import type React from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import type { ClienteComDocumentos } from '@/types/cliente';
-import type { Cobertura } from '@/types/cobertura';
 import type { Estacao } from '@/hooks/useEstacoes';
 import type { ViaturaBasic } from '@/hooks/useViaturas';
 import { ALDFields } from '@/components/renting/shared/ALDFields';
@@ -18,7 +17,6 @@ interface ContratoFormSecoesProps {
   clientes: ClienteComDocumentos[];
   viaturas: ViaturaBasic[];
   estacoes: Estacao[];
-  coberturas: Cobertura[];
 }
 
 /**
@@ -30,13 +28,12 @@ export const ContratoFormSecoes: React.FC<ContratoFormSecoesProps> = ({
   clientes,
   viaturas,
   estacoes,
-  coberturas,
 }) => (
   <div className="space-y-6">
     <SectionEntregaRecolha form={form} estacoes={estacoes} />
     <ALDFields idPrefix="contrato" />
     <SectionViatura form={form} viaturas={viaturas} estacoes={estacoes} />
-    <SectionGeral form={form} clientes={clientes} coberturas={coberturas} />
+    <SectionGeral form={form} clientes={clientes} />
     <FranquiaKmsFields />
     <SectionInfoAdicional form={form} />
   </div>

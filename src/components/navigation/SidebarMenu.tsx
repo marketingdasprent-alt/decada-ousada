@@ -18,7 +18,6 @@ import {
   CalendarCheck,
   ArrowRightLeft,
   Users,
-  Library,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
@@ -78,12 +77,6 @@ const MENU_ITEMS: MenuItem[] = [
         url: '/renting/clientes',
         icon: Users,
         recurso: 'renting_clientes',
-      },
-      {
-        label: 'Catálogos',
-        url: '/renting/catalogos',
-        icon: Library,
-        recurso: 'renting_contratos',
       },
     ],
   },

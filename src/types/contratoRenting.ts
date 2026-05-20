@@ -105,9 +105,6 @@ export type ContratoRenting = {
   kms_incluidos: number | null;
   km_adicional_valor: number | null;
 
-  // Cobertura (FK única ao catálogo — MVP)
-  cobertura_id: string | null;
-
   voucher_codigo: string | null;
 
   numero_processo: string | null;
