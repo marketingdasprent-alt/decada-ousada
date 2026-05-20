@@ -39,6 +39,7 @@ import {
   Route,
   Clock,
   RefreshCcw,
+  ShieldAlert,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { format, subDays } from 'date-fns';
@@ -496,6 +497,14 @@ export const UberDataTab: React.FC = () => {
     toast({
       title: 'Carregamento interrompido',
       description: `${transactions.length} transacções carregadas.`,
+    });
+  };
+
+  // TODO: auto-mapeamento de motoristas Uber ainda por implementar.
+  const handleAutoMap = () => {
+    toast({
+      title: 'Funcionalidade em desenvolvimento',
+      description: 'O auto-mapeamento de motoristas Uber ainda não está disponível.',
     });
   };
 

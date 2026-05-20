@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -199,7 +200,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
 
     setSaving(true);
     try {
-      const data = buildCandidaturaData();
+      const data = buildCandidaturaData() as TablesInsert<'motorista_candidaturas'>;
 
       if (candidatura) {
         const { error } = await supabase
@@ -328,7 +329,7 @@ export const CandidaturaFormulario: React.FC<CandidaturaFormularioProps> = ({
         ...buildCandidaturaData(),
         status: 'submetido',
         data_submissao: new Date().toISOString(),
-      };
+      } as TablesInsert<'motorista_candidaturas'>;
 
       if (candidatura) {
         const { error } = await supabase

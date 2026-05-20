@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { cronExpressionToPreset, presetToCronExpression, CRON_PRESETS } from '@/lib/cronPresets';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -339,7 +340,7 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
 
       const { data, error } = await supabase
         .from('plataformas_configuracao')
-        .update(updatePayload)
+        .update(updatePayload as TablesUpdate<'plataformas_configuracao'>)
         .eq('id', integracao.id)
         .select('*')
         .single();

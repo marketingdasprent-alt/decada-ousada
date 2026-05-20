@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import type { Reserva, ReservaEstado, ReservaInsert, ReservaUpdate } from '@/types/reserva';
 
 const QUERY_KEY_BASE = ['renting', 'reservas'] as const;
@@ -120,9 +121,10 @@ export function useCreateReserva() {
 
   return useMutation({
     mutationFn: async (payload: ReservaInsert): Promise<Reserva> => {
+      // org_id é preenchido por trigger na BD — daí o cast.
       const { data, error } = await supabase
         .from('reservas')
-        .insert(payload)
+        .insert(payload as TablesInsert<'reservas'>)
         .select(SELECT_COLUMNS)
         .single();
       if (error) throw error;

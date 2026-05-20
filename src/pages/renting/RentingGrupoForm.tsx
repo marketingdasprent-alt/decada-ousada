@@ -35,6 +35,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useTenant } from '@/contexts/TenantContext';
@@ -194,7 +195,7 @@ const RentingGrupoForm = () => {
       if (isNew) {
         const { data, error } = await supabase
           .from('renting_grupos')
-          .insert(payload)
+          .insert(payload as TablesInsert<'renting_grupos'>)
           .select('id')
           .single();
         if (error) throw error;

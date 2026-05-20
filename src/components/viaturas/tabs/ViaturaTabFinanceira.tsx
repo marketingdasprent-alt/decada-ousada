@@ -109,6 +109,7 @@ type FinanceiraFormData = z.infer<typeof financeiraSchema>;
 
 interface Viatura {
   id: string;
+  status?: string | null;
   tipo_frota?: string | null;
   tipo_financiamento?: string | null;
   custo_viatura?: number | null;
@@ -416,7 +417,8 @@ export function ViaturaTabFinanceira({ viatura, onUpdate }: ViaturaTabFinanceira
             ...(repsolRes.data || []),
             ...(edpRes.data || []),
           ].filter((f) => {
-            const d = new Date(f.transaction_date || f.data_movimento);
+            const ff = f as { transaction_date?: string; data_movimento?: string; motorista_id?: string };
+            const d = new Date(ff.transaction_date || ff.data_movimento || '');
             return f.motorista_id === assoc.motorista_id && d >= inicio && d <= fim;
           });
 

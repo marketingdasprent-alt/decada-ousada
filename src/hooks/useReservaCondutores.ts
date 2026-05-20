@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import type { CondutorFormItem, ReservaCondutor } from '@/types/reserva';
 
 const QUERY_KEY_BASE = ['renting', 'reserva-condutores'] as const;
@@ -66,7 +67,10 @@ export function useSyncReservaCondutores() {
           is_principal: false,
         }));
       if (aInserir.length > 0) {
-        const { error } = await supabase.from('reserva_condutores').insert(aInserir);
+        // org_id é preenchido por trigger na BD — daí o cast.
+        const { error } = await supabase
+          .from('reserva_condutores')
+          .insert(aInserir as TablesInsert<'reserva_condutores'>[]);
         if (error) throw error;
       }
 

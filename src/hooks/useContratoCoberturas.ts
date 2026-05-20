@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import type { ContratoCobertura, CoberturaFormItem } from '@/types/contratoRenting';
 
 const QUERY_KEY_BASE = ['renting', 'contrato-coberturas'] as const;
@@ -69,7 +70,10 @@ export function useSyncContratoCoberturas() {
           franquia_valor: c.franquia_valor,
         }));
       if (aInserir.length > 0) {
-        const { error } = await supabase.from('contrato_coberturas').insert(aInserir);
+        // org_id é preenchido por trigger na BD — daí o cast.
+        const { error } = await supabase
+          .from('contrato_coberturas')
+          .insert(aInserir as TablesInsert<'contrato_coberturas'>[]);
         if (error) throw error;
       }
     },

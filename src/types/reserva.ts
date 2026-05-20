@@ -73,9 +73,17 @@ export type Reserva = {
   updated_at: string;
 };
 
+// org_id é preenchido por trigger na BD — fica de fora do payload do formulário.
 export type ReservaInsert = Omit<
   Reserva,
-  'id' | 'codigo' | 'deleted_at' | 'created_by' | 'updated_by' | 'created_at' | 'updated_at'
+  | 'id'
+  | 'codigo'
+  | 'org_id'
+  | 'deleted_at'
+  | 'created_by'
+  | 'updated_by'
+  | 'created_at'
+  | 'updated_at'
 >;
 
 export type ReservaUpdate = Partial<ReservaInsert> & { deleted_at?: string | null };

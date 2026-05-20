@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import type { ContratoExtra, ExtraFormItem } from '@/types/contratoRenting';
 
 const QUERY_KEY_BASE = ['renting', 'contrato-extras'] as const;
@@ -64,7 +65,10 @@ export function useSyncContratoExtras() {
         quantidade: e.quantidade,
         total: calcExtraTotal(e, dias),
       }));
-      const { error: insErr } = await supabase.from('contrato_extras').insert(rows);
+      // org_id é preenchido por trigger na BD — daí o cast.
+      const { error: insErr } = await supabase
+        .from('contrato_extras')
+        .insert(rows as TablesInsert<'contrato_extras'>[]);
       if (insErr) throw insErr;
     },
     onSuccess: (_, vars) => {

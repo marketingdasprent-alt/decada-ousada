@@ -694,7 +694,8 @@ export function ContasResumoTab() {
       // 5a. Processar Bolt
       (boltResult.data || []).forEach((v) => {
         const driverUuid = v.driver_uuid || 'unknown';
-        const identificadorBolt = (v.raw_data as any)?.['Identificador do motorista'] || '';
+        const identificadorBolt =
+          (v as any).raw_data?.['Identificador do motorista'] || '';
 
         // ORDEM DE MATCHING BOLT:
         // 1. Pelo bolt_id gravado na ficha do motorista (CRM)
@@ -1323,7 +1324,9 @@ export function ContasResumoTab() {
                       <span className="flex items-center gap-1.5">
                         {resumo.driver_name}
                         {resumo.tem_recibo_importado && (
-                          <FileCheck className="h-4 w-4 text-blue-500" title="Recibo importado" />
+                          <span title="Recibo importado">
+                            <FileCheck className="h-4 w-4 text-blue-500" />
+                          </span>
                         )}
                       </span>
                     </TableCell>

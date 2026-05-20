@@ -390,7 +390,7 @@ export const ContratoEntregaStep: React.FC<ContratoEntregaStepProps> = ({
         if (isMultiple && combinedPdf && successCount > 0) {
           combinedPdf.deletePage(1);
           combinedPdf.autoPrint();
-          window.open(combinedPdf.output('bloburl') as string, '_blank');
+          window.open(combinedPdf.output('bloburl'), '_blank');
         }
       }
 

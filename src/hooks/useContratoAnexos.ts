@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import type { ContratoAnexo } from '@/types/contratoRenting';
 
 const BUCKET = 'contrato-anexos';
@@ -61,13 +62,14 @@ export function useUploadContratoAnexo(contratoId: string | null) {
         .upload(path, file, { contentType: file.type, upsert: false });
       if (uploadError) throw uploadError;
 
+      // org_id é preenchido por trigger na BD — daí o cast.
       const { error: insertError } = await supabase.from('contrato_anexos').insert({
         contrato_id: contratoId,
         nome: file.name,
         ficheiro_url: path,
         tamanho_bytes: file.size,
         mime_type: file.type,
-      });
+      } as TablesInsert<'contrato_anexos'>);
       if (insertError) {
         // Rollback: tentar remover o ficheiro
         await supabase.storage.from(BUCKET).remove([path]);

@@ -447,7 +447,7 @@ export const generateDocumentFromTemplate = async (
       });
 
     // Se estamos a adicionar a um PDF existente, adicionar nova página
-    const startPage = params.existingPdf ? pdf.internal.getNumberOfPages() + 1 : 1;
+    const startPage = params.existingPdf ? pdf.getNumberOfPages() + 1 : 1;
     if (params.existingPdf) {
       pdf.addPage();
     }
@@ -683,7 +683,7 @@ export const generateDocumentFromTemplate = async (
     }
 
     // Adicionar numeração de páginas (apenas deste documento, não de PDFs anteriores)
-    const endPage = pdf.internal.getNumberOfPages();
+    const endPage = pdf.getNumberOfPages();
     const docTotalPages = endPage - startPage + 1;
     for (let i = startPage; i <= endPage; i++) {
       pdf.setPage(i);

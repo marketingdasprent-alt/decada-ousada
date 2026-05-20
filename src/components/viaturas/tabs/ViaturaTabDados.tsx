@@ -44,6 +44,7 @@ import {
   FolderUp,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import {
   getCategoriaBadgeClass,
   getStatusBadgeClass,
@@ -230,36 +231,46 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       .select('id, nome, cidade')
       .eq('ativa', true)
       .order('nome')
-      .then(({ data }) => setEstacoes(data || []))
-      .catch((err) => console.error('Erro ao carregar estações:', err));
+      .then(
+        ({ data }) => setEstacoes(data || []),
+        (err) => console.error('Erro ao carregar estações:', err)
+      );
     supabase
       .from('viatura_tipos')
       .select('id, nome')
       .eq('ativo', true)
       .order('nome')
-      .then(({ data }) => setViaturasTipos(data || []))
-      .catch((err) => console.error('Erro ao carregar tipos:', err));
+      .then(
+        ({ data }) => setViaturasTipos(data || []),
+        (err) => console.error('Erro ao carregar tipos:', err)
+      );
     supabase
       .from('renting_grupos')
       .select('id, nome')
       .eq('ativo', true)
       .order('nome')
-      .then(({ data }) => setGrupos(data || []))
-      .catch((err) => console.error('Erro ao carregar grupos:', err));
+      .then(
+        ({ data }) => setGrupos(data || []),
+        (err) => console.error('Erro ao carregar grupos:', err)
+      );
     supabase
       .from('viatura_marcas')
       .select('id, nome')
       .eq('ativa', true)
       .order('nome')
-      .then(({ data }) => setMarcas(data || []))
-      .catch((err) => console.error('Erro ao carregar marcas:', err));
+      .then(
+        ({ data }) => setMarcas(data || []),
+        (err) => console.error('Erro ao carregar marcas:', err)
+      );
     supabase
       .from('viatura_combustiveis')
       .select('id, nome')
       .eq('ativo', true)
       .order('nome')
-      .then(({ data }) => setCombustiveis(data || []))
-      .catch((err) => console.error('Erro ao carregar combustíveis:', err));
+      .then(
+        ({ data }) => setCombustiveis(data || []),
+        (err) => console.error('Erro ao carregar combustíveis:', err)
+      );
   }, []);
 
   const form = useForm<ViaturaFormData>({
@@ -333,8 +344,10 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       .eq('marca_id', watchedMarcaId)
       .eq('ativo', true)
       .order('nome')
-      .then(({ data }) => setModelos(data || []))
-      .catch((err) => console.error('Erro ao carregar modelos:', err));
+      .then(
+        ({ data }) => setModelos(data || []),
+        (err) => console.error('Erro ao carregar modelos:', err)
+      );
   }, [watchedMarcaId]);
 
   const loadDocuments = async () => {
