@@ -3,6 +3,7 @@ import {
   CONTRATO_ESTADOS_FIN,
   CONTRATO_ESTADOS_OP,
   CONTRATO_ORIGENS,
+  CONTRATO_REGIMES,
   CONTRATO_RENOVACAO_OPCOES,
 } from '@/types/contratoRenting';
 
@@ -57,6 +58,7 @@ export const contratoFormSchema = z
     estado_operacional: z.enum(CONTRATO_ESTADOS_OP),
     estado_financeiro: z.enum(CONTRATO_ESTADOS_FIN),
     origem: z.enum(CONTRATO_ORIGENS),
+    regime: z.enum(CONTRATO_REGIMES).default('rent_a_car'),
 
     // Tarifário simples
     tarifa_diaria: optionalNonNegativeNumber,
@@ -103,6 +105,7 @@ export const contratoFormSchema = z
           is_principal: z.boolean().default(false),
         })
       )
+      .min(1, 'É obrigatório pelo menos um condutor.')
       .default([])
       .refine(
         (lista) => {
@@ -136,6 +139,7 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   estado_operacional: 'agendado',
   estado_financeiro: 'pendente',
   origem: 'sistema',
+  regime: 'rent_a_car',
   tarifa_diaria: null,
   desconto_percentagem: null,
   taxa_iva: 23,

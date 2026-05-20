@@ -25,8 +25,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useTenant } from '@/contexts/TenantContext';
 
-type TipoTarifa = 'renting' | 'tvde';
-
 interface RentingGrupo { id: string; nome: string; codigo: string; }
 
 const MINUTOS_OPTIONS = [
@@ -49,9 +47,9 @@ const MINUTOS_OPTIONS = [
 const EMPTY_FORM = {
   grupo_id: '',
   nome: '',
-  tipo: 'renting' as TipoTarifa,
   preco_dia: '',
   preco_fim_semana: '',
+  preco_semana: '',
   preco_mes: '',
   kms_incluidos: '',
   km_adicional_valor: '',
@@ -118,9 +116,9 @@ const RentingTarifaForm = () => {
     setForm({
       grupo_id:             tarifa.grupo_id ?? '',
       nome:                 tarifa.nome ?? '',
-      tipo:                 ((tarifa as any).tipo as TipoTarifa) || 'renting',
       preco_dia:            tarifa.preco_dia?.toString() ?? '',
       preco_fim_semana:     (tarifa as any).preco_fim_semana?.toString() ?? '',
+      preco_semana:         (tarifa as any).preco_semana?.toString() ?? '',
       preco_mes:            tarifa.preco_mes?.toString() ?? '',
       kms_incluidos:        tarifa.kms_incluidos?.toString() ?? '',
       km_adicional_valor:   tarifa.km_adicional_valor?.toString() ?? '',
@@ -143,9 +141,9 @@ const RentingTarifaForm = () => {
   const buildPayload = () => ({
     grupo_id:           form.grupo_id,
     nome:               form.nome.trim(),
-    tipo:               form.tipo,
     preco_dia:          parseFloat(form.preco_dia || '0'),
     preco_fim_semana:   n(form.preco_fim_semana),
+    preco_semana:       n(form.preco_semana),
     preco_mes:          n(form.preco_mes),
     kms_incluidos:      ni(form.kms_incluidos),
     km_adicional_valor: n(form.km_adicional_valor),
@@ -307,22 +305,6 @@ const RentingTarifaForm = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Tipo *</Label>
-                <Select
-                  value={form.tipo}
-                  onValueChange={(v: TipoTarifa) => setForm((p) => ({ ...p, tipo: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="renting">Renting</SelectItem>
-                    <SelectItem value="tvde">TVDE</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
                 <Label>Validade</Label>
                 <div className="flex items-center gap-2">
                   <Input type="date" value={form.valido_de} onChange={f('valido_de')} className="flex-1" />
@@ -369,7 +351,7 @@ const RentingTarifaForm = () => {
                 {/* Campos de preço — sempre Diária + Mensal */}
                 <div className="space-y-4">
                   <Label className="text-base font-semibold">Preços</Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="space-y-2">
                       <Label>Preço por dia (€) *</Label>
                       <div className="relative">
@@ -391,6 +373,19 @@ const RentingTarifaForm = () => {
                           value={form.preco_fim_semana}
                           onChange={f('preco_fim_semana')}
                           placeholder="Igual ao dia"
+                          className="pr-8"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Preço por semana (€)</Label>
+                      <div className="relative">
+                        <Input
+                          type="number" min="0" step="0.01"
+                          value={form.preco_semana}
+                          onChange={f('preco_semana')}
+                          placeholder="0.00"
                           className="pr-8"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
@@ -623,6 +618,12 @@ const RentingTarifaForm = () => {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Fim semana</span>
                     <span className="font-medium tabular-nums">{parseFloat(form.preco_fim_semana).toFixed(2)} €</span>
+                  </div>
+                )}
+                {form.preco_semana && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Por semana</span>
+                    <span className="font-medium tabular-nums">{parseFloat(form.preco_semana).toFixed(2)} €</span>
                   </div>
                 )}
                 {form.preco_mes && (

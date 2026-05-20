@@ -54,6 +54,17 @@ export const CONTRATO_RENOVACAO_OPCAO_LABELS: Record<ContratoRenovacaoOpcao, str
 };
 
 // ============================================================
+// Regime (rent-a-car vs TVDE)
+// ============================================================
+export const CONTRATO_REGIMES = ['rent_a_car', 'tvde'] as const;
+export type ContratoRegime = (typeof CONTRATO_REGIMES)[number];
+
+export const CONTRATO_REGIME_LABELS: Record<ContratoRegime, string> = {
+  rent_a_car: 'Rent-a-Car',
+  tvde: 'TVDE',
+};
+
+// ============================================================
 // Tipo principal
 // ============================================================
 export type ContratoRenting = {
@@ -81,6 +92,7 @@ export type ContratoRenting = {
   estado_operacional: ContratoEstadoOperacional;
   estado_financeiro: ContratoEstadoFinanceiro;
   origem: ContratoOrigem;
+  regime: ContratoRegime;
 
   // Tarifário simples (MVP)
   tarifa_diaria: number | null;

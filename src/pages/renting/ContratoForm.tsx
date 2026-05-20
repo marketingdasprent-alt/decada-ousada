@@ -111,6 +111,7 @@ const ContratoForm = () => {
         estado_operacional: contrato.estado_operacional,
         estado_financeiro: contrato.estado_financeiro,
         origem: contrato.origem,
+        regime: contrato.regime,
         tarifa_diaria: contrato.tarifa_diaria,
         desconto_percentagem: contrato.desconto_percentagem,
         taxa_iva: contrato.taxa_iva,
@@ -152,6 +153,7 @@ const ContratoForm = () => {
         data_inicio: isoToLocalInput(reservaFromQuery.data_inicio),
         data_fim: isoToLocalInput(reservaFromQuery.data_fim),
         origem: 'sistema',
+        regime: reservaFromQuery.regime,
         // Orçamento da reserva → override do total no contrato
         valor_total_manual: reservaFromQuery.valor_total,
         // ALD da reserva
@@ -226,6 +228,7 @@ const ContratoForm = () => {
       estado_operacional: values.estado_operacional,
       estado_financeiro: values.estado_financeiro,
       origem: values.origem,
+      regime: values.regime,
       tarifa_diaria: values.tarifa_diaria,
       desconto_percentagem: values.desconto_percentagem,
       taxa_iva: values.taxa_iva,
