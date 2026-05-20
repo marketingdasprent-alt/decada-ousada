@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useTenant } from '@/contexts/TenantContext';
 import { AdminAccessDenied } from '@/components/admin/AdminAccessDenied';
 import { AdminLoadingState } from '@/components/admin/AdminLoadingState';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,9 +19,13 @@ import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import { Settings2, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+const DECADA_OUSADA_ORG_ID = '11111111-1111-1111-1111-111111111111';
+
 const AdminSettings = () => {
   const { isAdmin, loading } = usePermissions();
+  const { orgId } = useTenant();
   const [importOpen, setImportOpen] = useState(false);
+  const isDecadaOusada = orgId === DECADA_OUSADA_ORG_ID;
 
   if (loading) {
     return <AdminLoadingState message="Verificando permissões..." />;
@@ -101,12 +106,14 @@ const AdminSettings = () => {
         >
           Tipos Viatura
         </TabsTrigger>
-        <TabsTrigger
-          value="organizacoes"
-          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs"
-        >
-          Organizações
-        </TabsTrigger>
+        {isDecadaOusada && (
+          <TabsTrigger
+            value="organizacoes"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs"
+          >
+            Organizações
+          </TabsTrigger>
+        )}
       </TabsList>
 
       <div className="space-y-6">
@@ -146,9 +153,11 @@ const AdminSettings = () => {
           <ViaturasTiposTab />
         </TabsContent>
 
-        <TabsContent value="organizacoes" className="mt-0">
-          <OrganizacoesTab />
-        </TabsContent>
+        {isDecadaOusada && (
+          <TabsContent value="organizacoes" className="mt-0">
+            <OrganizacoesTab />
+          </TabsContent>
+        )}
       </div>
     </Tabs>
   );

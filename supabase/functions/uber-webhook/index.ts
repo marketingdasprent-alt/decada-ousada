@@ -2079,8 +2079,10 @@ Deno.serve(async (req) => {
     return jsonResponse({ success: false, error: "Integração Uber não encontrada" }, 404);
   }
 
-  if (!config.client_secret) {
-    return jsonResponse({ success: false, error: "Client Secret da integração Uber em falta" }, 400);
+  // Use webhook_signing_key (preferred) or fall back to client_secret for backwards compat
+  const signingKey = config.webhook_signing_key || config.client_secret;
+  if (!signingKey) {
+    return jsonResponse({ success: false, error: "Webhook signing key da integração Uber em falta" }, 400);
   }
 
   const payload = parsedBody;
@@ -2094,7 +2096,7 @@ Deno.serve(async (req) => {
     ? new Date(rawEventTime * 1000).toISOString()
     : null;
 
-  const signatureValid = await isValidUberSignature(config.client_secret, rawBody, signature);
+  const signatureValid = await isValidUberSignature(signingKey, rawBody, signature);
 
   // Enrich headers with X-Environment for traceability
   const enrichedHeaders = { ...headers };

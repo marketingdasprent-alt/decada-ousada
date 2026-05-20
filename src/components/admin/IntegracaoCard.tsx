@@ -93,9 +93,12 @@ export const IntegracaoCard: React.FC<IntegracaoCardProps> = ({
     ? format(new Date(data.ultimoSync), 'dd/MM/yyyy', { locale: pt })
     : null;
 
+  const isWebhookMode = data.rawData?.auth_mode === 'webhook';
   const connectionLabel = data.ativo
     ? data.connectionMode === 'api'
-      ? 'Conectado'
+      ? isWebhookMode
+        ? 'Webhook Activo'
+        : 'Conectado'
       : data.connectionMode === 'ftp'
         ? 'FTP Activo'
         : 'Upload manual'
