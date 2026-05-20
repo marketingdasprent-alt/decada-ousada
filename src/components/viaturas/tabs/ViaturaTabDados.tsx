@@ -56,8 +56,11 @@ const viaturaSchema = z.object({
     .string()
     .min(1, 'Matrícula é obrigatória')
     .regex(/^[A-Z0-9]{2}-[A-Z0-9]{2}-[A-Z0-9]{2}$/, 'Formato inválido. Use XX-00-XX'),
-  marca: z.string().min(1, 'Marca é obrigatória'),
-  modelo: z.string().min(1, 'Modelo é obrigatório'),
+  marca: z.string().optional(),
+  modelo: z.string().optional(),
+  marca_id: z.string().min(1, 'Marca é obrigatória'),
+  modelo_id: z.string().min(1, 'Modelo é obrigatório'),
+  combustivel_id: z.string().optional(),
   ano: z.string().optional(),
   cor: z.string().optional(),
   categoria: z.string().optional(),
@@ -68,10 +71,7 @@ const viaturaSchema = z.object({
   numero_chassis: z.string().optional(),
   data_matricula: z.string().optional(),
   observacoes: z.string().optional(),
-  valor_aluguer: z.string().optional(),
-  valor_mensal: z.string().optional(),
-  valor_diario: z.string().optional(),
-  limite_km_mensal: z.string().optional(),
+  grupo_id: z.string().optional(),
   is_slot: z.boolean().default(false),
   estacao_id: z.string().optional(),
   extintor_numero: z.string().optional(),
@@ -86,6 +86,9 @@ interface Viatura {
   matricula: string;
   marca: string;
   modelo: string;
+  marca_id?: string | null;
+  modelo_id?: string | null;
+  combustivel_id?: string | null;
   ano?: number | null;
   cor?: string | null;
   categoria?: string | null;
@@ -96,10 +99,7 @@ interface Viatura {
   numero_chassis?: string | null;
   data_matricula?: string | null;
   observacoes?: string | null;
-  valor_aluguer?: number | null;
-  valor_mensal?: number | null;
-  valor_diario?: number | null;
-  limite_km_mensal?: number | null;
+  grupo_id?: string | null;
   is_slot?: boolean | null;
   estacao_id?: string | null;
   extintor_numero?: string | null;
@@ -129,12 +129,9 @@ const CATEGORIAS = [
   { value: 'x-saver', label: 'X-Saver' },
 ];
 
-const COMBUSTIVEIS = [
-  { value: 'eletrico', label: 'Elétrico' },
-  { value: 'hibrido', label: 'Híbrido' },
-  { value: 'gasolina', label: 'Gasolina' },
-  { value: 'diesel', label: 'Diesel' },
-];
+interface ViaturaMarca { id: string; nome: string; }
+interface ViaturaModelo { id: string; nome: string; marca_id: string; }
+interface ViaturaCombustivel { id: string; nome: string; }
 
 const STATUS_OPTIONS = [
   { value: 'disponivel', label: 'Disponível' },
@@ -195,12 +192,21 @@ interface ViaturasTipo {
   nome: string;
 }
 
+interface RentingGrupo {
+  id: string;
+  nome: string;
+}
+
 export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDadosProps) {
   const [documents, setDocuments] = useState<ViaturaDocument[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [estacoes, setEstacoes] = useState<Estacao[]>([]);
   const [viaturasTipos, setViaturasTipos] = useState<ViaturasTipo[]>([]);
+  const [grupos, setGrupos] = useState<RentingGrupo[]>([]);
+  const [marcas, setMarcas] = useState<ViaturaMarca[]>([]);
+  const [modelos, setModelos] = useState<ViaturaModelo[]>([]);
+  const [combustiveis, setCombustiveis] = useState<ViaturaCombustivel[]>([]);
 
   // Batch upload
   const batchInputRef = useRef<HTMLInputElement | null>(null);
@@ -223,6 +229,27 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       .order('nome')
       .then(({ data }) => setViaturasTipos(data || []))
       .catch((err) => console.error('Erro ao carregar tipos:', err));
+    supabase
+      .from('renting_grupos')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome')
+      .then(({ data }) => setGrupos(data || []))
+      .catch((err) => console.error('Erro ao carregar grupos:', err));
+    supabase
+      .from('viatura_marcas')
+      .select('id, nome')
+      .eq('ativa', true)
+      .order('nome')
+      .then(({ data }) => setMarcas(data || []))
+      .catch((err) => console.error('Erro ao carregar marcas:', err));
+    supabase
+      .from('viatura_combustiveis')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome')
+      .then(({ data }) => setCombustiveis(data || []))
+      .catch((err) => console.error('Erro ao carregar combustíveis:', err));
   }, []);
 
   const form = useForm<ViaturaFormData>({
@@ -231,6 +258,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       matricula: '',
       marca: '',
       modelo: '',
+      marca_id: '',
+      modelo_id: '',
+      combustivel_id: '',
       ano: '',
       cor: '',
       categoria: '',
@@ -241,10 +271,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       numero_chassis: '',
       data_matricula: '',
       observacoes: '',
-      valor_aluguer: '',
-      valor_mensal: '',
-      valor_diario: '',
-      limite_km_mensal: '',
+      grupo_id: '',
       is_slot: false,
       estacao_id: '',
       extintor_numero: '',
@@ -259,6 +286,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
         matricula: viatura.matricula || '',
         marca: viatura.marca || '',
         modelo: viatura.modelo || '',
+        marca_id: viatura.marca_id || '',
+        modelo_id: viatura.modelo_id || '',
+        combustivel_id: viatura.combustivel_id || '',
         ano: viatura.ano?.toString() || '',
         cor: viatura.cor || '',
         categoria: viatura.categoria || '',
@@ -269,10 +299,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
         numero_chassis: viatura.numero_chassis || '',
         data_matricula: viatura.data_matricula || '',
         observacoes: viatura.observacoes || '',
-        valor_aluguer: viatura.valor_aluguer?.toString() || '',
-        valor_mensal: viatura.valor_mensal?.toString() || '',
-        valor_diario: viatura.valor_diario?.toString() || '',
-        limite_km_mensal: viatura.limite_km_mensal?.toString() || '',
+        grupo_id: viatura.grupo_id || '',
         is_slot: viatura.is_slot || false,
         estacao_id: viatura.estacao_id || '',
         extintor_numero: viatura.extintor_numero || '',
@@ -282,6 +309,23 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       loadDocuments();
     }
   }, [viatura, form, viaturasTipos]);
+
+  // Fetch modelos when marca_id changes
+  const watchedMarcaId = form.watch('marca_id');
+  useEffect(() => {
+    if (!watchedMarcaId) {
+      setModelos([]);
+      return;
+    }
+    supabase
+      .from('viatura_modelos')
+      .select('id, nome, marca_id')
+      .eq('marca_id', watchedMarcaId)
+      .eq('ativo', true)
+      .order('nome')
+      .then(({ data }) => setModelos(data || []))
+      .catch((err) => console.error('Erro ao carregar modelos:', err));
+  }, [watchedMarcaId]);
 
   const loadDocuments = async () => {
     if (!viatura?.id) return;
@@ -307,24 +351,29 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
   };
 
   const onSubmit = async (data: ViaturaFormData) => {
+    // Resolve text names from FK IDs
+    const marcaNome = marcas.find((m) => m.id === data.marca_id)?.nome || data.marca || '';
+    const modeloNome = modelos.find((m) => m.id === data.modelo_id)?.nome || data.modelo || '';
+    const combustivelNome = combustiveis.find((c) => c.id === data.combustivel_id)?.nome || data.combustivel || '';
+
     const payload: Partial<Viatura> = {
       matricula: data.matricula.toUpperCase(),
-      marca: data.marca,
-      modelo: data.modelo,
+      marca: marcaNome,
+      modelo: modeloNome,
+      marca_id: data.marca_id || null,
+      modelo_id: data.modelo_id || null,
+      combustivel_id: data.combustivel_id || null,
       ano: data.ano ? parseInt(data.ano) : null,
       cor: data.cor || null,
       categoria: data.categoria || null,
-      combustivel: data.combustivel || null,
+      combustivel: combustivelNome || null,
       status: data.status || 'disponivel',
       km_atual: data.km_atual ? parseInt(data.km_atual) : 0,
       numero_motor: data.numero_motor || null,
       numero_chassis: data.numero_chassis || null,
       data_matricula: data.data_matricula || null,
       observacoes: data.observacoes || null,
-      valor_aluguer: data.valor_aluguer ? parseFloat(data.valor_aluguer) : null,
-      valor_mensal: data.valor_mensal ? parseFloat(data.valor_mensal) : null,
-      valor_diario: data.valor_diario ? parseFloat(data.valor_diario) : null,
-      limite_km_mensal: data.limite_km_mensal ? parseInt(data.limite_km_mensal) : null,
+      grupo_id: data.grupo_id || null,
       is_slot: data.is_slot,
       estacao_id: data.estacao_id || null,
       extintor_numero: data.extintor_numero || null,
@@ -612,26 +661,55 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
-                    name="marca"
+                    name="marca_id"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Marca *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Tesla" {...field} />
-                        </FormControl>
+                        <Select
+                          onValueChange={(v) => {
+                            field.onChange(v);
+                            // Limpar modelo quando muda a marca
+                            form.setValue('modelo_id', '', { shouldDirty: true });
+                          }}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecionar marca" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {marcas.map((m) => (
+                              <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <FormField
                     control={form.control}
-                    name="modelo"
+                    name="modelo_id"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Modelo *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Model 3" {...field} />
-                        </FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={!watchedMarcaId}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={watchedMarcaId ? 'Selecionar modelo' : 'Selecione a marca primeiro'} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {modelos.map((m) => (
+                              <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -662,10 +740,62 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="combustivel_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Combustível</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecionar" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {combustiveis.map((comb) => (
+                              <SelectItem key={comb.id} value={comb.id}>
+                                {comb.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="tipo_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo</FormLabel>
+                        <Select
+                          value={field.value || ''}
+                          onValueChange={(v) => field.onChange(v === 'none' ? '' : v)}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecionar tipo..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">— Sem tipo —</SelectItem>
+                            {viaturasTipos.map((t) => (
+                              <SelectItem key={t.id} value={t.id}>
+                                {t.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   {(() => {
                     const tipoId = form.watch('tipo_id');
                     const tipo = viaturasTipos.find((t) => t.id === tipoId);
-                    if (tipo?.nome?.toLowerCase() === 'comercial') return null;
+                    if (!tipo?.nome?.toLowerCase().includes('tvde')) return null;
                     return (
                       <FormField
                         control={form.control}
@@ -695,132 +825,28 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                   })()}
                   <FormField
                     control={form.control}
-                    name="combustivel"
+                    name="grupo_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Combustível</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecionar" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {COMBUSTIVEIS.map((comb) => (
-                              <SelectItem key={comb.value} value={comb.value}>
-                                {comb.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {(() => {
-                    const tipoIdAtual = form.watch('tipo_id');
-                    const tipoAtual = viaturasTipos.find((t) => t.id === tipoIdAtual);
-                    const isComercial = tipoAtual?.nome?.toLowerCase() === 'comercial';
-                    return isComercial ? (
-                      <>
-                        <FormField
-                          control={form.control}
-                          name="valor_mensal"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Valor Mensal (€)</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  placeholder="Ex: 800.00"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="valor_diario"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Valor Diário (€)</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  placeholder="Ex: 35.00"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </>
-                    ) : (
-                      <FormField
-                        control={form.control}
-                        name="valor_aluguer"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Valor Aluguer (€)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="Ex: 250.00"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    );
-                  })()}
-                  <FormField
-                    control={form.control}
-                    name="tipo_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tipo</FormLabel>
+                        <FormLabel>Grupo</FormLabel>
                         <Select
                           value={field.value || ''}
                           onValueChange={(v) => field.onChange(v === 'none' ? '' : v)}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecionar tipo..." />
+                              <SelectValue placeholder="Selecionar grupo..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">— Sem tipo —</SelectItem>
-                            {viaturasTipos.map((t) => (
-                              <SelectItem key={t.id} value={t.id}>
-                                {t.nome}
+                            <SelectItem value="none">— Sem grupo —</SelectItem>
+                            {grupos.map((g) => (
+                              <SelectItem key={g.id} value={g.id}>
+                                {g.nome}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="limite_km_mensal"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Limite KM Mensal</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" placeholder="Ex: 3000" {...field} />
-                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -856,21 +882,28 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                   />
                 </div>
 
-                {/* Card Viatura SLOT */}
-                <div className="md:col-span-3 mt-2">
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
-                    <div>
-                      <p className="font-medium">Viatura SLOT</p>
-                      <p className="text-sm text-muted-foreground">
-                        {form.watch('is_slot') ? '🟢 Activo' : '🔴 Inactivo'}
-                      </p>
+                {/* Card Viatura SLOT — só visível para TVDE */}
+                {(() => {
+                  const tipoId = form.watch('tipo_id');
+                  const tipo = viaturasTipos.find((t) => t.id === tipoId);
+                  if (!tipo?.nome?.toLowerCase().includes('tvde')) return null;
+                  return (
+                    <div className="md:col-span-3 mt-2">
+                      <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                        <div>
+                          <p className="font-medium">Viatura SLOT</p>
+                          <p className="text-sm text-muted-foreground">
+                            {form.watch('is_slot') ? '🟢 Activo' : '🔴 Inactivo'}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={form.watch('is_slot')}
+                          onCheckedChange={(checked) => form.setValue('is_slot', checked)}
+                        />
+                      </div>
                     </div>
-                    <Switch
-                      checked={form.watch('is_slot')}
-                      onCheckedChange={(checked) => form.setValue('is_slot', checked)}
-                    />
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
 
               <Separator />

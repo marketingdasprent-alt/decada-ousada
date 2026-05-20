@@ -55,15 +55,24 @@ const TRIP_ENDPOINTS = [
 async function getClientCredentialsToken(
   clientId: string,
   clientSecret: string,
+  scopes?: string[],
 ): Promise<string> {
+  const params: Record<string, string> = {
+    client_id: clientId,
+    client_secret: clientSecret,
+    grant_type: "client_credentials",
+  };
+
+  // Add scope if configured
+  if (scopes && scopes.length > 0) {
+    params.scope = scopes.join(" ");
+    console.log(`Requesting scopes: ${params.scope}`);
+  }
+
   const response = await fetch(UBER_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      grant_type: "client_credentials"
-    }),
+    body: new URLSearchParams(params),
   });
 
   const bodyText = await response.text();
@@ -229,7 +238,7 @@ serve(async (req) => {
     // Get integration config
     const { data: integracao, error: cfgError } = await supabase
       .from("plataformas_configuracao")
-      .select("id, nome, plataforma, client_id, client_secret, ativo")
+      .select("id, nome, plataforma, client_id, client_secret, uber_scopes, ativo")
       .eq("id", integracaoId)
       .eq("plataforma", "uber")
       .maybeSingle();
@@ -245,10 +254,12 @@ serve(async (req) => {
     }
 
     // Get token via Client Credentials
-    console.log("Obtaining token via Client Credentials...");
+    const scopes = integracao.uber_scopes as string[] | null;
+    console.log(`Obtaining token via Client Credentials... scopes: ${scopes?.join(', ') || '(none)'}`);
     const accessToken = await getClientCredentialsToken(
       integracao.client_id,
       integracao.client_secret,
+      scopes || undefined,
     );
 
     // Fetch trips with pagination
