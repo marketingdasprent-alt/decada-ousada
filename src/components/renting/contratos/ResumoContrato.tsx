@@ -11,6 +11,8 @@ interface ResumoContratoProps {
   valorTotalManual: number | null | undefined;
   descontoPercentagem: number | null | undefined;
   taxaIva: number;
+  /** Soma do preço/dia das coberturas seleccionadas (× dias = custo total) */
+  coberturasPrecoDia?: number;
   /** Se o contrato está facturado, totais estão congelados — UI mostra cadeado */
   isFacturado?: boolean;
   /** Snapshot do total final quando facturado (vem da BD, não recalcula) */
@@ -36,6 +38,7 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
   valorTotalManual,
   descontoPercentagem,
   taxaIva,
+  coberturasPrecoDia = 0,
   isFacturado = false,
   totalSnapshot,
   subtotalSnapshot,
@@ -45,6 +48,8 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
     if (isFacturado && totalSnapshot != null) {
       return {
         dias: 0,
+        baseAluguer: subtotalSnapshot ?? 0,
+        custoCoberturas: 0,
         subtotalBruto: subtotalSnapshot ?? 0,
         desconto: 0,
         subtotal: subtotalSnapshot ?? 0,
@@ -54,14 +59,25 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
     }
 
     if (!dataInicio || !dataFim) {
-      return { dias: 0, subtotalBruto: 0, desconto: 0, subtotal: 0, iva: 0, total: 0 };
+      return {
+        dias: 0,
+        baseAluguer: 0,
+        custoCoberturas: 0,
+        subtotalBruto: 0,
+        desconto: 0,
+        subtotal: 0,
+        iva: 0,
+        total: 0,
+      };
     }
 
     const dias = calcDias(dataInicio, dataFim);
-    const subtotalBruto =
+    const baseAluguer =
       valorTotalManual != null && valorTotalManual > 0
         ? valorTotalManual
         : (tarifaDiaria ?? 0) * dias;
+    const custoCoberturas = coberturasPrecoDia * dias;
+    const subtotalBruto = baseAluguer + custoCoberturas;
     const descontoPct = descontoPercentagem ?? 0;
     const desconto = subtotalBruto * (descontoPct / 100);
     const subtotal = subtotalBruto - desconto;
@@ -70,6 +86,8 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
 
     return {
       dias,
+      baseAluguer: Math.round(baseAluguer * 100) / 100,
+      custoCoberturas: Math.round(custoCoberturas * 100) / 100,
       subtotalBruto: Math.round(subtotalBruto * 100) / 100,
       desconto: Math.round(desconto * 100) / 100,
       subtotal: Math.round(subtotal * 100) / 100,
@@ -83,6 +101,7 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
     valorTotalManual,
     descontoPercentagem,
     taxaIva,
+    coberturasPrecoDia,
     isFacturado,
     totalSnapshot,
     subtotalSnapshot,
@@ -119,8 +138,14 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
 
           {showsManual ? (
             <Row label="Valor manual" value={formatCurrency(valorTotalManual ?? 0)} muted />
-          ) : (
+          ) : isFacturado ? (
             <Row label="Subtotal bruto" value={formatCurrency(calculo.subtotalBruto)} muted />
+          ) : (
+            <Row label="Aluguer" value={formatCurrency(calculo.baseAluguer)} muted />
+          )}
+
+          {!isFacturado && calculo.custoCoberturas > 0 && (
+            <Row label="Coberturas" value={formatCurrency(calculo.custoCoberturas)} muted />
           )}
 
           {!isFacturado && (descontoPercentagem ?? 0) > 0 && (

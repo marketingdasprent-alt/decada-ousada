@@ -158,6 +158,29 @@ export type ContratoCondutor = {
 };
 
 // ============================================================
+// Coberturas (m:n entre contratos_renting e renting_coberturas)
+// ============================================================
+export type ContratoCobertura = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  cobertura_id: string;
+  cobertura_nome: string;
+  preco_dia: number;
+  franquia_valor: number | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+/** Forma usada no formulário — carrega o snapshot do catálogo. */
+export type CoberturaFormItem = {
+  cobertura_id: string;
+  cobertura_nome: string;
+  preco_dia: number;
+  franquia_valor: number | null;
+};
+
+// ============================================================
 // Anexos (1:n por contrato)
 // ============================================================
 export type ContratoAnexo = {

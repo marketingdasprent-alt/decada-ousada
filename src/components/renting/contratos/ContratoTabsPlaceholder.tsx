@@ -6,6 +6,8 @@ interface ContratoTabsPlaceholderProps {
   geralContent: React.ReactNode;
   /** Conteúdo da tab "Condutores" — passado pela página pai. */
   condutoresContent: React.ReactNode;
+  /** Conteúdo da tab "Coberturas" — passado pela página pai. */
+  coberturasContent: React.ReactNode;
   /** Conteúdo da tab "Anexos" — passado pela página pai. */
   anexosContent: React.ReactNode;
 }
@@ -13,7 +15,6 @@ interface ContratoTabsPlaceholderProps {
 const PLACEHOLDER_TABS = [
   { value: 'extras', label: 'Extras' },
   { value: 'taxas', label: 'Taxas' },
-  { value: 'coberturas', label: 'Coberturas' },
   { value: 'pacotes', label: 'Pacotes' },
   { value: 'fecho', label: 'Fecho' },
   { value: 'outros', label: 'Outros' },
@@ -22,6 +23,7 @@ const PLACEHOLDER_TABS = [
 export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = ({
   geralContent,
   condutoresContent,
+  coberturasContent,
   anexosContent,
 }) => {
   const [active, setActive] = useState<string>('geral');
@@ -31,6 +33,7 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
       <TabsList className="w-full justify-start overflow-x-auto">
         <TabsTrigger value="geral">Geral</TabsTrigger>
         <TabsTrigger value="condutores">Condutores</TabsTrigger>
+        <TabsTrigger value="coberturas">Coberturas</TabsTrigger>
         {PLACEHOLDER_TABS.map((t) => (
           <TabsTrigger key={t.value} value={t.value}>
             {t.label}
@@ -45,6 +48,10 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
 
       <TabsContent value="condutores" className="mt-4">
         {condutoresContent}
+      </TabsContent>
+
+      <TabsContent value="coberturas" className="mt-4">
+        {coberturasContent}
       </TabsContent>
 
       {PLACEHOLDER_TABS.map((t) => (

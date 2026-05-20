@@ -81,6 +81,25 @@ export const contratoFormSchema = z
     kms_incluidos: optionalNonNegativeNumber,
     km_adicional_valor: optionalNonNegativeNumber,
 
+    // Coberturas (m:n com renting_coberturas — várias por contrato, com snapshot)
+    coberturas: z
+      .array(
+        z.object({
+          cobertura_id: z.string().uuid('Cobertura inválida'),
+          cobertura_nome: z.string(),
+          preco_dia: z.number(),
+          franquia_valor: z.number().nullable(),
+        })
+      )
+      .default([])
+      .refine(
+        (lista) => {
+          const ids = lista.map((c) => c.cobertura_id);
+          return new Set(ids).size === ids.length;
+        },
+        { message: 'Cada cobertura só pode aparecer uma vez.' }
+      ),
+
     // Voucher + info adicional
     voucher_codigo: z.string().max(50).optional().nullable(),
     numero_processo: z.string().max(100).optional().nullable(),
@@ -144,6 +163,7 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   caucao_valor: null,
   kms_incluidos: null,
   km_adicional_valor: null,
+  coberturas: [],
   voucher_codigo: '',
   numero_processo: '',
   voo_referencia: '',

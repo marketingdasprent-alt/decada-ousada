@@ -10,6 +10,7 @@ import { Form } from '@/components/ui/form';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
 import { useClientes } from '@/hooks/useClientes';
+import { useContratoCoberturas, useSyncContratoCoberturas } from '@/hooks/useContratoCoberturas';
 import { useContratoCondutores, useSyncContratoCondutores } from '@/hooks/useContratoCondutores';
 import {
   useContratoConflito,
@@ -19,12 +20,14 @@ import {
   useUpdateContratoRenting,
 } from '@/hooks/useContratosRenting';
 import { useEstacoes } from '@/hooks/useEstacoes';
+import { useRentingCoberturas } from '@/hooks/useRentingCoberturas';
 import { useReserva } from '@/hooks/useReservas';
 import { useViaturas } from '@/hooks/useViaturas';
 
 import { ContratoDeleteConfirm } from '@/components/renting/contratos/ContratoDeleteConfirm';
 import { ContratoFormSecoes } from '@/components/renting/contratos/ContratoFormSecoes';
 import { ContratoTabAnexos } from '@/components/renting/contratos/ContratoTabAnexos';
+import { ContratoTabCobertura } from '@/components/renting/contratos/ContratoTabCobertura';
 import { ContratoTabsPlaceholder } from '@/components/renting/contratos/ContratoTabsPlaceholder';
 import { ResumoContrato } from '@/components/renting/contratos/ResumoContrato';
 import { CondutoresFields } from '@/components/renting/shared/CondutoresFields';
@@ -48,6 +51,7 @@ const ContratoForm = () => {
   const { data: clientes = [] } = useClientes();
   const { data: viaturas = [] } = useViaturas();
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
+  const { data: coberturas = [] } = useRentingCoberturas({ apenasAtivas: true });
   const { data: contrato, isLoading: loadingContrato } = useContratoRenting(id ?? null);
 
   // Carrega reserva quando vier no query string (?reserva_id=X) e estamos a criar
@@ -58,9 +62,14 @@ const ContratoForm = () => {
   const updateMutation = useUpdateContratoRenting();
   const deleteMutation = useDeleteContratoRenting();
   const syncCondutoresMutation = useSyncContratoCondutores();
-  const { data: condutoresDb = [] } = useContratoCondutores(contrato?.id ?? null);
+  const syncCoberturasMutation = useSyncContratoCoberturas();
+  const { data: condutoresDb } = useContratoCondutores(contrato?.id ?? null);
+  const { data: coberturasDb } = useContratoCoberturas(contrato?.id ?? null);
   const isPending =
-    createMutation.isPending || updateMutation.isPending || syncCondutoresMutation.isPending;
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    syncCondutoresMutation.isPending ||
+    syncCoberturasMutation.isPending;
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
@@ -168,7 +177,7 @@ const ContratoForm = () => {
 
   // Hidratação dos condutores (vem em request separado — só em modo edit)
   useEffect(() => {
-    if (!isEdit || !contrato) return;
+    if (!isEdit || !contrato || !condutoresDb) return;
     form.setValue(
       'condutores',
       condutoresDb.map((c) => ({
@@ -179,6 +188,21 @@ const ContratoForm = () => {
     );
   }, [isEdit, contrato, condutoresDb, form]);
 
+  // Hidratação das coberturas (request separado — só em modo edit)
+  useEffect(() => {
+    if (!isEdit || !contrato || !coberturasDb) return;
+    form.setValue(
+      'coberturas',
+      coberturasDb.map((c) => ({
+        cobertura_id: c.cobertura_id,
+        cobertura_nome: c.cobertura_nome,
+        preco_dia: c.preco_dia,
+        franquia_valor: c.franquia_valor,
+      })),
+      { shouldDirty: false }
+    );
+  }, [isEdit, contrato, coberturasDb, form]);
+
   // Valores reactivos (conflito + resumo de preço)
   const viaturaId = form.watch('viatura_id');
   const dataInicio = form.watch('data_inicio');
@@ -187,6 +211,13 @@ const ContratoForm = () => {
   const valorTotalManual = form.watch('valor_total_manual');
   const descontoPercentagem = form.watch('desconto_percentagem');
   const taxaIva = form.watch('taxa_iva');
+  const coberturasForm = form.watch('coberturas');
+
+  // Soma do preço/dia das coberturas seleccionadas (× dias no ResumoContrato)
+  const coberturasPrecoDia = useMemo(
+    () => (coberturasForm ?? []).reduce((soma, c) => soma + (c.preco_dia ?? 0), 0),
+    [coberturasForm]
+  );
 
   const isFacturado = contrato?.estado_financeiro === 'facturado';
 
@@ -247,31 +278,24 @@ const ContratoForm = () => {
       observacoes_internas: values.observacoes_internas || null,
     };
 
+    // Sincroniza condutores + coberturas (tabelas de junção) após o contrato existir.
+    const syncRelacoes = (contratoId: string) => {
+      syncCondutoresMutation.mutate({ contratoId, desejados: values.condutores });
+      syncCoberturasMutation.mutate({ contratoId, desejadas: values.coberturas });
+    };
+
     if (isEdit && contrato) {
       // Editar: ficar na própria página (utilizador vê toast e continua a trabalhar).
       updateMutation.mutate(
         { id: contrato.id, ...payload },
-        {
-          onSuccess: () => {
-            syncCondutoresMutation.mutate({
-              contratoId: contrato.id,
-              desejados: values.condutores,
-            });
-          },
-        }
+        { onSuccess: () => syncRelacoes(contrato.id) }
       );
     } else {
-      // Criar: navegar para modo edição do novo contrato após sincronizar condutores.
+      // Criar: sincronizar relações e navegar para modo edição do novo contrato.
       createMutation.mutate(payload, {
         onSuccess: (created) => {
-          if (values.condutores.length > 0) {
-            syncCondutoresMutation.mutate(
-              { contratoId: created.id, desejados: values.condutores },
-              { onSettled: () => navigate(`/renting/contratos/${created.id}`) }
-            );
-          } else {
-            navigate(`/renting/contratos/${created.id}`);
-          }
+          syncRelacoes(created.id);
+          navigate(`/renting/contratos/${created.id}`);
         },
       });
     }
@@ -369,6 +393,7 @@ const ContratoForm = () => {
                       clientePrincipalLabel="Cliente do contrato também conduz"
                     />
                   }
+                  coberturasContent={<ContratoTabCobertura form={form} coberturas={coberturas} />}
                   anexosContent={<ContratoTabAnexos contratoId={contrato?.id ?? null} />}
                 />
 
@@ -394,6 +419,7 @@ const ContratoForm = () => {
             valorTotalManual={valorTotalManual}
             descontoPercentagem={descontoPercentagem}
             taxaIva={taxaIva}
+            coberturasPrecoDia={coberturasPrecoDia}
             isFacturado={isFacturado}
             totalSnapshot={contrato?.total_final}
             subtotalSnapshot={contrato?.total_subtotal}
