@@ -572,7 +572,8 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Necessário para sincronização directa via API. Diferente do signing key do webhook.
+                    Necessário para sincronização directa via API. Diferente do signing key do
+                    webhook.
                   </p>
                 </div>
                 <div className="space-y-2">

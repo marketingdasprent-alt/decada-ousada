@@ -129,9 +129,19 @@ const CATEGORIAS = [
   { value: 'x-saver', label: 'X-Saver' },
 ];
 
-interface ViaturaMarca { id: string; nome: string; }
-interface ViaturaModelo { id: string; nome: string; marca_id: string; }
-interface ViaturaCombustivel { id: string; nome: string; }
+interface ViaturaMarca {
+  id: string;
+  nome: string;
+}
+interface ViaturaModelo {
+  id: string;
+  nome: string;
+  marca_id: string;
+}
+interface ViaturaCombustivel {
+  id: string;
+  nome: string;
+}
 
 const STATUS_OPTIONS = [
   { value: 'disponivel', label: 'Disponível' },
@@ -354,7 +364,8 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
     // Resolve text names from FK IDs
     const marcaNome = marcas.find((m) => m.id === data.marca_id)?.nome || data.marca || '';
     const modeloNome = modelos.find((m) => m.id === data.modelo_id)?.nome || data.modelo || '';
-    const combustivelNome = combustiveis.find((c) => c.id === data.combustivel_id)?.nome || data.combustivel || '';
+    const combustivelNome =
+      combustiveis.find((c) => c.id === data.combustivel_id)?.nome || data.combustivel || '';
 
     const payload: Partial<Viatura> = {
       matricula: data.matricula.toUpperCase(),

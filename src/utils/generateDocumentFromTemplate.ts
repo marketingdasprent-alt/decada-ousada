@@ -447,9 +447,7 @@ export const generateDocumentFromTemplate = async (
       });
 
     // Se estamos a adicionar a um PDF existente, adicionar nova página
-    const startPage = params.existingPdf
-      ? pdf.internal.getNumberOfPages() + 1
-      : 1;
+    const startPage = params.existingPdf ? pdf.internal.getNumberOfPages() + 1 : 1;
     if (params.existingPdf) {
       pdf.addPage();
     }
