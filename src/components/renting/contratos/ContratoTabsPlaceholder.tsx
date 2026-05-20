@@ -16,11 +16,7 @@ interface ContratoTabsPlaceholderProps {
   anexosContent: React.ReactNode;
 }
 
-const PLACEHOLDER_TABS = [
-  { value: 'pacotes', label: 'Pacotes' },
-  { value: 'fecho', label: 'Fecho' },
-  { value: 'outros', label: 'Outros' },
-] as const;
+const PLACEHOLDER_TABS = [{ value: 'outros', label: 'Outros' }] as const;
 
 export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = ({
   geralContent,
