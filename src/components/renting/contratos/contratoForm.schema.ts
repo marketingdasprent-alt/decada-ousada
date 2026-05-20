@@ -120,6 +120,25 @@ export const contratoFormSchema = z
         { message: 'Cada extra só pode aparecer uma vez.' }
       ),
 
+    // Taxas (m:n com renting_taxas — várias por contrato, % ou valor fixo)
+    taxas: z
+      .array(
+        z.object({
+          taxa_id: z.string().uuid('Taxa inválida'),
+          taxa_nome: z.string(),
+          percentagem: z.number().nullable(),
+          valor_fixo: z.number().nullable(),
+        })
+      )
+      .default([])
+      .refine(
+        (lista) => {
+          const ids = lista.map((t) => t.taxa_id);
+          return new Set(ids).size === ids.length;
+        },
+        { message: 'Cada taxa só pode aparecer uma vez.' }
+      ),
+
     // Voucher + info adicional
     voucher_codigo: z.string().max(50).optional().nullable(),
     numero_processo: z.string().max(100).optional().nullable(),
@@ -185,6 +204,7 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   km_adicional_valor: null,
   coberturas: [],
   extras: [],
+  taxas: [],
   voucher_codigo: '',
   numero_processo: '',
   voo_referencia: '',

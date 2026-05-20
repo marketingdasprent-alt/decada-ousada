@@ -209,6 +209,31 @@ export type ExtraFormItem = {
 };
 
 // ============================================================
+// Taxas (m:n entre contratos_renting e renting_taxas)
+// ============================================================
+export type ContratoTaxa = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  taxa_id: string;
+  taxa_nome: string;
+  percentagem: number | null;
+  valor_fixo: number | null;
+  base_calculo: number | null;
+  valor_calculado: number;
+  created_by: string | null;
+  created_at: string;
+};
+
+/** Forma usada no formulário — carrega o snapshot do catálogo. */
+export type TaxaFormItem = {
+  taxa_id: string;
+  taxa_nome: string;
+  percentagem: number | null;
+  valor_fixo: number | null;
+};
+
+// ============================================================
 // Anexos (1:n por contrato)
 // ============================================================
 export type ContratoAnexo = {

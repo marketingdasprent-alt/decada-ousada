@@ -3,7 +3,8 @@ import { Lock } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { calcExtraTotal } from '@/hooks/useContratoExtras';
-import type { ExtraFormItem } from '@/types/contratoRenting';
+import { calcTaxaValor } from '@/hooks/useContratoTaxas';
+import type { ExtraFormItem, TaxaFormItem } from '@/types/contratoRenting';
 import { formatCurrency } from './contratosUtils';
 
 interface ResumoContratoProps {
@@ -17,6 +18,8 @@ interface ResumoContratoProps {
   coberturasPrecoDia?: number;
   /** Extras seleccionados — custo calculado por tipo (dia/fixo) */
   extras?: ExtraFormItem[];
+  /** Taxas seleccionadas — % do subtotal ou valor fixo, somadas após o IVA */
+  taxas?: TaxaFormItem[];
   /** Se o contrato está facturado, totais estão congelados — UI mostra cadeado */
   isFacturado?: boolean;
   /** Snapshot do total final quando facturado (vem da BD, não recalcula) */
@@ -44,6 +47,7 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
   taxaIva,
   coberturasPrecoDia = 0,
   extras = [],
+  taxas = [],
   isFacturado = false,
   totalSnapshot,
   subtotalSnapshot,
@@ -56,6 +60,7 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
         baseAluguer: subtotalSnapshot ?? 0,
         custoCoberturas: 0,
         custoExtras: 0,
+        custoTaxas: 0,
         subtotalBruto: subtotalSnapshot ?? 0,
         desconto: 0,
         subtotal: subtotalSnapshot ?? 0,
@@ -70,6 +75,7 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
         baseAluguer: 0,
         custoCoberturas: 0,
         custoExtras: 0,
+        custoTaxas: 0,
         subtotalBruto: 0,
         desconto: 0,
         subtotal: 0,
@@ -90,13 +96,16 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
     const desconto = subtotalBruto * (descontoPct / 100);
     const subtotal = subtotalBruto - desconto;
     const iva = subtotal * (taxaIva / 100);
-    const total = subtotal + iva;
+    // Taxas incidem sobre o subtotal e somam-se depois do IVA.
+    const custoTaxas = taxas.reduce((soma, t) => soma + calcTaxaValor(t, subtotal), 0);
+    const total = subtotal + iva + custoTaxas;
 
     return {
       dias,
       baseAluguer: Math.round(baseAluguer * 100) / 100,
       custoCoberturas: Math.round(custoCoberturas * 100) / 100,
       custoExtras: Math.round(custoExtras * 100) / 100,
+      custoTaxas: Math.round(custoTaxas * 100) / 100,
       subtotalBruto: Math.round(subtotalBruto * 100) / 100,
       desconto: Math.round(desconto * 100) / 100,
       subtotal: Math.round(subtotal * 100) / 100,
@@ -112,6 +121,7 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
     taxaIva,
     coberturasPrecoDia,
     extras,
+    taxas,
     isFacturado,
     totalSnapshot,
     subtotalSnapshot,
@@ -174,6 +184,10 @@ export const ResumoContrato: React.FC<ResumoContratoProps> = ({
 
           <Row label="Subtotal" value={formatCurrency(calculo.subtotal)} />
           <Row label={`IVA (${taxaIva}%)`} value={formatCurrency(calculo.iva)} muted />
+
+          {!isFacturado && calculo.custoTaxas > 0 && (
+            <Row label="Taxas" value={formatCurrency(calculo.custoTaxas)} muted />
+          )}
 
           <div className="border-t border-border/50 my-1" />
 

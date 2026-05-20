@@ -11,7 +11,12 @@ import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
 import { useClientes } from '@/hooks/useClientes';
 import { useContratoCoberturas, useSyncContratoCoberturas } from '@/hooks/useContratoCoberturas';
-import { useContratoExtras, useSyncContratoExtras } from '@/hooks/useContratoExtras';
+import {
+  useContratoExtras,
+  useSyncContratoExtras,
+  calcExtraTotal,
+} from '@/hooks/useContratoExtras';
+import { useContratoTaxas, useSyncContratoTaxas } from '@/hooks/useContratoTaxas';
 import { useContratoCondutores, useSyncContratoCondutores } from '@/hooks/useContratoCondutores';
 import {
   useContratoConflito,
@@ -23,6 +28,7 @@ import {
 import { useEstacoes } from '@/hooks/useEstacoes';
 import { useRentingCoberturas } from '@/hooks/useRentingCoberturas';
 import { useRentingExtras } from '@/hooks/useRentingExtras';
+import { useRentingTaxas } from '@/hooks/useRentingTaxas';
 import { useReserva } from '@/hooks/useReservas';
 import { useViaturas } from '@/hooks/useViaturas';
 
@@ -31,6 +37,7 @@ import { ContratoFormSecoes } from '@/components/renting/contratos/ContratoFormS
 import { ContratoTabAnexos } from '@/components/renting/contratos/ContratoTabAnexos';
 import { ContratoTabCobertura } from '@/components/renting/contratos/ContratoTabCobertura';
 import { ContratoTabExtras } from '@/components/renting/contratos/ContratoTabExtras';
+import { ContratoTabTaxas } from '@/components/renting/contratos/ContratoTabTaxas';
 import { ContratoTabsPlaceholder } from '@/components/renting/contratos/ContratoTabsPlaceholder';
 import { ResumoContrato } from '@/components/renting/contratos/ResumoContrato';
 import { CondutoresFields } from '@/components/renting/shared/CondutoresFields';
@@ -42,7 +49,13 @@ import {
   type ContratoFormValues,
 } from '@/components/renting/contratos/contratoForm.schema';
 
-import type { ContratoRentingInsert } from '@/types/contratoRenting';
+import type {
+  CoberturaFormItem,
+  ContratoRentingInsert,
+  ExtraFormItem,
+  TaxaFormItem,
+} from '@/types/contratoRenting';
+import type { CondutorFormItem } from '@/types/reserva';
 
 const ContratoForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -56,6 +69,7 @@ const ContratoForm = () => {
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
   const { data: coberturas = [] } = useRentingCoberturas({ apenasAtivas: true });
   const { data: extrasCatalogo = [] } = useRentingExtras({ apenasAtivos: true });
+  const { data: taxasCatalogo = [] } = useRentingTaxas({ apenasAtivas: true });
   const { data: contrato, isLoading: loadingContrato } = useContratoRenting(id ?? null);
 
   // Carrega reserva quando vier no query string (?reserva_id=X) e estamos a criar
@@ -68,15 +82,18 @@ const ContratoForm = () => {
   const syncCondutoresMutation = useSyncContratoCondutores();
   const syncCoberturasMutation = useSyncContratoCoberturas();
   const syncExtrasMutation = useSyncContratoExtras();
+  const syncTaxasMutation = useSyncContratoTaxas();
   const { data: condutoresDb } = useContratoCondutores(contrato?.id ?? null);
   const { data: coberturasDb } = useContratoCoberturas(contrato?.id ?? null);
   const { data: extrasDb } = useContratoExtras(contrato?.id ?? null);
+  const { data: taxasDb } = useContratoTaxas(contrato?.id ?? null);
   const isPending =
     createMutation.isPending ||
     updateMutation.isPending ||
     syncCondutoresMutation.isPending ||
     syncCoberturasMutation.isPending ||
-    syncExtrasMutation.isPending;
+    syncExtrasMutation.isPending ||
+    syncTaxasMutation.isPending;
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
@@ -226,6 +243,21 @@ const ContratoForm = () => {
     );
   }, [isEdit, contrato, extrasDb, form]);
 
+  // Hidratação das taxas (request separado — só em modo edit)
+  useEffect(() => {
+    if (!isEdit || !contrato || !taxasDb) return;
+    form.setValue(
+      'taxas',
+      taxasDb.map((t) => ({
+        taxa_id: t.taxa_id,
+        taxa_nome: t.taxa_nome,
+        percentagem: t.percentagem,
+        valor_fixo: t.valor_fixo,
+      })),
+      { shouldDirty: false }
+    );
+  }, [isEdit, contrato, taxasDb, form]);
+
   // Valores reactivos (conflito + resumo de preço)
   const viaturaId = form.watch('viatura_id');
   const dataInicio = form.watch('data_inicio');
@@ -235,7 +267,8 @@ const ContratoForm = () => {
   const descontoPercentagem = form.watch('desconto_percentagem');
   const taxaIva = form.watch('taxa_iva');
   const coberturasForm = form.watch('coberturas');
-  const extrasForm = form.watch('extras');
+  const extrasForm = form.watch('extras') as ExtraFormItem[];
+  const taxasForm = form.watch('taxas') as TaxaFormItem[];
 
   // Soma do preço/dia das coberturas seleccionadas (× dias no ResumoContrato)
   const coberturasPrecoDia = useMemo(
@@ -311,11 +344,31 @@ const ContratoForm = () => {
       )
     );
 
-    // Sincroniza condutores + coberturas + extras (junções) após o contrato existir.
+    // Subtotal do contrato — base de cálculo das taxas percentuais.
+    // Espelha o cálculo do ResumoContrato: aluguer + coberturas + extras, com desconto.
+    const baseAluguer =
+      values.valor_total_manual != null && values.valor_total_manual > 0
+        ? values.valor_total_manual
+        : (values.tarifa_diaria ?? 0) * diasContrato;
+    const custoCoberturas =
+      values.coberturas.reduce((soma, c) => soma + (c.preco_dia ?? 0), 0) * diasContrato;
+    // Os arrays do form já passaram a validação Zod do handleSubmit — os
+    // elementos estão completos, daí o cast para os tipos *FormItem.
+    const condutores = values.condutores as CondutorFormItem[];
+    const coberturas = values.coberturas as CoberturaFormItem[];
+    const extras = values.extras as ExtraFormItem[];
+    const taxas = values.taxas as TaxaFormItem[];
+
+    const custoExtras = extras.reduce((soma, e) => soma + calcExtraTotal(e, diasContrato), 0);
+    const subtotalBruto = baseAluguer + custoCoberturas + custoExtras;
+    const subtotalTaxas = subtotalBruto * (1 - (values.desconto_percentagem ?? 0) / 100);
+
+    // Sincroniza condutores + coberturas + extras + taxas (junções) após o contrato existir.
     const syncRelacoes = (contratoId: string) => {
-      syncCondutoresMutation.mutate({ contratoId, desejados: values.condutores });
-      syncCoberturasMutation.mutate({ contratoId, desejadas: values.coberturas });
-      syncExtrasMutation.mutate({ contratoId, desejados: values.extras, dias: diasContrato });
+      syncCondutoresMutation.mutate({ contratoId, desejados: condutores });
+      syncCoberturasMutation.mutate({ contratoId, desejadas: coberturas });
+      syncExtrasMutation.mutate({ contratoId, desejados: extras, dias: diasContrato });
+      syncTaxasMutation.mutate({ contratoId, desejadas: taxas, subtotal: subtotalTaxas });
     };
 
     if (isEdit && contrato) {
@@ -429,6 +482,7 @@ const ContratoForm = () => {
                   }
                   coberturasContent={<ContratoTabCobertura form={form} coberturas={coberturas} />}
                   extrasContent={<ContratoTabExtras form={form} extras={extrasCatalogo} />}
+                  taxasContent={<ContratoTabTaxas form={form} taxas={taxasCatalogo} />}
                   anexosContent={<ContratoTabAnexos contratoId={contrato?.id ?? null} />}
                 />
 
@@ -456,6 +510,7 @@ const ContratoForm = () => {
             taxaIva={taxaIva}
             coberturasPrecoDia={coberturasPrecoDia}
             extras={extrasForm}
+            taxas={taxasForm}
             isFacturado={isFacturado}
             totalSnapshot={contrato?.total_final}
             subtotalSnapshot={contrato?.total_subtotal}

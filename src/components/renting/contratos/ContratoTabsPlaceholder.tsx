@@ -10,12 +10,13 @@ interface ContratoTabsPlaceholderProps {
   coberturasContent: React.ReactNode;
   /** Conteúdo da tab "Extras" — passado pela página pai. */
   extrasContent: React.ReactNode;
+  /** Conteúdo da tab "Taxas" — passado pela página pai. */
+  taxasContent: React.ReactNode;
   /** Conteúdo da tab "Anexos" — passado pela página pai. */
   anexosContent: React.ReactNode;
 }
 
 const PLACEHOLDER_TABS = [
-  { value: 'taxas', label: 'Taxas' },
   { value: 'pacotes', label: 'Pacotes' },
   { value: 'fecho', label: 'Fecho' },
   { value: 'outros', label: 'Outros' },
@@ -26,6 +27,7 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
   condutoresContent,
   coberturasContent,
   extrasContent,
+  taxasContent,
   anexosContent,
 }) => {
   const [active, setActive] = useState<string>('geral');
@@ -37,6 +39,7 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
         <TabsTrigger value="condutores">Condutores</TabsTrigger>
         <TabsTrigger value="coberturas">Coberturas</TabsTrigger>
         <TabsTrigger value="extras">Extras</TabsTrigger>
+        <TabsTrigger value="taxas">Taxas</TabsTrigger>
         {PLACEHOLDER_TABS.map((t) => (
           <TabsTrigger key={t.value} value={t.value}>
             {t.label}
@@ -59,6 +62,10 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
 
       <TabsContent value="extras" className="mt-4">
         {extrasContent}
+      </TabsContent>
+
+      <TabsContent value="taxas" className="mt-4">
+        {taxasContent}
       </TabsContent>
 
       {PLACEHOLDER_TABS.map((t) => (
