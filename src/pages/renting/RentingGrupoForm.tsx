@@ -8,14 +8,29 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,7 +41,10 @@ import { useTenant } from '@/contexts/TenantContext';
 
 const IDADES = [
   { value: '', label: '— Sem Restrições —' },
-  ...[18,21,23,25,30,35,40,45,50,55,60,65,70,75,80].map(a => ({ value: String(a), label: `${a} anos` })),
+  ...[18, 21, 23, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80].map((a) => ({
+    value: String(a),
+    label: `${a} anos`,
+  })),
 ];
 
 type TimeUnit = 'horas' | 'dias' | 'semanas';
@@ -35,8 +53,10 @@ const UNIT_TO_MINUTES: Record<TimeUnit, number> = { horas: 60, dias: 1440, seman
 
 const minutesToParts = (totalMin: number | null): { valor: string; unidade: TimeUnit } => {
   if (!totalMin) return { valor: '', unidade: 'horas' };
-  if (totalMin >= 10080 && totalMin % 10080 === 0) return { valor: String(totalMin / 10080), unidade: 'semanas' };
-  if (totalMin >= 1440 && totalMin % 1440 === 0) return { valor: String(totalMin / 1440), unidade: 'dias' };
+  if (totalMin >= 10080 && totalMin % 10080 === 0)
+    return { valor: String(totalMin / 10080), unidade: 'semanas' };
+  if (totalMin >= 1440 && totalMin % 1440 === 0)
+    return { valor: String(totalMin / 1440), unidade: 'dias' };
   return { valor: String(totalMin / 60), unidade: 'horas' };
 };
 
@@ -59,12 +79,20 @@ const formatDuration = (totalMin: number | null): string => {
 };
 
 const EMPTY_FORM = {
-  nome: '', codigo: '', codigo_sipp: '', descricao: '',
-  isento_iva: false, ativo: true,
-  idade_minima_condutor: '', idade_maxima_condutor: '',
-  reserva_min_minutos: '', reserva_max_minutos: '',
-  reserva_min_valor: '', reserva_min_unidade: 'horas' as TimeUnit,
-  reserva_max_valor: '', reserva_max_unidade: 'dias' as TimeUnit,
+  nome: '',
+  codigo: '',
+  codigo_sipp: '',
+  descricao: '',
+  isento_iva: false,
+  ativo: true,
+  idade_minima_condutor: '',
+  idade_maxima_condutor: '',
+  reserva_min_minutos: '',
+  reserva_max_minutos: '',
+  reserva_min_valor: '',
+  reserva_min_unidade: 'horas' as TimeUnit,
+  reserva_max_valor: '',
+  reserva_max_unidade: 'dias' as TimeUnit,
 };
 
 const RentingGrupoForm = () => {
@@ -83,7 +111,10 @@ const RentingGrupoForm = () => {
     queryKey: ['renting_grupo', id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('renting_grupos').select('*').eq('id', id!).single();
+        .from('renting_grupos')
+        .select('*')
+        .eq('id', id!)
+        .single();
       if (error) throw error;
       return data;
     },
@@ -146,14 +177,26 @@ const RentingGrupoForm = () => {
         descricao: form.descricao.trim() || null,
         isento_iva: form.isento_iva,
         ativo: form.ativo,
-        idade_minima_condutor: form.idade_minima_condutor ? parseInt(form.idade_minima_condutor) : null,
-        idade_maxima_condutor: form.idade_maxima_condutor ? parseInt(form.idade_maxima_condutor) : null,
-        reserva_min_minutos: partsToMinutes(form.reserva_min_valor, form.reserva_min_unidade) ? parseInt(partsToMinutes(form.reserva_min_valor, form.reserva_min_unidade)) : null,
-        reserva_max_minutos: partsToMinutes(form.reserva_max_valor, form.reserva_max_unidade) ? parseInt(partsToMinutes(form.reserva_max_valor, form.reserva_max_unidade)) : null,
+        idade_minima_condutor: form.idade_minima_condutor
+          ? parseInt(form.idade_minima_condutor)
+          : null,
+        idade_maxima_condutor: form.idade_maxima_condutor
+          ? parseInt(form.idade_maxima_condutor)
+          : null,
+        reserva_min_minutos: partsToMinutes(form.reserva_min_valor, form.reserva_min_unidade)
+          ? parseInt(partsToMinutes(form.reserva_min_valor, form.reserva_min_unidade))
+          : null,
+        reserva_max_minutos: partsToMinutes(form.reserva_max_valor, form.reserva_max_unidade)
+          ? parseInt(partsToMinutes(form.reserva_max_valor, form.reserva_max_unidade))
+          : null,
       };
 
       if (isNew) {
-        const { data, error } = await supabase.from('renting_grupos').insert(payload).select('id').single();
+        const { data, error } = await supabase
+          .from('renting_grupos')
+          .insert(payload)
+          .select('id')
+          .single();
         if (error) throw error;
         toast({ title: 'Grupo criado' });
         qc.invalidateQueries({ queryKey: ['renting_grupos'] });
@@ -191,7 +234,8 @@ const RentingGrupoForm = () => {
       <div className="w-full space-y-6 p-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid grid-cols-2 gap-4">
-          <Skeleton className="h-10" /><Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
         </div>
       </div>
     );
@@ -212,8 +256,14 @@ const RentingGrupoForm = () => {
         </div>
         <div className="ml-auto flex items-center gap-2">
           {!isNew && (
-            <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10" onClick={() => setDeleteOpen(true)}>
-              <Trash2 className="h-4 w-4 mr-2" />Eliminar
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive border-destructive/40 hover:bg-destructive/10"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Eliminar
             </Button>
           )}
         </div>
@@ -222,17 +272,34 @@ const RentingGrupoForm = () => {
       {/* Top fields */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div className="md:col-span-1 space-y-2">
-          <Label>Nome *</Label>
-          <Input value={form.nome} onChange={(e) => setForm((p) => ({ ...p, nome: e.target.value }))} placeholder="Ex: JOGGER 7 lug (ou similar)" />
+          <Label>
+            Nome <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            value={form.nome}
+            onChange={(e) => setForm((p) => ({ ...p, nome: e.target.value }))}
+            placeholder="Ex: JOGGER 7 lug (ou similar)"
+          />
         </div>
         <div className="space-y-2">
-          <Label>Código *</Label>
-          <Input value={form.codigo} onChange={(e) => setForm((p) => ({ ...p, codigo: e.target.value }))} placeholder="Ex: A, SUV, Z" className="uppercase" />
+          <Label>
+            Código <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            value={form.codigo}
+            onChange={(e) => setForm((p) => ({ ...p, codigo: e.target.value }))}
+            placeholder="Ex: A, SUV, Z"
+            className="uppercase"
+          />
           <p className="text-xs text-muted-foreground">Código único de identificação do grupo.</p>
         </div>
         <div className="space-y-2">
           <Label>Código SIPP</Label>
-          <Input value={form.codigo_sipp} onChange={(e) => setForm((p) => ({ ...p, codigo_sipp: e.target.value }))} placeholder="Ex: SGMR" />
+          <Input
+            value={form.codigo_sipp}
+            onChange={(e) => setForm((p) => ({ ...p, codigo_sipp: e.target.value }))}
+            placeholder="Ex: SGMR"
+          />
           <p className="text-xs text-muted-foreground">Usado em webservices externos.</p>
         </div>
         <div className="md:col-span-3 space-y-2">
@@ -247,10 +314,15 @@ const RentingGrupoForm = () => {
       </div>
 
       <div className="flex items-center gap-3 mb-6 rounded-lg border bg-muted/20 p-3">
-        <Switch checked={form.isento_iva} onCheckedChange={(v) => setForm((p) => ({ ...p, isento_iva: v }))} />
+        <Switch
+          checked={form.isento_iva}
+          onCheckedChange={(v) => setForm((p) => ({ ...p, isento_iva: v }))}
+        />
         <div>
           <Label>Tarifas isentas de IVA</Label>
-          <p className="text-xs text-muted-foreground">Active se este grupo aplica a cessões internas.</p>
+          <p className="text-xs text-muted-foreground">
+            Active se este grupo aplica a cessões internas.
+          </p>
         </div>
       </div>
 
@@ -260,7 +332,8 @@ const RentingGrupoForm = () => {
           <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
           <TabsTrigger value="disponibilidade">Controlo Disponibilidade</TabsTrigger>
           <TabsTrigger value="viaturas" disabled={isNew}>
-            Viaturas Associadas {!isNew && viaturasAssociadas.length > 0 && `(${viaturasAssociadas.length})`}
+            Viaturas Associadas{' '}
+            {!isNew && viaturasAssociadas.length > 0 && `(${viaturasAssociadas.length})`}
           </TabsTrigger>
         </TabsList>
 
@@ -269,57 +342,94 @@ const RentingGrupoForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Restrições de Condutor</h3>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Restrições de Condutor
+                </h3>
                 <div className="space-y-2">
                   <Label>Idade Mínima Permitida</Label>
-                  <Select value={form.idade_minima_condutor} onValueChange={(v) => setForm((p) => ({ ...p, idade_minima_condutor: v === 'none' ? '' : v }))}>
-                    <SelectTrigger><SelectValue placeholder="— Sem Restrições —" /></SelectTrigger>
+                  <Select
+                    value={form.idade_minima_condutor}
+                    onValueChange={(v) =>
+                      setForm((p) => ({ ...p, idade_minima_condutor: v === 'none' ? '' : v }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="— Sem Restrições —" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">— Sem Restrições —</SelectItem>
-                      {IDADES.slice(1).map((a) => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
+                      {IDADES.slice(1).map((a) => (
+                        <SelectItem key={a.value} value={a.value}>
+                          {a.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">Idade mínima permitida para conduzir viaturas deste grupo.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Idade mínima permitida para conduzir viaturas deste grupo.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label>Idade Máxima Permitida</Label>
-                  <Select value={form.idade_maxima_condutor} onValueChange={(v) => setForm((p) => ({ ...p, idade_maxima_condutor: v === 'none' ? '' : v }))}>
-                    <SelectTrigger><SelectValue placeholder="— Sem Restrições —" /></SelectTrigger>
+                  <Select
+                    value={form.idade_maxima_condutor}
+                    onValueChange={(v) =>
+                      setForm((p) => ({ ...p, idade_maxima_condutor: v === 'none' ? '' : v }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="— Sem Restrições —" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">— Sem Restrições —</SelectItem>
-                      {IDADES.slice(1).map((a) => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
+                      {IDADES.slice(1).map((a) => (
+                        <SelectItem key={a.value} value={a.value}>
+                          {a.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">Idade máxima permitida para conduzir viaturas deste grupo.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Idade máxima permitida para conduzir viaturas deste grupo.
+                  </p>
                 </div>
               </div>
-
             </div>
 
             <div className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Tempos de Reserva</h3>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Tempos de Reserva
+                </h3>
                 <p className="text-xs text-muted-foreground -mt-2">
                   Define a duração mínima e máxima permitida para reservas de viaturas deste grupo.
-                  Por exemplo, se definir mínimo de 2 dias, ninguém poderá reservar por apenas 1 dia.
-                  Deixe em branco para não aplicar restrições.
+                  Por exemplo, se definir mínimo de 2 dias, ninguém poderá reservar por apenas 1
+                  dia. Deixe em branco para não aplicar restrições.
                 </p>
 
                 <div className="space-y-2">
                   <Label>Duração mínima</Label>
                   <div className="flex gap-2">
                     <Input
-                      type="number" min="0" step="1"
+                      type="number"
+                      min="0"
+                      step="1"
                       value={form.reserva_min_valor}
-                      onChange={(e) => setForm((p) => ({ ...p, reserva_min_valor: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, reserva_min_valor: e.target.value }))
+                      }
                       placeholder="—"
                       className="w-24"
                     />
                     <Select
                       value={form.reserva_min_unidade}
-                      onValueChange={(v: TimeUnit) => setForm((p) => ({ ...p, reserva_min_unidade: v }))}
+                      onValueChange={(v: TimeUnit) =>
+                        setForm((p) => ({ ...p, reserva_min_unidade: v }))
+                      }
                     >
-                      <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="horas">Horas</SelectItem>
                         <SelectItem value="dias">Dias</SelectItem>
@@ -329,7 +439,12 @@ const RentingGrupoForm = () => {
                   </div>
                   {form.reserva_min_valor && (
                     <p className="text-xs text-primary">
-                      Reservas devem ter no mínimo {formatDuration(parseInt(partsToMinutes(form.reserva_min_valor, form.reserva_min_unidade)) || null)}
+                      Reservas devem ter no mínimo{' '}
+                      {formatDuration(
+                        parseInt(
+                          partsToMinutes(form.reserva_min_valor, form.reserva_min_unidade)
+                        ) || null
+                      )}
                     </p>
                   )}
                 </div>
@@ -338,17 +453,25 @@ const RentingGrupoForm = () => {
                   <Label>Duração máxima</Label>
                   <div className="flex gap-2">
                     <Input
-                      type="number" min="0" step="1"
+                      type="number"
+                      min="0"
+                      step="1"
                       value={form.reserva_max_valor}
-                      onChange={(e) => setForm((p) => ({ ...p, reserva_max_valor: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, reserva_max_valor: e.target.value }))
+                      }
                       placeholder="—"
                       className="w-24"
                     />
                     <Select
                       value={form.reserva_max_unidade}
-                      onValueChange={(v: TimeUnit) => setForm((p) => ({ ...p, reserva_max_unidade: v }))}
+                      onValueChange={(v: TimeUnit) =>
+                        setForm((p) => ({ ...p, reserva_max_unidade: v }))
+                      }
                     >
-                      <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="horas">Horas</SelectItem>
                         <SelectItem value="dias">Dias</SelectItem>
@@ -358,17 +481,27 @@ const RentingGrupoForm = () => {
                   </div>
                   {form.reserva_max_valor && (
                     <p className="text-xs text-primary">
-                      Reservas não podem exceder {formatDuration(parseInt(partsToMinutes(form.reserva_max_valor, form.reserva_max_unidade)) || null)}
+                      Reservas não podem exceder{' '}
+                      {formatDuration(
+                        parseInt(
+                          partsToMinutes(form.reserva_max_valor, form.reserva_max_unidade)
+                        ) || null
+                      )}
                     </p>
                   )}
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Estado</h3>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Estado
+                </h3>
                 <div className="flex items-center justify-between rounded-lg border p-3">
                   <Label>Grupo Activo</Label>
-                  <Switch checked={form.ativo} onCheckedChange={(v) => setForm((p) => ({ ...p, ativo: v }))} />
+                  <Switch
+                    checked={form.ativo}
+                    onCheckedChange={(v) => setForm((p) => ({ ...p, ativo: v }))}
+                  />
                 </div>
               </div>
             </div>
@@ -379,7 +512,9 @@ const RentingGrupoForm = () => {
         <TabsContent value="disponibilidade">
           <div className="flex flex-col items-center justify-center py-16 gap-3 border rounded-lg border-dashed">
             <Car className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Controlo de disponibilidade — em desenvolvimento</p>
+            <p className="text-sm text-muted-foreground">
+              Controlo de disponibilidade — em desenvolvimento
+            </p>
           </div>
         </TabsContent>
 
@@ -388,8 +523,12 @@ const RentingGrupoForm = () => {
           {viaturasAssociadas.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 border rounded-lg border-dashed">
               <Car className="h-10 w-10 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Nenhuma viatura associada a este grupo</p>
-              <p className="text-xs text-muted-foreground">Associa viaturas na página de detalhe de cada viatura.</p>
+              <p className="text-sm text-muted-foreground">
+                Nenhuma viatura associada a este grupo
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Associa viaturas na página de detalhe de cada viatura.
+              </p>
             </div>
           ) : (
             <div className="border rounded-lg overflow-x-auto">
@@ -411,7 +550,10 @@ const RentingGrupoForm = () => {
                       <TableCell>{v.modelo || '—'}</TableCell>
                       <TableCell>{v.ano || '—'}</TableCell>
                       <TableCell>
-                        <Badge variant={v.estado === 'ativo' ? 'default' : 'secondary'} className="text-xs capitalize">
+                        <Badge
+                          variant={v.estado === 'ativo' ? 'default' : 'secondary'}
+                          className="text-xs capitalize"
+                        >
                           {v.estado || '—'}
                         </Badge>
                       </TableCell>
@@ -443,13 +585,16 @@ const RentingGrupoForm = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar grupo?</AlertDialogTitle>
             <AlertDialogDescription>
-              O grupo <strong>{grupo?.nome}</strong> será eliminado permanentemente.
-              As viaturas e reservas associadas perderão a ligação a este grupo.
+              O grupo <strong>{grupo?.nome}</strong> será eliminado permanentemente. As viaturas e
+              reservas associadas perderão a ligação a este grupo.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDelete}>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDelete}
+            >
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
