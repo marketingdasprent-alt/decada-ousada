@@ -83,8 +83,63 @@ export const contratoFormSchema = z
     kms_incluidos: optionalNonNegativeNumber,
     km_adicional_valor: optionalNonNegativeNumber,
 
-    // Cobertura (FK ao catálogo)
-    cobertura_id: z.string().uuid().nullable().optional(),
+    // Coberturas (m:n com renting_coberturas — várias por contrato, com snapshot)
+    coberturas: z
+      .array(
+        z.object({
+          cobertura_id: z.string().uuid('Cobertura inválida'),
+          cobertura_nome: z.string(),
+          preco_dia: z.number(),
+          franquia_valor: z.number().nullable(),
+        })
+      )
+      .default([])
+      .refine(
+        (lista) => {
+          const ids = lista.map((c) => c.cobertura_id);
+          return new Set(ids).size === ids.length;
+        },
+        { message: 'Cada cobertura só pode aparecer uma vez.' }
+      ),
+
+    // Extras (m:n com renting_extras — vários por contrato, com snapshot + quantidade)
+    extras: z
+      .array(
+        z.object({
+          extra_id: z.string().uuid('Extra inválido'),
+          extra_nome: z.string(),
+          preco_unidade: z.number(),
+          tipo_calculo: z.enum(['dia', 'fixo']),
+          quantidade: z.number().int().min(1, 'Quantidade mínima: 1'),
+        })
+      )
+      .default([])
+      .refine(
+        (lista) => {
+          const ids = lista.map((e) => e.extra_id);
+          return new Set(ids).size === ids.length;
+        },
+        { message: 'Cada extra só pode aparecer uma vez.' }
+      ),
+
+    // Taxas (m:n com renting_taxas — várias por contrato, % ou valor fixo)
+    taxas: z
+      .array(
+        z.object({
+          taxa_id: z.string().uuid('Taxa inválida'),
+          taxa_nome: z.string(),
+          percentagem: z.number().nullable(),
+          valor_fixo: z.number().nullable(),
+        })
+      )
+      .default([])
+      .refine(
+        (lista) => {
+          const ids = lista.map((t) => t.taxa_id);
+          return new Set(ids).size === ids.length;
+        },
+        { message: 'Cada taxa só pode aparecer uma vez.' }
+      ),
 
     // Voucher + info adicional
     voucher_codigo: z.string().max(50).optional().nullable(),
@@ -151,7 +206,9 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   caucao_valor: null,
   kms_incluidos: null,
   km_adicional_valor: null,
-  cobertura_id: null,
+  coberturas: [],
+  extras: [],
+  taxas: [],
   voucher_codigo: '',
   numero_processo: '',
   voo_referencia: '',

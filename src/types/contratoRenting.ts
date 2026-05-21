@@ -1,3 +1,5 @@
+import type { ExtraTipoCalculo } from './rentingExtra';
+
 // ============================================================
 // Estado operacional (ciclo físico da viatura)
 // ============================================================
@@ -35,6 +37,17 @@ export const CONTRATO_ORIGEM_LABELS: Record<ContratoOrigem, string> = {
   online: 'Online',
   telefone: 'Telefone',
   balcao: 'Balcão',
+};
+
+// ============================================================
+// Modalidade (rent-a-car vs TVDE — determina a taxa de IVA)
+// ============================================================
+export const CONTRATO_MODALIDADES = ['rent_a_car', 'tvde'] as const;
+export type ContratoModalidade = (typeof CONTRATO_MODALIDADES)[number];
+
+export const CONTRATO_MODALIDADE_LABELS: Record<ContratoModalidade, string> = {
+  rent_a_car: 'Rent-a-car',
+  tvde: 'TVDE',
 };
 
 // ============================================================
@@ -92,11 +105,13 @@ export type ContratoRenting = {
   estado_operacional: ContratoEstadoOperacional;
   estado_financeiro: ContratoEstadoFinanceiro;
   origem: ContratoOrigem;
+  /** rent_a_car ou tvde — determina o regime e a taxa de IVA (ver org_definicoes). */
   regime: ContratoRegime;
 
   // Tarifário simples (MVP)
   tarifa_diaria: number | null;
   desconto_percentagem: number | null;
+  /** Taxa de IVA aplicada — derivada da modalidade + config da org. */
   taxa_iva: number;
   valor_total_manual: number | null;
 
@@ -116,9 +131,6 @@ export type ContratoRenting = {
   caucao_valor: number | null;
   kms_incluidos: number | null;
   km_adicional_valor: number | null;
-
-  // Cobertura (FK única ao catálogo — MVP)
-  cobertura_id: string | null;
 
   voucher_codigo: string | null;
 
@@ -170,6 +182,80 @@ export type ContratoCondutor = {
   is_principal: boolean;
   created_by: string | null;
   created_at: string;
+};
+
+// ============================================================
+// Coberturas (m:n entre contratos_renting e renting_coberturas)
+// ============================================================
+export type ContratoCobertura = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  cobertura_id: string;
+  cobertura_nome: string;
+  preco_dia: number;
+  franquia_valor: number | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+/** Forma usada no formulário — carrega o snapshot do catálogo. */
+export type CoberturaFormItem = {
+  cobertura_id: string;
+  cobertura_nome: string;
+  preco_dia: number;
+  franquia_valor: number | null;
+};
+
+// ============================================================
+// Extras (m:n entre contratos_renting e renting_extras)
+// ============================================================
+export type ContratoExtra = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  extra_id: string;
+  extra_nome: string;
+  preco_unidade: number;
+  tipo_calculo: ExtraTipoCalculo;
+  quantidade: number;
+  total: number;
+  created_by: string | null;
+  created_at: string;
+};
+
+/** Forma usada no formulário — carrega o snapshot do catálogo + quantidade. */
+export type ExtraFormItem = {
+  extra_id: string;
+  extra_nome: string;
+  preco_unidade: number;
+  tipo_calculo: ExtraTipoCalculo;
+  quantidade: number;
+};
+
+// ============================================================
+// Taxas (m:n entre contratos_renting e renting_taxas)
+// ============================================================
+export type ContratoTaxa = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  taxa_id: string;
+  taxa_nome: string;
+  percentagem: number | null;
+  valor_fixo: number | null;
+  base_calculo: number | null;
+  valor_calculado: number;
+  created_by: string | null;
+  created_at: string;
+};
+
+/** Forma usada no formulário — carrega o snapshot do catálogo. */
+export type TaxaFormItem = {
+  taxa_id: string;
+  taxa_nome: string;
+  percentagem: number | null;
+  valor_fixo: number | null;
 };
 
 // ============================================================

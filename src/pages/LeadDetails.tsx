@@ -33,6 +33,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { CampaignTagsManager } from '@/components/crm/CampaignTagsManager';
@@ -254,7 +255,7 @@ const LeadDetails: React.FC = () => {
     try {
       const { error } = await supabase
         .from('leads_dasprent')
-        .update({ [field]: value })
+        .update({ [field]: value } as TablesUpdate<'leads_dasprent'>)
         .eq('id', lead.id);
 
       if (error) throw error;

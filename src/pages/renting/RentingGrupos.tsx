@@ -7,11 +7,22 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -40,10 +51,7 @@ const RentingGrupos = () => {
   const { data: grupos = [], isLoading } = useQuery({
     queryKey: ['renting_grupos', orgId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('renting_grupos')
-        .select('*')
-        .order('codigo');
+      const { data, error } = await supabase.from('renting_grupos').select('*').order('codigo');
       if (error) throw error;
       return data as RentingGrupo[];
     },
@@ -72,7 +80,11 @@ const RentingGrupos = () => {
     <div className="w-full">
       <StickyPageHeader
         title="Grupos de Viaturas"
-        description={isLoading ? 'A carregar...' : `${filtered.length} grupo${filtered.length !== 1 ? 's' : ''}`}
+        description={
+          isLoading
+            ? 'A carregar...'
+            : `${filtered.length} grupo${filtered.length !== 1 ? 's' : ''}`
+        }
         icon={Layers}
       >
         <Button onClick={() => navigate('/viaturas/grupos/novo')} size="sm">
@@ -136,7 +148,9 @@ const RentingGrupos = () => {
                 >
                   <TableCell className="font-mono font-semibold">{g.codigo}</TableCell>
                   <TableCell className="font-medium">{g.nome}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{g.descricao || '—'}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {g.descricao || '—'}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={g.ativo ? 'default' : 'secondary'} className="text-xs">
                       {g.ativo ? 'Activo' : 'Inactivo'}
@@ -145,13 +159,17 @@ const RentingGrupos = () => {
                   <TableCell className="py-2">
                     <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                       <Button
-                        variant="ghost" size="icon" className="h-8 w-8"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={() => navigate(`/viaturas/grupos/${g.id}`)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => setDeleteTarget(g)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -170,8 +188,8 @@ const RentingGrupos = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar grupo?</AlertDialogTitle>
             <AlertDialogDescription>
-              O grupo <strong>{deleteTarget?.nome}</strong> será eliminado permanentemente.
-              As viaturas e reservas associadas perderão a ligação a este grupo.
+              O grupo <strong>{deleteTarget?.nome}</strong> será eliminado permanentemente. As
+              viaturas e reservas associadas perderão a ligação a este grupo.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

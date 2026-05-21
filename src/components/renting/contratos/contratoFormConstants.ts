@@ -27,3 +27,8 @@ export const ESTADO_FIN_OPTIONS = [
 ] as const;
 
 export const DEFAULT_IVA_PERCENTAGE = 23;
+
+export const MODALIDADE_OPTIONS = [
+  { value: 'rent_a_car', label: 'Rent-a-car' },
+  { value: 'tvde', label: 'TVDE' },
+] as const;

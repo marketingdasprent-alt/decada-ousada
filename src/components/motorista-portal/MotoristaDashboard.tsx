@@ -71,6 +71,14 @@ interface DashboardStats {
   documentosAExpirar: number;
   semanasEmFalta: { value: string; label: string }[];
   docsExpirando: { label: string; data: string; tipo: string }[];
+  recibosPendentesList: {
+    id: string;
+    descricao: string;
+    criado_em: string | null;
+    valor: number;
+    url: string;
+    nome: string | null;
+  }[];
 }
 
 export function MotoristaDashboard() {
@@ -172,6 +180,7 @@ export function MotoristaDashboard() {
         .from('motorista_recibos')
         .select('id, descricao, created_at, valor_total, ficheiro_url, nome_ficheiro')
         .eq('motorista_id', motoristaId)
+        .eq('tipo', 'recibo')
         .eq('status', 'submetido');
 
       const recibosPendentesList =
@@ -192,7 +201,8 @@ export function MotoristaDashboard() {
         const { data: recibos } = await supabase
           .from('motorista_recibos')
           .select('semana_referencia_inicio')
-          .eq('motorista_id', motoristaId);
+          .eq('motorista_id', motoristaId)
+          .eq('tipo', 'recibo');
         const semanasComRecibo = new Set(
           recibos?.map((r) => r.semana_referencia_inicio).filter(Boolean) || []
         );

@@ -28,7 +28,7 @@ const SELECT_COLUMNS = `
   estacao_entrega_id, data_inicio,
   estacao_recolha_id, data_fim,
   estacao_origem_viatura_id,
-  estado_operacional, estado_financeiro, origem,
+  estado_operacional, estado_financeiro, origem, regime,
   tarifa_diaria, desconto_percentagem, taxa_iva, valor_total_manual,
   total_subtotal, total_iva, total_final, facturado_em,
   is_longa_duracao, renovacao_opcao, renovacao_intervalo_dias,

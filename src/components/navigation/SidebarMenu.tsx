@@ -25,7 +25,6 @@ import {
   Percent,
   Fuel,
   CarFront,
-  Library,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
@@ -100,16 +99,25 @@ const MENU_ITEMS: MenuItem[] = [
         recurso: 'renting_contratos',
         subItems: [
           { label: 'Tarifas', url: '/renting/tarifas', icon: Tag, recurso: 'renting_contratos' },
-          { label: 'Coberturas', url: '/renting/tarifas/coberturas', icon: ShieldCheck, recurso: 'renting_contratos' },
-          { label: 'Extras', url: '/renting/tarifas/extras', icon: PackagePlus, recurso: 'renting_contratos' },
-          { label: 'Taxas', url: '/renting/tarifas/taxas', icon: Percent, recurso: 'renting_contratos' },
+          {
+            label: 'Coberturas',
+            url: '/renting/tarifas/coberturas',
+            icon: ShieldCheck,
+            recurso: 'renting_contratos',
+          },
+          {
+            label: 'Extras',
+            url: '/renting/tarifas/extras',
+            icon: PackagePlus,
+            recurso: 'renting_contratos',
+          },
+          {
+            label: 'Taxas',
+            url: '/renting/tarifas/taxas',
+            icon: Percent,
+            recurso: 'renting_contratos',
+          },
         ],
-      },
-      {
-        label: 'Catálogos',
-        url: '/renting/catalogos',
-        icon: Library,
-        recurso: 'renting_contratos',
       },
     ],
   },
@@ -156,17 +164,19 @@ export const SidebarMenu: React.FC = () => {
   const visibleMenuItems = MENU_ITEMS.map((item) => {
     if (loading) return item;
     if (!item.subItems) return item;
-    const filteredSubs = item.subItems.map((sub) => {
-      if (!sub.subItems) return sub;
-      const filteredSubSubs = sub.subItems.filter(
-        (ss) => !ss.recurso || hasAccessToResource(ss.recurso)
-      );
-      return { ...sub, subItems: filteredSubSubs };
-    }).filter((sub) => {
-      if (sub.recurso && !hasAccessToResource(sub.recurso)) return false;
-      if (sub.subItems && sub.subItems.length === 0) return false;
-      return true;
-    });
+    const filteredSubs = item.subItems
+      .map((sub) => {
+        if (!sub.subItems) return sub;
+        const filteredSubSubs = sub.subItems.filter(
+          (ss) => !ss.recurso || hasAccessToResource(ss.recurso)
+        );
+        return { ...sub, subItems: filteredSubSubs };
+      })
+      .filter((sub) => {
+        if (sub.recurso && !hasAccessToResource(sub.recurso)) return false;
+        if (sub.subItems && sub.subItems.length === 0) return false;
+        return true;
+      });
     return { ...item, subItems: filteredSubs };
   }).filter((item) => {
     if (loading) return true;
@@ -177,10 +187,20 @@ export const SidebarMenu: React.FC = () => {
 
   const hasAdminAccess = !loading && (isAdmin || hasAccessToResource('admin_configuracoes'));
 
-  const NavItem = ({ item, isSub = false, siblings = [] }: { item: MenuItem | SubMenuItem; isSub?: boolean; siblings?: (SubMenuItem | SubSubMenuItem)[] }) => {
+  const NavItem = ({
+    item,
+    isSub = false,
+    siblings = [],
+  }: {
+    item: MenuItem | SubMenuItem;
+    isSub?: boolean;
+    siblings?: (SubMenuItem | SubSubMenuItem)[];
+  }) => {
     const Icon = item.icon!;
     // If a sibling URL starts with this item's URL + '/', use exact match to avoid false highlights
-    const hasChildPaths = siblings.some((s) => s.url && s.url !== item.url && item.url && s.url.startsWith(item.url + '/'));
+    const hasChildPaths = siblings.some(
+      (s) => s.url && s.url !== item.url && item.url && s.url.startsWith(item.url + '/')
+    );
     const isActive = hasChildPaths
       ? location.pathname === item.url
       : location.pathname === item.url ||
@@ -252,7 +272,7 @@ export const SidebarMenu: React.FC = () => {
               const isSubActive = item.subItems.some((sub) =>
                 sub.url
                   ? location.pathname.startsWith(sub.url)
-                  : sub.subItems?.some((ss) => location.pathname.startsWith(ss.url)) ?? false
+                  : (sub.subItems?.some((ss) => location.pathname.startsWith(ss.url)) ?? false)
               );
               return (
                 <Collapsible key={item.label} defaultOpen={isSubActive}>
@@ -296,7 +316,14 @@ export const SidebarMenu: React.FC = () => {
                                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                 )}
                               >
-                                {SubIcon && <SubIcon className={cn('h-3.5 w-3.5 shrink-0', isNestedActive && 'text-primary')} />}
+                                {SubIcon && (
+                                  <SubIcon
+                                    className={cn(
+                                      'h-3.5 w-3.5 shrink-0',
+                                      isNestedActive && 'text-primary'
+                                    )}
+                                  />
+                                )}
                                 <span>{sub.label}</span>
                                 <ChevronDown className="chevron h-3 w-3 ml-auto -rotate-90 transition-transform duration-200" />
                               </button>
@@ -305,10 +332,14 @@ export const SidebarMenu: React.FC = () => {
                               {sub.subItems.map((ss) => {
                                 const SsIcon = ss.icon;
                                 // Se há outro item no mesmo grupo cujo url começa com este + '/', usar só match exacto
-                                const hasChildPaths = sub.subItems!.some((other) => other.url !== ss.url && other.url.startsWith(ss.url + '/'));
+                                const hasChildPaths = sub.subItems!.some(
+                                  (other) =>
+                                    other.url !== ss.url && other.url.startsWith(ss.url + '/')
+                                );
                                 const ssActive = hasChildPaths
                                   ? location.pathname === ss.url
-                                  : location.pathname === ss.url || location.pathname.startsWith(ss.url + '/');
+                                  : location.pathname === ss.url ||
+                                    location.pathname.startsWith(ss.url + '/');
                                 return (
                                   <NavLink
                                     key={ss.url}
@@ -322,7 +353,14 @@ export const SidebarMenu: React.FC = () => {
                                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                     )}
                                   >
-                                    {SsIcon && <SsIcon className={cn('h-3 w-3 shrink-0', ssActive && 'text-primary')} />}
+                                    {SsIcon && (
+                                      <SsIcon
+                                        className={cn(
+                                          'h-3 w-3 shrink-0',
+                                          ssActive && 'text-primary'
+                                        )}
+                                      />
+                                    )}
                                     <span>{ss.label}</span>
                                   </NavLink>
                                 );
@@ -331,7 +369,14 @@ export const SidebarMenu: React.FC = () => {
                           </Collapsible>
                         );
                       }
-                      return <NavItem key={sub.url || sub.label} item={sub} isSub siblings={item.subItems} />;
+                      return (
+                        <NavItem
+                          key={sub.url || sub.label}
+                          item={sub}
+                          isSub
+                          siblings={item.subItems}
+                        />
+                      );
                     })}
                   </CollapsibleContent>
                 </Collapsible>

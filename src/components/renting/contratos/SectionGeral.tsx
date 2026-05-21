@@ -25,11 +25,9 @@ import {
 import { cn } from '@/lib/utils';
 
 import type { ClienteComDocumentos } from '@/types/cliente';
-import type { Cobertura } from '@/types/cobertura';
 import type { ContratoFormValues } from './contratoForm.schema';
 import { SectionTitle } from './SectionTitle';
 import {
-  SENTINEL_NONE,
   ORIGEM_OPTIONS,
   ESTADO_OP_OPTIONS,
   ESTADO_FIN_OPTIONS,
@@ -39,13 +37,12 @@ import {
 interface SectionGeralProps {
   form: UseFormReturn<ContratoFormValues>;
   clientes: ClienteComDocumentos[];
-  coberturas: Cobertura[];
 }
 
 const normalizeForSearch = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[-\s]/g, '');
 
-export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes, coberturas }) => {
+export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes }) => {
   const [clientePopoverOpen, setClientePopoverOpen] = useState(false);
   return (
   <div>
@@ -287,44 +284,15 @@ export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes, cobe
             <FormControl>
               <Input
                 type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                className="bg-background"
+                readOnly
+                tabIndex={-1}
+                className="bg-muted/50 cursor-not-allowed"
                 value={field.value ?? DEFAULT_IVA_PERCENTAGE}
-                onChange={(e) => field.onChange(Number(e.target.value))}
               />
             </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="cobertura_id"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Cobertura</FormLabel>
-            <Select
-              value={field.value || SENTINEL_NONE}
-              onValueChange={(v) => field.onChange(v === SENTINEL_NONE ? null : v)}
-            >
-              <FormControl>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Sem cobertura" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value={SENTINEL_NONE}>— Sem cobertura —</SelectItem>
-                {coberturas.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nome}
-                    {c.valor_diario != null ? ` (${c.valor_diario.toFixed(2)} €/dia)` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <p className="text-xs text-muted-foreground">
+              Definido pelo regime e pelas taxas da organização (Definições › Fiscal).
+            </p>
             <FormMessage />
           </FormItem>
         )}
@@ -334,7 +302,7 @@ export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes, cobe
         control={form.control}
         name="voucher_codigo"
         render={({ field }) => (
-          <FormItem>
+          <FormItem className="sm:col-span-2">
             <FormLabel>Voucher</FormLabel>
             <FormControl>
               <Input

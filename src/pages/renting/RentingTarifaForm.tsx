@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  Tag, Save, Trash2, ChevronRight, Calendar, Gauge, Clock,
-  ShieldCheck,
-} from 'lucide-react';
+import { Tag, Save, Trash2, ChevronRight, Calendar, Gauge, Clock, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,11 +11,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,17 +35,17 @@ import { useTenant } from '@/contexts/TenantContext';
 interface RentingGrupo { id: string; nome: string; codigo: string; }
 
 const MINUTOS_OPTIONS = [
-  { value: 'none',  label: '— Sem restrição —' },
-  { value: '30',    label: '30 minutos' },
-  { value: '60',    label: '1 hora' },
-  { value: '120',   label: '2 horas' },
-  { value: '180',   label: '3 horas' },
-  { value: '360',   label: '6 horas' },
-  { value: '720',   label: '12 horas' },
-  { value: '1440',  label: '1 dia' },
-  { value: '2880',  label: '2 dias' },
-  { value: '4320',  label: '3 dias' },
-  { value: '7200',  label: '5 dias' },
+  { value: 'none', label: '— Sem restrição —' },
+  { value: '30', label: '30 minutos' },
+  { value: '60', label: '1 hora' },
+  { value: '120', label: '2 horas' },
+  { value: '180', label: '3 horas' },
+  { value: '360', label: '6 horas' },
+  { value: '720', label: '12 horas' },
+  { value: '1440', label: '1 dia' },
+  { value: '2880', label: '2 dias' },
+  { value: '4320', label: '3 dias' },
+  { value: '7200', label: '5 dias' },
   { value: '10080', label: '7 dias' },
   { value: '20160', label: '14 dias' },
   { value: '43200', label: '30 dias' },
@@ -135,8 +142,8 @@ const RentingTarifaForm = () => {
   const f = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((p) => ({ ...p, [key]: e.target.value }));
 
-  const n  = (v: string) => v.trim() ? parseFloat(v) : null;
-  const ni = (v: string) => v.trim() ? parseInt(v)   : null;
+  const n = (v: string) => (v.trim() ? parseFloat(v) : null);
+  const ni = (v: string) => (v.trim() ? parseInt(v) : null);
 
   const buildPayload = () => ({
     grupo_id:           form.grupo_id,
@@ -147,15 +154,24 @@ const RentingTarifaForm = () => {
     preco_mes:          n(form.preco_mes),
     kms_incluidos:      ni(form.kms_incluidos),
     km_adicional_valor: n(form.km_adicional_valor),
-    valido_de:          form.valido_de   || null,
-    valido_ate:         form.valido_ate  || null,
-    ativa:              form.ativa,
+    valido_de: form.valido_de || null,
+    valido_ate: form.valido_ate || null,
+    ativa: form.ativa,
   });
 
   const validate = () => {
-    if (!form.grupo_id) { toast({ title: 'Selecione um grupo', variant: 'destructive' }); return false; }
-    if (!form.nome.trim()) { toast({ title: 'Nome é obrigatório', variant: 'destructive' }); return false; }
-    if (!form.preco_dia.trim()) { toast({ title: 'Preço/dia é obrigatório', variant: 'destructive' }); return false; }
+    if (!form.grupo_id) {
+      toast({ title: 'Selecione um grupo', variant: 'destructive' });
+      return false;
+    }
+    if (!form.nome.trim()) {
+      toast({ title: 'Nome é obrigatório', variant: 'destructive' });
+      return false;
+    }
+    if (!form.preco_dia.trim()) {
+      toast({ title: 'Preço/dia é obrigatório', variant: 'destructive' });
+      return false;
+    }
     return true;
   };
 
@@ -165,7 +181,11 @@ const RentingTarifaForm = () => {
       setSaving(true);
       const payload = buildPayload();
       if (isNew) {
-        const { data, error } = await supabase.from('renting_tarifas').insert({ ...payload, org_id: orgId }).select('id').single();
+        const { data, error } = await supabase
+          .from('renting_tarifas')
+          .insert({ ...payload, org_id: orgId })
+          .select('id')
+          .single();
         if (error) throw error;
         qc.invalidateQueries({ queryKey: ['renting_tarifas'] });
         toast({ title: 'Tarifa criada' });
@@ -206,7 +226,9 @@ const RentingTarifaForm = () => {
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-4 w-40" />
         <div className="grid grid-cols-2 gap-4 mt-6">
-          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-10" />)}
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-10" />
+          ))}
         </div>
       </div>
     );
@@ -236,7 +258,7 @@ const RentingTarifaForm = () => {
               </>
             )}
             <span className="font-semibold text-foreground truncate">
-              {isNew ? 'Nova Tarifa' : (form.nome || 'Editar Tarifa')}
+              {isNew ? 'Nova Tarifa' : form.nome || 'Editar Tarifa'}
             </span>
           </div>
 
@@ -276,7 +298,9 @@ const RentingTarifaForm = () => {
             {/* Campos de topo */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2 space-y-2">
-                <Label>Grupo *</Label>
+                <Label>
+                  Grupo <span className="text-red-500">*</span>
+                </Label>
                 <Select
                   value={form.grupo_id}
                   onValueChange={(v) => setForm((p) => ({ ...p, grupo_id: v }))}
@@ -287,7 +311,9 @@ const RentingTarifaForm = () => {
                   <SelectContent>
                     {grupos.map((g) => (
                       <SelectItem key={g.id} value={g.id}>
-                        <span className="font-mono text-xs mr-2 text-muted-foreground">{g.codigo}</span>
+                        <span className="font-mono text-xs mr-2 text-muted-foreground">
+                          {g.codigo}
+                        </span>
                         {g.nome}
                       </SelectItem>
                     ))}
@@ -296,7 +322,9 @@ const RentingTarifaForm = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Nome da Tarifa *</Label>
+                <Label>
+                  Nome da Tarifa <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   value={form.nome}
                   onChange={f('nome')}
@@ -307,9 +335,19 @@ const RentingTarifaForm = () => {
               <div className="space-y-2">
                 <Label>Validade</Label>
                 <div className="flex items-center gap-2">
-                  <Input type="date" value={form.valido_de} onChange={f('valido_de')} className="flex-1" />
+                  <Input
+                    type="date"
+                    value={form.valido_de}
+                    onChange={f('valido_de')}
+                    className="flex-1"
+                  />
                   <span className="text-muted-foreground text-sm shrink-0">até</span>
-                  <Input type="date" value={form.valido_ate} onChange={f('valido_ate')} className="flex-1" />
+                  <Input
+                    type="date"
+                    value={form.valido_ate}
+                    onChange={f('valido_ate')}
+                    className="flex-1"
+                  />
                 </div>
               </div>
             </div>
@@ -353,29 +391,39 @@ const RentingTarifaForm = () => {
                   <Label className="text-base font-semibold">Preços</Label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="space-y-2">
-                      <Label>Preço por dia (€) *</Label>
+                      <Label>
+                        Preço por dia (€) <span className="text-red-500">*</span>
+                      </Label>
                       <div className="relative">
                         <Input
-                          type="number" min="0" step="0.01"
+                          type="number"
+                          min="0"
+                          step="0.01"
                           value={form.preco_dia}
                           onChange={f('preco_dia')}
                           placeholder="0.00"
                           className="pr-8"
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                          €
+                        </span>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label>Preço fim de semana/dia (€)</Label>
                       <div className="relative">
                         <Input
-                          type="number" min="0" step="0.01"
+                          type="number"
+                          min="0"
+                          step="0.01"
                           value={form.preco_fim_semana}
                           onChange={f('preco_fim_semana')}
                           placeholder="Igual ao dia"
                           className="pr-8"
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                          €
+                        </span>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -395,13 +443,17 @@ const RentingTarifaForm = () => {
                       <Label>Preço por mês (€)</Label>
                       <div className="relative">
                         <Input
-                          type="number" min="0" step="0.01"
+                          type="number"
+                          min="0"
+                          step="0.01"
                           value={form.preco_mes}
                           onChange={f('preco_mes')}
                           placeholder="0.00"
                           className="pr-8"
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                          €
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -425,7 +477,8 @@ const RentingTarifaForm = () => {
                           Tarifa Promocional
                         </Label>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Assinala esta tarifa como promoção — pode ser usada em filtragens e destaques
+                          Assinala esta tarifa como promoção — pode ser usada em filtragens e
+                          destaques
                         </p>
                       </div>
                     </div>
@@ -433,11 +486,16 @@ const RentingTarifaForm = () => {
                       <Checkbox
                         id="manter_valor_primeira"
                         checked={form.manter_valor_primeira}
-                        onCheckedChange={(v) => setForm((p) => ({ ...p, manter_valor_primeira: !!v }))}
+                        onCheckedChange={(v) =>
+                          setForm((p) => ({ ...p, manter_valor_primeira: !!v }))
+                        }
                         className="mt-0.5"
                       />
                       <div>
-                        <Label htmlFor="manter_valor_primeira" className="cursor-pointer font-medium">
+                        <Label
+                          htmlFor="manter_valor_primeira"
+                          className="cursor-pointer font-medium"
+                        >
                           Manter valor da primeira tarifa
                         </Label>
                         <p className="text-xs text-muted-foreground mt-0.5">
@@ -465,13 +523,16 @@ const RentingTarifaForm = () => {
                     <Label>Kms incluídos</Label>
                     <div className="relative">
                       <Input
-                        type="number" min="0"
+                        type="number"
+                        min="0"
                         value={form.kms_incluidos}
                         onChange={f('kms_incluidos')}
                         placeholder="Deixar vazio = ilimitado"
                         className="pr-12"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">km</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                        km
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Deixe em branco para quilómetros ilimitados
@@ -482,13 +543,17 @@ const RentingTarifaForm = () => {
                     <Label>Custo por km extra (€)</Label>
                     <div className="relative">
                       <Input
-                        type="number" min="0" step="0.0001"
+                        type="number"
+                        min="0"
+                        step="0.0001"
                         value={form.km_adicional_valor}
                         onChange={f('km_adicional_valor')}
                         placeholder="0.0000"
                         className="pr-8"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                        €
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Valor cobrado por cada km acima do limite incluído
@@ -518,8 +583,8 @@ const RentingTarifaForm = () => {
                   <ShieldCheck className="h-10 w-10 text-muted-foreground" />
                   <p className="text-sm font-medium">Coberturas associadas</p>
                   <p className="text-sm text-muted-foreground text-center max-w-sm">
-                    A associação de coberturas a tarifas estará disponível em breve.
-                    Configure as coberturas disponíveis em <strong>Renting → Coberturas</strong>.
+                    A associação de coberturas a tarifas estará disponível em breve. Configure as
+                    coberturas disponíveis em <strong>Renting → Coberturas</strong>.
                   </p>
                 </div>
               </TabsContent>
@@ -545,7 +610,9 @@ const RentingTarifaForm = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {MINUTOS_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -562,7 +629,9 @@ const RentingTarifaForm = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {MINUTOS_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -611,13 +680,17 @@ const RentingTarifaForm = () => {
                 {form.preco_dia && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Por dia</span>
-                    <span className="font-medium tabular-nums">{parseFloat(form.preco_dia).toFixed(2)} €</span>
+                    <span className="font-medium tabular-nums">
+                      {parseFloat(form.preco_dia).toFixed(2)} €
+                    </span>
                   </div>
                 )}
                 {form.preco_fim_semana && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Fim semana</span>
-                    <span className="font-medium tabular-nums">{parseFloat(form.preco_fim_semana).toFixed(2)} €</span>
+                    <span className="font-medium tabular-nums">
+                      {parseFloat(form.preco_fim_semana).toFixed(2)} €
+                    </span>
                   </div>
                 )}
                 {form.preco_semana && (
@@ -629,19 +702,25 @@ const RentingTarifaForm = () => {
                 {form.preco_mes && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Por mês</span>
-                    <span className="font-medium tabular-nums">{parseFloat(form.preco_mes).toFixed(2)} €</span>
+                    <span className="font-medium tabular-nums">
+                      {parseFloat(form.preco_mes).toFixed(2)} €
+                    </span>
                   </div>
                 )}
                 {form.kms_incluidos && (
                   <div className="flex justify-between pt-1 border-t">
                     <span className="text-muted-foreground">Kms incl.</span>
-                    <span className="font-medium tabular-nums">{parseInt(form.kms_incluidos).toLocaleString('pt-PT')} km</span>
+                    <span className="font-medium tabular-nums">
+                      {parseInt(form.kms_incluidos).toLocaleString('pt-PT')} km
+                    </span>
                   </div>
                 )}
                 {form.km_adicional_valor && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Extra km</span>
-                    <span className="font-medium tabular-nums">{parseFloat(form.km_adicional_valor).toFixed(4)} €</span>
+                    <span className="font-medium tabular-nums">
+                      {parseFloat(form.km_adicional_valor).toFixed(4)} €
+                    </span>
                   </div>
                 )}
                 {!form.preco_dia && !form.preco_mes && (
@@ -658,8 +737,16 @@ const RentingTarifaForm = () => {
                   <p className="text-sm font-semibold">Validade</p>
                 </div>
                 <div className="text-xs text-muted-foreground space-y-1">
-                  {form.valido_de && <p>De: <span className="text-foreground font-medium">{form.valido_de}</span></p>}
-                  {form.valido_ate && <p>Até: <span className="text-foreground font-medium">{form.valido_ate}</span></p>}
+                  {form.valido_de && (
+                    <p>
+                      De: <span className="text-foreground font-medium">{form.valido_de}</span>
+                    </p>
+                  )}
+                  {form.valido_ate && (
+                    <p>
+                      Até: <span className="text-foreground font-medium">{form.valido_ate}</span>
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -669,8 +756,12 @@ const RentingTarifaForm = () => {
               <div className="rounded-lg border p-4 space-y-2">
                 <p className="text-sm font-semibold">Grupo</p>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="font-mono text-xs">{grupoSelecionado.codigo}</Badge>
-                  <span className="text-sm text-muted-foreground truncate">{grupoSelecionado.nome}</span>
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {grupoSelecionado.codigo}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground truncate">
+                    {grupoSelecionado.nome}
+                  </span>
                 </div>
               </div>
             )}
@@ -684,8 +775,8 @@ const RentingTarifaForm = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar tarifa?</AlertDialogTitle>
             <AlertDialogDescription>
-              A tarifa <strong>{form.nome}</strong> será eliminada permanentemente.
-              Esta acção não pode ser revertida.
+              A tarifa <strong>{form.nome}</strong> será eliminada permanentemente. Esta acção não
+              pode ser revertida.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

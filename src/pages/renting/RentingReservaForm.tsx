@@ -219,24 +219,23 @@ const RentingReservaForm = () => {
         // Criar: navegar para modo edição da nova reserva.
         // Permite clicar logo "Criar Contrato" sem voltar à lista.
         createMutation.mutate(payload, {
-          onSuccess: (created) => navigate(`/renting/reservas/${created.id}`),
-        });
-
-        // Upload em batch dos anexos pendentes (modo criar) — best-effort
-        if (!isEdit && anexosPendentes.length > 0) {
-          for (const p of anexosPendentes) {
-            try {
-              await uploadReservaAnexoSync(reservaId, p.file, p.nome);
-            } catch (err) {
-              // Log + continua para os próximos. O utilizador pode re-anexar
-              // em edição se algum falhar.
-              console.error(`Falha a anexar ${p.nome}:`, err);
+          onSuccess: async (created) => {
+            // Upload em batch dos anexos pendentes — best-effort.
+            if (anexosPendentes.length > 0) {
+              for (const p of anexosPendentes) {
+                try {
+                  await uploadReservaAnexoSync(created.id, p.file, p.nome);
+                } catch (err) {
+                  // Log + continua para os próximos. O utilizador pode re-anexar
+                  // em edição se algum falhar.
+                  console.error(`Falha a anexar ${p.nome}:`, err);
+                }
+              }
+              setAnexosPendentes([]);
             }
-          }
-          setAnexosPendentes([]);
-        }
-
-        navigate('/renting/reservas');
+            navigate(`/renting/reservas/${created.id}`);
+          },
+        });
       }
     } catch {
       // Erros são reportados via toast pelas mutations

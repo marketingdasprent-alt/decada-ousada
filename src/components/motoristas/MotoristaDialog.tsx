@@ -161,7 +161,6 @@ export function MotoristaDialog({
       codigo_postal: '',
       data_contratacao: '',
       cidade: '',
-      cidade_assinatura: '',
       status_ativo: true,
       observacoes: '',
       iban: '',

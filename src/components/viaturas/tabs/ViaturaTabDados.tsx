@@ -44,6 +44,7 @@ import {
   FolderUp,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import {
   getCategoriaBadgeClass,
   getStatusBadgeClass,
@@ -129,9 +130,19 @@ const CATEGORIAS = [
   { value: 'x-saver', label: 'X-Saver' },
 ];
 
-interface ViaturaMarca { id: string; nome: string; }
-interface ViaturaModelo { id: string; nome: string; marca_id: string; }
-interface ViaturaCombustivel { id: string; nome: string; }
+interface ViaturaMarca {
+  id: string;
+  nome: string;
+}
+interface ViaturaModelo {
+  id: string;
+  nome: string;
+  marca_id: string;
+}
+interface ViaturaCombustivel {
+  id: string;
+  nome: string;
+}
 
 const STATUS_OPTIONS = [
   { value: 'disponivel', label: 'Disponível' },
@@ -220,36 +231,46 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       .select('id, nome, cidade')
       .eq('ativa', true)
       .order('nome')
-      .then(({ data }) => setEstacoes(data || []))
-      .catch((err) => console.error('Erro ao carregar estações:', err));
+      .then(
+        ({ data }) => setEstacoes(data || []),
+        (err) => console.error('Erro ao carregar estações:', err)
+      );
     supabase
       .from('viatura_tipos')
       .select('id, nome')
       .eq('ativo', true)
       .order('nome')
-      .then(({ data }) => setViaturasTipos(data || []))
-      .catch((err) => console.error('Erro ao carregar tipos:', err));
+      .then(
+        ({ data }) => setViaturasTipos(data || []),
+        (err) => console.error('Erro ao carregar tipos:', err)
+      );
     supabase
       .from('renting_grupos')
       .select('id, nome')
       .eq('ativo', true)
       .order('nome')
-      .then(({ data }) => setGrupos(data || []))
-      .catch((err) => console.error('Erro ao carregar grupos:', err));
+      .then(
+        ({ data }) => setGrupos(data || []),
+        (err) => console.error('Erro ao carregar grupos:', err)
+      );
     supabase
       .from('viatura_marcas')
       .select('id, nome')
       .eq('ativa', true)
       .order('nome')
-      .then(({ data }) => setMarcas(data || []))
-      .catch((err) => console.error('Erro ao carregar marcas:', err));
+      .then(
+        ({ data }) => setMarcas(data || []),
+        (err) => console.error('Erro ao carregar marcas:', err)
+      );
     supabase
       .from('viatura_combustiveis')
       .select('id, nome')
       .eq('ativo', true)
       .order('nome')
-      .then(({ data }) => setCombustiveis(data || []))
-      .catch((err) => console.error('Erro ao carregar combustíveis:', err));
+      .then(
+        ({ data }) => setCombustiveis(data || []),
+        (err) => console.error('Erro ao carregar combustíveis:', err)
+      );
   }, []);
 
   const form = useForm<ViaturaFormData>({
@@ -323,8 +344,10 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       .eq('marca_id', watchedMarcaId)
       .eq('ativo', true)
       .order('nome')
-      .then(({ data }) => setModelos(data || []))
-      .catch((err) => console.error('Erro ao carregar modelos:', err));
+      .then(
+        ({ data }) => setModelos(data || []),
+        (err) => console.error('Erro ao carregar modelos:', err)
+      );
   }, [watchedMarcaId]);
 
   const loadDocuments = async () => {
@@ -354,7 +377,8 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
     // Resolve text names from FK IDs
     const marcaNome = marcas.find((m) => m.id === data.marca_id)?.nome || data.marca || '';
     const modeloNome = modelos.find((m) => m.id === data.modelo_id)?.nome || data.modelo || '';
-    const combustivelNome = combustiveis.find((c) => c.id === data.combustivel_id)?.nome || data.combustivel || '';
+    const combustivelNome =
+      combustiveis.find((c) => c.id === data.combustivel_id)?.nome || data.combustivel || '';
 
     const payload: Partial<Viatura> = {
       matricula: data.matricula.toUpperCase(),
@@ -684,7 +708,9 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                           </FormControl>
                           <SelectContent>
                             {marcas.map((m) => (
-                              <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+                              <SelectItem key={m.id} value={m.id}>
+                                {m.nome}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -707,12 +733,20 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder={watchedMarcaId ? 'Selecionar modelo' : 'Selecione a marca primeiro'} />
+                              <SelectValue
+                                placeholder={
+                                  watchedMarcaId
+                                    ? 'Selecionar modelo'
+                                    : 'Selecione a marca primeiro'
+                                }
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             {modelos.map((m) => (
-                              <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+                              <SelectItem key={m.id} value={m.id}>
+                                {m.nome}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

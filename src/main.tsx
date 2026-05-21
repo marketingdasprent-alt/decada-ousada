@@ -9,8 +9,8 @@ void setupNativeApp();
 
 // Service Worker só na web — na app nativa causa tela branca e reloads em loop
 if (!Capacitor.isNativePlatform()) {
-  registerSW({
-    onNeedRefresh(updateSW) {
+  const updateSW = registerSW({
+    onNeedRefresh() {
       // Guardar a função de atualização globalmente para o App.tsx usar
       (window as any).__swUpdate = () => updateSW(true);
       window.dispatchEvent(new CustomEvent('sw-update-available'));

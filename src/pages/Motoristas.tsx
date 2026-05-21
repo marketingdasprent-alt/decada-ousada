@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, ChevronUp, ChevronDown, Plus, Check } from 'lucide-react';
+import { Search, ChevronUp, ChevronDown, Plus, Check, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,8 @@ import { MotoristaDetailsDrawer } from '@/components/motoristas/MotoristaDetails
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn, normalizeString } from '@/lib/utils';
 
-export type { Motorista } from '@/types/motorista';
+import type { Motorista } from '@/types/motorista';
+export type { Motorista };
 
 type SortColumn =
   | 'codigo'

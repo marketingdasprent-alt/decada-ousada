@@ -22,7 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Plus, Pencil, Users, Loader2 } from 'lucide-react';
+import { Building2, Pencil, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Organizacao {
@@ -70,12 +70,6 @@ export const OrganizacoesTab: React.FC = () => {
     fetchOrgs();
   }, [fetchOrgs]);
 
-  const openCreateDialog = () => {
-    setEditingOrg(null);
-    setFormData({ nome: '', codigo: '', ativa: true });
-    setDialogOpen(true);
-  };
-
   const openEditDialog = (org: Organizacao) => {
     setEditingOrg(org);
     setFormData({ nome: org.nome, codigo: org.codigo, ativa: org.ativa });
@@ -83,6 +77,7 @@ export const OrganizacoesTab: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (!editingOrg) return;
     if (!formData.nome || !formData.codigo) {
       toast.error('Nome e código são obrigatórios');
       return;
@@ -90,37 +85,21 @@ export const OrganizacoesTab: React.FC = () => {
 
     setSaving(true);
 
-    if (editingOrg) {
-      const { error } = await supabase
-        .from('organizacoes')
-        .update({
-          nome: formData.nome,
-          codigo: formData.codigo.toLowerCase().trim(),
-          ativa: formData.ativa,
-        })
-        .eq('id', editingOrg.id);
-
-      if (error) {
-        toast.error(error.message.includes('duplicate') ? 'Código já existe' : 'Erro ao atualizar');
-      } else {
-        toast.success('Organização atualizada');
-        setDialogOpen(false);
-        fetchOrgs();
-      }
-    } else {
-      const { error } = await supabase.from('organizacoes').insert({
+    const { error } = await supabase
+      .from('organizacoes')
+      .update({
         nome: formData.nome,
         codigo: formData.codigo.toLowerCase().trim(),
         ativa: formData.ativa,
-      });
+      })
+      .eq('id', editingOrg.id);
 
-      if (error) {
-        toast.error(error.message.includes('duplicate') ? 'Código já existe' : 'Erro ao criar');
-      } else {
-        toast.success('Organização criada');
-        setDialogOpen(false);
-        fetchOrgs();
-      }
+    if (error) {
+      toast.error(error.message.includes('duplicate') ? 'Código já existe' : 'Erro ao atualizar');
+    } else {
+      toast.success('Organização atualizada');
+      setDialogOpen(false);
+      fetchOrgs();
     }
 
     setSaving(false);
@@ -128,18 +107,15 @@ export const OrganizacoesTab: React.FC = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Organizações
-          </CardTitle>
-          <CardDescription>Gerir as organizações do sistema multi-tenant</CardDescription>
-        </div>
-        <Button size="sm" className="gap-2" onClick={openCreateDialog}>
-          <Plus className="h-4 w-4" />
-          Nova Organização
-        </Button>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Building2 className="h-5 w-5" />
+          Organizações
+        </CardTitle>
+        <CardDescription>
+          Gerir as organizações do sistema multi-tenant. Para criar uma nova organização, usar a
+          página de registo (/registar-org) — só assim a org nasce com conta, cargo e permissões.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -196,7 +172,7 @@ export const OrganizacoesTab: React.FC = () => {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingOrg ? 'Editar Organização' : 'Nova Organização'}</DialogTitle>
+              <DialogTitle>Editar Organização</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -235,7 +211,7 @@ export const OrganizacoesTab: React.FC = () => {
               </Button>
               <Button onClick={handleSave} disabled={saving}>
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                {editingOrg ? 'Guardar' : 'Criar'}
+                Guardar
               </Button>
             </DialogFooter>
           </DialogContent>

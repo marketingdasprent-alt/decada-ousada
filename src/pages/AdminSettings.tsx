@@ -13,6 +13,7 @@ import { IntegracoesTab } from '@/components/admin/IntegracoesTab';
 import { EstacoesTab } from '@/components/admin/EstacoesTab';
 import { EmpresasTab } from '@/components/admin/EmpresasTab';
 import { ViaturasTiposTab } from '@/components/admin/ViaturasTiposTab';
+import { FiscalTab } from '@/components/admin/FiscalTab';
 import { OrganizacoesTab } from '@/components/admin/OrganizacoesTab';
 import { ImportExcelDialog } from '@/components/admin/ImportExcelDialog';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
@@ -106,6 +107,12 @@ const AdminSettings = () => {
         >
           Tipos Viatura
         </TabsTrigger>
+        <TabsTrigger
+          value="fiscal"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto text-xs"
+        >
+          Fiscal
+        </TabsTrigger>
         {isDecadaOusada && (
           <TabsTrigger
             value="organizacoes"
@@ -151,6 +158,10 @@ const AdminSettings = () => {
 
         <TabsContent value="viatura-tipos" className="mt-0">
           <ViaturasTiposTab />
+        </TabsContent>
+
+        <TabsContent value="fiscal" className="mt-0">
+          <FiscalTab />
         </TabsContent>
 
         {isDecadaOusada && (

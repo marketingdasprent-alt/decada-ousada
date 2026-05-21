@@ -249,7 +249,7 @@ export const HorizontalTopMenu: React.FC = () => {
           {[
             ...visibleMenuItems,
             ...(hasAdminAccess
-              ? [{ label: 'Administração', url: '/admin/settings', icon: Settings }]
+              ? [{ label: 'Administração', url: '/admin/settings', icon: Settings } as MenuItem]
               : []),
           ].map((item) => {
             const Icon = item.icon;

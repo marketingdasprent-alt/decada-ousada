@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import type { ContratoCondutor } from '@/types/contratoRenting';
 import type { CondutorFormItem } from '@/types/reserva';
 
@@ -67,7 +68,10 @@ export function useSyncContratoCondutores() {
           is_principal: false,
         }));
       if (aInserir.length > 0) {
-        const { error } = await supabase.from('contrato_condutores').insert(aInserir);
+        // org_id é preenchido por trigger na BD — daí o cast.
+        const { error } = await supabase
+          .from('contrato_condutores')
+          .insert(aInserir as TablesInsert<'contrato_condutores'>[]);
         if (error) throw error;
       }
 

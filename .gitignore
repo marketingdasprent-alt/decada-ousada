@@ -29,3 +29,6 @@ dist-ssr
 .env
 .env.local
 .env.production
+
+# Supabase CLI — ficheiros temporários/estado local
+supabase/.temp/

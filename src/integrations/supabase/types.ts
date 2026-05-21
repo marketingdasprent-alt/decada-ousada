@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       assistencia_anexos: {
@@ -2429,6 +2404,7 @@ export type Database = {
           local_entrega: string | null
           local_recolha: string | null
           matricula: string | null
+          modalidade: Database["public"]["Enums"]["contrato_modalidade_enum"]
           numero_processo: string | null
           observacoes: string | null
           observacoes_internas: string | null
@@ -2489,6 +2465,7 @@ export type Database = {
           local_entrega?: string | null
           local_recolha?: string | null
           matricula?: string | null
+          modalidade?: Database["public"]["Enums"]["contrato_modalidade_enum"]
           numero_processo?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
@@ -2549,6 +2526,7 @@ export type Database = {
           local_entrega?: string | null
           local_recolha?: string | null
           matricula?: string | null
+          modalidade?: Database["public"]["Enums"]["contrato_modalidade_enum"]
           numero_processo?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
@@ -4016,6 +3994,7 @@ export type Database = {
           plataforma: string | null
           semana_referencia_inicio: string | null
           status: string | null
+          tipo: string | null
           updated_at: string | null
           user_id: string | null
           validado_por: string | null
@@ -4036,6 +4015,7 @@ export type Database = {
           plataforma?: string | null
           semana_referencia_inicio?: string | null
           status?: string | null
+          tipo?: string | null
           updated_at?: string | null
           user_id?: string | null
           validado_por?: string | null
@@ -4056,6 +4036,7 @@ export type Database = {
           plataforma?: string | null
           semana_referencia_inicio?: string | null
           status?: string | null
+          tipo?: string | null
           updated_at?: string | null
           user_id?: string | null
           validado_por?: string | null
@@ -4382,6 +4363,38 @@ export type Database = {
             foreignKeyName: "motoristas_ativos_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_definicoes: {
+        Row: {
+          created_at: string
+          iva_rent_a_car: number
+          iva_tvde: number
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          iva_rent_a_car?: number
+          iva_tvde?: number
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          iva_rent_a_car?: number
+          iva_tvde?: number
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_definicoes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
             referencedRelation: "organizacoes"
             referencedColumns: ["id"]
           },
@@ -5431,6 +5444,63 @@ export type Database = {
           },
         ]
       }
+      reserva_anexos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          ficheiro_url: string
+          id: string
+          mime_type: string | null
+          nome: string
+          org_id: string
+          reserva_id: string
+          tamanho_bytes: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          ficheiro_url: string
+          id?: string
+          mime_type?: string | null
+          nome: string
+          org_id: string
+          reserva_id: string
+          tamanho_bytes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          ficheiro_url?: string
+          id?: string
+          mime_type?: string | null
+          nome?: string
+          org_id?: string
+          reserva_id?: string
+          tamanho_bytes?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reserva_anexos_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reserva_anexos_reserva_id_fkey"
+            columns: ["reserva_id"]
+            isOneToOne: false
+            referencedRelation: "reservas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reserva_condutores: {
         Row: {
           cliente_id: string
@@ -5640,6 +5710,7 @@ export type Database = {
           km_adicional_valor: number | null
           kms_incluidos: number | null
           matricula: string | null
+          modalidade: Database["public"]["Enums"]["contrato_modalidade_enum"]
           observacoes: string | null
           observacoes_internas: string | null
           org_id: string
@@ -5683,6 +5754,7 @@ export type Database = {
           km_adicional_valor?: number | null
           kms_incluidos?: number | null
           matricula?: string | null
+          modalidade?: Database["public"]["Enums"]["contrato_modalidade_enum"]
           observacoes?: string | null
           observacoes_internas?: string | null
           org_id?: string
@@ -5726,6 +5798,7 @@ export type Database = {
           km_adicional_valor?: number | null
           kms_incluidos?: number | null
           matricula?: string | null
+          modalidade?: Database["public"]["Enums"]["contrato_modalidade_enum"]
           observacoes?: string | null
           observacoes_internas?: string | null
           org_id?: string
@@ -8238,6 +8311,7 @@ export type Database = {
         | "em_curso"
         | "devolvido"
         | "cancelado"
+      contrato_modalidade_enum: "rent_a_car" | "tvde"
       contrato_origem_enum: "sistema" | "online" | "telefone" | "balcao"
       contrato_regime_enum: "rent_a_car" | "tvde"
       contrato_renovacao_opcao_enum:
@@ -8383,9 +8457,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       app_role: ["admin", "gestor_tvde", "gestor_comercial", "colaborador"],
@@ -8402,6 +8473,7 @@ export const Constants = {
         "devolvido",
         "cancelado",
       ],
+      contrato_modalidade_enum: ["rent_a_car", "tvde"],
       contrato_origem_enum: ["sistema", "online", "telefone", "balcao"],
       contrato_regime_enum: ["rent_a_car", "tvde"],
       contrato_renovacao_opcao_enum: [

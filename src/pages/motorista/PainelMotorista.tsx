@@ -57,6 +57,8 @@ interface MotoristaAtivo {
   id: string;
   user_id: string;
   status_ativo: boolean;
+  nome?: string | null;
+  foto_url?: string | null;
 }
 
 const PainelMotorista: React.FC = () => {
@@ -98,7 +100,7 @@ const PainelMotorista: React.FC = () => {
         console.error('Erro ao carregar candidatura:', candidaturaError);
       }
 
-      setCandidatura(candidaturaData as Candidatura | null);
+      setCandidatura(candidaturaData as unknown as Candidatura | null);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {

@@ -6,22 +6,24 @@ interface ContratoTabsPlaceholderProps {
   geralContent: React.ReactNode;
   /** Conteúdo da tab "Condutores" — passado pela página pai. */
   condutoresContent: React.ReactNode;
+  /** Conteúdo da tab "Coberturas" — passado pela página pai. */
+  coberturasContent: React.ReactNode;
+  /** Conteúdo da tab "Extras" — passado pela página pai. */
+  extrasContent: React.ReactNode;
+  /** Conteúdo da tab "Taxas" — passado pela página pai. */
+  taxasContent: React.ReactNode;
   /** Conteúdo da tab "Anexos" — passado pela página pai. */
   anexosContent: React.ReactNode;
 }
 
-const PLACEHOLDER_TABS = [
-  { value: 'extras', label: 'Extras' },
-  { value: 'taxas', label: 'Taxas' },
-  { value: 'coberturas', label: 'Coberturas' },
-  { value: 'pacotes', label: 'Pacotes' },
-  { value: 'fecho', label: 'Fecho' },
-  { value: 'outros', label: 'Outros' },
-] as const;
+const PLACEHOLDER_TABS = [{ value: 'outros', label: 'Outros' }] as const;
 
 export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = ({
   geralContent,
   condutoresContent,
+  coberturasContent,
+  extrasContent,
+  taxasContent,
   anexosContent,
 }) => {
   const [active, setActive] = useState<string>('geral');
@@ -31,6 +33,9 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
       <TabsList className="w-full justify-start overflow-x-auto">
         <TabsTrigger value="geral">Geral</TabsTrigger>
         <TabsTrigger value="condutores">Condutores</TabsTrigger>
+        <TabsTrigger value="coberturas">Coberturas</TabsTrigger>
+        <TabsTrigger value="extras">Extras</TabsTrigger>
+        <TabsTrigger value="taxas">Taxas</TabsTrigger>
         {PLACEHOLDER_TABS.map((t) => (
           <TabsTrigger key={t.value} value={t.value}>
             {t.label}
@@ -45,6 +50,18 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
 
       <TabsContent value="condutores" className="mt-4">
         {condutoresContent}
+      </TabsContent>
+
+      <TabsContent value="coberturas" className="mt-4">
+        {coberturasContent}
+      </TabsContent>
+
+      <TabsContent value="extras" className="mt-4">
+        {extrasContent}
+      </TabsContent>
+
+      <TabsContent value="taxas" className="mt-4">
+        {taxasContent}
       </TabsContent>
 
       {PLACEHOLDER_TABS.map((t) => (

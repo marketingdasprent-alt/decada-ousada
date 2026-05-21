@@ -171,10 +171,12 @@ const Dashboard = () => {
         '0cf27801-80ff-4480-857e-e90bfb75d5a6', // Supervisor Gestor TVDE
       ])
       .order('nome', { ascending: true })
-      .then(({ data }) => {
-        if (data) setGestores(data.filter((p) => p.nome));
-      })
-      .catch((err) => console.error('Erro ao carregar gestores:', err));
+      .then(
+        ({ data }) => {
+          if (data) setGestores(data.filter((p) => p.nome));
+        },
+        (err) => console.error('Erro ao carregar gestores:', err)
+      );
   }, []);
 
   // ── Period change ────────────────────────────────────────────────────────
