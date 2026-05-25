@@ -19,6 +19,7 @@ export const RECURSOS = {
   MOTORISTAS_CONTACTOS: 'motoristas_contactos',
   MOTORISTAS_CRM: 'motoristas_crm',
   MOTORISTAS_CONTRATOS: 'motoristas_contratos',
+  MOTORISTAS_EDITAR_DATA_CONTRATO: 'motoristas_editar_data_contrato',
   MOTORISTA_PAINEL: 'motorista_painel', // Painel exclusivo do motorista
 
   // Viaturas

@@ -106,6 +106,7 @@ const RECURSO_LABELS: Record<string, string> = {
   contratos_criar: 'Criar novos contratos',
   contratos_reimprimir: 'Reimprimir contratos',
   motoristas_contratos: 'Gestão completa de contratos',
+  motoristas_editar_data_contrato: 'Editar data do 1.º contrato',
   // Financeiro
   financeiro_recibos: 'Gestão de recibos verdes',
   recibos_verdes_adicionar: 'Adicionar recibos verdes manualmente',
