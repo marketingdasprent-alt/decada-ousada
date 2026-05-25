@@ -270,9 +270,10 @@ export const GenerateDocumentsDialog = ({
       );
 
       let successCount = 0;
-      const isMultiple = templatesToGenerate.length > 1;
+      // Para impressão cada documento abre o seu próprio diálogo; combinação só para download
+      const isMultiple = templatesToGenerate.length > 1 && action === 'download';
 
-      // Quando múltiplos, criar um PDF combinado onde todos os documentos são adicionados
+      // Quando múltiplos downloads, criar um PDF combinado onde todos os documentos são adicionados
       const combinedPdf = isMultiple
         ? new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
         : null;
@@ -397,18 +398,12 @@ export const GenerateDocumentsDialog = ({
         }
       }
 
-      // Quando múltiplos: apagar página 1 em branco e abrir/descarregar o PDF combinado
+      // Quando múltiplos downloads: apagar página 1 em branco e guardar PDF combinado
       if (isMultiple && combinedPdf && successCount > 0) {
         combinedPdf.deletePage(1);
-
-        if (action === 'print') {
-          combinedPdf.autoPrint();
-          window.open(combinedPdf.output('bloburl'), '_blank');
-        } else {
-          const today_str = new Date().toISOString().split('T')[0].replace(/-/g, '');
-          const fileName = `Documentos_${activeMotorista.nome}_${today_str}.pdf`;
-          combinedPdf.save(fileName);
-        }
+        const today_str = new Date().toISOString().split('T')[0].replace(/-/g, '');
+        const fileName = `Documentos_${activeMotorista.nome}_${today_str}.pdf`;
+        combinedPdf.save(fileName);
       }
 
       setCurrentGenerating(null);
