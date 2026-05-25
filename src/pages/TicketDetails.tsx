@@ -46,6 +46,7 @@ import { TicketClosureDialog } from '@/components/assistencia/ticket/TicketClosu
 import { TicketSubstitutaModal } from '@/components/assistencia/ticket/TicketSubstitutaModal';
 import { TicketLegendaDialog } from '@/components/assistencia/ticket/TicketLegendaDialog';
 import { TicketHeader } from '@/components/assistencia/ticket/TicketHeader';
+import { useTicket } from '@/hooks/useTicket';
 import {
   TicketAccessPanel,
   type TicketAccessPanelRef,
@@ -107,14 +108,19 @@ const TicketDetails = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [ticket, setTicket] = useState<Ticket | null>(null);
-  const [viatura, setViatura] = useState<Viatura | null>(null);
-  const [motorista, setMotorista] = useState<Motorista | null>(null);
-  const [categoria, setCategoria] = useState<Categoria | null>(null);
-  const [criador, setCriador] = useState<{ nome: string } | null>(null);
+  const { data: ticketData, isLoading: loading, refetch: refetchTicket } = useTicket(id);
+  const ticket = ticketData?.ticket ?? null;
+  const viatura = ticketData?.viatura ?? null;
+  const motorista = ticketData?.motorista ?? null;
+  const categoria = ticketData?.categoria ?? null;
+  const criador = ticketData?.criador ?? null;
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
   const [anexos, setAnexos] = useState<Anexo[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const refreshAll = () => {
+    refetchTicket();
+    if (id) fetchMensagensAndAnexos(id);
+  };
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [novaMensagem, setNovaMensagem] = useState('');
@@ -225,44 +231,44 @@ const TicketDetails = () => {
   // Permission logic is calculated after ticket loads in the return section
 
   useEffect(() => {
-    if (id) {
-      fetchTicketData();
+    if (!id) return;
+    fetchMensagensAndAnexos(id);
+    accessPanelRef.current?.fetchAcessos(id);
 
-      // Subscrever em Tempo Real (WhatsApp style)
-      const channel = supabase
-        .channel(`ticket-${id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'assistencia_mensagens',
-            filter: `ticket_id=eq.${id}`,
-          },
-          () => {
-            console.log('Nova mensagem detetada! Atualizando...');
-            fetchMensagensAndAnexos();
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'assistencia_anexos',
-            filter: `ticket_id=eq.${id}`,
-          },
-          () => {
-            console.log('Novo anexo detetado! Atualizando...');
-            fetchMensagensAndAnexos();
-          }
-        )
-        .subscribe();
+    // Subscrever em Tempo Real (WhatsApp style)
+    const channel = supabase
+      .channel(`ticket-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'assistencia_mensagens',
+          filter: `ticket_id=eq.${id}`,
+        },
+        () => {
+          console.log('Nova mensagem detetada! Atualizando...');
+          fetchMensagensAndAnexos();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'assistencia_anexos',
+          filter: `ticket_id=eq.${id}`,
+        },
+        () => {
+          console.log('Novo anexo detetado! Atualizando...');
+          fetchMensagensAndAnexos();
+        }
+      )
+      .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
   useEffect(() => {
@@ -280,76 +286,6 @@ const TicketDetails = () => {
     }
   };
 
-  const fetchTicketData = async (silent = false) => {
-    try {
-      if (!silent) setLoading(true);
-
-      // Fetch ticket
-      const { data: ticketData, error: ticketError } = await supabase
-        .from('assistencia_tickets')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (ticketError) throw ticketError;
-      setTicket(ticketData);
-
-      // Fetch related data in parallel
-      const [viaturaRes, motoristaRes, categoriaRes, criadorRes] = await Promise.all([
-        supabase
-          .from('viaturas')
-          .select('id, matricula, marca, modelo, km_atual')
-          .eq('id', ticketData.viatura_id)
-          .single(),
-        ticketData.motorista_id
-          ? supabase
-              .from('motoristas_ativos')
-              .select('id, nome, telefone')
-              .eq('id', ticketData.motorista_id)
-              .single()
-          : supabase
-              .from('motorista_viaturas')
-              .select('motoristas_ativos!motorista_id(id, nome, telefone)')
-              .eq('viatura_id', ticketData.viatura_id)
-              .eq('status', 'ativo')
-              .is('data_fim', null)
-              .maybeSingle()
-              .then(({ data }) => ({
-                data: (data as any)?.motoristas_ativos || null,
-                error: null,
-              })),
-        ticketData.categoria_id
-          ? supabase
-              .from('assistencia_categorias')
-              .select('id, nome, cor')
-              .eq('id', ticketData.categoria_id)
-              .single()
-          : Promise.resolve({ data: null, error: null }),
-        ticketData.criado_por
-          ? supabase.from('profiles').select('id, nome').eq('id', ticketData.criado_por).single()
-          : Promise.resolve({ data: null, error: null }),
-      ]);
-
-      if (viaturaRes.data) setViatura(viaturaRes.data as Viatura);
-      if (motoristaRes.data) setMotorista(motoristaRes.data as Motorista);
-      if (categoriaRes.data) setCategoria(categoriaRes.data as Categoria);
-      if (criadorRes.data) setCriador(criadorRes.data);
-
-      // Separar a lógica de mensagens para poder atualizar em tempo real
-      await fetchMensagensAndAnexos(ticketData.id);
-      await accessPanelRef.current?.fetchAcessos(ticketData.id);
-    } catch (error: any) {
-      console.error('Erro ao carregar ticket:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar os detalhes do ticket.',
-        variant: 'destructive',
-      });
-      navigate('/assistencia');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchMensagensAndAnexos = async (ticketIdOverride?: string) => {
     const targetId = ticketIdOverride || id;
@@ -607,7 +543,7 @@ const TicketDetails = () => {
 
       setNovaMensagem('');
       setSelectedFiles([]);
-      fetchTicketData(true);
+      refreshAll();
 
       toast({
         title: 'Sucesso',
@@ -661,7 +597,7 @@ const TicketDetails = () => {
         description: 'Estado do ticket atualizado.',
       });
 
-      fetchTicketData();
+      refreshAll();
     } catch (error: any) {
       console.error('Erro ao atualizar estado:', error);
       toast({
@@ -689,7 +625,7 @@ const TicketDetails = () => {
         tipo: 'status_change',
       });
       toast({ title: 'Ticket aceite', description: 'Viatura colocada em manutenção.' });
-      fetchTicketData();
+      refreshAll();
     } catch (error: any) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     }
@@ -728,7 +664,7 @@ const TicketDetails = () => {
       });
       setShowSubstituteModal(false);
       toast({ title: 'Viatura substituta atribuída.' });
-      fetchTicketData();
+      refreshAll();
     } catch (error: any) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } finally {
@@ -1055,7 +991,7 @@ const TicketDetails = () => {
           .catch((err) => console.error('Erro ao enviar notificação de falta de fatura:', err));
       }
 
-      fetchTicketData();
+      refreshAll();
     } catch (error: any) {
       console.error('Erro ao concluir reparação:', error);
       toast({
