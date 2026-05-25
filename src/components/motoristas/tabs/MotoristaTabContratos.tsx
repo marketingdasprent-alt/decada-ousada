@@ -81,6 +81,7 @@ export function MotoristaTabContratos({
   const [generating, setGenerating] = useState<string | null>(null);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [definindoPrimeiraData, setDefinindoPrimeiraData] = useState(false);
+  const [editandoPrimeiraData, setEditandoPrimeiraData] = useState(false);
   const [renovandoContratacao, setRenovandoContratacao] = useState(false);
   const [savingContratacao, setSavingContratacao] = useState(false);
   const [dataContratacaoInput, setDataContratacaoInput] = useState('');
@@ -308,6 +309,31 @@ export function MotoristaTabContratos({
     }
   };
 
+  const handleEditarPrimeiraData = async () => {
+    const formattedDate = sanitizeDate(dataContratacaoInput);
+    if (!formattedDate) {
+      toast.error('Selecione uma data válida');
+      return;
+    }
+    try {
+      setSavingContratacao(true);
+      const { error } = await supabase
+        .from('motoristas_ativos')
+        .update({ data_contratacao: formattedDate })
+        .eq('id', motorista.id);
+
+      if (error) throw error;
+      toast.success('Data do 1.º contrato atualizada');
+      setEditandoPrimeiraData(false);
+      onMotoristaUpdated?.();
+    } catch (error) {
+      console.error('Erro ao editar data de contratação:', error);
+      toast.error('Erro ao editar data de contratação');
+    } finally {
+      setSavingContratacao(false);
+    }
+  };
+
   const handleRenovarContratacao = async () => {
     const formattedDate = sanitizeDate(dataRenovacaoInput);
     if (!formattedDate) {
@@ -442,8 +468,23 @@ export function MotoristaTabContratos({
               <Briefcase className="h-3.5 w-3.5" />
               <span>Data do 1.º contrato</span>
             </div>
-            {motorista.data_contratacao && !definindoPrimeiraData ? (
-              <p className="font-semibold text-base">{formatDate(motorista.data_contratacao)}</p>
+            {motorista.data_contratacao && !definindoPrimeiraData && !editandoPrimeiraData ? (
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-base">{formatDate(motorista.data_contratacao)}</p>
+                {hasPermission('motoristas_editar_data_contrato') && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => {
+                      setDataContratacaoInput(sanitizeDate(motorista.data_contratacao));
+                      setEditandoPrimeiraData(true);
+                    }}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
             ) : definindoPrimeiraData ? (
               <div className="space-y-2">
                 <Input
@@ -477,16 +518,48 @@ export function MotoristaTabContratos({
                   </Button>
                 </div>
               </div>
+            ) : editandoPrimeiraData ? (
+              <div className="space-y-2">
+                <Input
+                  type="date"
+                  value={dataContratacaoInput}
+                  onChange={(e) => setDataContratacaoInput(e.target.value)}
+                />
+                <div className="flex gap-1 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditandoPrimeiraData(false);
+                      setDataContratacaoInput(sanitizeDate(motorista.data_contratacao));
+                    }}
+                    disabled={savingContratacao}
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" /> Cancelar
+                  </Button>
+                  <Button size="sm" onClick={handleEditarPrimeiraData} disabled={savingContratacao}>
+                    {savingContratacao ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    Guardar
+                  </Button>
+                </div>
+              </div>
             ) : (
               <Button variant="outline" size="sm" onClick={() => setDefinindoPrimeiraData(true)}>
                 <Pencil className="h-3.5 w-3.5 mr-1" /> Definir
               </Button>
             )}
-            {motorista.data_contratacao && !definindoPrimeiraData && (
-              <p className="text-[11px] text-muted-foreground">
-                Esta data é o registo original e não pode ser alterada.
-              </p>
-            )}
+            {motorista.data_contratacao &&
+              !definindoPrimeiraData &&
+              !editandoPrimeiraData &&
+              !hasPermission('motoristas_editar_data_contrato') && (
+                <p className="text-[11px] text-muted-foreground">
+                  Esta data é o registo original e não pode ser alterada.
+                </p>
+              )}
           </div>
 
           {/* Última renovação — pode ser atualizada */}
