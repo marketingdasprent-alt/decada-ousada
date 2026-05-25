@@ -1,11 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type {
-  Ticket,
-  Viatura,
-  Motorista,
-  Categoria,
-} from '@/components/assistencia/ticket/types';
+import type { Ticket, Viatura, Motorista, Categoria } from '@/components/assistencia/ticket/types';
 
 export interface TicketData {
   ticket: Ticket;

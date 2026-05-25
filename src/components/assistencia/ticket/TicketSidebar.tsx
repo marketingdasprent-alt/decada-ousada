@@ -61,10 +61,7 @@ export const TicketSidebar: React.FC<Props> = ({
       <CardContent className="pt-0 pb-3">
         <div className="flex gap-1 overflow-hidden h-12 mb-3">
           {anexos.slice(0, 4).map((anexo) => (
-            <div
-              key={anexo.id}
-              className="w-1/4 h-full rounded border overflow-hidden bg-muted"
-            >
+            <div key={anexo.id} className="w-1/4 h-full rounded border overflow-hidden bg-muted">
               {anexo.tipo_ficheiro?.startsWith('image/') ||
               anexo.nome_ficheiro?.match(/\.(jpg|jpeg|png|webp)$/i) ? (
                 <img src={anexo.ficheiro_url} className="w-full h-full object-cover" alt="" />
