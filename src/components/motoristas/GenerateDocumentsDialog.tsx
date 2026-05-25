@@ -270,9 +270,10 @@ export const GenerateDocumentsDialog = ({
       );
 
       let successCount = 0;
-      const isMultiple = templatesToGenerate.length > 1;
+      // Para impressão cada documento abre o seu próprio diálogo; combinação só para download
+      const isMultiple = templatesToGenerate.length > 1 && action === 'download';
 
-      // Quando múltiplos, criar um PDF combinado onde todos os documentos são adicionados
+      // Quando múltiplos downloads, criar um PDF combinado onde todos os documentos são adicionados
       const combinedPdf = isMultiple
         ? new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
         : null;
