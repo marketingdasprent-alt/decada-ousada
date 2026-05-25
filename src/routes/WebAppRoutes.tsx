@@ -181,7 +181,7 @@ const WebAppRoutes = () => {
           <Route
             path="/viaturas"
             element={
-              <ProtectedRoute requiredResource={RECURSOS.VIATURAS_VER}>
+              <ProtectedRoute requiredResource={RECURSOS.VIATURAS_VER} requiredModule="frota">
                 <DashboardLayout>
                   <Viaturas />
                 </DashboardLayout>
@@ -191,7 +191,7 @@ const WebAppRoutes = () => {
           <Route
             path="/viaturas/:id"
             element={
-              <ProtectedRoute requiredResource={RECURSOS.VIATURAS_VER}>
+              <ProtectedRoute requiredResource={RECURSOS.VIATURAS_VER} requiredModule="frota">
                 <DashboardLayout>
                   <ViaturaDetalhe />
                 </DashboardLayout>
@@ -291,7 +291,10 @@ const WebAppRoutes = () => {
           <Route
             path="/assistencia/nova"
             element={
-              <ProtectedRoute requiredResource={RECURSOS.ASSISTENCIA_TICKETS}>
+              <ProtectedRoute
+                requiredResource={RECURSOS.ASSISTENCIA_TICKETS}
+                requiredModule="assistencia"
+              >
                 <DashboardLayout>
                   <AssistenciaNova />
                 </DashboardLayout>
@@ -301,7 +304,10 @@ const WebAppRoutes = () => {
           <Route
             path="/assistencia"
             element={
-              <ProtectedRoute requiredResource={RECURSOS.ASSISTENCIA_TICKETS}>
+              <ProtectedRoute
+                requiredResource={RECURSOS.ASSISTENCIA_TICKETS}
+                requiredModule="assistencia"
+              >
                 <DashboardLayout>
                   <Assistencia />
                 </DashboardLayout>
@@ -311,7 +317,10 @@ const WebAppRoutes = () => {
           <Route
             path="/assistencia/:id"
             element={
-              <ProtectedRoute requiredResource={RECURSOS.ASSISTENCIA_TICKETS}>
+              <ProtectedRoute
+                requiredResource={RECURSOS.ASSISTENCIA_TICKETS}
+                requiredModule="assistencia"
+              >
                 <DashboardLayout>
                   <TicketDetails />
                 </DashboardLayout>
@@ -371,7 +380,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/contratos"
             element={
-              <ProtectedRoute requiredResource="renting_contratos">
+              <ProtectedRoute requiredResource="renting_contratos" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingContratos />
                 </DashboardLayout>
@@ -381,7 +390,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/contratos/novo"
             element={
-              <ProtectedRoute requiredResource="renting_contratos">
+              <ProtectedRoute requiredResource="renting_contratos" requiredModule="aluguer">
                 <DashboardLayout>
                   <ContratoForm />
                 </DashboardLayout>
@@ -391,7 +400,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/contratos/:id"
             element={
-              <ProtectedRoute requiredResource="renting_contratos">
+              <ProtectedRoute requiredResource="renting_contratos" requiredModule="aluguer">
                 <DashboardLayout>
                   <ContratoForm />
                 </DashboardLayout>
@@ -401,7 +410,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/reservas"
             element={
-              <ProtectedRoute requiredResource="renting_reservas">
+              <ProtectedRoute requiredResource="renting_reservas" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingReservas />
                 </DashboardLayout>
@@ -411,7 +420,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/reservas/nova"
             element={
-              <ProtectedRoute requiredResource="renting_reservas">
+              <ProtectedRoute requiredResource="renting_reservas" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingReservaForm />
                 </DashboardLayout>
@@ -421,7 +430,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/reservas/:id"
             element={
-              <ProtectedRoute requiredResource="renting_reservas">
+              <ProtectedRoute requiredResource="renting_reservas" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingReservaForm />
                 </DashboardLayout>
@@ -431,7 +440,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/movimentacoes"
             element={
-              <ProtectedRoute requiredResource="renting_movimentacoes">
+              <ProtectedRoute requiredResource="renting_movimentacoes" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingMovimentacoes />
                 </DashboardLayout>
@@ -441,7 +450,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/movimentacoes/novo"
             element={
-              <ProtectedRoute requiredResource="renting_movimentacoes">
+              <ProtectedRoute requiredResource="renting_movimentacoes" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingMovimentacaoForm />
                 </DashboardLayout>
@@ -451,7 +460,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/movimentacoes/:id"
             element={
-              <ProtectedRoute requiredResource="renting_movimentacoes">
+              <ProtectedRoute requiredResource="renting_movimentacoes" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingMovimentacaoForm />
                 </DashboardLayout>
@@ -461,7 +470,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/clientes"
             element={
-              <ProtectedRoute requiredResource="renting_clientes">
+              <ProtectedRoute requiredResource="renting_clientes" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingClientes />
                 </DashboardLayout>
@@ -471,7 +480,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/clientes/novo"
             element={
-              <ProtectedRoute requiredResource="renting_clientes">
+              <ProtectedRoute requiredResource="renting_clientes" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingClienteForm />
                 </DashboardLayout>
@@ -481,7 +490,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/clientes/:id"
             element={
-              <ProtectedRoute requiredResource="renting_clientes">
+              <ProtectedRoute requiredResource="renting_clientes" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingClienteForm />
                 </DashboardLayout>
@@ -491,7 +500,7 @@ const WebAppRoutes = () => {
           <Route
             path="/viaturas/grupos"
             element={
-              <ProtectedRoute requiredResource="viaturas_ver">
+              <ProtectedRoute requiredResource="viaturas_ver" requiredModule="frota">
                 <DashboardLayout>
                   <RentingGrupos />
                 </DashboardLayout>
@@ -501,7 +510,7 @@ const WebAppRoutes = () => {
           <Route
             path="/viaturas/grupos/novo"
             element={
-              <ProtectedRoute requiredResource="viaturas_ver">
+              <ProtectedRoute requiredResource="viaturas_ver" requiredModule="frota">
                 <DashboardLayout>
                   <RentingGrupoForm />
                 </DashboardLayout>
@@ -511,7 +520,7 @@ const WebAppRoutes = () => {
           <Route
             path="/viaturas/grupos/:id"
             element={
-              <ProtectedRoute requiredResource="viaturas_ver">
+              <ProtectedRoute requiredResource="viaturas_ver" requiredModule="frota">
                 <DashboardLayout>
                   <RentingGrupoForm />
                 </DashboardLayout>
@@ -521,7 +530,7 @@ const WebAppRoutes = () => {
           <Route
             path="/viaturas/marcas-modelos"
             element={
-              <ProtectedRoute requiredResource="viaturas_ver">
+              <ProtectedRoute requiredResource="viaturas_ver" requiredModule="frota">
                 <DashboardLayout>
                   <ViaturaMarcasModelos />
                 </DashboardLayout>
@@ -531,7 +540,7 @@ const WebAppRoutes = () => {
           <Route
             path="/viaturas/combustiveis"
             element={
-              <ProtectedRoute requiredResource="viaturas_ver">
+              <ProtectedRoute requiredResource="viaturas_ver" requiredModule="frota">
                 <DashboardLayout>
                   <ViaturaCombustiveis />
                 </DashboardLayout>
@@ -541,7 +550,7 @@ const WebAppRoutes = () => {
           <Route
             path="/viaturas/tipos"
             element={
-              <ProtectedRoute requiredResource="viaturas_ver">
+              <ProtectedRoute requiredResource="viaturas_ver" requiredModule="frota">
                 <DashboardLayout>
                   <ViaturaTipos />
                 </DashboardLayout>
@@ -551,7 +560,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/tarifas"
             element={
-              <ProtectedRoute requiredResource="renting_contratos">
+              <ProtectedRoute requiredResource="renting_contratos" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingTarifas />
                 </DashboardLayout>
@@ -561,7 +570,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/tarifas/nova"
             element={
-              <ProtectedRoute requiredResource="renting_contratos">
+              <ProtectedRoute requiredResource="renting_contratos" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingTarifaForm />
                 </DashboardLayout>
@@ -571,7 +580,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/tarifas/:id"
             element={
-              <ProtectedRoute requiredResource="renting_contratos">
+              <ProtectedRoute requiredResource="renting_contratos" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingTarifaForm />
                 </DashboardLayout>
@@ -581,7 +590,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/tarifas/coberturas"
             element={
-              <ProtectedRoute requiredResource="renting_contratos">
+              <ProtectedRoute requiredResource="renting_contratos" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingCoberturas />
                 </DashboardLayout>
@@ -591,7 +600,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/tarifas/extras"
             element={
-              <ProtectedRoute requiredResource="renting_contratos">
+              <ProtectedRoute requiredResource="renting_contratos" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingExtras />
                 </DashboardLayout>
@@ -601,7 +610,7 @@ const WebAppRoutes = () => {
           <Route
             path="/renting/tarifas/taxas"
             element={
-              <ProtectedRoute requiredResource="renting_contratos">
+              <ProtectedRoute requiredResource="renting_contratos" requiredModule="aluguer">
                 <DashboardLayout>
                   <RentingTaxas />
                 </DashboardLayout>

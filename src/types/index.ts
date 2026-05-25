@@ -5,6 +5,7 @@ export * from './contrato';
 export * from './convites';
 export * from './reserva';
 export * from './movimento';
+export * from './modulo';
 export * from './contratoRenting';
 export * from './rentingCobertura';
 export * from './rentingExtra';
