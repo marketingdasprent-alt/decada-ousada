@@ -27,6 +27,7 @@ jobs:
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
+      - run: pnpm format
       - run: pnpm format:check
 
   lint:
