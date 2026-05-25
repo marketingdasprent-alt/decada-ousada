@@ -9,6 +9,7 @@ import { pt } from 'date-fns/locale';
 import { FileDown, FileSpreadsheet, Loader2, X } from 'lucide-react';
 import { formatMatricula } from './EventoCard';
 import { cn } from '@/lib/utils';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { CalendarioEvento } from '@/pages/Calendario';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
@@ -97,6 +98,8 @@ interface Props {
 }
 
 export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMonth }) => {
+  const { hasPermission } = usePermissions();
+  const podeVerGestores = hasPermission('calendario_ver_gestores');
   const [dataInicio, setDataInicio] = useState(format(startOfMonth(currentMonth), 'yyyy-MM-dd'));
   const [dataFim, setDataFim] = useState(format(endOfMonth(currentMonth), 'yyyy-MM-dd'));
   const [tipoFiltro, setTipoFiltro] = useState<string | null>(null); // null = Todos
@@ -113,7 +116,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
   }, [open, currentMonth]);
 
   const { data: eventos = [], isLoading } = useQuery({
-    queryKey: ['relatorio-eventos', dataInicio, dataFim],
+    queryKey: ['relatorio-eventos', dataInicio, dataFim, podeVerGestores],
     enabled: open && !!dataInicio && !!dataFim,
     queryFn: async () => {
       const start = new Date(dataInicio + 'T00:00:00');
@@ -130,7 +133,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
 
       const criadorIds = [...new Set((data || []).map((e) => e.criado_por))];
       let profilesMap: Record<string, string> = {};
-      if (criadorIds.length > 0) {
+      if (podeVerGestores && criadorIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, nome')
@@ -544,7 +547,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
         'Matrícula',
         'Matrícula Devolver',
         'Cidade',
-        'Responsável',
+        ...(podeVerGestores ? ['Responsável'] : []),
         'Observações',
       ];
 
@@ -557,7 +560,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
           formatMatricula(ev.titulo),
           ev.matricula_devolver ? formatMatricula(ev.matricula_devolver) : '',
           ev.cidade || '',
-          ev.profiles?.nome || '',
+          ...(podeVerGestores ? [ev.profiles?.nome || ''] : []),
           ev.descricao || '',
         ];
       });
@@ -571,7 +574,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
         { wch: 14 }, // Matrícula
         { wch: 18 }, // Matrícula Devolver
         { wch: 20 }, // Cidade
-        { wch: 22 }, // Responsável
+        ...(podeVerGestores ? [{ wch: 22 }] : []), // Responsável
         { wch: 60 }, // Observações
       ];
 
@@ -992,20 +995,22 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
               )}
               PDF Eventos
             </Button>
-            <Button
-              variant="outline"
-              onClick={exportarPDFPorGestor}
-              disabled={isLoading || exportGestorLoading || eventosFiltrados.length === 0}
-              className="gap-2 h-8 text-xs"
-              size="sm"
-            >
-              {exportGestorLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <FileDown className="h-3.5 w-3.5" />
-              )}
-              PDF Gestor
-            </Button>
+            {podeVerGestores && (
+              <Button
+                variant="outline"
+                onClick={exportarPDFPorGestor}
+                disabled={isLoading || exportGestorLoading || eventosFiltrados.length === 0}
+                className="gap-2 h-8 text-xs"
+                size="sm"
+              >
+                {exportGestorLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <FileDown className="h-3.5 w-3.5" />
+                )}
+                PDF Gestor
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={exportarExcel}
@@ -1138,7 +1143,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
               )}
 
               {/* Gráfico por gestor */}
-              {totalPorGestor.length > 0 && (
+              {podeVerGestores && totalPorGestor.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Por Gestor

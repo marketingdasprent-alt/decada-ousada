@@ -50,6 +50,7 @@ export const getRecursoLabel = (nome: string): string => {
 
     // Calendário
     calendario_ver: 'Ver eventos do calendário',
+    calendario_ver_gestores: 'Ver gestores nos relatórios de eventos',
     calendario_criar: 'Criar novos eventos',
     calendario_editar: 'Editar eventos existentes',
     calendario_editar_todos: 'Editar eventos de todos os gestores',

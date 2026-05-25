@@ -62,6 +62,7 @@ export const RECURSOS = {
   CALENDARIO_EDITAR_TODOS: 'calendario_editar_todos',
   CALENDARIO_ELIMINAR: 'calendario_eliminar',
   CALENDARIO_RECOLHAS: 'calendario_recolhas',
+  CALENDARIO_VER_GESTORES: 'calendario_ver_gestores',
 
   // Renting
   RENTING_RESERVAS: 'renting_reservas',
