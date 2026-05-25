@@ -43,6 +43,8 @@ import { TicketMediaLightbox } from '@/components/assistencia/TicketMediaLightbo
 import { TicketGalleryDialog } from '@/components/assistencia/TicketGalleryDialog';
 import { TicketSidebar } from '@/components/assistencia/ticket/TicketSidebar';
 import { TicketClosureDialog } from '@/components/assistencia/ticket/TicketClosureDialog';
+import { TicketSubstitutaModal } from '@/components/assistencia/ticket/TicketSubstitutaModal';
+import { TicketLegendaDialog } from '@/components/assistencia/ticket/TicketLegendaDialog';
 import {
   TicketAccessPanel,
   type TicketAccessPanelRef,
@@ -1778,60 +1780,15 @@ const TicketDetails = () => {
       />
 
       {/* Modal de seleção de viatura substituta */}
-      <Dialog open={showSubstituteModal} onOpenChange={setShowSubstituteModal}>
-        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Car className="h-5 w-5" /> Atribuir Viatura Substituta
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Selecione uma viatura disponível para atribuir como substituta.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              className="w-full pl-9 pr-3 py-2 text-sm border rounded-md bg-background"
-              placeholder="Pesquisar matrícula ou modelo..."
-              value={substituteSearch}
-              onChange={(e) => setSubstituteSearch(e.target.value)}
-            />
-          </div>
-          <div className="overflow-y-auto flex-1 space-y-2">
-            {viaturasDisponiveis
-              .filter(
-                (v) =>
-                  v.matricula.toLowerCase().includes(substituteSearch.toLowerCase()) ||
-                  v.marca.toLowerCase().includes(substituteSearch.toLowerCase()) ||
-                  v.modelo.toLowerCase().includes(substituteSearch.toLowerCase())
-              )
-              .map((v) => (
-                <button
-                  key={v.id}
-                  onClick={() => handleAtribuirSubstituta(v.id)}
-                  disabled={assigningSubstitute}
-                  className="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors text-left"
-                >
-                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Car className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-mono font-bold text-sm">{v.matricula}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {v.marca} {v.modelo}
-                    </p>
-                  </div>
-                  {assigningSubstitute && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
-                </button>
-              ))}
-            {viaturasDisponiveis.length === 0 && (
-              <p className="text-center text-muted-foreground py-8 text-sm">
-                Sem viaturas disponíveis.
-              </p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <TicketSubstitutaModal
+        open={showSubstituteModal}
+        onOpenChange={setShowSubstituteModal}
+        viaturasDisponiveis={viaturasDisponiveis}
+        search={substituteSearch}
+        onSearchChange={setSubstituteSearch}
+        assigning={assigningSubstitute}
+        onSelect={handleAtribuirSubstituta}
+      />
       <TicketMediaLightbox
         open={lightboxOpen}
         onOpenChange={setLightboxOpen}
@@ -1843,36 +1800,16 @@ const TicketDetails = () => {
       />
 
       {/* Modal Editar Legenda */}
-      <Dialog open={!!editingLegenda} onOpenChange={(open) => !open && setEditingLegenda(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Legenda da Imagem</DialogTitle>
-            <DialogDescription className="sr-only">
-              Edite a legenda da imagem selecionada.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Descrição / Legenda</Label>
-              <Textarea
-                placeholder="Ex: Pneu dianteiro esquerdo desgastado..."
-                value={editingLegenda?.legenda || ''}
-                onChange={(e) =>
-                  setEditingLegenda((prev) => (prev ? { ...prev, legenda: e.target.value } : null))
-                }
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditingLegenda(null)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleUpdateLegenda} disabled={updatingLegenda}>
-                {updatingLegenda ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : 'Guardar'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <TicketLegendaDialog
+        open={!!editingLegenda}
+        legenda={editingLegenda?.legenda || ''}
+        saving={updatingLegenda}
+        onLegendaChange={(legenda) =>
+          setEditingLegenda((prev) => (prev ? { ...prev, legenda } : null))
+        }
+        onSave={handleUpdateLegenda}
+        onClose={() => setEditingLegenda(null)}
+      />
 
       {/* Modal Concluir / Editar Reparação */}
       <TicketClosureDialog
