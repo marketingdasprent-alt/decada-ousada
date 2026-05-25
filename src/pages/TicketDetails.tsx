@@ -41,6 +41,8 @@ import {
 import { AssistenciaMultimediaUpload } from '@/components/assistencia/AssistenciaMultimediaUpload';
 import { TicketMediaLightbox } from '@/components/assistencia/TicketMediaLightbox';
 import { TicketGalleryDialog } from '@/components/assistencia/TicketGalleryDialog';
+import { TicketSidebar } from '@/components/assistencia/ticket/TicketSidebar';
+import { TicketClosureDialog } from '@/components/assistencia/ticket/TicketClosureDialog';
 import {
   TicketAccessPanel,
   type TicketAccessPanelRef,
@@ -75,6 +77,7 @@ import type {
   TicketAnexo as Anexo,
   TicketCategoria as Categoria,
 } from '@/types/ticket';
+import { statusConfig, prioridadeConfig } from '@/lib/ticketsConfig';
 
 interface Viatura {
   id: string;
@@ -89,38 +92,6 @@ interface Motorista {
   nome: string;
   telefone: string | null;
 }
-
-const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  pendente: {
-    label: 'Pendente de Aprovação',
-    color: 'bg-purple-600',
-    icon: <Clock className="h-4 w-4" />,
-  },
-  aberto: { label: 'Aberto', color: 'bg-blue-500', icon: <AlertCircle className="h-4 w-4" /> },
-  em_andamento: {
-    label: 'Em Manutenção',
-    color: 'bg-yellow-500',
-    icon: <Clock className="h-4 w-4" />,
-  },
-  aguardando: {
-    label: 'Aguardando Peças',
-    color: 'bg-orange-500',
-    icon: <Clock className="h-4 w-4" />,
-  },
-  resolvido: {
-    label: 'Concluído',
-    color: 'bg-green-500',
-    icon: <CheckCircle2 className="h-4 w-4" />,
-  },
-  fechado: { label: 'Fechado', color: 'bg-gray-500', icon: <CheckCircle2 className="h-4 w-4" /> },
-};
-
-const prioridadeConfig: Record<string, { label: string; color: string }> = {
-  baixa: { label: 'Baixa', color: 'bg-gray-400' },
-  media: { label: 'Média', color: 'bg-blue-400' },
-  alta: { label: 'Alta', color: 'bg-orange-500' },
-  urgente: { label: 'Urgente', color: 'bg-red-500' },
-};
 
 const TicketDetails = () => {
   const { id } = useParams();
@@ -1788,129 +1759,14 @@ const TicketDetails = () => {
           </Card>
         </div>
 
-        {/* Sidebar (Scrollable) */}
-        <div className="space-y-6 lg:h-full lg:overflow-y-auto pr-1 custom-scrollbar">
-          {/* Description Card - MOVED HERE */}
-          {ticket.descricao && (
-            <Card className="border-l-4 border-l-primary shadow-sm">
-              <CardHeader className="py-3 pb-2">
-                <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-bold flex items-center gap-2">
-                  <FileText className="h-3.5 w-3.5" /> Descrição do Problema
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-sm leading-relaxed">{ticket.descricao}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Gallery Summary Card - NEW COMPACT VERSION */}
-          <Card className="overflow-hidden border-none shadow-sm bg-gradient-to-br from-background to-muted/50">
-            <CardHeader className="py-3 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-bold flex items-center gap-2">
-                <Image className="h-3.5 w-3.5 text-primary" /> Multimédia
-              </CardTitle>
-              <Badge variant="secondary" className="font-mono text-[10px]">
-                {anexos.length} itens
-              </Badge>
-            </CardHeader>
-            <CardContent className="pt-0 pb-3">
-              <div className="flex gap-1 overflow-hidden h-12 mb-3">
-                {anexos.slice(0, 4).map((anexo, i) => (
-                  <div
-                    key={anexo.id}
-                    className="w-1/4 h-full rounded border overflow-hidden bg-muted"
-                  >
-                    {anexo.tipo_ficheiro?.startsWith('image/') ||
-                    anexo.nome_ficheiro?.match(/\.(jpg|jpeg|png|webp)$/i) ? (
-                      <img src={anexo.ficheiro_url} className="w-full h-full object-cover" alt="" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <PlayCircle className="h-4 w-4 opacity-30" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full h-8 text-xs font-bold gap-2"
-                onClick={() => setShowGalleryDialog(true)}
-              >
-                <Eye className="h-3.5 w-3.5" /> Ver Galeria Completa
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Info Card */}
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" /> Informações
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-0">
-              {/* Viatura */}
-              {viatura && (
-                <div>
-                  <Label className="text-[10px] uppercase text-muted-foreground font-bold">
-                    Viatura
-                  </Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Car className="h-4 w-4 text-blue-500" />
-                    <span className="font-mono font-bold text-sm">{viatura.matricula}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Motorista */}
-              {motorista && (
-                <div>
-                  <Label className="text-[10px] uppercase text-muted-foreground font-bold">
-                    Motorista
-                  </Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <User className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium">{motorista.nome}</span>
-                  </div>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Dates */}
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <Label className="text-[10px] uppercase text-muted-foreground font-bold">
-                    Criado em
-                  </Label>
-                  <div className="flex items-center gap-2 mt-1 text-xs">
-                    <Calendar className="h-3 w-3" />
-                    <span>{format(new Date(ticket.created_at), 'dd/MM/yyyy HH:mm')}</span>
-                  </div>
-                  {criador && (
-                    <p className="text-[10px] text-muted-foreground mt-1 ml-5">
-                      por {criador.nome}
-                    </p>
-                  )}
-                </div>
-
-                {ticket.data_estimada && (
-                  <div>
-                    <Label className="text-[10px] uppercase text-muted-foreground font-bold">
-                      Previsão
-                    </Label>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-amber-600">
-                      <Clock className="h-3 w-3" />
-                      <span>{format(new Date(ticket.data_estimada), 'dd/MM/yyyy')}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <TicketSidebar
+          ticket={ticket}
+          anexos={anexos}
+          viatura={viatura}
+          motorista={motorista}
+          criador={criador}
+          onOpenGallery={() => setShowGalleryDialog(true)}
+        />
       </div>
 
       <TicketAccessPanel
@@ -2019,286 +1875,30 @@ const TicketDetails = () => {
       </Dialog>
 
       {/* Modal Concluir / Editar Reparação */}
-      <Dialog
+      <TicketClosureDialog
         open={showClosureForm}
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowClosureForm(false);
-            setIsEditMode(false);
-            setClosureDecisao('empresa');
-            setClosureSubstDecisao(null);
-          }
+        isEditMode={isEditMode}
+        closureLoading={closureLoading}
+        closureData={closureData}
+        closureDecisao={closureDecisao}
+        closureSubstDecisao={closureSubstDecisao}
+        ticket={ticket}
+        viatura={viatura}
+        viaturaSubstituta={viaturaSubstituta}
+        faturaFile={faturaFile}
+        onClosureDataChange={(data) => setClosureData((prev) => ({ ...prev, ...data }))}
+        onDecisaoChange={setClosureDecisao}
+        onSubstDecisaoChange={setClosureSubstDecisao}
+        onFaturaChange={setFaturaFile}
+        onExitMediaChange={setExitMediaFiles}
+        onSubmit={handleViaturaReparada}
+        onClose={() => {
+          setShowClosureForm(false);
+          setIsEditMode(false);
+          setClosureDecisao('empresa');
+          setClosureSubstDecisao(null);
         }}
-      >
-        <DialogContent className="max-w-2xl flex flex-col h-[90vh] p-0">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
-            <DialogTitle className="flex items-center gap-2">
-              {isEditMode ? (
-                <Wrench className="h-5 w-5 text-primary" />
-              ) : (
-                <CheckCircle2 className="h-5 w-5 text-primary" />
-              )}
-              {isEditMode
-                ? 'Editar Detalhes da Reparação'
-                : 'Concluir Reparação (Viatura Reparada)'}
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Preencha os dados de fecho desta assistência.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>
-                  KM Final <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  type="number"
-                  placeholder="Quilometragem atual"
-                  value={closureData.km_fim}
-                  onChange={(e) => setClosureData((prev) => ({ ...prev, km_fim: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Combustível Final</Label>
-                <Select
-                  value={closureData.combustivel_fim}
-                  onValueChange={(val) =>
-                    setClosureData((prev) => ({ ...prev, combustivel_fim: val }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="vazio">Vazio</SelectItem>
-                    <SelectItem value="reserva">Reserva</SelectItem>
-                    <SelectItem value="1/4">1/4</SelectItem>
-                    <SelectItem value="meio">1/2 (Meio)</SelectItem>
-                    <SelectItem value="3/4">3/4</SelectItem>
-                    <SelectItem value="cheio">Cheio</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Valor Total (€)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={closureData.valor_reparacao}
-                  onChange={(e) =>
-                    setClosureData((prev) => ({ ...prev, valor_reparacao: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>AdBlue Final</Label>
-                <Select
-                  value={closureData.adblue_fim}
-                  onValueChange={(val) => setClosureData((prev) => ({ ...prev, adblue_fim: val }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Cheio">Cheio</SelectItem>
-                    <SelectItem value="Meio">Meio</SelectItem>
-                    <SelectItem value="Reserva">Reserva</SelectItem>
-                    <SelectItem value="Vazio">Vazio</SelectItem>
-                    <SelectItem value="Não aplicável">Não aplicável</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Limpeza Final</Label>
-                <Select
-                  value={closureData.limpeza_fim}
-                  onValueChange={(val) => setClosureData((prev) => ({ ...prev, limpeza_fim: val }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Limpa">Limpa</SelectItem>
-                    <SelectItem value="Razoável">Razoável</SelectItem>
-                    <SelectItem value="Suja">Suja</SelectItem>
-                    <SelectItem value="Muito Suja">Muito Suja</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Resumo da Reparação</Label>
-              <Textarea
-                placeholder="O que foi reparado..."
-                value={closureData.descricao_reparacao}
-                onChange={(e) =>
-                  setClosureData((prev) => ({ ...prev, descricao_reparacao: e.target.value }))
-                }
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nº Fatura</Label>
-                <Input
-                  placeholder="Ex: FT 2026/123"
-                  value={closureData.numero_fatura}
-                  onChange={(e) =>
-                    setClosureData((prev) => ({ ...prev, numero_fatura: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Anexar Fatura</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => faturaInputRef.current?.click()}
-                    className="flex-1"
-                  >
-                    <Paperclip className="h-4 w-4 mr-2" />
-                    {faturaFile ? faturaFile.name : 'Selecionar ficheiro'}
-                  </Button>
-                  {faturaFile && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setFaturaFile(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <input
-                    ref={faturaInputRef}
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => setFaturaFile(e.target.files?.[0] || null)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4 border-t pt-4">
-              <Label className="text-base font-bold flex items-center gap-2">
-                <Image className="h-5 w-5 text-blue-500" />
-                Multimédia de Saída
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Registe o estado da viatura no momento da entrega.
-              </p>
-              <AssistenciaMultimediaUpload
-                onFilesChange={setExitMediaFiles}
-                requiredPhotos={0}
-                requiredVideos={0}
-              />
-            </div>
-
-            <div className="space-y-2 border-t pt-4">
-              <Label className="font-semibold">
-                Responsabilidade Financeira ({viatura?.matricula})
-              </Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setClosureDecisao('motorista')}
-                  className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'motorista' ? 'border-orange-500 bg-orange-500/10' : 'border-border hover:border-primary/40'}`}
-                >
-                  <div className="flex items-center gap-2 font-medium text-sm">
-                    <Coins className="h-4 w-4 text-orange-500" /> Cobrar do Motorista
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Gera débito na conta do motorista
-                  </p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setClosureDecisao('empresa')}
-                  className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'empresa' ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-primary/40'}`}
-                >
-                  <div className="flex items-center gap-2 font-medium text-sm">
-                    <Building2 className="h-4 w-4 text-blue-500" /> Cobrar da Empresa
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Registado como despesa da viatura
-                  </p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setClosureDecisao('aberto')}
-                  className={`rounded-lg border-2 p-3 text-left transition-all ${closureDecisao === 'aberto' ? 'border-yellow-500 bg-yellow-500/10' : 'border-border hover:border-primary/40'}`}
-                >
-                  <div className="flex items-center gap-2 font-medium text-sm">
-                    <Clock className="h-4 w-4 text-yellow-600" /> Deixar Em Aberto
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Gera aviso na ficha até ser definido
-                  </p>
-                </button>
-              </div>
-            </div>
-
-            {ticket?.viatura_substituta_id && viaturaSubstituta && (
-              <div className="space-y-2 border-t pt-4">
-                <Label className="font-semibold">
-                  O que fazer com a viatura substituta ({viaturaSubstituta.matricula})?
-                </Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setClosureSubstDecisao('devolver')}
-                    className={`rounded-lg border-2 p-3 text-left transition-all ${closureSubstDecisao === 'devolver' ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-primary/40'}`}
-                  >
-                    <div className="flex items-center gap-2 font-medium text-sm">
-                      <ParkingSquare className="h-4 w-4" /> Devolver ao parque
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Encerra associação temporária, fica disponível
-                    </p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setClosureSubstDecisao('definitivo')}
-                    className={`rounded-lg border-2 p-3 text-left transition-all ${closureSubstDecisao === 'definitivo' ? 'border-green-500 bg-green-500/10' : 'border-border hover:border-primary/40'}`}
-                  >
-                    <div className="flex items-center gap-2 font-medium text-sm">
-                      <RefreshCw className="h-4 w-4" /> Manter com o motorista
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Passa a associação definitiva, continua em uso
-                    </p>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="px-6 py-4 border-t shrink-0">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowClosureForm(false);
-                setIsEditMode(false);
-                setClosureDecisao('empresa');
-                setClosureSubstDecisao(null);
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button onClick={handleViaturaReparada} disabled={closureLoading}>
-              {closureLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditMode ? 'Guardar Alterações' : 'Concluir Reparação'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      />
 
       <TicketGalleryDialog
         open={showGalleryDialog}
