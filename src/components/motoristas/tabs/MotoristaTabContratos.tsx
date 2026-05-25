@@ -537,11 +537,7 @@ export function MotoristaTabContratos({
                   >
                     <X className="h-3.5 w-3.5 mr-1" /> Cancelar
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleEditarPrimeiraData}
-                    disabled={savingContratacao}
-                  >
+                  <Button size="sm" onClick={handleEditarPrimeiraData} disabled={savingContratacao}>
                     {savingContratacao ? (
                       <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                     ) : (
@@ -556,11 +552,14 @@ export function MotoristaTabContratos({
                 <Pencil className="h-3.5 w-3.5 mr-1" /> Definir
               </Button>
             )}
-            {motorista.data_contratacao && !definindoPrimeiraData && !editandoPrimeiraData && !hasPermission('motoristas_editar_data_contrato') && (
-              <p className="text-[11px] text-muted-foreground">
-                Esta data é o registo original e não pode ser alterada.
-              </p>
-            )}
+            {motorista.data_contratacao &&
+              !definindoPrimeiraData &&
+              !editandoPrimeiraData &&
+              !hasPermission('motoristas_editar_data_contrato') && (
+                <p className="text-[11px] text-muted-foreground">
+                  Esta data é o registo original e não pode ser alterada.
+                </p>
+              )}
           </div>
 
           {/* Última renovação — pode ser atualizada */}
