@@ -114,6 +114,7 @@ const RECURSO_LABELS: Record<string, string> = {
   marketing_ver: 'Aceder ao módulo de Marketing',
   // Calendário
   calendario_ver: 'Ver eventos do calendário',
+  calendario_ver_gestores: 'Ver gestores nos relatórios de eventos',
   calendario_criar: 'Criar novos eventos',
   calendario_editar: 'Editar eventos existentes',
   calendario_gerir_todos: 'Gerir eventos de todos os gestores',
