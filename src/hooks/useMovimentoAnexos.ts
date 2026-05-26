@@ -40,6 +40,10 @@ export async function uploadMovimentoAnexoSync(
     .upload(path, file, { contentType: file.type, upsert: false });
   if (uploadError) throw uploadError;
 
+  // @ts-expect-error org_id é preenchido pelo trigger set_movimento_anexo_org_id
+  // (BEFORE INSERT) a partir do movimento; os types Supabase marcam-no como
+  // obrigatório no Insert mas a BD aceita NULL no client porque o trigger
+  // o preenche antes da gravação.
   const { error: insertError } = await supabase.from('movimento_anexos').insert({
     movimento_id: movimentoId,
     nome: (nomeOverride ?? file.name).trim() || file.name,

@@ -11,6 +11,16 @@
 -- ============================================================
 
 -- ------------------------------------------------------------
+-- Função utilitária updated_at — garantida idempotente para o caso
+-- de a migration `add_estacoes` ainda não ter sido aplicada.
+-- CREATE OR REPLACE = não destrói nada se a função já existir.
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN NEW.updated_at = now(); RETURN NEW; END;
+$$;
+
+-- ------------------------------------------------------------
 -- Helper de acesso (mantém policies legíveis)
 -- ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.has_renting_movimentacoes_access()
