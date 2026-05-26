@@ -44,6 +44,15 @@ const normalizeForSearch = (s: string) =>
 
 export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes }) => {
   const [clientePopoverOpen, setClientePopoverOpen] = useState(false);
+  const regime = form.watch('regime');
+  const isTvde = regime === 'tvde';
+  const clienteLabel = isTvde ? 'Motorista parceiro' : 'Cliente';
+  const clientePlaceholder = isTvde
+    ? 'Clique ou escreva para procurar motorista parceiro...'
+    : 'Clique ou escreva para procurar cliente...';
+  const clienteEmpty = isTvde
+    ? 'Nenhum motorista parceiro encontrado.'
+    : 'Nenhum cliente encontrado.';
   return (
   <div>
     <SectionTitle>Geral</SectionTitle>
@@ -58,7 +67,7 @@ export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes }) =>
           return (
             <FormItem>
               <FormLabel>
-                Cliente <span className="text-red-500">*</span>
+                {clienteLabel} <span className="text-red-500">*</span>
               </FormLabel>
               <Popover
                 open={clientePopoverOpen}
@@ -76,7 +85,7 @@ export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes }) =>
                     >
                       {selected
                         ? `${selected.nome}${selected.codigo ? ` (#${selected.codigo})` : ''}`
-                        : 'Clique ou escreva para procurar cliente...'}
+                        : clientePlaceholder}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </FormControl>
@@ -94,7 +103,7 @@ export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes }) =>
                   >
                     <CommandInput placeholder="Pesquisar por nome, NIF..." className="h-9" />
                     <CommandList>
-                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                      <CommandEmpty>{clienteEmpty}</CommandEmpty>
                       <CommandGroup>
                         {clientes.map((c) => (
                           <CommandItem

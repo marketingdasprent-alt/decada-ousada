@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, ArrowLeft, CalendarCheck, FileText, Loader2, Trash2 } from 'lucide-react';
@@ -71,7 +71,11 @@ const DEFAULT_VALUES: ReservaFormValues = {
 const RentingReservaForm = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const isEdit = !!id && id !== 'nova';
+  // Pré-preenchimento por URL (atalhos a partir de viatura/cliente).
+  const viaturaIdFromUrl = !isEdit ? searchParams.get('viatura_id') : null;
+  const clienteIdFromUrl = !isEdit ? searchParams.get('cliente_id') : null;
 
   const { data: reserva, isLoading: loadingReserva } = useReserva(isEdit ? id : null);
   const { data: condutoresAtuais = [] } = useReservaCondutores(isEdit ? id : null);
@@ -117,6 +121,26 @@ const RentingReservaForm = () => {
     resolver: zodResolver(reservaDialogSchema),
     defaultValues: DEFAULT_VALUES,
   });
+
+  // Pré-preenchimento via URL (criar reserva a partir de viatura/cliente).
+  // Só corre uma vez quando os dados das listas (viaturas/clientes) chegam.
+  useEffect(() => {
+    if (isEdit) return;
+    if (!viaturaIdFromUrl && !clienteIdFromUrl) return;
+
+    const viatura = viaturaIdFromUrl ? viaturas.find((v) => v.id === viaturaIdFromUrl) : null;
+    const cliente = clienteIdFromUrl ? clientes.find((c) => c.id === clienteIdFromUrl) : null;
+
+    if (viatura) {
+      form.setValue('viatura_id', viatura.id, { shouldDirty: false });
+      form.setValue('matricula', viatura.matricula ?? '', { shouldDirty: false });
+    }
+    if (cliente) {
+      form.setValue('cliente_id', cliente.id, { shouldDirty: false });
+      form.setValue('cliente_nome', cliente.nome ?? '', { shouldDirty: false });
+    }
+    // Ambos: só faz sentido validar uma vez quando as listas existem
+  }, [isEdit, viaturaIdFromUrl, clienteIdFromUrl, viaturas, clientes, form]);
 
   // Hidrata o formulário quando a reserva carrega (modo edição).
   useEffect(() => {
