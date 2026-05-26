@@ -93,8 +93,10 @@ const PAGAMENTOS_ALIASES: Record<string, string[]> = {
   driver_last_name: ["apelido do motorista", "last name", "apelido", "apelido_do_motorista"],
   uber_vehicle_id: ["vehicle", "vehicle id", "viatura", "plate", "license plate", "matrícula", "matricula", "veículo", "veiculo"],
   occurred_at: ["date", "data", "occurred at", "trip date", "data viagem", "datetime", "data/hora", "timestamp"],
-  gross_amount: ["gross", "bruto", "total", "gross amount", "valor bruto", "valor total", "fare", "tarifa", "valor", "pago a si"],
-  net_amount: ["net", "líquido", "liquido", "net amount", "valor líquido", "valor liquido", "earnings", "ganhos", "driver earnings", "pago a si:os seus rendimentos", "pago a si : os seus rendimentos"],
+  gross_amount: ["gross", "bruto", "total", "gross amount", "valor bruto", "valor total", "fare", "tarifa", "valor"],
+  // "pago a si" = o que o motorista recebe (líquido) — fica antes das variantes
+  // mais específicas para ganhar prioridade.
+  net_amount: ["pago a si", "net", "líquido", "liquido", "net amount", "valor líquido", "valor liquido", "earnings", "ganhos", "driver earnings", "pago a si:os seus rendimentos", "pago a si : os seus rendimentos"],
   commission_amount: ["commission", "comissão", "comissao", "fee", "taxa", "commission amount", "uber fee", "service fee", "pago a si:os seus rendimentos:taxa de serviço", "pago a si : os seus rendimentos : taxa de serviço", "pago a si:os seus rendimentos:taxa de servico", "pago a si : os seus rendimentos : taxa de servico"],
   currency: ["currency", "moeda", "currency code"],
   status: ["status", "estado", "state", "trip status"],

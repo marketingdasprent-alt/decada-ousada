@@ -253,6 +253,7 @@ export const RepsolDataTab: React.FC = () => {
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
         integracaoId={selectedIntegracao}
+        integracoes={integracoes}
         onImportComplete={fetchTransacoes}
       />
     </div>

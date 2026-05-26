@@ -12,6 +12,7 @@ export interface ViaturaBasic {
   combustivel: string | null;
   is_vendida: boolean | null;
   grupo_id: string | null;
+  estacao_id: string | null;
 }
 
 interface UseViaturasOptions {
@@ -38,7 +39,7 @@ export function useViaturas(options: UseViaturasOptions = {}) {
       let q = supabase
         .from('viaturas')
         .select(
-          'id, matricula, marca, modelo, status, categoria, km_atual, combustivel, is_vendida, grupo_id'
+          'id, matricula, marca, modelo, status, categoria, km_atual, combustivel, is_vendida, grupo_id, estacao_id'
         )
         .order('matricula');
 

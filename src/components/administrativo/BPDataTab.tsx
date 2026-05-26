@@ -383,6 +383,7 @@ export const BPDataTab: React.FC = () => {
           open={showImportDialog}
           onOpenChange={setShowImportDialog}
           integracaoId={firstActiveIntegracao.id}
+          integracoes={integracoes}
           onImportComplete={fetchTransacoes}
         />
       )}

@@ -53,7 +53,7 @@ export const FiscalTab: React.FC = () => {
           Fiscal
         </CardTitle>
         <CardDescription>
-          Taxas de IVA da organização. Cada contrato aplica a taxa conforme a sua modalidade —
+          Taxas de IVA da organização. Cada contrato aplica a taxa conforme o seu regime —
           rent-a-car ou TVDE.
         </CardDescription>
       </CardHeader>

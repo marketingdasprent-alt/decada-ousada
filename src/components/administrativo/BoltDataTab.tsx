@@ -35,11 +35,10 @@ import {
   Car,
   CalendarIcon,
 } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 import { ImportRobotCsvDialog } from '@/components/admin/ImportRobotCsvDialog';
-import { DateRange } from 'react-day-picker';
+import { AdminFiltros } from './AdminFiltros';
 
 interface Integracao {
   id: string;
@@ -82,11 +81,7 @@ export const BoltDataTab: React.FC = () => {
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIntegracao, setSelectedIntegracao] = useState('all');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
-    to: new Date(),
-  });
-  const [rangeClickCount, setRangeClickCount] = useState(0);
+  const [selectedWeek, setSelectedWeek] = useState<Date>(subWeeks(new Date(), 1));
 
   useEffect(() => {
     fetchIntegracoes();
@@ -95,7 +90,7 @@ export const BoltDataTab: React.FC = () => {
 
   useEffect(() => {
     fetchResumos();
-  }, [selectedIntegracao, dateRange]);
+  }, [selectedIntegracao, selectedWeek]);
 
   const fetchIntegracoes = async () => {
     try {
@@ -146,15 +141,12 @@ export const BoltDataTab: React.FC = () => {
         )
         .order('motorista_nome');
 
-      const fromDate = dateRange?.from;
-      const toDate = dateRange?.to || dateRange?.from;
-      if (fromDate) {
-        // Show records whose week overlaps with the selected range
-        query = query.lte('periodo_inicio', formatDateForQuery(toDate!));
-      }
-      if (toDate) {
-        query = query.gte('periodo_fim', formatDateForQuery(fromDate!));
-      }
+      // Filtro por semana — overlap com o período do resumo
+      const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 });
+      query = query
+        .lte('periodo_inicio', formatDateForQuery(weekEnd))
+        .gte('periodo_fim', formatDateForQuery(weekStart));
       if (selectedIntegracao !== 'all') {
         query = query.eq('integracao_id', selectedIntegracao);
       }
@@ -212,16 +204,6 @@ export const BoltDataTab: React.FC = () => {
     }
   };
 
-  const handleClearFilters = () => {
-    setSearchTerm('');
-    setSelectedIntegracao('all');
-    setDateRange({ from: subDays(new Date(), 30), to: new Date() });
-    setRangeClickCount(0);
-  };
-
-  const hasActiveFilters =
-    searchTerm || selectedIntegracao !== 'all' || !dateRange?.from || !dateRange?.to;
-
   const firstActiveIntegracao = integracoes.find((i) => i.ativo);
 
   const formatMinutes = (min: number | null) => {
@@ -230,13 +212,6 @@ export const BoltDataTab: React.FC = () => {
     const m = Math.round(min % 60);
     return h > 0 ? `${h}h${m > 0 ? ` ${m}m` : ''}` : `${m}m`;
   };
-
-  const dateLabel =
-    dateRange?.from && dateRange?.to
-      ? `${format(dateRange.from, 'dd/MM/yyyy', { locale: pt })} - ${format(dateRange.to, 'dd/MM/yyyy', { locale: pt })}`
-      : dateRange?.from
-        ? format(dateRange.from, 'dd/MM/yyyy', { locale: pt })
-        : 'Selecionar datas';
 
   const handleFetchFromApify = async () => {
     setLoading(true);
@@ -310,79 +285,17 @@ export const BoltDataTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
+      {/* Filtros — iguais à tab Contas */}
       <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Date Range Filter */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  'w-[280px] justify-start text-left font-normal',
-                  !dateRange?.from && 'text-muted-foreground'
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateLabel}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="range"
-                selected={dateRange}
-                onSelect={handleDateRangeSelect}
-                numberOfMonths={2}
-                className={cn('p-3 pointer-events-auto')}
-                locale={pt}
-              />
-            </PopoverContent>
-          </Popover>
-
-          {/* Integration Filter */}
-          <Select value={selectedIntegracao} onValueChange={setSelectedIntegracao}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Todas as integrações" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as integrações</SelectItem>
-              {integracoes.map((int) => (
-                <SelectItem key={int.id} value={int.id}>
-                  {int.nome}
-                  {int.plataforma === 'robot' && ' (Robot)'}
-                  {!int.ativo && ' (inativa)'}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Pesquisar motorista..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleFetchFromApify}
-            className="text-xs text-muted-foreground hidden md:flex items-center gap-1"
-          >
-            <Clock className="h-3 w-3" />
-            Resgatar do Apify
-          </Button>
-
-          {hasActiveFilters && (
-            <Button variant="ghost" size="icon" onClick={handleClearFilters}>
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+        <AdminFiltros
+          selectedWeek={selectedWeek}
+          onSelectedWeekChange={setSelectedWeek}
+          integracoes={integracoes}
+          selectedIntegracao={selectedIntegracao}
+          onSelectedIntegracaoChange={setSelectedIntegracao}
+          searchTerm={searchTerm}
+          onSearchTermChange={setSearchTerm}
+        />
 
         {/* Import Status Bar */}
         <div className="flex items-center justify-between text-sm">
@@ -586,6 +499,7 @@ export const BoltDataTab: React.FC = () => {
           open={showImportDialog}
           onOpenChange={setShowImportDialog}
           integracaoId={firstActiveIntegracao.id}
+          integracoes={integracoes}
           onImportComplete={handleImportComplete}
         />
       )}

@@ -38,7 +38,6 @@ import {
 } from '@/components/ui/select';
 import { MotoristaResumoDialog } from './MotoristaResumoDialog';
 import { ImportarRecibosDialog } from './ImportarRecibosDialog';
-import { ReparaCartoes } from './ReparaCartoes';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Printer, Mail, Send, FileDown } from 'lucide-react';
 import { generateFinanceiroPDF } from '@/utils/generateFinanceiroPDF';
@@ -1207,8 +1206,6 @@ export function ContasResumoTab() {
             <Upload className="h-4 w-4" />
             Importar Recibos
           </Button>
-
-          <ReparaCartoes />
         </div>
       </div>
 

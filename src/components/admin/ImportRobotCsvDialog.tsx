@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -10,13 +10,30 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Upload, Loader2, FileText, CheckCircle2, AlertCircle, Fuel, Zap } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+interface IntegracaoOption {
+  id: string;
+  nome: string;
+  company_name?: string | null;
+}
 
 interface ImportRobotCsvDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Integração pré-selecionada (compat). */
   integracaoId: string;
+  /** Lista de integrações disponíveis — se passada com >1 item, mostra seletor. */
+  integracoes?: IntegracaoOption[];
   onImportComplete: () => void;
 }
 
@@ -24,8 +41,19 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
   open,
   onOpenChange,
   integracaoId,
+  integracoes,
   onImportComplete,
 }) => {
+  const [selectedId, setSelectedId] = useState<string>(integracaoId);
+
+  // Reset da seleção ao abrir o diálogo.
+  useEffect(() => {
+    if (open) setSelectedId(integracaoId);
+  }, [open, integracaoId]);
+
+  const mostrarSeletor = !!integracoes && integracoes.length > 1;
+  const nomeAtual = integracoes?.find((i) => i.id === selectedId)?.nome;
+
   const [importing, setImporting] = useState(false);
   const [activeTab, setActiveTab] = useState('uber');
 
@@ -77,7 +105,7 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ integracao_id: integracaoId, ...body }),
+        body: JSON.stringify({ integracao_id: selectedId, ...body }),
       });
 
       const data = await response.json();
@@ -121,7 +149,7 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          integracao_id: integracaoId,
+          integracao_id: selectedId,
           dados_csv_bolt: csvText,
           origem: 'Upload Manual (Contas)',
         }),
@@ -165,7 +193,7 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ integracao_id: integracaoId, combustivel_csv: csvText }),
+        body: JSON.stringify({ integracao_id: selectedId, combustivel_csv: csvText }),
       });
 
       const data = await response.json();
@@ -227,6 +255,33 @@ export const ImportRobotCsvDialog: React.FC<ImportRobotCsvDialogProps> = ({
           </DialogTitle>
           <DialogDescription>Carregue ficheiros CSV para importação manual.</DialogDescription>
         </DialogHeader>
+
+        {/* Seletor de integração — só quando há múltiplas instâncias */}
+        {mostrarSeletor && (
+          <div className="space-y-2 pb-2">
+            <Label>
+              Conta da integração <span className="text-red-500">*</span>
+            </Label>
+            <Select value={selectedId} onValueChange={setSelectedId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Escolhe a conta..." />
+              </SelectTrigger>
+              <SelectContent>
+                {integracoes!.map((i) => (
+                  <SelectItem key={i.id} value={i.id}>
+                    {i.nome}
+                    {i.company_name ? ` — ${i.company_name}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {!mostrarSeletor && nomeAtual && (
+          <p className="text-xs text-muted-foreground">
+            Conta: <strong>{nomeAtual}</strong>
+          </p>
+        )}
 
         <Tabs
           value={activeTab}

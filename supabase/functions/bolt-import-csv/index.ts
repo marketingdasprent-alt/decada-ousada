@@ -65,6 +65,26 @@ const NUMERIC_COLUMNS = new Set([
 
 const INTEGER_COLUMNS = new Set(['viagens_terminadas']);
 
+/**
+ * Normaliza um cabeçalho CSV — torna o matching tolerante a maiúsculas,
+ * acentos e ao sufixo de unidade (ex.: "|€", "|€/h", "|%").
+ * "Ganhos Líquidos|€", "ganhos liquidos" e "Ganhos líquidos" passam todos
+ * a casar com a mesma chave.
+ */
+const normHeader = (s: string): string =>
+  s
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // strip accents
+    .replace(/\|.*$/, '')                              // strip unit suffix
+    .replace(/\s+/g, ' ')
+    .trim();
+
+// Pré-calcula o map com chaves normalizadas — usado em runtime.
+const COLUMN_MAP_NORM: Record<string, string> = {};
+for (const [k, v] of Object.entries(COLUMN_MAP)) {
+  COLUMN_MAP_NORM[normHeader(k)] = v;
+}
+
 function parseCSV(csvContent: string): Record<string, string>[] {
   const lines = csvContent.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   if (lines.length < 2) return [];
@@ -325,10 +345,11 @@ Deno.serve(async (req) => {
           ...(periodoFimValue && { periodo_fim: periodoFimValue }),
         };
 
-        // Map CSV columns to DB columns
-        for (const [csvCol, dbCol] of Object.entries(COLUMN_MAP)) {
-          const value = row[csvCol];
+        // Map CSV columns to DB columns — matching tolerante (normHeader).
+        for (const [csvHeader, value] of Object.entries(row)) {
           if (value === undefined) continue;
+          const dbCol = COLUMN_MAP_NORM[normHeader(csvHeader)];
+          if (!dbCol) continue;
 
           if (NUMERIC_COLUMNS.has(dbCol)) {
             record[dbCol] = parseNumber(value);

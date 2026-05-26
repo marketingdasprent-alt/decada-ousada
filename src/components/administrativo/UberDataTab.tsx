@@ -716,58 +716,6 @@ export const UberDataTab: React.FC = () => {
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleFetchFromApify}
-                disabled={loading}
-                className="text-xs text-muted-foreground hidden md:flex items-center gap-1"
-              >
-                {loading ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Clock className="h-3 w-3" />
-                )}
-                Resgatar do Apify
-              </Button>
-              <input
-                type="file"
-                id="emergency-fix-input"
-                className="hidden"
-                accept=".csv"
-                onChange={handleEmergencyFix}
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => document.getElementById('emergency-fix-input')?.click()}
-                disabled={loading}
-                className="text-xs text-orange-500 hover:text-orange-600 hidden md:flex items-center gap-1"
-                title="Use isto se houver motoristas sem UUID após a importação regular"
-              >
-                {loading ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <ShieldAlert className="h-3 w-3" />
-                )}
-                Reparar Associação
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleAutoMap}
-                disabled={loading}
-                className="text-xs text-muted-foreground hidden md:flex items-center gap-1"
-              >
-                {loading ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <RefreshCcw className="h-3 w-3" />
-                )}
-                Auto-Mapear
-              </Button>
-
               <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
                 <Upload className="h-4 w-4 mr-2" />
                 Importar CSV
@@ -976,6 +924,7 @@ export const UberDataTab: React.FC = () => {
             open={showImportDialog}
             onOpenChange={setShowImportDialog}
             integracaoId={integracoes[0].id}
+            integracoes={integracoes}
             onImportComplete={() => {
               fetchAllTransactions();
               fetchLastImport();

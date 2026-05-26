@@ -30,7 +30,15 @@ export const SectionRegime: React.FC<SectionRegimeProps> = ({ form }) => (
             <FormLabel>
               Regime <span className="text-red-500">*</span>
             </FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select
+              value={field.value}
+              onValueChange={(v) => {
+                if (v === field.value) return;
+                field.onChange(v);
+                // Condutores mudam de tipo (cliente ↔ motorista) com o regime.
+                form.setValue('condutores', [], { shouldDirty: true });
+              }}
+            >
               <FormControl>
                 <SelectTrigger className="bg-background">
                   <SelectValue />

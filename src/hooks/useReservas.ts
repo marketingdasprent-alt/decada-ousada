@@ -23,7 +23,7 @@ const SELECT_COLUMNS = `
   data_inicio, data_fim,
   cliente_id, cliente_nome,
   condutor_id, condutor_nome,
-  estado, regime, valor_total,
+  estado, regime, valor_total, desconto, valor_total_manual,
   observacoes, observacoes_internas,
   is_longa_duracao, renovacao_opcao, renovacao_intervalo_dias,
   franquia_valor, caucao_valor, kms_incluidos, km_adicional_valor,

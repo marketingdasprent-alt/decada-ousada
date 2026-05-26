@@ -156,18 +156,18 @@ export const contratoFormSchema = z
     condutores: z
       .array(
         z.object({
-          cliente_id: z.string().uuid('Cliente inválido'),
+          pessoa_id: z.string().uuid('Condutor inválido'),
           is_principal: z.boolean().default(false),
         })
       )
-      .min(1, 'É obrigatório pelo menos um condutor.')
+      .min(1, 'É obrigatório pelo menos um condutor/motorista.')
       .default([])
       .refine(
         (lista) => {
-          const ids = lista.map((c) => c.cliente_id);
+          const ids = lista.map((c) => c.pessoa_id);
           return new Set(ids).size === ids.length;
         },
-        { message: 'Cada cliente só pode aparecer uma vez como condutor.' }
+        { message: 'Cada pessoa só pode aparecer uma vez.' }
       )
       .refine((lista) => lista.filter((c) => c.is_principal).length <= 1, {
         message: 'Apenas um condutor pode ser principal.',
@@ -176,6 +176,27 @@ export const contratoFormSchema = z
   .refine((d) => new Date(d.data_fim).getTime() > new Date(d.data_inicio).getTime(), {
     message: 'Data fim tem que ser posterior à data início',
     path: ['data_fim'],
+  })
+  // Renovação: o aluguer de longa duração obriga a escolher a opção de renovação.
+  .superRefine((d, ctx) => {
+    if (d.is_longa_duracao && !d.renovacao_opcao) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['renovacao_opcao'],
+        message: 'Escolha a opção de renovação.',
+      });
+    }
+    if (
+      d.is_longa_duracao &&
+      d.renovacao_opcao === 'intervalo_dias' &&
+      (d.renovacao_intervalo_dias == null || d.renovacao_intervalo_dias <= 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['renovacao_intervalo_dias'],
+        message: 'Indique o intervalo de dias da renovação.',
+      });
+    }
   });
 
 export type ContratoFormValues = z.infer<typeof contratoFormSchema>;

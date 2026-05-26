@@ -3,6 +3,7 @@ import type { UseFormReturn } from 'react-hook-form';
 import { AlertTriangle, Calculator, Check } from 'lucide-react';
 
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 import type { ReservaFormValues } from './reservaDialog.schema';
@@ -55,6 +56,8 @@ export const ReservaResumoSidebar: React.FC<ReservaResumoSidebarProps> = ({
   const dataInicio = form.watch('data_inicio');
   const dataFim = form.watch('data_fim');
   const valorTotal = form.watch('valor_total');
+  const desconto = form.watch('desconto');
+  const valorTotalManual = form.watch('valor_total_manual');
   const grupo = form.watch('grupo');
   const viaturaId = form.watch('viatura_id');
   const kmsIncluidos = form.watch('kms_incluidos');
@@ -186,30 +189,64 @@ export const ReservaResumoSidebar: React.FC<ReservaResumoSidebarProps> = ({
 
         <div className="border-t">
           <div className="px-4 py-2 grid grid-cols-2 text-xs font-semibold text-muted-foreground bg-muted/30">
-            <span>Tarifa</span>
-            <span className="text-right">Custo</span>
+            <span>Faturação</span>
+            <span className="text-right">Valor</span>
           </div>
-          <div className="px-4 py-2 grid grid-cols-2 text-sm border-t">
-            {valorTotal && valorTotal > 0 ? (
-              <span className="text-foreground">Aluguer</span>
-            ) : (
-              <span className="text-amber-600 dark:text-amber-400 italic flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> Tarifa?
-              </span>
-            )}
-            <span className="text-right">{formatEur(valorTotal)}</span>
+
+          {/* Desconto — editável */}
+          <div className="px-4 py-2 flex items-center justify-between gap-2 border-t">
+            <span className="text-sm text-muted-foreground">Desconto (%)</span>
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={desconto ?? ''}
+              onChange={(e) =>
+                form.setValue('desconto', e.target.value === '' ? null : Number(e.target.value), {
+                  shouldDirty: true,
+                })
+              }
+              disabled={valorTotalManual != null}
+              placeholder="0"
+              title={
+                valorTotalManual != null ? 'Total manual ativo — desconto ignorado' : undefined
+              }
+              className="h-8 w-20 text-right bg-background tabular-nums"
+            />
           </div>
+
+          {/* Total manual — editável (sobrepõe o cálculo) */}
+          <div className="px-4 py-2 flex items-center justify-between gap-2 border-t">
+            <span className="text-sm text-muted-foreground">Total manual (€)</span>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={valorTotalManual ?? ''}
+              onChange={(e) =>
+                form.setValue(
+                  'valor_total_manual',
+                  e.target.value === '' ? null : Number(e.target.value),
+                  { shouldDirty: true }
+                )
+              }
+              placeholder="auto"
+              className="h-8 w-24 text-right bg-background tabular-nums"
+            />
+          </div>
+
           <div className="px-4 py-1.5 grid grid-cols-2 text-sm border-t">
             <span className="text-muted-foreground">Sub-total</span>
-            <span className="text-right">{formatEur(subtotal)}</span>
+            <span className="text-right tabular-nums">{formatEur(subtotal)}</span>
           </div>
           <div className="px-4 py-1.5 grid grid-cols-2 text-sm border-t bg-muted/20">
             <span className="text-muted-foreground">IVA</span>
-            <span className="text-right">{formatEur(iva)}</span>
+            <span className="text-right tabular-nums">{formatEur(iva)}</span>
           </div>
           <div className="px-4 py-2 grid grid-cols-2 text-sm border-t font-semibold">
             <span>Total</span>
-            <span className="text-right">{formatEur(total)}</span>
+            <span className="text-right tabular-nums">{formatEur(total)}</span>
           </div>
         </div>
       </Card>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, ArrowLeft, FileText, Loader2, Trash2 } from 'lucide-react';
 
@@ -10,6 +10,7 @@ import { Form } from '@/components/ui/form';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 
 import { useClientes } from '@/hooks/useClientes';
+import { useToast } from '@/hooks/use-toast';
 import { useContratoCoberturas, useSyncContratoCoberturas } from '@/hooks/useContratoCoberturas';
 import {
   useContratoExtras,
@@ -26,12 +27,13 @@ import {
   useUpdateContratoRenting,
 } from '@/hooks/useContratosRenting';
 import { useEstacoes } from '@/hooks/useEstacoes';
-import { useOrgDefinicoes, ivaParaModalidade } from '@/hooks/useOrgDefinicoes';
+import { useOrgDefinicoes, ivaParaRegime } from '@/hooks/useOrgDefinicoes';
 import { useRentingCoberturas } from '@/hooks/useRentingCoberturas';
 import { useRentingExtras } from '@/hooks/useRentingExtras';
 import { useRentingTaxas } from '@/hooks/useRentingTaxas';
 import { useReserva } from '@/hooks/useReservas';
 import { useViaturas } from '@/hooks/useViaturas';
+import { useMotoristas } from '@/hooks/useMotoristas';
 
 import { ContratoDeleteConfirm } from '@/components/renting/contratos/ContratoDeleteConfirm';
 import { ContratoFormSecoes } from '@/components/renting/contratos/ContratoFormSecoes';
@@ -41,7 +43,7 @@ import { ContratoTabExtras } from '@/components/renting/contratos/ContratoTabExt
 import { ContratoTabTaxas } from '@/components/renting/contratos/ContratoTabTaxas';
 import { ContratoTabsPlaceholder } from '@/components/renting/contratos/ContratoTabsPlaceholder';
 import { ResumoContrato } from '@/components/renting/contratos/ResumoContrato';
-import { CondutoresFields } from '@/components/renting/shared/CondutoresFields';
+import { CondutoresFields, type CondutorPessoa } from '@/components/renting/shared/CondutoresFields';
 import {
   DEFAULT_CONTRATO_VALUES,
   contratoFormSchema,
@@ -58,6 +60,17 @@ import type {
 } from '@/types/contratoRenting';
 import type { CondutorFormItem } from '@/types/reserva';
 
+/** Recolhe as mensagens de erro de validação para mostrar ao utilizador. */
+function collectErrorMessages(errors: FieldErrors<ContratoFormValues>): string[] {
+  const out: string[] = [];
+  for (const val of Object.values(errors)) {
+    if (val && typeof val === 'object' && 'message' in val && typeof val.message === 'string') {
+      out.push(val.message);
+    }
+  }
+  return out;
+}
+
 const ContratoForm = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -66,6 +79,7 @@ const ContratoForm = () => {
 
   // Server state
   const { data: clientes = [] } = useClientes();
+  const { data: motoristas = [] } = useMotoristas({ apenasAtivos: true });
   const { data: viaturas = [] } = useViaturas();
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
   const { data: coberturas = [] } = useRentingCoberturas({ apenasAtivas: true });
@@ -98,6 +112,18 @@ const ContratoForm = () => {
     syncTaxasMutation.isPending;
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const { toast } = useToast();
+
+  // Validação falhou — avisa o utilizador (senão "não acontece nada" ao Guardar).
+  const onInvalid = (errors: FieldErrors<ContratoFormValues>) => {
+    const messages = collectErrorMessages(errors);
+    toast({
+      title: 'Não foi possível guardar',
+      description:
+        messages[0] ?? 'Há campos obrigatórios por preencher. Verifique o formulário.',
+      variant: 'destructive',
+    });
+  };
 
   const handleDelete = () => {
     if (!contrato) return;
@@ -209,7 +235,7 @@ const ContratoForm = () => {
     form.setValue(
       'condutores',
       condutoresDb.map((c) => ({
-        cliente_id: c.cliente_id,
+        pessoa_id: (c.cliente_id ?? c.motorista_id) as string,
         is_principal: c.is_principal,
       })),
       { shouldDirty: false }
@@ -271,6 +297,8 @@ const ContratoForm = () => {
   const descontoPercentagem = form.watch('desconto_percentagem');
   const taxaIva = form.watch('taxa_iva');
   const regime = form.watch('regime');
+  const isTvde = regime === 'tvde';
+  const condutorPessoas: CondutorPessoa[] = isTvde ? motoristas : clientes;
   const coberturasForm = form.watch('coberturas');
   const extrasForm = form.watch('extras') as ExtraFormItem[];
   const taxasForm = form.watch('taxas') as TaxaFormItem[];
@@ -278,7 +306,7 @@ const ContratoForm = () => {
   // O IVA não é editável no contrato — é derivado do regime
   // (rent-a-car / TVDE) e das taxas configuradas na organização.
   useEffect(() => {
-    form.setValue('taxa_iva', ivaParaModalidade(orgDefinicoes, regime), {
+    form.setValue('taxa_iva', ivaParaRegime(orgDefinicoes, regime), {
       shouldDirty: false,
     });
   }, [regime, orgDefinicoes, form]);
@@ -379,7 +407,11 @@ const ContratoForm = () => {
 
     // Sincroniza condutores + coberturas + extras + taxas (junções) após o contrato existir.
     const syncRelacoes = (contratoId: string) => {
-      syncCondutoresMutation.mutate({ contratoId, desejados: condutores });
+      syncCondutoresMutation.mutate({
+        contratoId,
+        desejados: condutores,
+        tipo: isTvde ? 'motorista' : 'cliente',
+      });
       syncCoberturasMutation.mutate({ contratoId, desejadas: coberturas });
       syncExtrasMutation.mutate({ contratoId, desejados: extras, dias: diasContrato });
       syncTaxasMutation.mutate({ contratoId, desejadas: taxas, subtotal: subtotalTaxas });
@@ -465,7 +497,7 @@ const ContratoForm = () => {
         )}
         <Button
           type="button"
-          onClick={form.handleSubmit(onSubmit)}
+          onClick={form.handleSubmit(onSubmit, onInvalid)}
           disabled={isPending}
           className="gap-2"
         >
@@ -478,7 +510,7 @@ const ContratoForm = () => {
         <Card className="bg-card border-border">
           <CardContent className="p-4 sm:p-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-4">
                 <ContratoTabsPlaceholder
                   geralContent={
                     <ContratoFormSecoes
@@ -488,9 +520,11 @@ const ContratoForm = () => {
                       estacoes={estacoes}
                     />
                   }
+                  condutoresLabel={isTvde ? 'Motoristas' : 'Condutores'}
                   condutoresContent={
                     <CondutoresFields
-                      clientes={clientes}
+                      pessoas={condutorPessoas}
+                      tipo={isTvde ? 'motorista' : 'cliente'}
                       clientePrincipalLabel="Cliente do contrato também conduz"
                     />
                   }

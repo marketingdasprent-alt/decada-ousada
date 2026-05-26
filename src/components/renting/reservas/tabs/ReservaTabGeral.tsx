@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import {
+  ArrowRightLeft,
   Car,
   CarTaxiFront,
   Check,
@@ -50,6 +51,7 @@ import { ESTADO_LABELS, type ReservaEstado } from '@/types/reserva';
 import { SectionHeader } from '../SectionHeader';
 import { RegimeCards } from '../RegimeCards';
 import { ESTADO_META } from '../EstadoBadge';
+import { MovimentarViaturaModal } from '@/components/renting/MovimentarViaturaModal';
 
 const SENTINEL_NONE = '__none__';
 
@@ -197,11 +199,19 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
     [regime, isLongaDuracao, dias, tarifaAtual]
   );
 
+  // Total = valor manual (se definido) senão faturação × (1 − desconto%).
+  const desconto = form.watch('desconto');
+  const valorTotalManual = form.watch('valor_total_manual');
   useEffect(() => {
-    if (faturacao) {
-      form.setValue('valor_total', faturacao.valor, { shouldDirty: true });
+    if (valorTotalManual != null) {
+      form.setValue('valor_total', valorTotalManual, { shouldDirty: true });
+      return;
     }
-  }, [faturacao, form]);
+    if (faturacao) {
+      const final = Number((faturacao.valor * (1 - (desconto ?? 0) / 100)).toFixed(2));
+      form.setValue('valor_total', final, { shouldDirty: true });
+    }
+  }, [faturacao, desconto, valorTotalManual, form]);
 
   // Modo mensal (TVDE ou ALD): trava o período em 30 dias.
   useEffect(() => {
@@ -215,6 +225,21 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
 
   const estadoExtra =
     estadoAtual && !ESTADOS_EDITAVEIS.includes(estadoAtual as ReservaEstado) ? estadoAtual : null;
+
+  // Movimentação — avisa se a viatura está numa estação diferente da entrega.
+  const [movModalOpen, setMovModalOpen] = useState(false);
+  const estacaoEntregaId = form.watch('estacao_entrega_id');
+  const viaturaSelecionada = useMemo(
+    () => viaturas.find((v) => v.id === viaturaIdSel) ?? null,
+    [viaturas, viaturaIdSel]
+  );
+  const precisaMovimentar =
+    !!viaturaSelecionada &&
+    !!estacaoEntregaId &&
+    viaturaSelecionada.estacao_id !== estacaoEntregaId;
+  const estacaoViaturaNome = viaturaSelecionada?.estacao_id
+    ? (estacoes.find((e) => e.id === viaturaSelecionada.estacao_id)?.nome ?? null)
+    : null;
 
   const handleDiasManualChange = (raw: string) => {
     const cleaned = raw.replace(/\D/g, '');
@@ -260,7 +285,15 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
             <FormItem>
               <FormLabel className="sr-only">Regime</FormLabel>
               <FormControl>
-                <RegimeCards value={field.value} onChange={field.onChange} />
+                <RegimeCards
+                  value={field.value}
+                  onChange={(v) => {
+                    if (v === field.value) return;
+                    field.onChange(v);
+                    // Condutores mudam de tipo (cliente ↔ motorista) com o regime.
+                    form.setValue('condutores', [], { shouldDirty: true });
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -714,6 +747,34 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
             )}
           />
         </div>
+
+        {precisaMovimentar && (
+          <div className="flex flex-col gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 sm:flex-row sm:items-center">
+            <div className="flex flex-1 items-start gap-2 text-sm text-amber-700 dark:text-amber-300">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                {estacaoViaturaNome ? (
+                  <>
+                    A viatura encontra-se na estação <strong>{estacaoViaturaNome}</strong> —
+                    diferente da estação de entrega.
+                  </>
+                ) : (
+                  <>A viatura não tem estação definida.</>
+                )}
+              </span>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setMovModalOpen(true)}
+              className="shrink-0 gap-2"
+            >
+              <ArrowRightLeft className="h-4 w-4" />
+              Movimentar viatura
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* === Franquia / Caução / Kms (shared) === */}
@@ -841,6 +902,22 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
           />
         </div>
       </div>
+
+      <MovimentarViaturaModal
+        open={movModalOpen}
+        onOpenChange={setMovModalOpen}
+        viatura={
+          viaturaSelecionada
+            ? {
+                id: viaturaSelecionada.id,
+                matricula: viaturaSelecionada.matricula,
+                estacao_id: viaturaSelecionada.estacao_id,
+              }
+            : null
+        }
+        estacoes={estacoes}
+        estacaoDestinoSugerida={estacaoEntregaId}
+      />
     </div>
   );
 };

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from '@/contexts/TenantContext';
 import type { Tables } from '@/integrations/supabase/types';
-import type { ContratoModalidade } from '@/types/contratoRenting';
+import type { ContratoRegime } from '@/types/contratoRenting';
 
 export type OrgDefinicoes = Tables<'org_definicoes'>;
 
@@ -13,14 +13,14 @@ export const IVA_DEFAULT_RENT_A_CAR = 23;
 export const IVA_DEFAULT_TVDE = 6;
 
 /**
- * Taxa de IVA a aplicar consoante a modalidade do contrato/reserva.
+ * Taxa de IVA a aplicar consoante o regime do contrato/reserva.
  * Usa a config da org; cai nos defaults de mercado se não houver.
  */
-export function ivaParaModalidade(
+export function ivaParaRegime(
   def: OrgDefinicoes | null | undefined,
-  modalidade: ContratoModalidade
+  regime: ContratoRegime
 ): number {
-  if (modalidade === 'tvde') {
+  if (regime === 'tvde') {
     return def?.iva_tvde ?? IVA_DEFAULT_TVDE;
   }
   return def?.iva_rent_a_car ?? IVA_DEFAULT_RENT_A_CAR;

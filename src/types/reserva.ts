@@ -65,6 +65,10 @@ export type Reserva = {
   /** rent_a_car ou tvde — determina o regime de aluguer e a taxa de IVA. */
   regime: ReservaRegime;
   valor_total: number | null;
+  /** Percentagem de desconto aplicada ao total (0-100). */
+  desconto: number | null;
+  /** Total introduzido manualmente; null = usa o cálculo automático. */
+  valor_total_manual: number | null;
   observacoes: string | null;
   observacoes_internas: string | null;
   // Longa duração / renovação
@@ -105,15 +109,18 @@ export type ReservaCondutor = {
   id: string;
   org_id: string;
   reserva_id: string;
-  cliente_id: string;
+  /** Preenchido em rent-a-car (FK clientes). */
+  cliente_id: string | null;
+  /** Preenchido em TVDE (FK motoristas_ativos). */
+  motorista_id: string | null;
   is_principal: boolean;
   created_by: string | null;
   created_at: string;
 };
 
-/** Forma usada no formulário antes da reserva ter ID na BD. */
+/** Forma usada no formulário — pessoa_id é cliente OU motorista conforme o regime. */
 export type CondutorFormItem = {
-  cliente_id: string;
+  pessoa_id: string;
   is_principal: boolean;
 };
 

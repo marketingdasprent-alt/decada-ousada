@@ -145,65 +145,64 @@ export default function Administrativo() {
   }
 
   return (
-    <Tabs defaultValue="recibos" className="w-full">
+    <Tabs defaultValue="contas" className="w-full">
       <StickyPageHeader
         title="Administrativo"
         description="Gestão financeira e dados de plataformas"
         icon={Briefcase}
-        className="pb-0"
-      >
-        <TabsList className="flex w-full overflow-x-auto justify-start no-scrollbar border-b rounded-none bg-transparent h-auto p-0 gap-6">
-          <TabsTrigger
-            value="recibos"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Receipt className="h-4 w-4" />
-            Recibos
-          </TabsTrigger>
-          <TabsTrigger
-            value="bolt"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Zap className="h-4 w-4" />
-            Bolt
-          </TabsTrigger>
-          <TabsTrigger
-            value="uber"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Car className="h-4 w-4" />
-            Uber
-          </TabsTrigger>
-          <TabsTrigger
-            value="bp"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Fuel className="h-4 w-4 text-orange-400" />
-            BP
-          </TabsTrigger>
-          <TabsTrigger
-            value="repsol"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Fuel className="h-4 w-4 text-orange-500" />
-            Repsol
-          </TabsTrigger>
-          <TabsTrigger
-            value="edp"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Zap className="h-4 w-4 text-green-500" />
-            EDP
-          </TabsTrigger>
-          <TabsTrigger
-            value="contas"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Calculator className="h-4 w-4" />
-            Contas
-          </TabsTrigger>
-        </TabsList>
-      </StickyPageHeader>
+      />
+
+      <TabsList className="flex w-full overflow-x-auto justify-start no-scrollbar border-b rounded-none bg-transparent h-auto p-0 gap-6 mb-2">
+        <TabsTrigger
+          value="contas"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Calculator className="h-4 w-4" />
+          Contas
+        </TabsTrigger>
+        <TabsTrigger
+          value="recibos"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Receipt className="h-4 w-4" />
+          Recibos
+        </TabsTrigger>
+        <TabsTrigger
+          value="bolt"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Zap className="h-4 w-4" />
+          Bolt
+        </TabsTrigger>
+        <TabsTrigger
+          value="uber"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Car className="h-4 w-4" />
+          Uber
+        </TabsTrigger>
+        <TabsTrigger
+          value="bp"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Fuel className="h-4 w-4 text-orange-400" />
+          BP
+        </TabsTrigger>
+        <TabsTrigger
+          value="repsol"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Fuel className="h-4 w-4 text-orange-500" />
+          Repsol
+        </TabsTrigger>
+        <TabsTrigger
+          value="edp"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Zap className="h-4 w-4 text-green-500" />
+          EDP
+        </TabsTrigger>
+      </TabsList>
 
       <div className="space-y-6">
         <TabsContent value="recibos" className="space-y-4 mt-4">
