@@ -2,8 +2,8 @@ import { z } from 'zod';
 import {
   CONTRATO_ESTADOS_FIN,
   CONTRATO_ESTADOS_OP,
-  CONTRATO_MODALIDADES,
   CONTRATO_ORIGENS,
+  CONTRATO_REGIMES,
   CONTRATO_RENOVACAO_OPCOES,
 } from '@/types/contratoRenting';
 
@@ -58,9 +58,7 @@ export const contratoFormSchema = z
     estado_operacional: z.enum(CONTRATO_ESTADOS_OP),
     estado_financeiro: z.enum(CONTRATO_ESTADOS_FIN),
     origem: z.enum(CONTRATO_ORIGENS),
-
-    // Modalidade — determina a taxa de IVA (rent-a-car vs TVDE)
-    modalidade: z.enum(CONTRATO_MODALIDADES),
+    regime: z.enum(CONTRATO_REGIMES).default('rent_a_car'),
 
     // Tarifário simples
     tarifa_diaria: optionalNonNegativeNumber,
@@ -162,6 +160,7 @@ export const contratoFormSchema = z
           is_principal: z.boolean().default(false),
         })
       )
+      .min(1, 'É obrigatório pelo menos um condutor.')
       .default([])
       .refine(
         (lista) => {
@@ -195,7 +194,7 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   estado_operacional: 'agendado',
   estado_financeiro: 'pendente',
   origem: 'sistema',
-  modalidade: 'rent_a_car',
+  regime: 'rent_a_car',
   tarifa_diaria: null,
   desconto_percentagem: null,
   taxa_iva: 23,

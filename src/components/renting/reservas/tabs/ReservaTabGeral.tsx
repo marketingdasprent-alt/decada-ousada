@@ -1,6 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { Check, ChevronsUpDown, Coins, EyeOff, FileText } from 'lucide-react';
+import {
+  Car,
+  CarTaxiFront,
+  Check,
+  ChevronsUpDown,
+  ClipboardList,
+  Coins,
+  Euro,
+  EyeOff,
+  FileText,
+  Layers,
+  MapPin,
+  User,
+} from 'lucide-react';
 
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -23,6 +36,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 import { ALDFields } from '@/components/renting/shared/ALDFields';
 import { FranquiaKmsFields } from '@/components/renting/shared/FranquiaKmsFields';
@@ -32,20 +47,23 @@ import type { ViaturaBasic } from '@/hooks/useViaturas';
 import type { Estacao } from '@/hooks/useEstacoes';
 import type { ClienteComDocumentos } from '@/types/cliente';
 import { ESTADO_LABELS, type ReservaEstado } from '@/types/reserva';
-import { CONTRATO_MODALIDADES, CONTRATO_MODALIDADE_LABELS } from '@/types/contratoRenting';
+import { SectionHeader } from '../SectionHeader';
+import { RegimeCards } from '../RegimeCards';
+import { ESTADO_META } from '../EstadoBadge';
 
 const SENTINEL_NONE = '__none__';
 
 const normalizeForSearch = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[-\s]/g, '');
 
-const ESTADOS_EDITAVEIS: ReservaEstado[] = ['confirmada', 'cancelada'];
+const ESTADOS_EDITAVEIS: ReservaEstado[] = ['pendente', 'confirmada', 'cancelada'];
 
 interface ReservaTabGeralProps {
   form: UseFormReturn<ReservaFormValues>;
   viaturas: ViaturaBasic[];
   estacoes: Estacao[];
   clientes: ClienteComDocumentos[];
+  isEdit: boolean;
 }
 
 function diferencaDias(inicio: string, fim: string): number | null {
@@ -65,13 +83,59 @@ function addDaysToLocalInput(localInput: string, days: number): string | null {
   return `${novo.getFullYear()}-${pad(novo.getMonth() + 1)}-${pad(novo.getDate())}T${pad(novo.getHours())}:${pad(novo.getMinutes())}`;
 }
 
+type TarifaPrecos = {
+  preco_dia: number | null;
+  preco_semana: number | null;
+  preco_mes: number | null;
+};
+
+type Faturacao = {
+  valor: number; // valor faturado ao cliente
+  modo: 'Diário' | 'Mensal';
+  descricao: string;
+  semanalCondutor: number | null; // preço/semana atribuído ao condutor (só TVDE)
+};
+
+// Faturação ao cliente:
+//   TVDE ou ALD       → mensal (preço/mês, período travado em 30 dias)
+//   Rent-a-Car normal → diário (nº dias × preço/dia)
+// No TVDE, o preço/semana vai para a conta-corrente do condutor.
+function calcularFaturacao(
+  regime: string,
+  isLongaDuracao: boolean,
+  dias: number | null,
+  tarifa: TarifaPrecos | null
+): Faturacao | null {
+  if (!tarifa) return null;
+
+  if (regime === 'tvde' || isLongaDuracao) {
+    if (tarifa.preco_mes == null) return null;
+    return {
+      valor: Number(tarifa.preco_mes.toFixed(2)),
+      modo: 'Mensal',
+      descricao: '30 dias · renova a cada mês',
+      semanalCondutor: regime === 'tvde' ? tarifa.preco_semana : null,
+    };
+  }
+
+  if (dias == null || dias <= 0 || tarifa.preco_dia == null) return null;
+  return {
+    valor: Number((dias * tarifa.preco_dia).toFixed(2)),
+    modo: 'Diário',
+    descricao: `${dias} dia(s) × ${tarifa.preco_dia} €`,
+    semanalCondutor: null,
+  };
+}
+
 export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
   form,
   viaturas,
   estacoes,
   clientes,
+  isEdit,
 }) => {
   const [viaturaPopoverOpen, setViaturaPopoverOpen] = useState(false);
+  const [clientePopoverOpen, setClientePopoverOpen] = useState(false);
 
   const clienteId = form.watch('cliente_id');
   const estadoAtual = form.watch('estado');
@@ -90,6 +154,65 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
     setDiasInput(dias !== null ? String(dias) : '');
   }, [dias]);
 
+  // Grupos e tarifas — para preencher automaticamente ao escolher a viatura.
+  const { data: grupos = [] } = useQuery({
+    queryKey: ['renting_grupos_min'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('renting_grupos')
+        .select('id, nome')
+        .eq('ativo', true);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: tarifas = [] } = useQuery({
+    queryKey: ['renting_tarifas_min'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('renting_tarifas')
+        .select('grupo_id, nome, kms_incluidos, km_adicional_valor, preco_dia, preco_semana, preco_mes')
+        .eq('ativa', true);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Tarifa aplicável = a do grupo da viatura escolhida.
+  const viaturaIdSel = form.watch('viatura_id');
+  const tarifaAtual = useMemo(() => {
+    if (!viaturaIdSel) return null;
+    const v = viaturas.find((x) => x.id === viaturaIdSel);
+    if (!v?.grupo_id) return null;
+    return tarifas.find((t) => t.grupo_id === v.grupo_id) ?? null;
+  }, [viaturaIdSel, viaturas, tarifas]);
+
+  // Faturação automática: regime + ALD + duração + tarifa → valor_total.
+  const regime = form.watch('regime');
+  const isLongaDuracao = form.watch('is_longa_duracao');
+  const modoMensal = regime === 'tvde' || isLongaDuracao;
+  const faturacao = useMemo(
+    () => calcularFaturacao(regime, isLongaDuracao, dias, tarifaAtual),
+    [regime, isLongaDuracao, dias, tarifaAtual]
+  );
+
+  useEffect(() => {
+    if (faturacao) {
+      form.setValue('valor_total', faturacao.valor, { shouldDirty: true });
+    }
+  }, [faturacao, form]);
+
+  // Modo mensal (TVDE ou ALD): trava o período em 30 dias.
+  useEffect(() => {
+    if (modoMensal && dataInicio) {
+      const fim = addDaysToLocalInput(dataInicio, 30);
+      if (fim && fim !== dataFim) {
+        form.setValue('data_fim', fim, { shouldValidate: true });
+      }
+    }
+  }, [modoMensal, dataInicio, dataFim, form]);
+
   const estadoExtra =
     estadoAtual && !ESTADOS_EDITAVEIS.includes(estadoAtual as ReservaEstado) ? estadoAtual : null;
 
@@ -104,56 +227,156 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
     if (novoFim) form.setValue('data_fim', novoFim, { shouldValidate: true });
   };
 
+  // Ao escolher a viatura: puxa o grupo e os valores da tarifa desse grupo.
+  const aplicarDadosViatura = (v: ViaturaBasic) => {
+    if (!v.grupo_id) return;
+    const grupo = grupos.find((g) => g.id === v.grupo_id);
+    if (grupo) form.setValue('grupo', grupo.nome, { shouldDirty: true });
+
+    const tarifa = tarifas.find((t) => t.grupo_id === v.grupo_id);
+    if (!tarifa) return;
+    if (tarifa.kms_incluidos != null)
+      form.setValue('kms_incluidos', tarifa.kms_incluidos, { shouldDirty: true });
+    if (tarifa.km_adicional_valor != null)
+      form.setValue('km_adicional_valor', tarifa.km_adicional_valor, { shouldDirty: true });
+    // O valor_total é calculado automaticamente pelo useEffect (regime + duração).
+  };
+
   return (
     <div className="space-y-8">
-      {/* === Cliente da Reserva === */}
+      {/* === Regime (primeira escolha) === */}
       <div>
-        <div className="flex items-center justify-between gap-2 pb-2 border-b mb-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold">Cliente da Reserva</h3>
-            <span className="text-red-500 text-sm">*</span>
-          </div>
-          <span className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground">
-            Quem encomendou
-          </span>
-        </div>
-
+        <SectionHeader
+          icon={Layers}
+          title="Regime do Aluguer"
+          accent="navy"
+          required
+          hint="Define como a reserva é faturada"
+        />
         <FormField
           control={form.control}
-          name="cliente_id"
+          name="regime"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="sr-only">Cliente</FormLabel>
-              <Select
-                value={field.value ?? SENTINEL_NONE}
-                onValueChange={(v) => {
-                  const newId = v === SENTINEL_NONE ? null : v;
-                  field.onChange(newId);
-                  const cli = clientes.find((c) => c.id === newId);
-                  form.setValue('cliente_nome', cli?.nome ?? '');
-                }}
-              >
-                <FormControl>
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Clique para escolher cliente..." />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value={SENTINEL_NONE}>— Sem cliente —</SelectItem>
-                  {clientes.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome} {c.codigo ? `(#${c.codigo})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormLabel className="sr-only">Regime</FormLabel>
+              <FormControl>
+                <RegimeCards value={field.value} onChange={field.onChange} />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+      </div>
+
+      {/* === Cliente da Reserva === */}
+      <div>
+        <SectionHeader
+          icon={User}
+          title="Cliente da Reserva"
+          accent="emerald"
+          required
+          hint="Quem encomendou a reserva"
+        />
+
+        <FormField
+          control={form.control}
+          name="cliente_id"
+          render={({ field }) => {
+            const selected = field.value
+              ? (clientes.find((c) => c.id === field.value) ?? null)
+              : null;
+            return (
+              <FormItem>
+                <FormLabel className="sr-only">Cliente</FormLabel>
+                <Popover
+                  open={clientePopoverOpen}
+                  onOpenChange={setClientePopoverOpen}
+                  modal={false}
+                >
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={clientePopoverOpen}
+                        className="w-full justify-between font-normal bg-background"
+                      >
+                        {selected
+                          ? `${selected.nome}${selected.codigo ? ` (#${selected.codigo})` : ''}`
+                          : 'Clique ou escreva para procurar cliente...'}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[var(--radix-popover-trigger-width)] p-0"
+                    align="start"
+                  >
+                    <Command
+                      filter={(value, search) => {
+                        const v = normalizeForSearch(value);
+                        const s = normalizeForSearch(search);
+                        return s === '' || v.includes(s) ? 1 : 0;
+                      }}
+                    >
+                      <CommandInput placeholder="Pesquisar por nome, NIF..." className="h-9" />
+                      <CommandList>
+                        <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="__sem_cliente__"
+                            onSelect={() => {
+                              field.onChange(null);
+                              form.setValue('cliente_nome', '');
+                              setClientePopoverOpen(false);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                !field.value ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            — Sem cliente —
+                          </CommandItem>
+                          {clientes.map((c) => (
+                            <CommandItem
+                              key={c.id}
+                              value={`${c.nome} ${c.nif ?? ''} ${c.codigo ?? ''}`}
+                              onSelect={() => {
+                                field.onChange(c.id);
+                                form.setValue('cliente_nome', c.nome);
+                                setClientePopoverOpen(false);
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  field.value === c.id ? 'opacity-100' : 'opacity-0'
+                                )}
+                              />
+                              {c.nome}
+                              {c.codigo && (
+                                <span className="ml-1 text-muted-foreground">(#{c.codigo})</span>
+                              )}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
 
         {cliente && (
-          <div className="mt-3 p-3 rounded-md border bg-muted/20 text-sm grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="mt-3 p-3 rounded-md border bg-muted/20 text-sm grid grid-cols-1 sm:grid-cols-3 gap-2 animate-in fade-in-0 slide-in-from-top-1 duration-200">
             <div>
               <p className="text-xs text-muted-foreground">Nome</p>
               <p className="font-medium">{cliente.nome}</p>
@@ -177,9 +400,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
       {/* === Entrega | Recolha === */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b h-10">
-            <h3 className="text-base font-semibold">Entrega</h3>
-          </div>
+          <SectionHeader icon={MapPin} title="Entrega" accent="sky" />
           <FormField
             control={form.control}
             name="estacao_entrega_id"
@@ -233,26 +454,32 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b h-10">
-            <h3 className="text-base font-semibold">Recolha</h3>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">Nº Dias</span>
-              <Input
-                type="text"
-                inputMode="numeric"
-                value={diasInput}
-                onChange={(e) => handleDiasManualChange(e.target.value)}
-                disabled={!dataInicio}
-                className="h-9 w-16 text-center bg-background text-base font-semibold"
-                placeholder="—"
-                title={
-                  dataInicio
-                    ? 'Editar ajusta a Data Fim automaticamente'
-                    : 'Define primeiro a Data Início'
-                }
-              />
-            </div>
-          </div>
+          <SectionHeader
+            icon={MapPin}
+            title="Recolha"
+            accent="violet"
+            right={
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Nº Dias</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={diasInput}
+                  onChange={(e) => handleDiasManualChange(e.target.value)}
+                  disabled={!dataInicio || modoMensal}
+                  className="h-9 w-16 text-center bg-background text-base font-semibold disabled:bg-muted"
+                  placeholder="—"
+                  title={
+                    modoMensal
+                      ? 'Período fixo de 30 dias (mensal)'
+                      : dataInicio
+                        ? 'Editar ajusta a Data Fim automaticamente'
+                        : 'Define primeiro a Data Início'
+                  }
+                />
+              </div>
+            }
+          />
           <FormField
             control={form.control}
             name="estacao_recolha_id"
@@ -294,7 +521,8 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
                 <FormControl>
                   <Input
                     type="datetime-local"
-                    className="bg-background"
+                    className={modoMensal ? 'bg-muted' : 'bg-background'}
+                    disabled={modoMensal}
                     {...field}
                     value={field.value ?? ''}
                   />
@@ -311,9 +539,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
 
       {/* === Viatura === */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <h3 className="text-base font-semibold">Viatura</h3>
-        </div>
+        <SectionHeader icon={Car} title="Viatura" accent="navy" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <FormField
             control={form.control}
@@ -385,6 +611,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
                                 onSelect={() => {
                                   field.onChange(v.id);
                                   form.setValue('matricula', v.matricula);
+                                  aplicarDadosViatura(v);
                                   setViaturaPopoverOpen(false);
                                 }}
                                 className="cursor-pointer"
@@ -421,10 +648,11 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
                 <FormLabel>Grupo Viatura</FormLabel>
                 <FormControl>
                   <Input
-                    className="bg-background"
+                    className="bg-muted"
                     {...field}
                     value={field.value ?? ''}
-                    placeholder="ex.: Económico, SUV"
+                    placeholder="Definido pela viatura"
+                    readOnly
                   />
                 </FormControl>
                 <FormMessage />
@@ -446,35 +674,39 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
                   <SelectContent>
                     {estadoExtra && (
                       <SelectItem value={estadoExtra}>
-                        {ESTADO_LABELS[estadoExtra as ReservaEstado]} (automático)
+                        <span className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              'h-2 w-2 rounded-full',
+                              ESTADO_META[estadoExtra as ReservaEstado].dot
+                            )}
+                          />
+                          {ESTADO_LABELS[estadoExtra as ReservaEstado]} (automático)
+                        </span>
                       </SelectItem>
                     )}
-                    <SelectItem value="confirmada">Confirmada</SelectItem>
-                    <SelectItem value="cancelada">Cancelada</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="modalidade"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Modalidade</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className="bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {CONTRATO_MODALIDADES.map((m) => (
-                      <SelectItem key={m} value={m}>
-                        {CONTRATO_MODALIDADE_LABELS[m]}
+                    <SelectItem value="pendente">
+                      <span className="flex items-center gap-2">
+                        <span className={cn('h-2 w-2 rounded-full', ESTADO_META.pendente.dot)} />
+                        Pendente
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="confirmada">
+                      <span className="flex items-center gap-2">
+                        <span className={cn('h-2 w-2 rounded-full', ESTADO_META.confirmada.dot)} />
+                        Confirmada
+                      </span>
+                    </SelectItem>
+                    {isEdit && (
+                      <SelectItem value="cancelada">
+                        <span className="flex items-center gap-2">
+                          <span
+                            className={cn('h-2 w-2 rounded-full', ESTADO_META.cancelada.dot)}
+                          />
+                          Cancelada
+                        </span>
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -485,28 +717,79 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
       </div>
 
       {/* === Franquia / Caução / Kms (shared) === */}
-      <FranquiaKmsFields />
+      <FranquiaKmsFields kmsReadOnly />
 
-      {/* === Tarifa (placeholder) === */}
-      <div className="rounded-lg border border-dashed bg-muted/10 p-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Coins className="h-5 w-5 text-muted-foreground" />
-          <h3 className="text-base font-semibold text-muted-foreground">Tarifa</h3>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border">
-            em construção
-          </span>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Selecção de grupo de tarifas, vouchers e cálculo automático ficam disponíveis em breve.
-          Por agora utiliza o campo <em>Valor total</em> na tab <strong>Caixa</strong>.
-        </p>
+      {/* === Tarifa & Faturação (da viatura escolhida) === */}
+      <div>
+        <SectionHeader icon={Coins} title="Tarifa & Faturação" accent="emerald" />
+        {tarifaAtual ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Tarifa', value: tarifaAtual.nome },
+              {
+                label: 'Preço / dia',
+                value: tarifaAtual.preco_dia != null ? `${tarifaAtual.preco_dia} €` : '—',
+              },
+              {
+                label: 'Preço / semana',
+                value:
+                  tarifaAtual.preco_semana != null ? `${tarifaAtual.preco_semana} €` : '—',
+              },
+              {
+                label: 'Preço / mês',
+                value: tarifaAtual.preco_mes != null ? `${tarifaAtual.preco_mes} €` : '—',
+              },
+            ].map((cell) => (
+              <div key={cell.label} className="rounded-lg border bg-muted/20 p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">
+                  {cell.label}
+                </p>
+                <p className="mt-0.5 font-semibold truncate">{cell.value}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
+            Escolhe uma viatura com grupo definido para ver a tarifa aplicável.
+          </div>
+        )}
+
+        {faturacao && (
+          <div className="mt-3 rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-brand-navy/10 p-4">
+            <div className="flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                  <Euro className="h-3.5 w-3.5" />
+                  Faturar ao cliente
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {faturacao.modo} · {faturacao.descricao}
+                </p>
+              </div>
+              <p className="shrink-0 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
+                {faturacao.valor.toFixed(2)} €
+              </p>
+            </div>
+            {regime === 'tvde' && (
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-emerald-500/20 pt-3 animate-in fade-in-0 slide-in-from-top-1 duration-200">
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <CarTaxiFront className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  Condutor · conta-corrente semanal
+                </p>
+                <p className="shrink-0 text-sm font-semibold tabular-nums">
+                  {faturacao.semanalCondutor != null
+                    ? `${faturacao.semanalCondutor.toFixed(2)} €/sem`
+                    : '— sem preço/semana'}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* === Observações === */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <h3 className="text-base font-semibold">Observações</h3>
-        </div>
+        <SectionHeader icon={ClipboardList} title="Observações" accent="amber" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <FormField
             control={form.control}

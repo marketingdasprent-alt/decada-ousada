@@ -1,5 +1,3 @@
-import type { ContratoModalidade } from './contratoRenting';
-
 export const RESERVA_ESTADOS = [
   'pendente',
   'confirmada',
@@ -40,6 +38,14 @@ export const RENOVACAO_OPCAO_LABELS: Record<RenovacaoOpcao, string> = {
   intervalo_dias: 'A cada intervalo específico de dias',
 };
 
+export const RESERVA_REGIMES = ['rent_a_car', 'tvde'] as const;
+export type ReservaRegime = (typeof RESERVA_REGIMES)[number];
+
+export const REGIME_LABELS: Record<ReservaRegime, string> = {
+  rent_a_car: 'Rent-a-Car',
+  tvde: 'TVDE',
+};
+
 export type Reserva = {
   id: string;
   org_id: string;
@@ -56,8 +62,8 @@ export type Reserva = {
   condutor_id: string | null;
   condutor_nome: string | null;
   estado: ReservaEstado;
-  /** rent_a_car ou tvde — determina a taxa de IVA. */
-  modalidade: ContratoModalidade;
+  /** rent_a_car ou tvde — determina o regime de aluguer e a taxa de IVA. */
+  regime: ReservaRegime;
   valor_total: number | null;
   observacoes: string | null;
   observacoes_internas: string | null;

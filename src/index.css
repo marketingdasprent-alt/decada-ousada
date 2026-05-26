@@ -43,6 +43,10 @@ html[data-native-app="true"] .native-bottom {
     --input: 0 0% 89.8%;
     --ring: 174 100% 38.4%;
 
+    /* Cor de marca WeGest — azul-marinho da logo (destaque secundário) */
+    --brand-navy: 210 64% 30%;
+    --brand-navy-foreground: 0 0% 100%;
+
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
@@ -84,6 +88,10 @@ html[data-native-app="true"] .native-bottom {
     --border: 222 47% 18%;
     --input: 222 47% 18%;
     --ring: 174 100% 38.4%;
+
+    /* Azul-marinho mais claro p/ contraste em fundo escuro */
+    --brand-navy: 210 74% 64%;
+    --brand-navy-foreground: 222 47% 8%;
 
     --radius: 0.75rem;
 

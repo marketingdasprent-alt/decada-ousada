@@ -10,6 +10,7 @@ import type { ContratoFormValues } from './contratoForm.schema';
 import { SectionEntregaRecolha } from './SectionEntregaRecolha';
 import { SectionInfoAdicional } from './SectionInfoAdicional';
 import { SectionGeral } from './SectionGeral';
+import { SectionRegime } from './SectionRegime';
 import { SectionViatura } from './SectionViatura';
 
 interface ContratoFormSecoesProps {
@@ -30,6 +31,7 @@ export const ContratoFormSecoes: React.FC<ContratoFormSecoesProps> = ({
   estacoes,
 }) => (
   <div className="space-y-6">
+    <SectionRegime form={form} />
     <SectionEntregaRecolha form={form} estacoes={estacoes} />
     <ALDFields idPrefix="contrato" />
     <SectionViatura form={form} viaturas={viaturas} estacoes={estacoes} />

@@ -53,8 +53,8 @@ const DEFAULT_VALUES: ReservaFormValues = {
   cliente_nome: '',
   condutor_id: null,
   condutor_nome: '',
-  estado: 'confirmada',
-  modalidade: 'rent_a_car',
+  estado: 'pendente',
+  regime: 'rent_a_car',
   valor_total: null,
   franquia_valor: null,
   caucao_valor: null,
@@ -135,7 +135,7 @@ const RentingReservaForm = () => {
       condutor_id: reserva.condutor_id,
       condutor_nome: reserva.condutor_nome ?? '',
       estado: reserva.estado,
-      modalidade: reserva.modalidade,
+      regime: reserva.regime,
       valor_total: reserva.valor_total,
       franquia_valor: reserva.franquia_valor,
       caucao_valor: reserva.caucao_valor,
@@ -196,7 +196,7 @@ const RentingReservaForm = () => {
         condutor_id: null,
         condutor_nome: condutorPrincipalCliente?.nome ?? null,
         estado: values.estado,
-        modalidade: values.modalidade,
+        regime: values.regime,
         valor_total: values.valor_total,
         franquia_valor: values.franquia_valor,
         caucao_valor: values.caucao_valor,
@@ -374,6 +374,7 @@ const RentingReservaForm = () => {
                         viaturas={viaturas}
                         estacoes={estacoes}
                         clientes={clientes}
+                        isEdit={isEdit}
                       />
                     </TabsContent>
 

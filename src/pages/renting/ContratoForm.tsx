@@ -144,7 +144,7 @@ const ContratoForm = () => {
         estado_operacional: contrato.estado_operacional,
         estado_financeiro: contrato.estado_financeiro,
         origem: contrato.origem,
-        modalidade: contrato.modalidade,
+        regime: contrato.regime,
         tarifa_diaria: contrato.tarifa_diaria,
         desconto_percentagem: contrato.desconto_percentagem,
         taxa_iva: contrato.taxa_iva,
@@ -185,7 +185,7 @@ const ContratoForm = () => {
         data_inicio: isoToLocalInput(reservaFromQuery.data_inicio),
         data_fim: isoToLocalInput(reservaFromQuery.data_fim),
         origem: 'sistema',
-        modalidade: reservaFromQuery.modalidade,
+        regime: reservaFromQuery.regime,
         // Orçamento da reserva → override do total no contrato
         valor_total_manual: reservaFromQuery.valor_total,
         // ALD da reserva
@@ -270,18 +270,18 @@ const ContratoForm = () => {
   const valorTotalManual = form.watch('valor_total_manual');
   const descontoPercentagem = form.watch('desconto_percentagem');
   const taxaIva = form.watch('taxa_iva');
-  const modalidade = form.watch('modalidade');
+  const regime = form.watch('regime');
   const coberturasForm = form.watch('coberturas');
   const extrasForm = form.watch('extras') as ExtraFormItem[];
   const taxasForm = form.watch('taxas') as TaxaFormItem[];
 
-  // O IVA não é editável no contrato — é derivado da modalidade
+  // O IVA não é editável no contrato — é derivado do regime
   // (rent-a-car / TVDE) e das taxas configuradas na organização.
   useEffect(() => {
-    form.setValue('taxa_iva', ivaParaModalidade(orgDefinicoes, modalidade), {
+    form.setValue('taxa_iva', ivaParaModalidade(orgDefinicoes, regime), {
       shouldDirty: false,
     });
-  }, [modalidade, orgDefinicoes, form]);
+  }, [regime, orgDefinicoes, form]);
 
   // Soma do preço/dia das coberturas seleccionadas (× dias no ResumoContrato)
   const coberturasPrecoDia = useMemo(
@@ -324,7 +324,7 @@ const ContratoForm = () => {
       estado_operacional: values.estado_operacional,
       estado_financeiro: values.estado_financeiro,
       origem: values.origem,
-      modalidade: values.modalidade,
+      regime: values.regime,
       tarifa_diaria: values.tarifa_diaria,
       desconto_percentagem: values.desconto_percentagem,
       taxa_iva: values.taxa_iva,
