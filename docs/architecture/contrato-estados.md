@@ -89,6 +89,7 @@ Listadas no schema (ver `pg_trigger` em `contratos_renting`):
 | `trg_contratos_imutabilidade_facturados` ([migration 20260519000020](../../supabase/migrations/20260519000020_contratos_alinhar_reserva.sql)) | Quando `estado_financeiro = 'facturado'`, todos os UPDATEs de campos contratuais (datas, valores, viatura) são rejeitados |
 | `trg_contratos_disponibilidade` ([código existente]) | Após mudanças de `estado_operacional`, `viatura_id` ou `deleted_at`, chama `recalcular_disponibilidade_viatura()` que sincroniza `viaturas.status` segundo a regra canónica |
 | `trg_contrato_renting_cascata_open` ([migration 20260520300001](../../supabase/migrations/20260520300001_contrato_renting_cascata.sql)) | Ao **INSERT**: avança `reserva.estado='em_curso'` + cria 2 eventos no calendário (entrega/recolha) |
+| `trg_contrato_renting_cascata_estado` ([migration 20260520400001](../../supabase/migrations/20260520400001_contrato_renting_cascata_estado.sql)) | Ao **UPDATE OF estado_operacional**: mapeia mudança para reserva (`cancelado` de `agendado` → `confirmada`; `cancelado` de `em_curso` → `cancelada`; `devolvido` → `concluida`) + apaga eventos derivados do calendário |
 
 ### Invariantes-chave
 
@@ -123,7 +124,7 @@ Se aparecer pressão para criar estados específicos (`tvde_em_partilha`, `alugu
 
 - [ ] **Handler de entrega física** que faz `agendado → em_curso`. Hoje a passagem só ocorre via UI manual em `ContratoForm`. Devia ser disparada por evento de calendário de tipo `entrega` quando o colaborador faz check-in.
 - [ ] **Handler de recolha física** que faz `em_curso → devolvido`. Mesmo padrão.
-- [ ] **Cascata inversa em cancelamento**: se um contrato `agendado` é cancelado, repor reserva original para `confirmada` (hoje fica em `em_curso` para sempre).
+- [x] ~~**Cascata inversa em cancelamento**~~ — implementada em [migration 20260520400001](../../supabase/migrations/20260520400001_contrato_renting_cascata_estado.sql).
 - [ ] **Integração Primavera** para passagem `pendente → facturado` automática.
 
 ---
