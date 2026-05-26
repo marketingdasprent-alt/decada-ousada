@@ -86,17 +86,6 @@ export const movimentoFormSchema = z
           path: ['estacao_destino_id'],
         });
       }
-      if (
-        d.estacao_origem_id &&
-        d.estacao_destino_id &&
-        d.estacao_origem_id === d.estacao_destino_id
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'A origem e o destino têm de ser estações diferentes',
-          path: ['estacao_destino_id'],
-        });
-      }
     }
 
     if (

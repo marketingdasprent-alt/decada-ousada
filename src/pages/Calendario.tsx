@@ -10,12 +10,22 @@ import { EventoHistoricoDialog } from '@/components/calendario/EventoHistoricoDi
 import { CalendarioConfig } from '@/components/calendario/CalendarioConfig';
 import { RelatorioDialog } from '@/components/calendario/RelatorioDialog';
 import { NovoEventoPage } from '@/components/calendario/NovoEventoPage';
+import { NovaMovimentacaoInternaDialog } from '@/components/calendario/NovaMovimentacaoInternaDialog';
 import { RecolhasPendentesDrawer } from '@/components/calendario/RecolhasPendentesDrawer';
 import { CheckOutPendentesDrawer } from '@/components/calendario/CheckOutPendentesDrawer';
 import { ListaEsperaDrawer } from '@/components/calendario/ListaEsperaDrawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Settings, CalendarDays, FileDown, PackageCheck, LogOut, Clock } from 'lucide-react';
+import {
+  ArrowRightLeft,
+  CalendarDays,
+  Clock,
+  FileDown,
+  LogOut,
+  PackageCheck,
+  Plus,
+  Settings,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import { format } from 'date-fns';
@@ -41,6 +51,7 @@ const Calendario: React.FC = () => {
   const { hasPermission, isAdmin, cargo } = usePermissions();
   const queryClient = useQueryClient();
   const [novoEventoOpen, setNovoEventoOpen] = useState(false);
+  const [novaMovimentacaoOpen, setNovaMovimentacaoOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
   const [historicoOpen, setHistoricoOpen] = useState(false);
   const [relatorioOpen, setRelatorioOpen] = useState(false);
@@ -269,10 +280,10 @@ const Calendario: React.FC = () => {
           onClose={() => setEditingEvento(null)}
         />
       )}
-      <div className="space-y-6">
+      <div className="flex flex-col h-[calc(100dvh-6rem)] md:h-[calc(100dvh-8rem)] lg:h-[calc(100dvh-4rem)]">
         <StickyPageHeader
-          title="Calendário"
-          description="Agendamento de entregas, devoluções e manutenções"
+          title="Movimentações"
+          description="Agendamento de entregas, devoluções e transferências"
           icon={CalendarDays}
         >
           <div className="flex items-center gap-2">
@@ -327,6 +338,16 @@ const Calendario: React.FC = () => {
                 </Button>
               </>
             )}
+            {hasPermission('renting_movimentacoes') && (
+              <Button
+                variant="outline"
+                onClick={() => setNovaMovimentacaoOpen(true)}
+                className="gap-2"
+              >
+                <ArrowRightLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Nova Movimentação Interna</span>
+              </Button>
+            )}
             {hasPermission('calendario_criar') && (
               <Button onClick={handleNew} className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -336,29 +357,31 @@ const Calendario: React.FC = () => {
           </div>
         </StickyPageHeader>
 
-        <CalendarioGrid
-          eventos={eventos}
-          currentMonth={currentMonth}
-          onMonthChange={setCurrentMonth}
-          onEventClick={
-            hasPermission('calendario_editar') || hasPermission('calendario_gerir_todos')
-              ? (ev) => {
-                  if (ev.tipo === 'lista_espera' && !canManageListaEspera) return;
-                  handleEdit(ev);
-                }
-              : undefined
-          }
-          onDeleteEvent={
-            hasPermission('calendario_eliminar') || hasPermission('calendario_gerir_todos')
-              ? (id) => deleteMutation.mutate(id)
-              : undefined
-          }
-          onEventDetails={handleDetails}
-          onDaySelect={setSelectedDay}
-          isLoading={isLoading}
-          currentUserId={user?.id}
-          canEditAll={hasPermission('calendario_gerir_todos')}
-        />
+        <div className="flex-1 min-h-0">
+          <CalendarioGrid
+            eventos={eventos}
+            currentMonth={currentMonth}
+            onMonthChange={setCurrentMonth}
+            onEventClick={
+              hasPermission('calendario_editar') || hasPermission('calendario_gerir_todos')
+                ? (ev) => {
+                    if (ev.tipo === 'lista_espera' && !canManageListaEspera) return;
+                    handleEdit(ev);
+                  }
+                : undefined
+            }
+            onDeleteEvent={
+              hasPermission('calendario_eliminar') || hasPermission('calendario_gerir_todos')
+                ? (id) => deleteMutation.mutate(id)
+                : undefined
+            }
+            onEventDetails={handleDetails}
+            onDaySelect={setSelectedDay}
+            isLoading={isLoading}
+            currentUserId={user?.id}
+            canEditAll={hasPermission('calendario_gerir_todos')}
+          />
+        </div>
 
         <EventoHistoricoDialog
           open={historicoOpen}
@@ -372,6 +395,11 @@ const Calendario: React.FC = () => {
           open={relatorioOpen}
           onOpenChange={setRelatorioOpen}
           currentMonth={currentMonth}
+        />
+
+        <NovaMovimentacaoInternaDialog
+          open={novaMovimentacaoOpen}
+          onOpenChange={setNovaMovimentacaoOpen}
         />
       </div>
     </>

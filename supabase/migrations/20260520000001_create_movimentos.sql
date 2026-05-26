@@ -11,6 +11,21 @@
 -- ============================================================
 
 -- ------------------------------------------------------------
+-- Helper genérico: garante que `set_updated_at` existe antes de
+-- qualquer trigger desta migração depender dele. Idempotente, por
+-- isso não interfere com a definição original em migrações anteriores.
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+-- ------------------------------------------------------------
 -- Helper de acesso (mantém policies legíveis)
 -- ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.has_renting_movimentacoes_access()
@@ -351,3 +366,34 @@ $$;
 
 REVOKE ALL ON FUNCTION public.listar_colaboradores() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.listar_colaboradores() TO authenticated;
+
+-- ============================================================
+-- calendario_eventos: aceitar `transferencia` como tipo válido.
+-- ============================================================
+-- Um trigger existente cria uma entrada em `calendario_eventos`
+-- por cada movimento ('Gerado automaticamente pelo movimento #N'),
+-- usando `tipo='transferencia'`. Sem isto a check constraint
+-- rejeita o INSERT e o movimento falha com 23514.
+-- ============================================================
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'calendario_eventos'
+  ) THEN
+    ALTER TABLE public.calendario_eventos
+      DROP CONSTRAINT IF EXISTS calendario_eventos_tipo_check;
+
+    ALTER TABLE public.calendario_eventos
+      ADD CONSTRAINT calendario_eventos_tipo_check
+      CHECK (tipo = ANY (ARRAY[
+        'entrega',
+        'recolha',
+        'devolucao',
+        'troca',
+        'upgrade',
+        'lista_espera',
+        'transferencia'
+      ]));
+  END IF;
+END $$;

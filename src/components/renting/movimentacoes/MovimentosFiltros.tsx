@@ -11,8 +11,6 @@ import {
 import {
   MOVIMENTO_ESTADO_LABELS,
   MOVIMENTO_ESTADOS,
-  MOVIMENTO_TIPO_LABELS,
-  MOVIMENTO_TIPOS,
   type MovimentoEstado,
   type MovimentoTipo,
 } from '@/types/movimento';
@@ -38,11 +36,7 @@ export const MovimentosFiltros: React.FC<MovimentosFiltrosProps> = ({
   onChange,
   onClear,
 }) => {
-  const hasActive =
-    !!state.codigo ||
-    state.tipo !== 'todos' ||
-    state.estado !== 'todos' ||
-    state.estacao !== 'todas';
+  const hasActive = !!state.codigo || state.estado !== 'todos' || state.estacao !== 'todas';
 
   const update = <K extends keyof MovimentosFiltrosState>(
     key: K,
@@ -50,7 +44,7 @@ export const MovimentosFiltros: React.FC<MovimentosFiltrosProps> = ({
   ) => onChange({ ...state, [key]: value });
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 p-3 border-b border-border/50 items-end">
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 p-3 border-b border-border/50 items-end">
       <div className="space-y-1">
         <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           Código
@@ -64,28 +58,6 @@ export const MovimentosFiltros: React.FC<MovimentosFiltrosProps> = ({
             className="pl-8 h-9 bg-background"
           />
         </div>
-      </div>
-
-      <div className="space-y-1">
-        <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Tipo
-        </label>
-        <Select
-          value={state.tipo}
-          onValueChange={(v) => update('tipo', v as MovimentosFiltrosState['tipo'])}
-        >
-          <SelectTrigger className="h-9 bg-background">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os tipos</SelectItem>
-            {MOVIMENTO_TIPOS.map((t) => (
-              <SelectItem key={t} value={t}>
-                {MOVIMENTO_TIPO_LABELS[t]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="space-y-1">

@@ -85,7 +85,23 @@ export function useMovimentos(options: UseMovimentosOptions = {}) {
 // ────────────────────────────────────────────────────────────
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Erro inesperado';
+  if (typeof console !== 'undefined') console.error('[movimentos] erro:', error);
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object') {
+    const err = error as Record<string, unknown>;
+    const parts: string[] = [];
+    if (typeof err.message === 'string' && err.message.length > 0) parts.push(err.message);
+    if (typeof err.details === 'string' && err.details.length > 0) parts.push(err.details);
+    if (typeof err.hint === 'string' && err.hint.length > 0) parts.push(err.hint);
+    if (typeof err.code === 'string' && err.code.length > 0) parts.push(`(${err.code})`);
+    if (parts.length > 0) return parts.join(' · ');
+    try {
+      return JSON.stringify(error);
+    } catch {
+      // fall-through
+    }
+  }
+  return 'Erro inesperado';
 }
 
 /** Invalida movimentos + viaturas (o trigger de sync pode ter mexido na viatura). */

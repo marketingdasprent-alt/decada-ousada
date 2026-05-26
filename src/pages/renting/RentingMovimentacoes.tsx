@@ -163,7 +163,7 @@ const RentingMovimentacoes = () => {
     <div className="w-full space-y-4">
       <StickyPageHeader
         title="Movimentações"
-        description="Transferências, reparações, manutenções, impros e inspeções de viatura"
+        description="Transferências internas de viatura entre estações"
         icon={ArrowRightLeft}
       />
 

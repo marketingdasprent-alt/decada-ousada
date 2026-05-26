@@ -10,9 +10,12 @@ interface UseColaboradoresOptions {
 /**
  * Lista os colaboradores internos (utilizadores) da organização atual.
  *
- * A policy RLS de `profiles` só deixa o utilizador comum ver o próprio
- * perfil, por isso usamos a função SECURITY DEFINER `listar_colaboradores`,
- * que devolve apenas (id, nome) dos membros da org.
+ * Estratégia:
+ *  1. Tenta o RPC `listar_colaboradores` (SECURITY DEFINER — funciona mesmo
+ *     com RLS restritiva em `profiles`).
+ *  2. Se devolver vazio (por exemplo sessão sem org ativa) cai num
+ *     `select` directo a `profiles`, que devolve o que a RLS permitir
+ *     ao utilizador (admin vê todos, restantes vêem o seu).
  */
 export function useColaboradores(options: UseColaboradoresOptions = {}) {
   const { enabled = true } = options;
@@ -20,9 +23,23 @@ export function useColaboradores(options: UseColaboradoresOptions = {}) {
   return useQuery({
     queryKey: ['colaboradores'],
     queryFn: async (): Promise<Colaborador[]> => {
-      const { data, error } = await supabase.rpc('listar_colaboradores');
+      const rpcResult = await supabase.rpc('listar_colaboradores');
+
+      if (!rpcResult.error && rpcResult.data && rpcResult.data.length > 0) {
+        return rpcResult.data as Colaborador[];
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, nome')
+        .not('nome', 'is', null)
+        .order('nome');
+
       if (error) throw error;
-      return (data ?? []) as Colaborador[];
+
+      return (data ?? [])
+        .filter((p): p is { id: string; nome: string } => !!p.id && !!p.nome)
+        .map((p) => ({ id: p.id, nome: p.nome }));
     },
     staleTime: 5 * 60 * 1000,
     enabled,
