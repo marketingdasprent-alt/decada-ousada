@@ -39,7 +39,7 @@ import {
   type ReservaFormValues,
 } from '@/components/renting/reservas/reservaDialog.schema';
 
-import type { ReservaInsert } from '@/types/reserva';
+import type { CondutorFormItem, ReservaInsert } from '@/types/reserva';
 
 const DEFAULT_VALUES: ReservaFormValues = {
   viatura_id: null,
@@ -236,14 +236,30 @@ const RentingReservaForm = () => {
         observacoes_internas: values.observacoes_internas || null,
       };
 
+      // Persiste os condutores (m:n com clientes) após gravar/atualizar a reserva.
+      // Espelha o padrão do ContratoForm — sem isto, o array `values.condutores`
+      // fica só no form e nunca chega à BD (motorista "desaparece" após guardar).
+      // O array já passou pela validação Zod do handleSubmit — cast seguro.
+      const condutoresFinal = values.condutores as CondutorFormItem[];
+      const syncCondutores = (reservaId: string) => {
+        syncCondutoresMutation.mutate({
+          reservaId,
+          desejados: condutoresFinal,
+        });
+      };
+
       if (isEdit && reserva) {
         // Editar: ficar na própria página (utilizador vê toast e continua a trabalhar).
-        updateMutation.mutate({ id: reserva.id, ...payload });
+        updateMutation.mutate(
+          { id: reserva.id, ...payload },
+          { onSuccess: () => syncCondutores(reserva.id) }
+        );
       } else {
         // Criar: navegar para modo edição da nova reserva.
         // Permite clicar logo "Criar Contrato" sem voltar à lista.
         createMutation.mutate(payload, {
           onSuccess: async (created) => {
+            syncCondutores(created.id);
             // Upload em batch dos anexos pendentes — best-effort.
             if (anexosPendentes.length > 0) {
               for (const p of anexosPendentes) {
