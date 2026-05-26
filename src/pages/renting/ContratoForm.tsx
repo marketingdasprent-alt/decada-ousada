@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+import { useToast } from '@/hooks/use-toast';
 
 import { useClientes } from '@/hooks/useClientes';
 import { useContratoCoberturas, useSyncContratoCoberturas } from '@/hooks/useContratoCoberturas';
@@ -62,6 +63,7 @@ const ContratoForm = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const isEdit = !!id;
 
   // Server state
@@ -74,9 +76,16 @@ const ContratoForm = () => {
   const { data: orgDefinicoes } = useOrgDefinicoes();
   const { data: contrato, isLoading: loadingContrato } = useContratoRenting(id ?? null);
 
-  // Carrega reserva quando vier no query string (?reserva_id=X) e estamos a criar
+  // Carrega reserva — em criação vem do query string, em edição vem do contrato.
+  // Em ambos os casos é a fonte do `viatura_id` (campo bloqueado no formulário).
   const reservaIdFromQuery = searchParams.get('reserva_id');
+  const reservaIdActiva = isEdit ? (contrato?.reserva_id ?? null) : reservaIdFromQuery;
   const { data: reservaFromQuery } = useReserva(!isEdit ? reservaIdFromQuery : null);
+  const { data: reservaDoContrato } = useReserva(isEdit ? (contrato?.reserva_id ?? null) : null);
+  const reservaAssociada = reservaFromQuery ?? reservaDoContrato;
+  // Viatura é definida pela reserva — bloquear edição preserva o EXCLUDE
+  // anti-overbooking e mantém consistência cascateada.
+  const viaturaLocked = !!reservaIdActiva;
 
   const createMutation = useCreateContratoRenting();
   const updateMutation = useUpdateContratoRenting();
@@ -306,6 +315,18 @@ const ContratoForm = () => {
   const { data: temConflito } = useContratoConflito(conflitoArgs);
 
   const onSubmit = (values: ContratoFormValues) => {
+    // Validação cruzada: viatura do contrato tem de coincidir com a da reserva.
+    // Defesa em profundidade — a UI já bloqueia, mas guarda contra bypass.
+    if (reservaAssociada && values.viatura_id !== reservaAssociada.viatura_id) {
+      toast({
+        title: 'Viatura divergente da reserva',
+        description:
+          'A viatura no contrato tem de ser a mesma da reserva. Edita primeiro a reserva e tenta de novo.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Snapshot matrícula a partir da viatura se não veio do form
     const viatura = viaturas.find((v) => v.id === values.viatura_id);
     const matriculaFinal = values.matricula || viatura?.matricula || null;
@@ -486,6 +507,8 @@ const ContratoForm = () => {
                       clientes={clientes}
                       viaturas={viaturas}
                       estacoes={estacoes}
+                      viaturaLocked={viaturaLocked}
+                      reservaCodigo={reservaAssociada?.codigo ?? null}
                     />
                   }
                   condutoresContent={
