@@ -210,7 +210,9 @@ export const IntegracoesTab: React.FC = () => {
           connectionMode: isSimplifiedRobot
             ? 'api'
             : i.plataforma === 'uber'
-              ? 'upload'
+              ? (i as any).auth_mode === 'webhook'
+                ? 'api'
+                : 'upload'
               : i.plataforma === 'robot'
                 ? 'api'
                 : 'api',
@@ -333,6 +335,42 @@ export const IntegracoesTab: React.FC = () => {
     } catch (error: any) {
       toast({
         title: 'Erro ao executar robot',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setExecutingRobots((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  const handleExecuteUber = async (card: IntegracaoCardData) => {
+    const integracao = card.rawData as IntegracaoConfig;
+    const id = integracao.id;
+    setExecutingRobots((prev) => new Set(prev).add(id));
+    try {
+      const { data, error } = await supabase.functions.invoke('uber-sync', {
+        body: { integracao_id: id },
+      });
+      if (error) {
+        let msg = error.message;
+        try {
+          const body = await error.context?.json?.();
+          msg = body?.error || msg;
+        } catch {}
+        throw new Error(msg);
+      }
+      if (!data?.success) throw new Error(data?.error || 'Erro desconhecido');
+      toast({
+        title: 'Uber — Webhook activo',
+        description: data.message || 'Dados chegam automaticamente via webhook.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao verificar Uber',
         description: error.message,
         variant: 'destructive',
       });
@@ -546,7 +584,9 @@ export const IntegracoesTab: React.FC = () => {
                 onEdit={handleCardEdit}
                 onSync={card.type !== 'via_verde' ? handleCardSync : undefined}
                 onImport={hasImport ? handleCardImport : undefined}
-                onExecute={isRobotBacked ? handleExecuteRobot : undefined}
+                onExecute={
+                  isRobotBacked ? handleExecuteRobot : isUberBacked ? handleExecuteUber : undefined
+                }
                 isExecuting={executingRobots.has(card.id)}
               />
             );
@@ -693,7 +733,9 @@ export const IntegracoesTab: React.FC = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="wh-nome">Nome *</Label>
+              <Label htmlFor="wh-nome">
+                Nome <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="wh-nome"
                 placeholder="Ex: n8n Tickets"
@@ -714,7 +756,9 @@ export const IntegracoesTab: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="wh-url">URL do Webhook *</Label>
+              <Label htmlFor="wh-url">
+                URL do Webhook <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="wh-url"
                 type="url"
@@ -724,7 +768,9 @@ export const IntegracoesTab: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="wh-evento">Evento *</Label>
+              <Label htmlFor="wh-evento">
+                Evento <span className="text-red-500">*</span>
+              </Label>
               <Select
                 value={webhookFormData.evento}
                 onValueChange={(value) =>

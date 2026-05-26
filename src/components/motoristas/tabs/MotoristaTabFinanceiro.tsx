@@ -372,7 +372,9 @@ function NovoMovimentoOverlay({
             )}
 
             <div className="space-y-1.5">
-              <Label>Descrição *</Label>
+              <Label>
+                Descrição <span className="text-red-500">*</span>
+              </Label>
               <Textarea
                 placeholder="Ex: Caução semana 1, Salário Janeiro..."
                 value={descricao}
@@ -384,7 +386,9 @@ function NovoMovimentoOverlay({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Valor Total (€) *</Label>
+                <Label>
+                  Valor Total (€) <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   type="number"
                   step="0.01"

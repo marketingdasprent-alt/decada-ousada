@@ -39,6 +39,7 @@ import {
   Route,
   Clock,
   RefreshCcw,
+  ShieldAlert,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { format, subDays } from 'date-fns';
@@ -346,7 +347,6 @@ export const UberDataTab: React.FC = () => {
 
       let successCount = 0;
       for (const config of uberConfigs) {
-        console.log(`Rescuing Uber for: ${config.nome}`);
         const { data, error } = await supabase.functions.invoke('uber-rescue-apify', {
           body: { integracao_id: config.id },
         });
@@ -497,6 +497,14 @@ export const UberDataTab: React.FC = () => {
     toast({
       title: 'Carregamento interrompido',
       description: `${transactions.length} transacções carregadas.`,
+    });
+  };
+
+  // TODO: auto-mapeamento de motoristas Uber ainda por implementar.
+  const handleAutoMap = () => {
+    toast({
+      title: 'Funcionalidade em desenvolvimento',
+      description: 'O auto-mapeamento de motoristas Uber ainda não está disponível.',
     });
   };
 

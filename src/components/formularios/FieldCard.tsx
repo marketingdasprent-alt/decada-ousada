@@ -54,7 +54,7 @@ export const FieldCard: React.FC<FieldCardProps> = ({
             </div>
             <IconComponent className="h-4 w-4 text-primary" />
             <span className="text-sm">{field.label}</span>
-            {field.required && <span className="text-destructive text-xs">*</span>}
+            {field.required && <span className="text-red-500 text-xs">*</span>}
           </div>
           <div className="flex gap-2">
             <Button

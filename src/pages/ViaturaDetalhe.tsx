@@ -83,9 +83,13 @@ interface Viatura {
   extintor_numero?: string | null;
   extintor_validade?: string | null;
   tipo_id?: string | null;
+  marca_id?: string | null;
+  modelo_id?: string | null;
+  combustivel_id?: string | null;
   valor_mensal?: number | null;
   valor_diario?: number | null;
   limite_km_mensal?: number | null;
+  grupo_id?: string | null;
   is_slot?: boolean | null;
   estacao_id?: string | null;
 }

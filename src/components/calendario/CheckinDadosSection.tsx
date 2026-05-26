@@ -525,7 +525,7 @@ export const CheckinDadosSection: React.FC<CheckinDadosSectionProps> = ({
     <div className="space-y-1.5">
       <Label className="text-xs flex items-center gap-1">
         {icon}
-        {label} {required && <span className="text-destructive">*</span>}
+        {label} {required && <span className="text-red-500">*</span>}
       </Label>
       <div className="flex rounded-md border border-input overflow-hidden h-9">
         {opts.map((opt) => (
@@ -570,7 +570,7 @@ export const CheckinDadosSection: React.FC<CheckinDadosSectionProps> = ({
       {/* KM */}
       <div className="space-y-1.5">
         <Label className="text-xs flex items-center gap-1">
-          KM Atual <span className="text-destructive">*</span>
+          KM Atual <span className="text-red-500">*</span>
           {kmMinimo > 0 && (
             <span className="text-muted-foreground font-normal">
               (mín. {kmMinimo.toLocaleString()})

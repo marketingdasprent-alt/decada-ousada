@@ -18,6 +18,13 @@ import {
   CalendarCheck,
   ArrowRightLeft,
   Users,
+  Layers,
+  Tag,
+  ShieldCheck,
+  PackagePlus,
+  Percent,
+  Fuel,
+  CarFront,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,11 +39,19 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-interface SubMenuItem {
+interface SubSubMenuItem {
   label: string;
   url: string;
   icon?: React.ComponentType<{ className?: string }>;
   recurso?: string;
+}
+
+interface SubMenuItem {
+  label: string;
+  url?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  recurso?: string;
+  subItems?: SubSubMenuItem[];
 }
 
 interface MenuItem {
@@ -78,6 +93,32 @@ const MENU_ITEMS: MenuItem[] = [
         icon: Users,
         recurso: 'renting_clientes',
       },
+      {
+        label: 'Tarifas',
+        icon: Tag,
+        recurso: 'renting_contratos',
+        subItems: [
+          { label: 'Tarifas', url: '/renting/tarifas', icon: Tag, recurso: 'renting_contratos' },
+          {
+            label: 'Coberturas',
+            url: '/renting/tarifas/coberturas',
+            icon: ShieldCheck,
+            recurso: 'renting_contratos',
+          },
+          {
+            label: 'Extras',
+            url: '/renting/tarifas/extras',
+            icon: PackagePlus,
+            recurso: 'renting_contratos',
+          },
+          {
+            label: 'Taxas',
+            url: '/renting/tarifas/taxas',
+            icon: Percent,
+            recurso: 'renting_contratos',
+          },
+        ],
+      },
     ],
   },
   { label: 'CRM', url: '/crm', icon: BarChart3, recurso: 'motoristas_crm' },
@@ -92,7 +133,18 @@ const MENU_ITEMS: MenuItem[] = [
       { label: 'Contratos', url: '/contratos', icon: FileText },
     ],
   },
-  { label: 'Viaturas', url: '/viaturas', icon: Car, recurso: 'viaturas_ver' },
+  {
+    label: 'Viaturas',
+    icon: Car,
+    recurso: 'viaturas_ver',
+    subItems: [
+      { label: 'Viaturas', url: '/viaturas', icon: Car },
+      { label: 'Grupos', url: '/viaturas/grupos', icon: Layers },
+      { label: 'Marcas / Modelos', url: '/viaturas/marcas-modelos', icon: CarFront },
+      { label: 'Combustíveis', url: '/viaturas/combustiveis', icon: Fuel },
+      { label: 'Tipos', url: '/viaturas/tipos', icon: Tag },
+    ],
+  },
   { label: 'Financeiro', url: '/financeiro', icon: Wallet, recurso: 'financeiro_recibos' },
   { label: 'Assistência', url: '/assistencia', icon: Wrench, recurso: 'assistencia_tickets' },
   { label: 'Calendário', url: '/calendario', icon: CalendarDays, recurso: 'calendario_ver' },
@@ -112,36 +164,58 @@ export const SidebarMenu: React.FC = () => {
   const visibleMenuItems = MENU_ITEMS.map((item) => {
     if (loading) return item;
     if (!item.subItems) return item;
-    // Submenus com recurso: filtrar pelos que o utilizador pode aceder
-    const filteredSubs = item.subItems.filter(
-      (sub) => !sub.recurso || hasAccessToResource(sub.recurso)
-    );
+    const filteredSubs = item.subItems
+      .map((sub) => {
+        if (!sub.subItems) return sub;
+        const filteredSubSubs = sub.subItems.filter(
+          (ss) => !ss.recurso || hasAccessToResource(ss.recurso)
+        );
+        return { ...sub, subItems: filteredSubSubs };
+      })
+      .filter((sub) => {
+        if (sub.recurso && !hasAccessToResource(sub.recurso)) return false;
+        if (sub.subItems && sub.subItems.length === 0) return false;
+        return true;
+      });
     return { ...item, subItems: filteredSubs };
   }).filter((item) => {
     if (loading) return true;
     if (item.recurso && !hasAccessToResource(item.recurso)) return false;
-    // Esconder item pai se tinha subItems mas nenhum sobrou visível
     if (item.subItems && item.subItems.length === 0) return false;
     return true;
   });
 
   const hasAdminAccess = !loading && (isAdmin || hasAccessToResource('admin_configuracoes'));
 
-  const NavItem = ({ item, isSub = false }: { item: MenuItem | SubMenuItem; isSub?: boolean }) => {
+  const NavItem = ({
+    item,
+    isSub = false,
+    siblings = [],
+  }: {
+    item: MenuItem | SubMenuItem;
+    isSub?: boolean;
+    siblings?: (SubMenuItem | SubSubMenuItem)[];
+  }) => {
     const Icon = item.icon!;
-    const isActive =
-      location.pathname === item.url ||
-      (item.url !== '/' && location.pathname.startsWith(item.url + '/'));
+    // If a sibling URL starts with this item's URL + '/', use exact match to avoid false highlights
+    const hasChildPaths = siblings.some(
+      (s) => s.url && s.url !== item.url && item.url && s.url.startsWith(item.url + '/')
+    );
+    const isActive = hasChildPaths
+      ? location.pathname === item.url
+      : location.pathname === item.url ||
+        (item.url !== '/' && location.pathname.startsWith(item.url! + '/'));
 
     return (
       <NavLink
         to={item.url!}
+        end={hasChildPaths}
         onClick={() => isMobile && setIsOpen(false)}
-        className={({ isActive: linkActive }) =>
+        className={() =>
           cn(
             'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group relative',
             isSub ? 'ml-9 text-sm' : 'text-sm font-medium',
-            linkActive
+            isActive
               ? 'bg-primary/15 text-primary shadow-sm'
               : 'text-muted-foreground hover:bg-muted hover:text-foreground'
           )
@@ -196,7 +270,9 @@ export const SidebarMenu: React.FC = () => {
           {visibleMenuItems.map((item) => {
             if (item.subItems && item.subItems.length > 0) {
               const isSubActive = item.subItems.some((sub) =>
-                location.pathname.startsWith(sub.url)
+                sub.url
+                  ? location.pathname.startsWith(sub.url)
+                  : (sub.subItems?.some((ss) => location.pathname.startsWith(ss.url)) ?? false)
               );
               return (
                 <Collapsible key={item.label} defaultOpen={isSubActive}>
@@ -221,9 +297,87 @@ export const SidebarMenu: React.FC = () => {
                     </button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1 pt-1">
-                    {item.subItems.map((sub) => (
-                      <NavItem key={sub.url} item={sub} isSub />
-                    ))}
+                    {item.subItems.map((sub) => {
+                      // Sub-submenu (3o nível)
+                      if (sub.subItems && sub.subItems.length > 0) {
+                        const SubIcon = sub.icon;
+                        const isNestedActive = sub.subItems.some((ss) =>
+                          location.pathname.startsWith(ss.url)
+                        );
+                        return (
+                          <Collapsible key={sub.label} defaultOpen={isNestedActive}>
+                            <CollapsibleTrigger asChild>
+                              <button
+                                className={cn(
+                                  'flex items-center gap-3 ml-9 px-3 py-2 rounded-lg transition-all duration-200 w-[calc(100%-2.25rem)] group text-sm',
+                                  '[&[data-state=open]>svg.chevron]:rotate-0',
+                                  isNestedActive
+                                    ? 'text-primary'
+                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                )}
+                              >
+                                {SubIcon && (
+                                  <SubIcon
+                                    className={cn(
+                                      'h-3.5 w-3.5 shrink-0',
+                                      isNestedActive && 'text-primary'
+                                    )}
+                                  />
+                                )}
+                                <span>{sub.label}</span>
+                                <ChevronDown className="chevron h-3 w-3 ml-auto -rotate-90 transition-transform duration-200" />
+                              </button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="space-y-0.5 pt-0.5">
+                              {sub.subItems.map((ss) => {
+                                const SsIcon = ss.icon;
+                                // Se há outro item no mesmo grupo cujo url começa com este + '/', usar só match exacto
+                                const hasChildPaths = sub.subItems!.some(
+                                  (other) =>
+                                    other.url !== ss.url && other.url.startsWith(ss.url + '/')
+                                );
+                                const ssActive = hasChildPaths
+                                  ? location.pathname === ss.url
+                                  : location.pathname === ss.url ||
+                                    location.pathname.startsWith(ss.url + '/');
+                                return (
+                                  <NavLink
+                                    key={ss.url}
+                                    to={ss.url}
+                                    end
+                                    onClick={() => isMobile && setIsOpen(false)}
+                                    className={cn(
+                                      'flex items-center gap-2.5 ml-[4.5rem] px-3 py-1.5 rounded-md transition-all duration-200 text-xs',
+                                      ssActive
+                                        ? 'bg-primary/10 text-primary font-medium'
+                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                    )}
+                                  >
+                                    {SsIcon && (
+                                      <SsIcon
+                                        className={cn(
+                                          'h-3 w-3 shrink-0',
+                                          ssActive && 'text-primary'
+                                        )}
+                                      />
+                                    )}
+                                    <span>{ss.label}</span>
+                                  </NavLink>
+                                );
+                              })}
+                            </CollapsibleContent>
+                          </Collapsible>
+                        );
+                      }
+                      return (
+                        <NavItem
+                          key={sub.url || sub.label}
+                          item={sub}
+                          isSub
+                          siblings={item.subItems}
+                        />
+                      );
+                    })}
                   </CollapsibleContent>
                 </Collapsible>
               );

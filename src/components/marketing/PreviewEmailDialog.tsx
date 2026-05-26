@@ -6,7 +6,7 @@ interface Props {
   campanha: any;
 }
 
-const PreviewEmailDialog = ({ open, onOpenChange, campanha }: Props) => {
+export const PreviewEmailDialog = ({ open, onOpenChange, campanha }: Props) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
@@ -31,5 +31,3 @@ const PreviewEmailDialog = ({ open, onOpenChange, campanha }: Props) => {
     </Dialog>
   );
 };
-
-export default PreviewEmailDialog;

@@ -112,7 +112,9 @@ export const TicketClosureDialog: React.FC<Props> = ({
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>KM Final *</Label>
+              <Label>
+                KM Final <span className="text-red-500">*</span>
+              </Label>
               <Input
                 type="number"
                 placeholder="Quilometragem atual"

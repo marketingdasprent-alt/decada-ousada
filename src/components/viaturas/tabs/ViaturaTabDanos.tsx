@@ -466,7 +466,9 @@ export function ViaturaTabDanos({ viaturaId, matricula }: ViaturaTabDanosProps) 
             </DialogHeader>
             <div className="space-y-4 pt-4 max-h-[70vh] overflow-y-auto">
               <div>
-                <Label htmlFor="descricao">Descrição *</Label>
+                <Label htmlFor="descricao">
+                  Descrição <span className="text-red-500">*</span>
+                </Label>
                 <Textarea
                   id="descricao"
                   placeholder="Descreva o dano..."

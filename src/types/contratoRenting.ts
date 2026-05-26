@@ -1,3 +1,5 @@
+import type { ExtraTipoCalculo } from './rentingExtra';
+
 // ============================================================
 // Estado operacional (ciclo físico da viatura)
 // ============================================================
@@ -38,6 +40,33 @@ export const CONTRATO_ORIGEM_LABELS: Record<ContratoOrigem, string> = {
 };
 
 // ============================================================
+// Modalidade (rent-a-car vs TVDE — determina a taxa de IVA)
+// ============================================================
+export const CONTRATO_MODALIDADES = ['rent_a_car', 'tvde'] as const;
+export type ContratoModalidade = (typeof CONTRATO_MODALIDADES)[number];
+
+export const CONTRATO_MODALIDADE_LABELS: Record<ContratoModalidade, string> = {
+  rent_a_car: 'Rent-a-car',
+  tvde: 'TVDE',
+};
+
+// ============================================================
+// Renovação (ALD — espelha reserva)
+// ============================================================
+export const CONTRATO_RENOVACAO_OPCOES = [
+  'primeiro_dia_mes',
+  'mesmo_dia_cada_mes',
+  'intervalo_dias',
+] as const;
+export type ContratoRenovacaoOpcao = (typeof CONTRATO_RENOVACAO_OPCOES)[number];
+
+export const CONTRATO_RENOVACAO_OPCAO_LABELS: Record<ContratoRenovacaoOpcao, string> = {
+  primeiro_dia_mes: 'Ao primeiro dia de cada mês',
+  mesmo_dia_cada_mes: 'No mesmo dia em cada mês',
+  intervalo_dias: 'A cada intervalo específico de dias',
+};
+
+// ============================================================
 // Tipo principal
 // ============================================================
 export type ContratoRenting = {
@@ -45,7 +74,8 @@ export type ContratoRenting = {
   org_id: string;
   codigo: number;
 
-  reserva_id: string | null;
+  /** FK obrigatória — todo contrato começa em reserva. */
+  reserva_id: string;
 
   cliente_id: string;
 
@@ -65,9 +95,13 @@ export type ContratoRenting = {
   estado_financeiro: ContratoEstadoFinanceiro;
   origem: ContratoOrigem;
 
+  /** rent_a_car ou tvde — determina a taxa de IVA (ver org_definicoes). */
+  modalidade: ContratoModalidade;
+
   // Tarifário simples (MVP)
   tarifa_diaria: number | null;
   desconto_percentagem: number | null;
+  /** Taxa de IVA aplicada — derivada da modalidade + config da org. */
   taxa_iva: number;
   valor_total_manual: number | null;
 
@@ -76,6 +110,17 @@ export type ContratoRenting = {
   total_iva: number | null;
   total_final: number | null;
   facturado_em: string | null;
+
+  // Longa duração / renovação (espelha reserva)
+  is_longa_duracao: boolean;
+  renovacao_opcao: ContratoRenovacaoOpcao | null;
+  renovacao_intervalo_dias: number | null;
+
+  // Financeiro / kms (copiado da reserva, editável no contrato)
+  franquia_valor: number | null;
+  caucao_valor: number | null;
+  kms_incluidos: number | null;
+  km_adicional_valor: number | null;
 
   voucher_codigo: string | null;
 
@@ -87,6 +132,7 @@ export type ContratoRenting = {
   comentarios_recolha: string | null;
 
   observacoes: string | null;
+  observacoes_internas: string | null;
 
   deleted_at: string | null;
   created_by: string | null;
@@ -113,4 +159,108 @@ export type ContratoRentingInsert = Omit<
 
 export type ContratoRentingUpdate = Partial<ContratoRentingInsert> & {
   deleted_at?: string | null;
+};
+
+// ============================================================
+// Condutores (m:n entre contratos_renting e clientes)
+// ============================================================
+export type ContratoCondutor = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  cliente_id: string;
+  is_principal: boolean;
+  created_by: string | null;
+  created_at: string;
+};
+
+// ============================================================
+// Coberturas (m:n entre contratos_renting e renting_coberturas)
+// ============================================================
+export type ContratoCobertura = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  cobertura_id: string;
+  cobertura_nome: string;
+  preco_dia: number;
+  franquia_valor: number | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+/** Forma usada no formulário — carrega o snapshot do catálogo. */
+export type CoberturaFormItem = {
+  cobertura_id: string;
+  cobertura_nome: string;
+  preco_dia: number;
+  franquia_valor: number | null;
+};
+
+// ============================================================
+// Extras (m:n entre contratos_renting e renting_extras)
+// ============================================================
+export type ContratoExtra = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  extra_id: string;
+  extra_nome: string;
+  preco_unidade: number;
+  tipo_calculo: ExtraTipoCalculo;
+  quantidade: number;
+  total: number;
+  created_by: string | null;
+  created_at: string;
+};
+
+/** Forma usada no formulário — carrega o snapshot do catálogo + quantidade. */
+export type ExtraFormItem = {
+  extra_id: string;
+  extra_nome: string;
+  preco_unidade: number;
+  tipo_calculo: ExtraTipoCalculo;
+  quantidade: number;
+};
+
+// ============================================================
+// Taxas (m:n entre contratos_renting e renting_taxas)
+// ============================================================
+export type ContratoTaxa = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  taxa_id: string;
+  taxa_nome: string;
+  percentagem: number | null;
+  valor_fixo: number | null;
+  base_calculo: number | null;
+  valor_calculado: number;
+  created_by: string | null;
+  created_at: string;
+};
+
+/** Forma usada no formulário — carrega o snapshot do catálogo. */
+export type TaxaFormItem = {
+  taxa_id: string;
+  taxa_nome: string;
+  percentagem: number | null;
+  valor_fixo: number | null;
+};
+
+// ============================================================
+// Anexos (1:n por contrato)
+// ============================================================
+export type ContratoAnexo = {
+  id: string;
+  org_id: string;
+  contrato_id: string;
+  nome: string;
+  ficheiro_url: string;
+  tamanho_bytes: number | null;
+  mime_type: string | null;
+  descricao: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 };

@@ -15,7 +15,7 @@ interface Props {
   lista?: any;
 }
 
-const NovaListaDialog = ({ open, onOpenChange, lista }: Props) => {
+export const NovaListaDialog = ({ open, onOpenChange, lista }: Props) => {
   const queryClient = useQueryClient();
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -97,5 +97,3 @@ const NovaListaDialog = ({ open, onOpenChange, lista }: Props) => {
     </Dialog>
   );
 };
-
-export default NovaListaDialog;

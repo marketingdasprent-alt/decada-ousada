@@ -1,32 +1,35 @@
 import { useCallback, useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { Download, FileText, Plus, Search } from 'lucide-react';
+import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
-import { useToast } from '@/hooks/use-toast';
 
-import { useEstacoes } from '@/hooks/useEstacoes';
 import { useClientes } from '@/hooks/useClientes';
 import { useContratosRenting } from '@/hooks/useContratosRenting';
+import { useEstacoes } from '@/hooks/useEstacoes';
+import { useToast } from '@/hooks/use-toast';
 
-import {
-  ContratosFiltros,
-  type ContratosFiltrosState,
-} from '@/components/renting/contratos/ContratosFiltros';
+import { ContratoSelectorReserva } from '@/components/renting/contratos/ContratoSelectorReserva';
 import {
   ContratosTabela,
   type SortColumn,
   type SortDir,
 } from '@/components/renting/contratos/ContratosTabela';
 import {
+  ContratosFiltros,
+  type ContratosFiltrosState,
+} from '@/components/renting/contratos/ContratosFiltros';
+import {
   csvEscape,
   formatCurrency,
   formatDateTime,
   normalizeMatricula,
 } from '@/components/renting/contratos/contratosUtils';
+
 import {
   CONTRATO_ESTADO_FIN_LABELS,
   CONTRATO_ESTADO_OP_LABELS,
@@ -46,6 +49,7 @@ const HARD_LIMIT = 1000;
 
 const RentingContratos = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
   const { data: clientes = [] } = useClientes();
   const { data: contratos = [], isLoading } = useContratosRenting({ limit: HARD_LIMIT });
@@ -54,6 +58,7 @@ const RentingContratos = () => {
   const [filtros, setFiltros] = useState<ContratosFiltrosState>(FILTROS_INICIAIS);
   const [sortColumn, setSortColumn] = useState<SortColumn>('codigo');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [selectorOpen, setSelectorOpen] = useState(false);
 
   const estacaoNomeById = useMemo(() => {
     const m = new Map<string, string>();
@@ -144,19 +149,11 @@ const RentingContratos = () => {
   };
 
   const handleRowClick = (c: ContratoRenting) => {
-    // MVP.3 — navegação para página de edição. Por agora, toast informativo.
-    toast({
-      title: `Contrato #${c.codigo}`,
-      description: 'Página de edição em desenvolvimento (Sprint MVP.3).',
-    });
+    navigate(`/renting/contratos/${c.id}`);
   };
 
   const handleCreateClick = () => {
-    // MVP.3 — navegação para página de criação. Por agora, toast informativo.
-    toast({
-      title: 'Criar contrato',
-      description: 'Página de criação em desenvolvimento (Sprint MVP.3).',
-    });
+    setSelectorOpen(true);
   };
 
   const handleExport = () => {
@@ -270,6 +267,8 @@ const RentingContratos = () => {
           </div>
         </CardContent>
       </Card>
+
+      <ContratoSelectorReserva open={selectorOpen} onOpenChange={setSelectorOpen} />
     </div>
   );
 };

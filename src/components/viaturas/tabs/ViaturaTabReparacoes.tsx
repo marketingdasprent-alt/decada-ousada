@@ -209,7 +209,7 @@ export function ViaturaTabReparacoes({ viaturaId, onUpdate }: ViaturaTabReparaco
             reparacaoId: repair.id,
             parcelas: pMap[repair.id],
             isClosedTicket: ['resolvido', 'fechado'].includes(ticket.status),
-            statusFinanceiro: repair.status_financeiro,
+            statusFinanceiro: repair.status_financeiro as 'motorista' | 'empresa' | 'aberto',
             faturaUrl: (ticket as any).fatura_url,
           });
         } else {
@@ -242,7 +242,7 @@ export function ViaturaTabReparacoes({ viaturaId, onUpdate }: ViaturaTabReparaco
             motoristaName: getMotoristaName(rep.motorista_responsavel_id),
             reparacaoId: rep.id,
             parcelas: pMap[rep.id],
-            statusFinanceiro: rep.status_financeiro,
+            statusFinanceiro: rep.status_financeiro as 'motorista' | 'empresa' | 'aberto',
           });
         }
       });

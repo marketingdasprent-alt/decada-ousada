@@ -1,3 +1,5 @@
+import type { ContratoModalidade } from './contratoRenting';
+
 export const RESERVA_ESTADOS = [
   'pendente',
   'confirmada',
@@ -54,11 +56,13 @@ export type Reserva = {
   condutor_id: string | null;
   condutor_nome: string | null;
   estado: ReservaEstado;
+  /** rent_a_car ou tvde — determina a taxa de IVA. */
+  modalidade: ContratoModalidade;
   valor_total: number | null;
   observacoes: string | null;
   observacoes_internas: string | null;
   // Longa duração / renovação
-  aluguer_longa_duracao: boolean;
+  is_longa_duracao: boolean;
   renovacao_opcao: RenovacaoOpcao | null;
   renovacao_intervalo_dias: number | null;
   // Financeiro / kms
@@ -73,9 +77,17 @@ export type Reserva = {
   updated_at: string;
 };
 
+// org_id é preenchido por trigger na BD — fica de fora do payload do formulário.
 export type ReservaInsert = Omit<
   Reserva,
-  'id' | 'codigo' | 'deleted_at' | 'created_by' | 'updated_by' | 'created_at' | 'updated_at'
+  | 'id'
+  | 'codigo'
+  | 'org_id'
+  | 'deleted_at'
+  | 'created_by'
+  | 'updated_by'
+  | 'created_at'
+  | 'updated_at'
 >;
 
 export type ReservaUpdate = Partial<ReservaInsert> & { deleted_at?: string | null };

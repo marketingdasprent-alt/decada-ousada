@@ -273,7 +273,9 @@ export const NovoTicketPage: React.FC<Props> = ({ onClose, onSuccess }) => {
               </h2>
 
               <div className="space-y-1.5">
-                <Label htmlFor="titulo">Título *</Label>
+                <Label htmlFor="titulo">
+                  Título <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="titulo"
                   placeholder="Ex: Barulho no motor, revisão anual..."

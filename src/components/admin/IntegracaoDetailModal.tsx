@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { cronExpressionToPreset, presetToCronExpression, CRON_PRESETS } from '@/lib/cronPresets';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -128,6 +129,8 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
     nome: integracao.nome,
     client_id: integracao.client_id ?? '',
     client_secret: integracao.client_secret ?? '',
+    webhook_signing_key: integracao.webhook_signing_key ?? '',
+    uber_scopes: (integracao.uber_scopes ?? []).join(' '),
     company_id: integracao.company_id?.toString() || '',
     ativo: integracao.ativo,
     sync_automatico: integracao.sync_automatico ?? false,
@@ -174,6 +177,8 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
       nome: integracao.nome,
       client_id: integracao.client_id ?? '',
       client_secret: integracao.client_secret ?? '',
+      webhook_signing_key: integracao.webhook_signing_key ?? '',
+      uber_scopes: (integracao.uber_scopes ?? []).join(' '),
       company_id: integracao.company_id?.toString() || '',
       ativo: integracao.ativo,
       sync_automatico: integracao.sync_automatico ?? false,
@@ -304,6 +309,14 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
         updatePayload.client_secret = formData.client_secret || null;
         updatePayload.cookies_json = null;
         updatePayload.auth_mode = 'password';
+      } else if (integracao.plataforma === 'uber') {
+        // Native Uber integration (webhook + direct API)
+        updatePayload.client_id = formData.client_id || null;
+        updatePayload.client_secret = formData.client_secret || null;
+        updatePayload.webhook_signing_key = formData.webhook_signing_key || null;
+        updatePayload.uber_scopes = formData.uber_scopes
+          ? formData.uber_scopes.trim().split(/\s+/).filter(Boolean)
+          : [];
       } else if (integracao.plataforma === 'bolt') {
         updatePayload.client_id = formData.client_id || null;
         updatePayload.client_secret = formData.client_secret || null;
@@ -327,7 +340,7 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
 
       const { data, error } = await supabase
         .from('plataformas_configuracao')
-        .update(updatePayload)
+        .update(updatePayload as TablesUpdate<'plataformas_configuracao'>)
         .eq('id', integracao.id)
         .select('*')
         .single();
@@ -518,6 +531,89 @@ export const IntegracaoDetailModal: React.FC<IntegracaoDetailModalProps> = ({
                       {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
+                </div>
+              </>
+            )}
+
+            {/* === UBER NATIVE FIELDS === */}
+            {integracao.plataforma === 'uber' && (
+              <>
+                <div className="space-y-2">
+                  <Label>App ID (Client ID)</Label>
+                  <Input
+                    value={formData.client_id}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, client_id: e.target.value }))
+                    }
+                    placeholder="PZMlLbqcMDzxpD8FSDx9rTBTPFMhiygi"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    App ID da aplicação no painel Uber Developer.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>OAuth Client Secret</Label>
+                  <div className="relative">
+                    <Input
+                      type={showSecret ? 'text' : 'password'}
+                      value={formData.client_secret}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, client_secret: e.target.value }))
+                      }
+                      placeholder="OAuth Client Secret (para API directa)"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2"
+                      onClick={() => setShowSecret(!showSecret)}
+                    >
+                      {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Necessário para sincronização directa via API. Diferente do signing key do
+                    webhook.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Webhook Signing Key</Label>
+                  <div className="relative">
+                    <Input
+                      type={showSecret ? 'text' : 'password'}
+                      value={formData.webhook_signing_key}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, webhook_signing_key: e.target.value }))
+                      }
+                      placeholder="Chave HMAC para validar webhooks"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2"
+                      onClick={() => setShowSecret(!showSecret)}
+                    >
+                      {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Chave para validar assinaturas HMAC dos eventos webhook da Uber.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>OAuth Scopes (API directa)</Label>
+                  <Input
+                    value={formData.uber_scopes}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, uber_scopes: e.target.value }))
+                    }
+                    placeholder="partner.trips fleet.trips (separados por espaço)"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Scopes OAuth configurados na app Uber Developer, separados por espaço.
+                  </p>
                 </div>
               </>
             )}

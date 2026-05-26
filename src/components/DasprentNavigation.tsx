@@ -5,7 +5,7 @@ import { Users, BarChart3 } from 'lucide-react';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { useThemedLogo } from '@/hooks/useThemedLogo';
 
-const DasprentNavigation = () => {
+export const DasprentNavigation: React.FC = () => {
   const location = useLocation();
   const logoSrc = useThemedLogo();
 
@@ -62,5 +62,3 @@ const DasprentNavigation = () => {
     </nav>
   );
 };
-
-export default DasprentNavigation;

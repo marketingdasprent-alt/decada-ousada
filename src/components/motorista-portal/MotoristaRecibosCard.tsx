@@ -152,6 +152,7 @@ export function MotoristaRecibosCard({
         .from('motorista_recibos')
         .select('*')
         .eq('motorista_id', motoristaId)
+        .eq('tipo', 'recibo')
         .order('created_at', { ascending: false })
         .limit(10);
 
