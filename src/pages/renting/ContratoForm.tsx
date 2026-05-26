@@ -35,6 +35,7 @@ import { useReserva } from '@/hooks/useReservas';
 import { useViaturas } from '@/hooks/useViaturas';
 
 import { ContratoDeleteConfirm } from '@/components/renting/contratos/ContratoDeleteConfirm';
+import { ContratoEstadoActions } from '@/components/renting/contratos/ContratoEstadoActions';
 import { ContratoFormSecoes } from '@/components/renting/contratos/ContratoFormSecoes';
 import { ContratoTabAnexos } from '@/components/renting/contratos/ContratoTabAnexos';
 import { ContratoTabCobertura } from '@/components/renting/contratos/ContratoTabCobertura';
@@ -468,10 +469,11 @@ const ContratoForm = () => {
           <ArrowLeft className="h-4 w-4" />
           Voltar
         </Button>
+        {isEdit && contrato && <ContratoEstadoActions contrato={contrato} />}
         {isEdit && contrato && (
           <Button
             type="button"
-            variant="destructive"
+            variant="outline"
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
             className="gap-2"
