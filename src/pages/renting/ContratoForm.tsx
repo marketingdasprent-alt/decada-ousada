@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -58,6 +60,7 @@ import {
   type AlteracaoMaterial,
 } from '@/components/renting/contratos/ContratoNovaVersaoDialog';
 import { ContratoTabHistorico } from '@/components/renting/contratos/ContratoTabHistorico';
+import { RealizarEntregaDialog } from '@/components/renting/contratos/RealizarEntregaDialog';
 import { ContratoTabAnexos } from '@/components/renting/contratos/ContratoTabAnexos';
 import { ContratoTabCobertura } from '@/components/renting/contratos/ContratoTabCobertura';
 import { ContratoTabExtras } from '@/components/renting/contratos/ContratoTabExtras';
@@ -143,6 +146,14 @@ const ContratoForm = () => {
     alteracoes: AlteracaoMaterial[];
     valores: ContratoFormValues;
   } | null>(null);
+  /** Dialog de realização (entrega/recolha) via QR. Aberto automaticamente
+   *  quando há evento pendente correspondente ao estado actual. */
+  const [realizarDialog, setRealizarDialog] = useState<{
+    eventoId: string;
+    tipo: 'entrega' | 'recolha';
+  } | null>(null);
+  /** Marca para o auto-open só correr uma vez por carregamento da página. */
+  const [autoOpenedRealizar, setAutoOpenedRealizar] = useState(false);
 
   /** Adiciona um cliente recém-criado à lista de condutores (rent-a-car). */
   const handleClienteCriado = (clienteId: string) => {
@@ -439,6 +450,44 @@ const ContratoForm = () => {
   );
 
   const isFacturado = contrato?.estado_financeiro === 'facturado';
+
+  // Procura o evento pendente (entrega ou recolha) do contrato actual
+  // para abrir automaticamente o dialog de realização ao entrar na página.
+  const tipoEventoEsperado: 'entrega' | 'recolha' | null = !contrato
+    ? null
+    : contrato.estado_operacional === 'agendado'
+      ? 'entrega'
+      : contrato.estado_operacional === 'em_curso'
+        ? 'recolha'
+        : null;
+
+  const { data: eventoPendente } = useQuery({
+    queryKey: ['calendario-evento-pendente', contrato?.id ?? null, tipoEventoEsperado],
+    queryFn: async () => {
+      if (!contrato || !tipoEventoEsperado) return null;
+      const { data, error } = await supabase
+        .from('calendario_eventos')
+        .select('id, tipo')
+        .eq('origem_tipo', 'contrato_renting')
+        .eq('origem_id', contrato.id)
+        .eq('tipo', tipoEventoEsperado)
+        .is('realizado_em', null)
+        .maybeSingle();
+      if (error || !data) return null;
+      return { id: data.id as string, tipo: data.tipo as 'entrega' | 'recolha' };
+    },
+    enabled: isEdit && !!contrato && !!tipoEventoEsperado && !isFacturado,
+  });
+
+  // Auto-open do dialog assim que entramos na página com evento pendente.
+  // Só dispara uma vez por mount — se o user fechar, não reabre.
+  useEffect(() => {
+    if (autoOpenedRealizar) return;
+    if (!eventoPendente) return;
+    if (contrato?.substituido_em) return; // versão antiga não realiza
+    setRealizarDialog({ eventoId: eventoPendente.id, tipo: eventoPendente.tipo });
+    setAutoOpenedRealizar(true);
+  }, [eventoPendente, autoOpenedRealizar, contrato?.substituido_em]);
 
   const conflitoArgs = useMemo(() => {
     const di = dataInicio ? new Date(dataInicio) : null;
@@ -914,6 +963,16 @@ const ContratoForm = () => {
         alteracoes={novaVersaoCtx?.alteracoes ?? []}
         isPending={criarVersaoMutation.isPending || updateMutation.isPending}
         onConfirmar={confirmarNovaVersao}
+      />
+
+      <RealizarEntregaDialog
+        open={!!realizarDialog}
+        onOpenChange={(o) => {
+          if (!o) setRealizarDialog(null);
+        }}
+        eventoId={realizarDialog?.eventoId ?? null}
+        tipo={realizarDialog?.tipo ?? 'entrega'}
+        resumo={contrato ? `Contrato #${contrato.codigo} · ${contrato.matricula ?? ''}` : undefined}
       />
     </div>
   );

@@ -84,6 +84,37 @@ const Calendario: React.FC = () => {
     },
   });
 
+  // Contagem combinada (legacy + renting) para os badges nos botões.
+  const { data: rentingEntregaPendentesCount = 0 } = useQuery({
+    queryKey: ['calendario', 'eventos-pendentes-renting', 'entrega', 'count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('calendario_eventos')
+        .select('id', { count: 'exact', head: true })
+        .eq('origem_tipo', 'contrato_renting')
+        .eq('tipo', 'entrega')
+        .is('realizado_em', null);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    staleTime: 30_000,
+  });
+
+  const { data: rentingRecolhaPendentesCount = 0 } = useQuery({
+    queryKey: ['calendario', 'eventos-pendentes-renting', 'recolha', 'count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('calendario_eventos')
+        .select('id', { count: 'exact', head: true })
+        .eq('origem_tipo', 'contrato_renting')
+        .eq('tipo', 'recolha')
+        .is('realizado_em', null);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    staleTime: 30_000,
+  });
+
   const canManageListaEspera = isAdmin || !!cargo?.toLowerCase().includes('supervisor');
 
   const { data: listaEsperaCount = 0 } = useQuery({
@@ -319,9 +350,9 @@ const Calendario: React.FC = () => {
                 >
                   <LogOut className="h-4 w-4" />
                   <span className="hidden sm:inline">Check Out</span>
-                  {checkoutPendentes.length > 0 && (
+                  {checkoutPendentes.length + rentingEntregaPendentesCount > 0 && (
                     <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-green-600 text-white border-0">
-                      {checkoutPendentes.length}
+                      {checkoutPendentes.length + rentingEntregaPendentesCount}
                     </Badge>
                   )}
                 </Button>
@@ -332,9 +363,9 @@ const Calendario: React.FC = () => {
                 >
                   <PackageCheck className="h-4 w-4" />
                   <span className="hidden sm:inline">Check In</span>
-                  {recolhasPendentes.length > 0 && (
+                  {recolhasPendentes.length + rentingRecolhaPendentesCount > 0 && (
                     <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-orange-500 text-white border-0">
-                      {recolhasPendentes.length}
+                      {recolhasPendentes.length + rentingRecolhaPendentesCount}
                     </Badge>
                   )}
                 </Button>
