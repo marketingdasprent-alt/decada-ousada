@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatMatricula, SearchableDropdown } from './calendarioUtils';
+import { RentingPendentesSection } from './RentingPendentesSection';
 import {
   CheckinDadosSection,
   emptyCheckinDados,
@@ -440,6 +441,8 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto">
+          {/* Renting (rent-a-car / aluguer) — pendentes em primeiro com botão simples */}
+          <RentingPendentesSection tipo="recolha" />
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -447,7 +450,7 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
           ) : viaturas.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
               <CheckCircle className="h-10 w-10 opacity-30" />
-              <p className="text-sm">Nenhuma recolha pendente</p>
+              <p className="text-sm">Nenhuma recolha TVDE pendente</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
