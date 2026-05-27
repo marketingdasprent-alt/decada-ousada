@@ -6005,6 +6005,42 @@ export type Database = {
           },
         ]
       }
+      realizacao_tokens: {
+        Row: {
+          id: string
+          org_id: string
+          evento_id: string
+          contrato_id: string
+          tipo: string
+          expires_at: string
+          used_at: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          evento_id: string
+          contrato_id: string
+          tipo: string
+          expires_at?: string
+          used_at?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          evento_id?: string
+          contrato_id?: string
+          tipo?: string
+          expires_at?: string
+          used_at?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       reservas: {
         Row: {
           caucao_valor: number | null
@@ -8490,6 +8526,21 @@ export type Database = {
       criar_versao_contrato_renting: {
         Args: { p_contrato_id: string; p_motivo: string }
         Returns: string
+      }
+      gerar_token_realizacao: {
+        Args: { p_evento_id: string }
+        Returns: string
+      }
+      consumir_token_realizacao: {
+        Args: { p_token: string }
+        Returns: {
+          evento_id: string
+          contrato_id: string
+          tipo: string
+          matricula: string
+          cidade: string | null
+          data_inicio: string
+        }[]
       }
       execute_gestor_assignment: { Args: never; Returns: number }
       fn_contrato_dias: {

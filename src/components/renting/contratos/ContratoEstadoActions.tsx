@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, Loader2, PackageCheck, XCircle } from 'lucide-react';
+import { Loader2, XCircle } from 'lucide-react';
 
 import {
   AlertDialog,
@@ -15,41 +15,22 @@ import { Button } from '@/components/ui/button';
 import { useUpdateContratoRenting } from '@/hooks/useContratosRenting';
 import type { ContratoEstadoOperacional, ContratoRenting } from '@/types/contratoRenting';
 
-type AccaoEstado = 'entrega' | 'devolucao' | 'cancelar';
+// Entrega e devolução são feitas via fluxo QR/check-out pendente — os
+// botões "Confirmar entrega"/"Marcar devolução" foram removidos para
+// evitar transições directas sem fotos. Cancelar continua disponível.
+type AccaoEstado = 'cancelar';
 
 interface AccaoConfig {
-  /** Estado para o qual transitar */
   novoEstado: ContratoEstadoOperacional;
-  /** Estados a partir dos quais a acção é válida */
   estadosOrigem: ContratoEstadoOperacional[];
   label: string;
-  Icon: typeof CheckCircle2;
+  Icon: typeof XCircle;
   variant: 'default' | 'destructive' | 'outline';
   dialogTitle: string;
   dialogDescription: (codigo: number) => string;
 }
 
 const ACCOES: Record<AccaoEstado, AccaoConfig> = {
-  entrega: {
-    novoEstado: 'em_curso',
-    estadosOrigem: ['agendado'],
-    label: 'Confirmar entrega',
-    Icon: PackageCheck,
-    variant: 'default',
-    dialogTitle: 'Confirmar entrega ao cliente?',
-    dialogDescription: (codigo) =>
-      `O contrato #${codigo} passa a "em curso" — a viatura fica em uso e a reserva associada já está activa. Esta transição deve corresponder à entrega física da viatura.`,
-  },
-  devolucao: {
-    novoEstado: 'devolvido',
-    estadosOrigem: ['em_curso'],
-    label: 'Marcar devolução',
-    Icon: CheckCircle2,
-    variant: 'default',
-    dialogTitle: 'Marcar contrato como devolvido?',
-    dialogDescription: (codigo) =>
-      `O contrato #${codigo} passa a "devolvido". A reserva é concluída, a viatura volta a disponibilidade (se nada mais a ocupar) e os eventos no calendário são limpos.`,
-  },
   cancelar: {
     novoEstado: 'cancelado',
     estadosOrigem: ['agendado', 'em_curso'],
@@ -66,11 +47,6 @@ interface ContratoEstadoActionsProps {
   contrato: ContratoRenting;
 }
 
-/**
- * Botões de transição de estado_operacional do contrato. Cada acção
- * tem confirmação por AlertDialog e dispara mutation com cascata via
- * triggers SQL (reserva, viatura, eventos do calendário).
- */
 export const ContratoEstadoActions: React.FC<ContratoEstadoActionsProps> = ({ contrato }) => {
   const [accaoAberta, setAccaoAberta] = useState<AccaoEstado | null>(null);
   const updateMutation = useUpdateContratoRenting();
@@ -82,7 +58,6 @@ export const ContratoEstadoActions: React.FC<ContratoEstadoActionsProps> = ({ co
     ([, cfg]) => cfg.estadosOrigem.includes(contrato.estado_operacional)
   );
 
-  // Contrato facturado é imutável (SAF-T) — esconder todas as acções.
   if (isFacturado) return null;
   if (accoesVisiveis.length === 0) return null;
 

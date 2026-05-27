@@ -51,6 +51,7 @@ const SelecionarOrg = lazy(() => import('@/pages/SelecionarOrg'));
 const RegistarOrg = lazy(() => import('@/pages/RegistarOrg'));
 const RentingContratos = lazy(() => import('@/pages/renting/RentingContratos'));
 const ContratoForm = lazy(() => import('@/pages/renting/ContratoForm'));
+const RealizarEntregaPage = lazy(() => import('@/pages/renting/RealizarEntregaPage'));
 const RentingReservas = lazy(() => import('@/pages/renting/RentingReservas'));
 const RentingReservaForm = lazy(() => import('@/pages/renting/RentingReservaForm'));
 const RentingMovimentacoes = lazy(() => import('@/pages/renting/RentingMovimentacoes'));
@@ -395,6 +396,15 @@ const WebAppRoutes = () => {
                 <DashboardLayout>
                   <ContratoForm />
                 </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          {/* Deep link via QR — usado pelo modal de "Realizar agora" */}
+          <Route
+            path="/realizar/:token"
+            element={
+              <ProtectedRoute>
+                <RealizarEntregaPage />
               </ProtectedRoute>
             }
           />
