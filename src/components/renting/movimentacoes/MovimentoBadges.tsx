@@ -1,4 +1,4 @@
-import { ArrowRightLeft, OctagonAlert, ScrollText, Wrench } from 'lucide-react';
+import { ArrowRightLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import {
@@ -12,31 +12,14 @@ import {
 // Tipo
 // ────────────────────────────────────────────────────────────
 
-const TIPO_STYLES: Record<MovimentoTipo, string> = {
-  transferencia: 'border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300',
-  reparacao: 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  manutencao: 'border-violet-500/40 bg-violet-500/10 text-violet-700 dark:text-violet-300',
-  impro: 'border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300',
-  inspecao: 'border-teal-500/40 bg-teal-500/10 text-teal-700 dark:text-teal-300',
-};
+const TIPO_STYLE = 'border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300';
 
-const TIPO_ICONS: Record<MovimentoTipo, React.ComponentType<{ className?: string }>> = {
-  transferencia: ArrowRightLeft,
-  reparacao: Wrench,
-  manutencao: Wrench,
-  impro: OctagonAlert,
-  inspecao: ScrollText,
-};
-
-export const MovimentoTipoBadge: React.FC<{ tipo: MovimentoTipo }> = ({ tipo }) => {
-  const Icon = TIPO_ICONS[tipo];
-  return (
-    <Badge variant="outline" className={cn('font-medium gap-1', TIPO_STYLES[tipo])}>
-      <Icon className="h-3 w-3" />
-      {MOVIMENTO_TIPO_LABELS[tipo]}
-    </Badge>
-  );
-};
+export const MovimentoTipoBadge: React.FC<{ tipo: MovimentoTipo }> = ({ tipo }) => (
+  <Badge variant="outline" className={cn('font-medium gap-1', TIPO_STYLE)}>
+    <ArrowRightLeft className="h-3 w-3" />
+    {MOVIMENTO_TIPO_LABELS[tipo] ?? 'Transferência Interna'}
+  </Badge>
+);
 
 // ────────────────────────────────────────────────────────────
 // Estado

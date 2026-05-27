@@ -20,6 +20,7 @@ const TIPO_LABELS: Record<string, string> = {
   troca: 'Troca',
   upgrade: 'Upgrade',
   lista_espera: 'Lista de Espera',
+  transferencia: 'Transferência',
 };
 
 const TIPO_COLORS: Record<string, string> = {
@@ -29,6 +30,7 @@ const TIPO_COLORS: Record<string, string> = {
   troca: 'border-l-purple-500',
   upgrade: 'border-l-yellow-500',
   lista_espera: 'border-l-pink-500',
+  transferencia: 'border-l-cyan-500',
 };
 
 export function formatMatricula(val: string): string {

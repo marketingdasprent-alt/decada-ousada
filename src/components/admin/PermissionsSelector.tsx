@@ -106,6 +106,7 @@ const RECURSO_LABELS: Record<string, string> = {
   contratos_criar: 'Criar novos contratos',
   contratos_reimprimir: 'Reimprimir contratos',
   motoristas_contratos: 'Gestão completa de contratos',
+  motoristas_editar_data_contrato: 'Editar data do 1.º contrato',
   // Financeiro
   financeiro_recibos: 'Gestão de recibos verdes',
   recibos_verdes_adicionar: 'Adicionar recibos verdes manualmente',
@@ -113,6 +114,7 @@ const RECURSO_LABELS: Record<string, string> = {
   marketing_ver: 'Aceder ao módulo de Marketing',
   // Calendário
   calendario_ver: 'Ver eventos do calendário',
+  calendario_ver_gestores: 'Ver gestores nos relatórios de eventos',
   calendario_criar: 'Criar novos eventos',
   calendario_editar: 'Editar eventos existentes',
   calendario_gerir_todos: 'Gerir eventos de todos os gestores',
