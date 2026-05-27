@@ -126,6 +126,7 @@ Se aparecer pressão para criar estados específicos (`tvde_em_partilha`, `alugu
 - [ ] **Handler de recolha física** que faz `em_curso → devolvido`. Mesmo padrão.
 - [x] ~~**Cascata inversa em cancelamento**~~ — implementada em [migration 20260520400001](../../supabase/migrations/20260520400001_contrato_renting_cascata_estado.sql).
 - [ ] **Integração Primavera** para passagem `pendente → facturado` automática.
+- [ ] **Renomear `contratos_renting` → `contratos`** quando o fluxo legacy (`contratos` tabela antiga via `gerar_contrato_atomico`) for descontinuado. O nome histórico "renting" é confuso porque a tabela suporta ambos os regimes (`rent_a_car` e `tvde`). Documentado via `COMMENT ON TABLE` em produção.
 
 ---
 
