@@ -19,6 +19,7 @@ export const RECURSOS = {
   MOTORISTAS_CONTACTOS: 'motoristas_contactos',
   MOTORISTAS_CRM: 'motoristas_crm',
   MOTORISTAS_CONTRATOS: 'motoristas_contratos',
+  MOTORISTAS_EDITAR_DATA_CONTRATO: 'motoristas_editar_data_contrato',
   MOTORISTA_PAINEL: 'motorista_painel', // Painel exclusivo do motorista
 
   // Viaturas
@@ -61,6 +62,7 @@ export const RECURSOS = {
   CALENDARIO_EDITAR_TODOS: 'calendario_editar_todos',
   CALENDARIO_ELIMINAR: 'calendario_eliminar',
   CALENDARIO_RECOLHAS: 'calendario_recolhas',
+  CALENDARIO_VER_GESTORES: 'calendario_ver_gestores',
 
   // Renting
   RENTING_RESERVAS: 'renting_reservas',

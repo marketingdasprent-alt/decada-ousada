@@ -1,5 +1,5 @@
 import type { UseFormReturn } from 'react-hook-form';
-import { Building2, Fuel, Gauge, MapPin, Wrench } from 'lucide-react';
+import { Fuel, Gauge, MapPin } from 'lucide-react';
 
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,6 @@ import {
 import type { MovimentoFormValues } from '../movimentoForm.schema';
 import { COMBUSTIVEL_OPTIONS } from '../movimentosUtils';
 import type { Estacao } from '@/hooks/useEstacoes';
-import { MOVIMENTO_TIPO_LABELS, isAssistencia } from '@/types/movimento';
 
 const SENTINEL_NONE = '__none__';
 
@@ -63,10 +62,10 @@ const EstacaoField: React.FC<{
   />
 );
 
-/** Campo numérico opcional (KM / custos). */
+/** Campo numérico opcional (KM). */
 const NumberField: React.FC<{
   form: UseFormReturn<MovimentoFormValues>;
-  name: 'km_inicial' | 'km_final' | 'custo_estimado' | 'custo_final';
+  name: 'km_inicial' | 'km_final';
   label: string;
   suffix: string;
   step?: string;
@@ -144,155 +143,42 @@ const CombustivelField: React.FC<{
   />
 );
 
-export const MovimentoTabDetalhes: React.FC<MovimentoTabDetalhesProps> = ({ form, estacoes }) => {
-  const tipo = form.watch('tipo');
-  const ehTransferencia = tipo === 'transferencia';
-  const ehAssistencia = isAssistencia(tipo);
-
-  return (
-    <div className="space-y-8">
-      {ehTransferencia && (
-        <>
-          {/* Trajeto */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <MapPin className="h-4 w-4 text-primary" />
-              <h3 className="text-base font-semibold">Trajeto da Transferência</h3>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <EstacaoField
-                form={form}
-                name="estacao_origem_id"
-                label="Estação de Origem"
-                estacoes={estacoes}
-              />
-              <EstacaoField
-                form={form}
-                name="estacao_destino_id"
-                label="Estação de Destino"
-                estacoes={estacoes}
-              />
-            </div>
-          </div>
-
-          {/* Quilometragem & Combustível */}
-          <div className="rounded-lg border bg-gradient-to-br from-muted/40 to-muted/10 p-5 space-y-5">
-            <div className="flex items-center gap-2">
-              <Gauge className="h-5 w-5 text-primary" />
-              <h3 className="text-base font-semibold">Quilometragem & Combustível</h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <NumberField
-                form={form}
-                name="km_inicial"
-                label="KM Inicial"
-                suffix="km"
-                icon={Gauge}
-              />
-              <NumberField form={form} name="km_final" label="KM Final" suffix="km" icon={Gauge} />
-              <CombustivelField
-                form={form}
-                name="combustivel_inicial"
-                label="Combustível Inicial"
-              />
-              <CombustivelField form={form} name="combustivel_final" label="Combustível Final" />
-            </div>
-          </div>
-        </>
-      )}
-
-      {ehAssistencia && (
-        <>
-          {/* Detalhes da assistência */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <Wrench className="h-4 w-4 text-primary" />
-              <h3 className="text-base font-semibold">Detalhes — {MOVIMENTO_TIPO_LABELS[tipo]}</h3>
-            </div>
-            <FormField
-              control={form.control}
-              name="motivo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Motivo</FormLabel>
-                  <FormControl>
-                    <Input
-                      className="bg-background"
-                      placeholder="ex.: avaria nos travões, sinistro, revisão dos 60.000 km..."
-                      maxLength={255}
-                      {...field}
-                      value={field.value ?? ''}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="prestador"
-                render={({ field }) => (
-                  <FormItem className="lg:col-span-1">
-                    <FormLabel className="flex items-center gap-1.5">
-                      <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      Oficina / Prestador
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        className="bg-background"
-                        placeholder="Nome da oficina ou fornecedor"
-                        maxLength={255}
-                        {...field}
-                        value={field.value ?? ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <NumberField
-                form={form}
-                name="custo_estimado"
-                label="Custo Estimado"
-                suffix="€"
-                step="0.01"
-              />
-              <NumberField
-                form={form}
-                name="custo_final"
-                label="Custo Final"
-                suffix="€"
-                step="0.01"
-              />
-            </div>
-          </div>
-
-          {/* Quilometragem na assistência */}
-          <div className="rounded-lg border bg-gradient-to-br from-muted/40 to-muted/10 p-5 space-y-5">
-            <div className="flex items-center gap-2">
-              <Gauge className="h-5 w-5 text-primary" />
-              <h3 className="text-base font-semibold">Quilometragem</h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <NumberField
-                form={form}
-                name="km_inicial"
-                label="KM na Entrada"
-                suffix="km"
-                icon={Gauge}
-              />
-              <NumberField
-                form={form}
-                name="km_final"
-                label="KM na Saída"
-                suffix="km"
-                icon={Gauge}
-              />
-            </div>
-          </div>
-        </>
-      )}
+export const MovimentoTabDetalhes: React.FC<MovimentoTabDetalhesProps> = ({ form, estacoes }) => (
+  <div className="space-y-8">
+    {/* Trajeto */}
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 pb-2 border-b">
+        <MapPin className="h-4 w-4 text-primary" />
+        <h3 className="text-base font-semibold">Trajeto da Transferência</h3>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <EstacaoField
+          form={form}
+          name="estacao_origem_id"
+          label="Estação de Origem"
+          estacoes={estacoes}
+        />
+        <EstacaoField
+          form={form}
+          name="estacao_destino_id"
+          label="Estação de Destino"
+          estacoes={estacoes}
+        />
+      </div>
     </div>
-  );
-};
+
+    {/* Quilometragem & Combustível */}
+    <div className="rounded-lg border bg-gradient-to-br from-muted/40 to-muted/10 p-5 space-y-5">
+      <div className="flex items-center gap-2">
+        <Gauge className="h-5 w-5 text-primary" />
+        <h3 className="text-base font-semibold">Quilometragem & Combustível</h3>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <NumberField form={form} name="km_inicial" label="KM Inicial" suffix="km" icon={Gauge} />
+        <NumberField form={form} name="km_final" label="KM Final" suffix="km" icon={Gauge} />
+        <CombustivelField form={form} name="combustivel_inicial" label="Combustível Inicial" />
+        <CombustivelField form={form} name="combustivel_final" label="Combustível Final" />
+      </div>
+    </div>
+  </div>
+);

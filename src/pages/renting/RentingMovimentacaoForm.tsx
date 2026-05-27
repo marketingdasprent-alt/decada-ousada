@@ -146,28 +146,27 @@ const RentingMovimentacaoForm = () => {
   };
 
   const onSubmit = async (values: MovimentoFormValues) => {
-    const ehTransferencia = values.tipo === 'transferencia';
     const viaturaSelecionada = viaturas.find((v) => v.id === values.viatura_id);
 
     const payload: MovimentoInsert = {
-      tipo: values.tipo,
+      tipo: 'transferencia',
       estado: values.estado,
       viatura_id: values.viatura_id,
       matricula: values.matricula || viaturaSelecionada?.matricula || null,
-      estacao_origem_id: ehTransferencia ? (values.estacao_origem_id ?? null) : null,
-      estacao_destino_id: ehTransferencia ? (values.estacao_destino_id ?? null) : null,
+      estacao_origem_id: values.estacao_origem_id ?? null,
+      estacao_destino_id: values.estacao_destino_id ?? null,
       data_partida: localInputToIso(values.data_partida),
       data_chegada: localInputToIso(values.data_chegada),
       colaborador_id: values.colaborador_id ?? null,
       colaborador_nome: values.colaborador_nome || null,
       km_inicial: values.km_inicial,
       km_final: values.km_final,
-      combustivel_inicial: ehTransferencia ? values.combustivel_inicial : null,
-      combustivel_final: ehTransferencia ? values.combustivel_final : null,
-      motivo: ehTransferencia ? null : values.motivo || null,
-      prestador: ehTransferencia ? null : values.prestador || null,
-      custo_estimado: ehTransferencia ? null : values.custo_estimado,
-      custo_final: ehTransferencia ? null : values.custo_final,
+      combustivel_inicial: values.combustivel_inicial,
+      combustivel_final: values.combustivel_final,
+      motivo: null,
+      prestador: null,
+      custo_estimado: null,
+      custo_final: null,
       info: values.info || null,
       observacoes: values.observacoes || null,
       observacoes_internas: values.observacoes_internas || null,

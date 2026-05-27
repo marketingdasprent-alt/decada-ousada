@@ -53,20 +53,8 @@ export const MovimentoTabGeral: React.FC<MovimentoTabGeralProps> = ({
       <div>
         <div className="flex items-center gap-2 pb-2 border-b mb-4">
           <h3 className="text-base font-semibold">Tipo de Movimento</h3>
-          <span className="text-destructive text-sm">*</span>
         </div>
-        <FormField
-          control={form.control}
-          name="tipo"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <MovimentoTipoSelector value={field.value} onChange={field.onChange} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <MovimentoTipoSelector />
       </div>
 
       {/* === Viatura + Estado === */}

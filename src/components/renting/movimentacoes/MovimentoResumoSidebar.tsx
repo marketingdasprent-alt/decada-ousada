@@ -7,10 +7,9 @@ import { cn } from '@/lib/utils';
 
 import type { MovimentoFormValues } from './movimentoForm.schema';
 import { MovimentoEstadoBadge, MovimentoTipoBadge } from './MovimentoBadges';
-import { formatCombustivel, formatDateTime, formatEuro, formatKm } from './movimentosUtils';
+import { formatCombustivel, formatDateTime, formatKm } from './movimentosUtils';
 import type { Estacao } from '@/hooks/useEstacoes';
 import type { ViaturaBasic } from '@/hooks/useViaturas';
-import { isAssistencia } from '@/types/movimento';
 
 interface MovimentoResumoSidebarProps {
   form: UseFormReturn<MovimentoFormValues>;
@@ -42,16 +41,10 @@ export const MovimentoResumoSidebar: React.FC<MovimentoResumoSidebarProps> = ({
   const dataPartida = form.watch('data_partida');
   const dataChegada = form.watch('data_chegada');
   const colaboradorNome = form.watch('colaborador_nome');
-  const custoEstimado = form.watch('custo_estimado');
-  const custoFinal = form.watch('custo_final');
-  const motivo = form.watch('motivo');
 
   const viatura = useMemo(() => viaturas.find((v) => v.id === viaturaId), [viaturas, viaturaId]);
   const origem = useMemo(() => estacoes.find((e) => e.id === origemId), [estacoes, origemId]);
   const destino = useMemo(() => estacoes.find((e) => e.id === destinoId), [estacoes, destinoId]);
-
-  const ehTransferencia = tipo === 'transferencia';
-  const ehAssistencia = isAssistencia(tipo);
 
   const kmPercorridos =
     kmInicial != null && kmFinal != null && kmFinal >= kmInicial ? kmFinal - kmInicial : null;
@@ -80,35 +73,21 @@ export const MovimentoResumoSidebar: React.FC<MovimentoResumoSidebarProps> = ({
         </div>
 
         {/* Trajeto da transferência */}
-        {ehTransferencia && (
-          <div className="px-4 py-3 border-b">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5" />
-              Trajeto
-            </p>
-            <div className="flex items-center gap-2 text-sm">
-              <span className={cn('flex-1', !origem && 'text-muted-foreground italic')}>
-                {origem?.nome ?? 'Origem?'}
-              </span>
-              <ArrowRight className="h-4 w-4 text-primary shrink-0" />
-              <span className={cn('flex-1 text-right', !destino && 'text-muted-foreground italic')}>
-                {destino?.nome ?? 'Destino?'}
-              </span>
-            </div>
+        <div className="px-4 py-3 border-b">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5" />
+            Trajeto
+          </p>
+          <div className="flex items-center gap-2 text-sm">
+            <span className={cn('flex-1', !origem && 'text-muted-foreground italic')}>
+              {origem?.nome ?? 'Origem?'}
+            </span>
+            <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+            <span className={cn('flex-1 text-right', !destino && 'text-muted-foreground italic')}>
+              {destino?.nome ?? 'Destino?'}
+            </span>
           </div>
-        )}
-
-        {/* Motivo da assistência */}
-        {ehAssistencia && (
-          <div className="px-4 py-3 border-b">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-              Motivo
-            </p>
-            <p className={cn('text-sm', !motivo && 'text-muted-foreground italic')}>
-              {motivo || 'Por preencher'}
-            </p>
-          </div>
-        )}
+        </div>
 
         {/* Quilometragem / combustível */}
         <div className="px-4 py-3 space-y-2 border-b">
@@ -124,22 +103,12 @@ export const MovimentoResumoSidebar: React.FC<MovimentoResumoSidebarProps> = ({
               <span className="text-primary">{formatKm(kmPercorridos)}</span>
             </Linha>
           )}
-          {ehTransferencia && (
-            <Linha label="Combustível">
-              <span className="flex items-center gap-1 justify-end">
-                <Fuel className="h-3.5 w-3.5 text-muted-foreground" />
-                {formatCombustivel(combustivelInicial)} → {formatCombustivel(combustivelFinal)}
-              </span>
-            </Linha>
-          )}
-          {ehAssistencia && (custoEstimado != null || custoFinal != null) && (
-            <>
-              <Linha label="Custo estimado">{formatEuro(custoEstimado)}</Linha>
-              <Linha label="Custo final">
-                <span className="text-primary">{formatEuro(custoFinal)}</span>
-              </Linha>
-            </>
-          )}
+          <Linha label="Combustível">
+            <span className="flex items-center gap-1 justify-end">
+              <Fuel className="h-3.5 w-3.5 text-muted-foreground" />
+              {formatCombustivel(combustivelInicial)} → {formatCombustivel(combustivelFinal)}
+            </span>
+          </Linha>
         </div>
 
         {/* Datas + responsável */}

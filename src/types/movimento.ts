@@ -2,35 +2,13 @@
 // Domínio: Movimentações operacionais de viatura
 // ============================================================
 
-export const MOVIMENTO_TIPOS = [
-  'transferencia',
-  'reparacao',
-  'manutencao',
-  'impro',
-  'inspecao',
-] as const;
+export const MOVIMENTO_TIPOS = ['transferencia'] as const;
 
 export type MovimentoTipo = (typeof MOVIMENTO_TIPOS)[number];
 
 export const MOVIMENTO_TIPO_LABELS: Record<MovimentoTipo, string> = {
-  transferencia: 'Transferência',
-  reparacao: 'Reparação',
-  manutencao: 'Manutenção',
-  impro: 'Impro',
-  inspecao: 'Inspeção',
+  transferencia: 'Transferência Interna',
 };
-
-/** Tipos de assistência — partilham os mesmos campos no formulário. */
-export const MOVIMENTO_TIPOS_ASSISTENCIA: readonly MovimentoTipo[] = [
-  'reparacao',
-  'manutencao',
-  'impro',
-  'inspecao',
-] as const;
-
-export function isAssistencia(tipo: MovimentoTipo): boolean {
-  return MOVIMENTO_TIPOS_ASSISTENCIA.includes(tipo);
-}
 
 export const MOVIMENTO_ESTADOS = ['planeado', 'a_decorrer', 'concluido', 'cancelado'] as const;
 
