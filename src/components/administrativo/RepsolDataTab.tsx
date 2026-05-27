@@ -33,11 +33,10 @@ import {
   MapPin,
   Calendar as CalendarIcon,
 } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { ImportRobotCsvDialog } from '@/components/admin/ImportRobotCsvDialog';
-import { DateRange } from 'react-day-picker';
+import { AdminFiltros } from './AdminFiltros';
 
 interface Transacao {
   id: string;
@@ -66,20 +65,16 @@ export const RepsolDataTab: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [integracoes, setIntegracoes] = useState<Integracao[]>([]);
-  const [showImportDialog, setShowImportDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIntegracao, setSelectedIntegracao] = useState('all');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
-    to: new Date(),
-  });
+  const [selectedWeek, setSelectedWeek] = useState<Date>(subWeeks(new Date(), 1));
 
   useEffect(() => {
     fetchIntegracoes();
   }, []);
   useEffect(() => {
     fetchTransacoes();
-  }, [selectedIntegracao, dateRange]);
+  }, [selectedIntegracao, selectedWeek]);
 
   const fetchIntegracoes = async () => {
     try {
@@ -104,8 +99,13 @@ export const RepsolDataTab: React.FC = () => {
         .select(`*, motorista:motoristas_ativos (nome), integracao:plataformas_configuracao (nome)`)
         .order('transaction_date', { ascending: false });
 
-      if (dateRange?.from) query = query.gte('transaction_date', dateRange.from.toISOString());
-      if (dateRange?.to) query = query.lte('transaction_date', dateRange.to.toISOString());
+      const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 });
+      weekStart.setHours(0, 0, 0, 0);
+      weekEnd.setHours(23, 59, 59, 999);
+      query = query
+        .gte('transaction_date', weekStart.toISOString())
+        .lte('transaction_date', weekEnd.toISOString());
       if (selectedIntegracao !== 'all') query = query.eq('integracao_id', selectedIntegracao);
 
       const { data, error } = await query;
@@ -144,55 +144,16 @@ export const RepsolDataTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-3 items-center">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-[280px] justify-start text-left">
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateRange?.from
-                ? dateRange.to
-                  ? `${format(dateRange.from, 'dd/MM/yyyy')} - ${format(dateRange.to, 'dd/MM/yyyy')}`
-                  : format(dateRange.from, 'dd/MM/yyyy')
-                : 'Selecionar período'}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="range"
-              selected={dateRange}
-              onSelect={setDateRange}
-              numberOfMonths={2}
-              locale={pt}
-            />
-          </PopoverContent>
-        </Popover>
-        <Select value={selectedIntegracao} onValueChange={setSelectedIntegracao}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Integração" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
-            {integracoes.map((i) => (
-              <SelectItem key={i.id} value={i.id}>
-                {i.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Pesquisar..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-          <Upload className="h-4 w-4 mr-2" />
-          Importar Repsol
-        </Button>
-      </div>
+      <AdminFiltros
+        selectedWeek={selectedWeek}
+        onSelectedWeekChange={setSelectedWeek}
+        integracoes={integracoes}
+        selectedIntegracao={selectedIntegracao}
+        onSelectedIntegracaoChange={setSelectedIntegracao}
+        searchTerm={searchTerm}
+        onSearchTermChange={setSearchTerm}
+        searchPlaceholder="Pesquisar motorista ou posto..."
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard title="Transações" value={stats.total} icon={<Fuel className="h-4 w-4" />} />
@@ -249,13 +210,6 @@ export const RepsolDataTab: React.FC = () => {
           </Table>
         )}
       </div>
-      <ImportRobotCsvDialog
-        open={showImportDialog}
-        onOpenChange={setShowImportDialog}
-        integracaoId={selectedIntegracao}
-        integracoes={integracoes}
-        onImportComplete={fetchTransacoes}
-      />
     </div>
   );
 };

@@ -318,15 +318,6 @@ export const BoltDataTab: React.FC = () => {
             )}
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowImportDialog(true)}
-            disabled={!firstActiveIntegracao}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Importar CSV
-          </Button>
         </div>
       </div>
 
@@ -493,16 +484,6 @@ export const BoltDataTab: React.FC = () => {
         </div>
       )}
 
-      {/* Import CSV Dialog */}
-      {firstActiveIntegracao && (
-        <ImportRobotCsvDialog
-          open={showImportDialog}
-          onOpenChange={setShowImportDialog}
-          integracaoId={firstActiveIntegracao.id}
-          integracoes={integracoes}
-          onImportComplete={handleImportComplete}
-        />
-      )}
     </div>
   );
 };

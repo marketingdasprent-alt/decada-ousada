@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { MotoristaResumoDialog } from './MotoristaResumoDialog';
-import { ImportarRecibosDialog } from './ImportarRecibosDialog';
+import { ImportarDadosWizard } from './ImportarDadosWizard';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Printer, Mail, Send, FileDown } from 'lucide-react';
 import { generateFinanceiroPDF } from '@/utils/generateFinanceiroPDF';
@@ -98,7 +98,7 @@ export function ContasResumoTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkSending, setIsBulkSending] = useState(false);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importarWizardOpen, setImportarWizardOpen] = useState(false);
   const [motoristasList, setMotoristasList] = useState<Array<{ id: string; nome: string }>>([]);
   const logoSrc = useThemedLogo();
 
@@ -1202,9 +1202,12 @@ export function ContasResumoTab() {
             />
           </div>
 
-          <Button variant="outline" className="gap-2" onClick={() => setImportDialogOpen(true)}>
+          <Button
+            className="gap-2 bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-90"
+            onClick={() => setImportarWizardOpen(true)}
+          >
             <Upload className="h-4 w-4" />
-            Importar Recibos
+            Importar Dados
           </Button>
         </div>
       </div>
@@ -1562,11 +1565,10 @@ export function ContasResumoTab() {
         dateRange={{ from: weekStart, to: weekEnd }}
       />
 
-      {/* Dialog de Importação de Recibos */}
-      <ImportarRecibosDialog
-        open={importDialogOpen}
-        onOpenChange={setImportDialogOpen}
-        motoristas={motoristasList}
+      {/* Wizard de Importação de Dados das Plataformas */}
+      <ImportarDadosWizard
+        open={importarWizardOpen}
+        onOpenChange={setImportarWizardOpen}
         onImportComplete={() => loadResumos()}
       />
     </div>

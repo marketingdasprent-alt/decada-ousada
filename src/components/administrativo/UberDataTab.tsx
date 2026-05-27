@@ -42,13 +42,13 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { format, subDays } from 'date-fns';
+import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { DateRange } from 'react-day-picker';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ImportUberCsvDialog } from './ImportUberCsvDialog';
 import { UberViagensTab } from './UberViagensTab';
+import { AdminFiltros } from './AdminFiltros';
 
 interface Integracao {
   id: string;
@@ -127,9 +127,10 @@ export const UberDataTab: React.FC = () => {
 
   const loadRequestIdRef = useRef<number>(0);
 
-  // Date range
-  const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 30));
-  const [endDate, setEndDate] = useState<Date>(new Date());
+  // Date — semana selecionada (default = semana passada)
+  const [selectedWeek, setSelectedWeek] = useState<Date>(subWeeks(new Date(), 1));
+  const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 });
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -152,7 +153,7 @@ export const UberDataTab: React.FC = () => {
 
   useEffect(() => {
     fetchAllTransactions();
-  }, [startDate, endDate, selectedIntegracao]);
+  }, [selectedWeek, selectedIntegracao]);
 
   const fetchLastImport = async () => {
     try {
@@ -218,8 +219,8 @@ export const UberDataTab: React.FC = () => {
       let q = supabase
         .from('uber_transactions')
         .select('*', { count: 'exact', head: true })
-        .gte('occurred_at', `${format(startDate, 'yyyy-MM-dd')}T00:00:00`)
-        .lte('occurred_at', `${format(endDate, 'yyyy-MM-dd')}T23:59:59`);
+        .gte('occurred_at', `${format(weekStart, 'yyyy-MM-dd')}T00:00:00`)
+        .lte('occurred_at', `${format(weekEnd, 'yyyy-MM-dd')}T23:59:59`);
 
       if (selectedIntegracao !== 'all') {
         q = q.eq('integracao_id', selectedIntegracao);
@@ -245,8 +246,8 @@ export const UberDataTab: React.FC = () => {
         integracao:plataformas_configuracao!uber_transactions_integracao_id_fkey (nome)
       `
       )
-      .gte('occurred_at', `${format(startDate, 'yyyy-MM-dd')}T00:00:00`)
-      .lte('occurred_at', `${format(endDate, 'yyyy-MM-dd')}T23:59:59`)
+      .gte('occurred_at', `${format(weekStart, 'yyyy-MM-dd')}T00:00:00`)
+      .lte('occurred_at', `${format(weekEnd, 'yyyy-MM-dd')}T23:59:59`)
       .order('occurred_at', { ascending: false })
       .range(rangeStart, rangeEnd);
 
@@ -309,7 +310,7 @@ export const UberDataTab: React.FC = () => {
         setLoadingAll(false);
       }
     }
-  }, [startDate, endDate, selectedIntegracao, toast]);
+  }, [selectedWeek, selectedIntegracao, toast]);
 
   const handleFetchFromApify = async () => {
     setLoading(true);
@@ -552,9 +553,9 @@ export const UberDataTab: React.FC = () => {
     setSearchTerm('');
     setSelectedIntegracao('all');
     setSelectedStatus('all');
-    setStartDate(subDays(new Date(), 30));
-    setEndDate(new Date());
+    setSelectedWeek(subWeeks(new Date(), 1));
   };
+  void handleClearFilters;
 
   const statusTranslations: Record<
     string,
@@ -589,11 +590,8 @@ export const UberDataTab: React.FC = () => {
   };
 
   const hasActiveFilters =
-    searchTerm ||
-    selectedIntegracao !== 'all' ||
-    selectedStatus !== 'all' ||
-    format(startDate, 'yyyy-MM-dd') !== format(subDays(new Date(), 30), 'yyyy-MM-dd') ||
-    format(endDate, 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd');
+    searchTerm || selectedIntegracao !== 'all' || selectedStatus !== 'all';
+  void hasActiveFilters;
 
   const hasLocalFilters = searchTerm || selectedStatus !== 'all';
 
@@ -611,93 +609,32 @@ export const UberDataTab: React.FC = () => {
       </TabsList>
 
       <TabsContent value="pagamentos" className="space-y-4">
-        {/* Date Range + Filters */}
+        {/* Filtros — iguais à tab Contas */}
         <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Date Range */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-[260px] justify-start text-left font-normal',
-                    !startDate && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate && endDate ? (
-                    <>
-                      {format(startDate, 'dd/MM/yyyy')} → {format(endDate, 'dd/MM/yyyy')}
-                    </>
-                  ) : (
-                    <span>Selecionar período</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={{ from: startDate, to: endDate }}
-                  onSelect={(range: DateRange | undefined) => {
-                    if (range?.from) setStartDate(range.from);
-                    if (range?.to) setEndDate(range.to);
-                    else if (range?.from) setEndDate(range.from);
-                  }}
-                  numberOfMonths={isMobile ? 1 : 2}
-                  initialFocus
-                  locale={pt}
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-
-            {/* Integration Filter */}
-            <Select value={selectedIntegracao} onValueChange={setSelectedIntegracao}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Integração" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as integrações</SelectItem>
-                {integracoes.map((int) => (
-                  <SelectItem key={int.id} value={int.id}>
-                    {int.nome}
-                    {!int.ativo && ' (inativa)'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Status Filter */}
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Search */}
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Pesquisar referência, motorista, veículo..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            {hasActiveFilters && (
-              <Button variant="ghost" size="icon" onClick={handleClearFilters}>
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+          <AdminFiltros
+            selectedWeek={selectedWeek}
+            onSelectedWeekChange={setSelectedWeek}
+            integracoes={integracoes}
+            selectedIntegracao={selectedIntegracao}
+            onSelectedIntegracaoChange={setSelectedIntegracao}
+            searchTerm={searchTerm}
+            onSearchTermChange={setSearchTerm}
+            searchPlaceholder="Pesquisar referência, motorista, veículo..."
+            extraRight={
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            }
+          />
 
           {/* Status Bar + Import */}
           <div className="flex items-center justify-between text-sm">
@@ -714,12 +651,6 @@ export const UberDataTab: React.FC = () => {
                   </>
                 )}
               </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Importar CSV
-              </Button>
             </div>
           </div>
         </div>
@@ -747,13 +678,11 @@ export const UberDataTab: React.FC = () => {
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">
-                <p className="text-2xl font-bold">
-                  €
-                  {stats.totalValor.toLocaleString('pt-PT', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </p>
+                €
+                {stats.totalValor.toLocaleString('pt-PT', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </p>
             </CardContent>
           </Card>
@@ -767,13 +696,11 @@ export const UberDataTab: React.FC = () => {
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold text-green-400">
-                <p className="text-2xl font-bold text-green-400">
-                  €
-                  {stats.totalEarnings.toLocaleString('pt-PT', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </p>
+                €
+                {stats.totalEarnings.toLocaleString('pt-PT', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </p>
             </CardContent>
           </Card>
@@ -918,20 +845,6 @@ export const UberDataTab: React.FC = () => {
           </div>
         )}
 
-        {/* Import CSV Dialog */}
-        {integracoes.length > 0 && (
-          <ImportUberCsvDialog
-            open={showImportDialog}
-            onOpenChange={setShowImportDialog}
-            integracaoId={integracoes[0].id}
-            integracoes={integracoes}
-            onImportComplete={() => {
-              fetchAllTransactions();
-              fetchLastImport();
-              fetchUberDrivers();
-            }}
-          />
-        )}
       </TabsContent>
 
       <TabsContent value="viagens">

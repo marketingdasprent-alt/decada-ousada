@@ -211,6 +211,20 @@ Deno.serve(async (req) => {
 
     console.log(`bp-import-csv: Processing CSV for integration ${integracao_id}, length=${combustivel_csv.length}`);
 
+    // Buscar org_id da integração (necessário para RLS multi-tenant).
+    const { data: integracaoData, error: integracaoError } = await supabase
+      .from('plataformas_configuracao')
+      .select('org_id')
+      .eq('id', integracao_id)
+      .single();
+
+    if (integracaoError || !integracaoData?.org_id) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Integração não encontrada ou sem org_id (${integracao_id})` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const orgId = integracaoData.org_id as string;
+
     const rows = parseCsv(combustivel_csv);
     console.log(`bp-import-csv: Parsed ${rows.length} rows`);
     if (rows.length > 0) {
@@ -293,6 +307,7 @@ Deno.serve(async (req) => {
           .from('bp_transacoes')
           .upsert({
             integracao_id,
+            org_id: orgId,
             transaction_id: txId,
             transaction_date: transactionDate,
             amount,
