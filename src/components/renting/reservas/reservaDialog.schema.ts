@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { RENOVACAO_OPCOES, RESERVA_ESTADOS } from '@/types/reserva';
-import { CONTRATO_MODALIDADES } from '@/types/contratoRenting';
+import { RENOVACAO_OPCOES, RESERVA_ESTADOS, RESERVA_REGIMES } from '@/types/reserva';
 
 const optionalNumber = z
   .union([z.number(), z.string()])
@@ -36,9 +35,7 @@ export const reservaDialogSchema = z
     condutor_nome: z.string().max(255).optional().nullable(),
 
     estado: z.enum(RESERVA_ESTADOS),
-
-    // Modalidade — determina a taxa de IVA (rent-a-car vs TVDE)
-    modalidade: z.enum(CONTRATO_MODALIDADES),
+    regime: z.enum(RESERVA_REGIMES).default('rent_a_car'),
 
     valor_total: optionalNumber,
     franquia_valor: optionalNumber,
@@ -55,18 +52,24 @@ export const reservaDialogSchema = z
 
     condutores: z
       .array(
-        z.object({
-          cliente_id: z.string().uuid('Cliente inválido'),
-          is_principal: z.boolean().default(false),
-        })
+        z
+          .object({
+            cliente_id: z.string().uuid().nullable().default(null),
+            motorista_id: z.string().uuid().nullable().default(null),
+            is_principal: z.boolean().default(false),
+          })
+          .refine((c) => (c.cliente_id !== null) !== (c.motorista_id !== null), {
+            message: 'Cada condutor tem que ser cliente OU motorista (não ambos).',
+          })
       )
+      .min(1, 'É obrigatório pelo menos um condutor.')
       .default([])
       .refine(
         (lista) => {
-          const ids = lista.map((c) => c.cliente_id);
-          return new Set(ids).size === ids.length;
+          const chaves = lista.map((c) => c.cliente_id ?? c.motorista_id);
+          return new Set(chaves).size === chaves.length;
         },
-        { message: 'Cada cliente só pode aparecer uma vez como condutor.' }
+        { message: 'Cada entidade só pode aparecer uma vez como condutor.' }
       )
       .refine((lista) => lista.filter((c) => c.is_principal).length <= 1, {
         message: 'Apenas um condutor pode ser principal.',

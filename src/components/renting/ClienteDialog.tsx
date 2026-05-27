@@ -536,10 +536,16 @@ interface ClienteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   cliente: ClienteComDocumentos | null;
+  /**
+   * Callback chamado após criar um cliente novo com sucesso. Recebe o `id`
+   * do cliente criado. Útil para fluxos inline (ex.: adicionar como condutor
+   * imediatamente após criar).
+   */
+  onCreated?: (clienteId: string) => void;
 }
 
 // ── Componente principal ──────────────────────────────────────
-export function ClienteDialog({ open, onOpenChange, cliente }: ClienteDialogProps) {
+export function ClienteDialog({ open, onOpenChange, cliente, onCreated }: ClienteDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'dados' | 'anexos'>('dados');
   const createMutation = useCreateCliente();
@@ -616,11 +622,12 @@ export function ClienteDialog({ open, onOpenChange, cliente }: ClienteDialogProp
             cartaConducao: cartaPayload,
           });
         } else {
-          await createMutation.mutateAsync({
+          const novoCliente = await createMutation.mutateAsync({
             cliente: clientePayload,
             documentoIdentificacao: documentoPayload,
             cartaConducao: cartaPayload,
           });
+          onCreated?.(novoCliente.id);
         }
         onOpenChange(false);
       } catch {
@@ -629,7 +636,7 @@ export function ClienteDialog({ open, onOpenChange, cliente }: ClienteDialogProp
         setIsSubmitting(false);
       }
     },
-    [cliente, createMutation, updateMutation, isSubmitting, onOpenChange]
+    [cliente, createMutation, updateMutation, isSubmitting, onOpenChange, onCreated]
   );
 
   const loading = isSubmitting || createMutation.isPending || updateMutation.isPending;

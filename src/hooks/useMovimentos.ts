@@ -118,7 +118,10 @@ export function useCreateMovimento() {
     mutationFn: async (payload: MovimentoInsert): Promise<Movimento> => {
       const { data, error } = await supabase
         .from('movimentos')
-        .insert(payload)
+        // `codigo` é gerado pelo trigger `gen_movimento_codigo` (BEFORE INSERT)
+        // mas os types Supabase marcam-no como obrigatório — placeholder 0
+        // dispara o trigger a calcular o real.
+        .insert({ ...payload, codigo: 0 })
         .select(SELECT_COLUMNS)
         .single();
       if (error) throw error;

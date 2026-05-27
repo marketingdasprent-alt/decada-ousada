@@ -2,8 +2,8 @@ import { z } from 'zod';
 import {
   CONTRATO_ESTADOS_FIN,
   CONTRATO_ESTADOS_OP,
-  CONTRATO_MODALIDADES,
   CONTRATO_ORIGENS,
+  CONTRATO_REGIMES,
   CONTRATO_RENOVACAO_OPCOES,
 } from '@/types/contratoRenting';
 
@@ -43,6 +43,11 @@ export const contratoFormSchema = z
     // Reserva associada (obrigatória — contrato sempre origina de reserva)
     reserva_id: z.string().uuid('Reserva inválida'),
 
+    // Transferista — preenchido implicitamente quando alguém realiza o
+    // check-in da entrega/recolha. Não é exigido na criação do contrato
+    // (modelo pool: qualquer colaborador da org pode atender o evento).
+    transferista_id: z.string().uuid().nullable().optional(),
+
     // Entrega
     estacao_entrega_id: z.string().uuid().nullable().optional(),
     data_inicio: datetimeLocal,
@@ -58,9 +63,7 @@ export const contratoFormSchema = z
     estado_operacional: z.enum(CONTRATO_ESTADOS_OP),
     estado_financeiro: z.enum(CONTRATO_ESTADOS_FIN),
     origem: z.enum(CONTRATO_ORIGENS),
-
-    // Modalidade — determina a taxa de IVA (rent-a-car vs TVDE)
-    modalidade: z.enum(CONTRATO_MODALIDADES),
+    regime: z.enum(CONTRATO_REGIMES).default('rent_a_car'),
 
     // Tarifário simples
     tarifa_diaria: optionalNonNegativeNumber,
@@ -157,18 +160,24 @@ export const contratoFormSchema = z
 
     condutores: z
       .array(
-        z.object({
-          cliente_id: z.string().uuid('Cliente inválido'),
-          is_principal: z.boolean().default(false),
-        })
+        z
+          .object({
+            cliente_id: z.string().uuid().nullable().default(null),
+            motorista_id: z.string().uuid().nullable().default(null),
+            is_principal: z.boolean().default(false),
+          })
+          .refine((c) => (c.cliente_id !== null) !== (c.motorista_id !== null), {
+            message: 'Cada condutor tem que ser cliente OU motorista (não ambos).',
+          })
       )
+      .min(1, 'É obrigatório pelo menos um condutor.')
       .default([])
       .refine(
         (lista) => {
-          const ids = lista.map((c) => c.cliente_id);
-          return new Set(ids).size === ids.length;
+          const chaves = lista.map((c) => c.cliente_id ?? c.motorista_id);
+          return new Set(chaves).size === chaves.length;
         },
-        { message: 'Cada cliente só pode aparecer uma vez como condutor.' }
+        { message: 'Cada entidade só pode aparecer uma vez como condutor.' }
       )
       .refine((lista) => lista.filter((c) => c.is_principal).length <= 1, {
         message: 'Apenas um condutor pode ser principal.',
@@ -187,6 +196,7 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   grupo: '',
   matricula: '',
   reserva_id: '',
+  transferista_id: null,
   estacao_entrega_id: null,
   data_inicio: '',
   estacao_recolha_id: null,
@@ -195,7 +205,7 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   estado_operacional: 'agendado',
   estado_financeiro: 'pendente',
   origem: 'sistema',
-  modalidade: 'rent_a_car',
+  regime: 'rent_a_car',
   tarifa_diaria: null,
   desconto_percentagem: null,
   taxa_iva: 23,

@@ -1,5 +1,7 @@
 export interface EmpresaConfig {
   id: string;
+  /** Org dona desta empresa — usado para escolher o template correcto em ambientes multi-tenant. */
+  orgId?: string | null;
   nome: string;
   nomeCompleto: string;
   nif: string;

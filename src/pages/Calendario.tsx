@@ -39,9 +39,13 @@ export interface CalendarioEvento {
   dia_todo: boolean;
   matricula_devolver: string | null;
   criado_por: string;
+  realizado_por_id: string | null;
+  realizado_em: string | null;
   created_at: string;
   updated_at: string;
   profiles: { nome: string } | null;
+  /** Nome de quem realizou (lookup em profiles via realizado_por_id). */
+  realizador?: { nome: string } | null;
 }
 
 const Calendario: React.FC = () => {
@@ -140,14 +144,19 @@ const Calendario: React.FC = () => {
 
       if (error) throw error;
 
-      // Buscar nomes dos criadores em separado
-      const criadorIds = [...new Set((data || []).map((e) => e.criado_por))];
+      // Buscar nomes dos criadores E dos realizadores em separado
+      const criadorIds = (data || []).map((e) => e.criado_por);
+      const realizadorIds = (data || [])
+        .map((e) => e.realizado_por_id)
+        .filter((id): id is string => !!id);
+      const allIds = [...new Set([...criadorIds, ...realizadorIds])];
+
       let profilesMap: Record<string, string> = {};
-      if (criadorIds.length > 0) {
+      if (allIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, nome')
-          .in('id', criadorIds);
+          .in('id', allIds);
         if (profiles) {
           profilesMap = Object.fromEntries(profiles.map((p) => [p.id, p.nome || '']));
         }
@@ -156,6 +165,10 @@ const Calendario: React.FC = () => {
       return (data || []).map((e) => ({
         ...e,
         profiles: profilesMap[e.criado_por] ? { nome: profilesMap[e.criado_por] } : null,
+        realizador:
+          e.realizado_por_id && profilesMap[e.realizado_por_id]
+            ? { nome: profilesMap[e.realizado_por_id] }
+            : null,
       })) as CalendarioEvento[];
     },
   });

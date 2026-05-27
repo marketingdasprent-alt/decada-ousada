@@ -13,6 +13,7 @@ import {
   Paperclip,
   Loader2,
   Wallet,
+  CalendarPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -266,6 +267,15 @@ export default function ViaturaDetalhe() {
             )}
           </div>
         </div>
+        {!isNew && viatura?.id && (
+          <Button
+            onClick={() => navigate(`/renting/reservas/nova?viatura_id=${viatura.id}`)}
+            className="gap-2"
+          >
+            <CalendarPlus className="h-4 w-4" />
+            Nova reserva
+          </Button>
+        )}
       </div>
 
       {/* Content with Tabs */}

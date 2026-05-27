@@ -67,6 +67,17 @@ export const CONTRATO_RENOVACAO_OPCAO_LABELS: Record<ContratoRenovacaoOpcao, str
 };
 
 // ============================================================
+// Regime (rent-a-car vs TVDE)
+// ============================================================
+export const CONTRATO_REGIMES = ['rent_a_car', 'tvde'] as const;
+export type ContratoRegime = (typeof CONTRATO_REGIMES)[number];
+
+export const CONTRATO_REGIME_LABELS: Record<ContratoRegime, string> = {
+  rent_a_car: 'Rent-a-Car',
+  tvde: 'TVDE',
+};
+
+// ============================================================
 // Tipo principal
 // ============================================================
 export type ContratoRenting = {
@@ -76,6 +87,10 @@ export type ContratoRenting = {
 
   /** FK obrigatória — todo contrato começa em reserva. */
   reserva_id: string;
+
+  /** Colaborador interno responsável pela entrega/recolha física da viatura.
+   *  Nullable em BD durante migração, obrigatório no schema do client. */
+  transferista_id: string | null;
 
   cliente_id: string;
 
@@ -94,9 +109,8 @@ export type ContratoRenting = {
   estado_operacional: ContratoEstadoOperacional;
   estado_financeiro: ContratoEstadoFinanceiro;
   origem: ContratoOrigem;
-
-  /** rent_a_car ou tvde — determina a taxa de IVA (ver org_definicoes). */
-  modalidade: ContratoModalidade;
+  /** rent_a_car ou tvde — determina o regime e a taxa de IVA (ver org_definicoes). */
+  regime: ContratoRegime;
 
   // Tarifário simples (MVP)
   tarifa_diaria: number | null;
@@ -134,6 +148,13 @@ export type ContratoRenting = {
   observacoes: string | null;
   observacoes_internas: string | null;
 
+  // Versionamento (upgrade/downgrade)
+  versao: number;
+  contrato_anterior_id: string | null;
+  /** NULL = versão actual. NOT NULL = foi substituído nesta data. */
+  substituido_em: string | null;
+  motivo_versao: string | null;
+
   deleted_at: string | null;
   created_by: string | null;
   updated_by: string | null;
@@ -150,6 +171,10 @@ export type ContratoRentingInsert = Omit<
   | 'total_iva'
   | 'total_final'
   | 'facturado_em'
+  | 'versao'
+  | 'contrato_anterior_id'
+  | 'substituido_em'
+  | 'motivo_versao'
   | 'deleted_at'
   | 'created_by'
   | 'updated_by'
@@ -168,7 +193,10 @@ export type ContratoCondutor = {
   id: string;
   org_id: string;
   contrato_id: string;
-  cliente_id: string;
+  /** XOR com motorista_id — exactamente um dos dois preenchido. */
+  cliente_id: string | null;
+  /** XOR com cliente_id — usado em regime TVDE. */
+  motorista_id: string | null;
   is_principal: boolean;
   created_by: string | null;
   created_at: string;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, ArrowLeft, CalendarCheck, FileText, Loader2, Trash2 } from 'lucide-react';
@@ -11,6 +11,8 @@ import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { useClientes } from '@/hooks/useClientes';
+import { useMotoristas } from '@/hooks/useMotoristas';
+import { useToast } from '@/hooks/use-toast';
 import { useEstacoes } from '@/hooks/useEstacoes';
 import {
   useCreateReserva,
@@ -23,6 +25,8 @@ import { useReservaCondutores, useSyncReservaCondutores } from '@/hooks/useReser
 import { uploadReservaAnexoSync } from '@/hooks/useReservaAnexos';
 import { useViaturas } from '@/hooks/useViaturas';
 
+import { ClienteDialog } from '@/components/renting/ClienteDialog';
+import { MotoristaDialog } from '@/components/motoristas/MotoristaDialog';
 import { ReservaDeleteConfirm } from '@/components/renting/reservas/ReservaDeleteConfirm';
 import { ReservaResumoSidebar } from '@/components/renting/reservas/ReservaResumoSidebar';
 import {
@@ -39,7 +43,7 @@ import {
   type ReservaFormValues,
 } from '@/components/renting/reservas/reservaDialog.schema';
 
-import type { ReservaInsert } from '@/types/reserva';
+import type { CondutorFormItem, ReservaInsert } from '@/types/reserva';
 
 const DEFAULT_VALUES: ReservaFormValues = {
   viatura_id: null,
@@ -53,8 +57,8 @@ const DEFAULT_VALUES: ReservaFormValues = {
   cliente_nome: '',
   condutor_id: null,
   condutor_nome: '',
-  estado: 'confirmada',
-  modalidade: 'rent_a_car',
+  estado: 'pendente',
+  regime: 'rent_a_car',
   valor_total: null,
   franquia_valor: null,
   caucao_valor: null,
@@ -71,12 +75,17 @@ const DEFAULT_VALUES: ReservaFormValues = {
 const RentingReservaForm = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const isEdit = !!id && id !== 'nova';
+  // Pré-preenchimento por URL (atalhos a partir de viatura/cliente).
+  const viaturaIdFromUrl = !isEdit ? searchParams.get('viatura_id') : null;
+  const clienteIdFromUrl = !isEdit ? searchParams.get('cliente_id') : null;
 
   const { data: reserva, isLoading: loadingReserva } = useReserva(isEdit ? id : null);
   const { data: condutoresAtuais = [] } = useReservaCondutores(isEdit ? id : null);
 
   const { data: clientes = [] } = useClientes();
+  const { data: motoristas = [] } = useMotoristas({ apenasAtivos: true });
   const { data: viaturas = [] } = useViaturas({ apenasDisponiveis: !isEdit });
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
 
@@ -87,6 +96,9 @@ const RentingReservaForm = () => {
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [anexosPendentes, setAnexosPendentes] = useState<AnexoPendente[]>([]);
+  const [clienteDialogOpen, setClienteDialogOpen] = useState(false);
+  const [motoristaDialogOpen, setMotoristaDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const adicionarAnexosPendentes = (files: File[]) => {
     setAnexosPendentes((prev) => [
@@ -118,6 +130,62 @@ const RentingReservaForm = () => {
     defaultValues: DEFAULT_VALUES,
   });
 
+  // Pré-preenchimento via URL (criar reserva a partir de viatura/cliente).
+  // Só corre uma vez quando os dados das listas (viaturas/clientes) chegam.
+  useEffect(() => {
+    if (isEdit) return;
+    if (!viaturaIdFromUrl && !clienteIdFromUrl) return;
+
+    const viatura = viaturaIdFromUrl ? viaturas.find((v) => v.id === viaturaIdFromUrl) : null;
+    const cliente = clienteIdFromUrl ? clientes.find((c) => c.id === clienteIdFromUrl) : null;
+
+    if (viatura) {
+      form.setValue('viatura_id', viatura.id, { shouldDirty: false });
+      form.setValue('matricula', viatura.matricula ?? '', { shouldDirty: false });
+    }
+    if (cliente) {
+      form.setValue('cliente_id', cliente.id, { shouldDirty: false });
+      form.setValue('cliente_nome', cliente.nome ?? '', { shouldDirty: false });
+    }
+    // Ambos: só faz sentido validar uma vez quando as listas existem
+  }, [isEdit, viaturaIdFromUrl, clienteIdFromUrl, viaturas, clientes, form]);
+
+  /** Adiciona um cliente recém-criado à lista de condutores (rent-a-car). */
+  const handleClienteCriado = (clienteId: string) => {
+    const existentes = (form.getValues('condutores') ?? []) as Array<{
+      cliente_id: string | null;
+      motorista_id: string | null;
+      is_principal: boolean;
+    }>;
+    if (existentes.some((c) => c.cliente_id === clienteId)) return;
+    form.setValue(
+      'condutores',
+      [
+        ...existentes,
+        { cliente_id: clienteId, motorista_id: null, is_principal: existentes.length === 0 },
+      ],
+      { shouldDirty: true, shouldValidate: true }
+    );
+  };
+
+  /** Adiciona um motorista recém-criado à lista de condutores (TVDE). */
+  const handleMotoristaCriado = (motoristaId: string) => {
+    const existentes = (form.getValues('condutores') ?? []) as Array<{
+      cliente_id: string | null;
+      motorista_id: string | null;
+      is_principal: boolean;
+    }>;
+    if (existentes.some((c) => c.motorista_id === motoristaId)) return;
+    form.setValue(
+      'condutores',
+      [
+        ...existentes,
+        { cliente_id: null, motorista_id: motoristaId, is_principal: existentes.length === 0 },
+      ],
+      { shouldDirty: true, shouldValidate: true }
+    );
+  };
+
   // Hidrata o formulário quando a reserva carrega (modo edição).
   useEffect(() => {
     if (!isEdit) return;
@@ -135,7 +203,7 @@ const RentingReservaForm = () => {
       condutor_id: reserva.condutor_id,
       condutor_nome: reserva.condutor_nome ?? '',
       estado: reserva.estado,
-      modalidade: reserva.modalidade,
+      regime: reserva.regime,
       valor_total: reserva.valor_total,
       franquia_valor: reserva.franquia_valor,
       caucao_valor: reserva.caucao_valor,
@@ -148,6 +216,7 @@ const RentingReservaForm = () => {
       observacoes_internas: reserva.observacoes_internas ?? '',
       condutores: condutoresAtuais.map((c) => ({
         cliente_id: c.cliente_id,
+        motorista_id: c.motorista_id,
         is_principal: c.is_principal,
       })),
     });
@@ -171,16 +240,45 @@ const RentingReservaForm = () => {
 
   const { data: temConflito } = useReservaConflito(conflitoArgs);
 
+  // Quando o user troca de regime, os condutores existentes deixam de fazer
+  // sentido (clientes vs motoristas) — limpamos a lista com aviso.
+  const regimeWatched = form.watch('regime');
+  useEffect(() => {
+    const condutores = (form.getValues('condutores') ?? []) as Array<{
+      cliente_id: string | null;
+      motorista_id: string | null;
+    }>;
+    if (condutores.length === 0) return;
+    const expectedKey: 'cliente_id' | 'motorista_id' =
+      regimeWatched === 'tvde' ? 'motorista_id' : 'cliente_id';
+    const tipoErrado = condutores.some((c) => !c[expectedKey]);
+    if (!tipoErrado) return;
+    form.setValue('condutores', [], { shouldDirty: true, shouldValidate: true });
+    toast({
+      title: 'Condutores limpos',
+      description:
+        regimeWatched === 'tvde'
+          ? 'Mudaste para TVDE — os condutores são agora motoristas. Volta a adicionar.'
+          : 'Mudaste para Rent-a-car — os condutores são agora clientes. Volta a adicionar.',
+    });
+  }, [regimeWatched, form, toast]);
+
   const onSubmit = async (values: ReservaFormValues) => {
     try {
       const viaturaSelecionada = viaturas.find((v) => v.id === values.viatura_id);
       const matriculaFinal = values.matricula || viaturaSelecionada?.matricula || null;
 
       // Condutor principal — derivado da lista para snapshot legado em reservas.
+      // Pode ser cliente (rent-a-car) ou motorista (TVDE).
       const condutorPrincipal = values.condutores.find((c) => c.is_principal) ?? null;
-      const condutorPrincipalCliente = condutorPrincipal
+      const condutorPrincipalCliente = condutorPrincipal?.cliente_id
         ? (clientes.find((c) => c.id === condutorPrincipal.cliente_id) ?? null)
         : null;
+      const condutorPrincipalMotorista = condutorPrincipal?.motorista_id
+        ? (motoristas.find((m) => m.id === condutorPrincipal.motorista_id) ?? null)
+        : null;
+      const condutorPrincipalNome =
+        condutorPrincipalCliente?.nome ?? condutorPrincipalMotorista?.nome ?? null;
 
       const payload: ReservaInsert = {
         viatura_id: values.viatura_id || null,
@@ -192,11 +290,12 @@ const RentingReservaForm = () => {
         data_fim: localInputToIso(values.data_fim),
         cliente_id: values.cliente_id || null,
         cliente_nome: values.cliente_nome || null,
-        // condutor_id refere motoristas_ativos (não clientes) — fica null
-        condutor_id: null,
-        condutor_nome: condutorPrincipalCliente?.nome ?? null,
+        // Snapshot legado de condutor (compat) — preenchido a partir da lista
+        // bifurcada. Em TVDE usa o motorista, em rent-a-car fica null.
+        condutor_id: condutorPrincipalMotorista?.id ?? null,
+        condutor_nome: condutorPrincipalNome,
         estado: values.estado,
-        modalidade: values.modalidade,
+        regime: values.regime,
         valor_total: values.valor_total,
         franquia_valor: values.franquia_valor,
         caucao_valor: values.caucao_valor,
@@ -212,14 +311,30 @@ const RentingReservaForm = () => {
         observacoes_internas: values.observacoes_internas || null,
       };
 
+      // Persiste os condutores (m:n com clientes) após gravar/atualizar a reserva.
+      // Espelha o padrão do ContratoForm — sem isto, o array `values.condutores`
+      // fica só no form e nunca chega à BD (motorista "desaparece" após guardar).
+      // O array já passou pela validação Zod do handleSubmit — cast seguro.
+      const condutoresFinal = values.condutores as CondutorFormItem[];
+      const syncCondutores = (reservaId: string) => {
+        syncCondutoresMutation.mutate({
+          reservaId,
+          desejados: condutoresFinal,
+        });
+      };
+
       if (isEdit && reserva) {
         // Editar: ficar na própria página (utilizador vê toast e continua a trabalhar).
-        updateMutation.mutate({ id: reserva.id, ...payload });
+        updateMutation.mutate(
+          { id: reserva.id, ...payload },
+          { onSuccess: () => syncCondutores(reserva.id) }
+        );
       } else {
         // Criar: navegar para modo edição da nova reserva.
         // Permite clicar logo "Criar Contrato" sem voltar à lista.
         createMutation.mutate(payload, {
           onSuccess: async (created) => {
+            syncCondutores(created.id);
             // Upload em batch dos anexos pendentes — best-effort.
             if (anexosPendentes.length > 0) {
               for (const p of anexosPendentes) {
@@ -374,11 +489,19 @@ const RentingReservaForm = () => {
                         viaturas={viaturas}
                         estacoes={estacoes}
                         clientes={clientes}
+                        isEdit={isEdit}
                       />
                     </TabsContent>
 
                     <TabsContent value="condutores" className="pt-4">
-                      <ReservaTabCondutores form={form} clientes={clientes} />
+                      <ReservaTabCondutores
+                        form={form}
+                        regime={regimeWatched}
+                        clientes={clientes}
+                        motoristas={motoristas}
+                        onCriarNovoCliente={() => setClienteDialogOpen(true)}
+                        onCriarNovoMotorista={() => setMotoristaDialogOpen(true)}
+                      />
                     </TabsContent>
 
                     <TabsContent value="caixa" className="pt-4">
@@ -421,6 +544,20 @@ const RentingReservaForm = () => {
         reserva={reserva ?? null}
         isPending={deleteMutation.isPending}
         onConfirm={confirmDelete}
+      />
+
+      <ClienteDialog
+        open={clienteDialogOpen}
+        onOpenChange={setClienteDialogOpen}
+        cliente={null}
+        onCreated={handleClienteCriado}
+      />
+
+      <MotoristaDialog
+        open={motoristaDialogOpen}
+        onOpenChange={setMotoristaDialogOpen}
+        motorista={null}
+        onMotoristaCreated={(m) => handleMotoristaCriado(m.id)}
       />
     </>
   );

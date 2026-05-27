@@ -21,6 +21,7 @@ import {
   ReservasFiltros,
   type ReservasFiltrosState,
 } from '@/components/renting/reservas/ReservasFiltros';
+import { ReservasStats } from '@/components/renting/reservas/ReservasStats';
 import {
   csvEscape,
   formatDateTime,
@@ -186,6 +187,8 @@ const RentingReservas = () => {
         description="Lista de reservas de renting"
         icon={CalendarCheck}
       />
+
+      <ReservasStats reservas={reservas} />
 
       <Card className="bg-card border-border">
         <CardContent className="p-0">
