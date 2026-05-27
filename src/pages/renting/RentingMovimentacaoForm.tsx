@@ -77,7 +77,10 @@ const RentingMovimentacaoForm = () => {
   const isEdit = !!id && id !== 'novo';
 
   const { data: movimento, isLoading: loadingMovimento } = useMovimento(isEdit ? id : null);
-  const { data: viaturas = [] } = useViaturas({ apenasDisponiveis: !isEdit });
+  // Carregamos TODAS as viaturas (não vendidas). O ViaturaDisponibilidadeSelect
+  // dentro do tab Geral mostra-as todas, marcando as ocupadas no intervalo
+  // [data_partida, data_chegada] como desabilitadas com tooltip explicativo.
+  const { data: viaturas = [] } = useViaturas({ excluirVendidas: true });
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
   const { data: colaboradores = [] } = useColaboradores();
 
@@ -305,6 +308,7 @@ const RentingMovimentacaoForm = () => {
                         form={form}
                         viaturas={viaturas}
                         colaboradores={colaboradores}
+                        movimentoId={isEdit ? (id ?? null) : null}
                       />
                     </TabsContent>
 
