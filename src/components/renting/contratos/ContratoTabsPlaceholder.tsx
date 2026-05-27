@@ -12,6 +12,8 @@ interface ContratoTabsPlaceholderProps {
   extrasContent: React.ReactNode;
   /** Conteúdo da tab "Taxas" — passado pela página pai. */
   taxasContent: React.ReactNode;
+  /** Conteúdo da tab "Histórico" — só renderizado em modo edit. */
+  historicoContent?: React.ReactNode;
   /** Conteúdo da tab "Anexos" — passado pela página pai. */
   anexosContent: React.ReactNode;
 }
@@ -24,6 +26,7 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
   coberturasContent,
   extrasContent,
   taxasContent,
+  historicoContent,
   anexosContent,
 }) => {
   const [active, setActive] = useState<string>('geral');
@@ -41,6 +44,7 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
             {t.label}
           </TabsTrigger>
         ))}
+        {historicoContent && <TabsTrigger value="historico">Histórico</TabsTrigger>}
         <TabsTrigger value="anexos">Anexos</TabsTrigger>
       </TabsList>
 
@@ -76,6 +80,12 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
           </div>
         </TabsContent>
       ))}
+
+      {historicoContent && (
+        <TabsContent value="historico" className="mt-4">
+          {historicoContent}
+        </TabsContent>
+      )}
 
       <TabsContent value="anexos" className="mt-4">
         {anexosContent}

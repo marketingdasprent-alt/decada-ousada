@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useFieldArray, useFormContext, type FieldValues } from 'react-hook-form';
-import { Info, Plus, Star, Trash2, UserCheck, Users } from 'lucide-react';
+import { Info, Plus, Star, Trash2, UserCheck, UserPlus, Users } from 'lucide-react';
 
 import { FormField, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
@@ -24,32 +24,47 @@ import {
 import { cn } from '@/lib/utils';
 
 import type { ClienteComDocumentos } from '@/types/cliente';
+import type { Motorista } from '@/types/motorista';
 
 const normalizeForSearch = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 /**
- * Campos partilhados de Condutores Autorizados entre Reserva e Contrato.
- * Usa useFormContext — o form pai precisa de ter:
- *   - condutores: { cliente_id: string; is_principal: boolean }[]
- *   - cliente_id: string | null (opcional — usado para shortcut "também conduz")
+ * Forma genérica do form pai. Em rent-a-car cada condutor tem
+ * `cliente_id` preenchido; em TVDE tem `motorista_id`.
  */
 interface CondutoresFieldsShape extends FieldValues {
-  cliente_id: string | null;
-  condutores: { cliente_id: string; is_principal: boolean }[];
+  cliente_id?: string | null;
+  condutores: Array<{
+    cliente_id: string | null;
+    motorista_id: string | null;
+    is_principal: boolean;
+  }>;
 }
 
 interface CondutoresFieldsProps {
+  /** Regime do contrato/reserva — bifurca a lista de entidades. */
+  regime: 'rent_a_car' | 'tvde';
   clientes: ClienteComDocumentos[];
-  /** Label para o botão de "X da Reserva/Contrato também conduz". */
+  motoristas?: Motorista[];
+  /** Label para o botão de "X também conduz" (rent-a-car). */
   clientePrincipalLabel?: string;
+  /** Callback para abrir o dialog de criar novo cliente (só rent-a-car). */
+  onCriarNovoCliente?: () => void;
+  /** Callback para abrir o dialog de criar novo motorista (só TVDE). */
+  onCriarNovoMotorista?: () => void;
 }
 
 export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
+  regime,
   clientes,
+  motoristas = [],
   clientePrincipalLabel = 'Cliente do contrato também conduz',
+  onCriarNovoCliente,
+  onCriarNovoMotorista,
 }) => {
   const form = useFormContext<CondutoresFieldsShape>();
   const [adicionarOpen, setAdicionarOpen] = useState(false);
+  const isTvde = regime === 'tvde';
 
   const clienteId = form.watch('cliente_id');
   const cliente = clienteId ? (clientes.find((c) => c.id === clienteId) ?? null) : null;
@@ -65,15 +80,33 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
     return m;
   }, [clientes]);
 
-  const clientesDisponiveis = useMemo(() => {
-    const usados = new Set(fields.map((f) => f.cliente_id));
-    return clientes.filter((c) => !usados.has(c.id));
-  }, [clientes, fields]);
+  const motoristasPorId = useMemo(() => {
+    const m = new Map<string, Motorista>();
+    motoristas.forEach((mo) => m.set(mo.id, mo));
+    return m;
+  }, [motoristas]);
 
-  const handleAdicionar = (newClienteId: string) => {
-    if (fields.some((f) => f.cliente_id === newClienteId)) return;
+  const disponiveis = useMemo(() => {
+    if (isTvde) {
+      const usados = new Set(fields.map((f) => f.motorista_id).filter(Boolean));
+      return motoristas.filter((mo) => !usados.has(mo.id));
+    }
+    const usados = new Set(fields.map((f) => f.cliente_id).filter(Boolean));
+    return clientes.filter((c) => !usados.has(c.id));
+  }, [isTvde, clientes, motoristas, fields]);
+
+  const handleAdicionar = (id: string) => {
+    if (isTvde) {
+      if (fields.some((f) => f.motorista_id === id)) return;
+    } else {
+      if (fields.some((f) => f.cliente_id === id)) return;
+    }
     const isFirst = fields.length === 0;
-    append({ cliente_id: newClienteId, is_principal: isFirst });
+    append({
+      cliente_id: isTvde ? null : id,
+      motorista_id: isTvde ? id : null,
+      is_principal: isFirst,
+    });
     setAdicionarOpen(false);
   };
 
@@ -108,9 +141,15 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
     }
   };
 
-  const clientePrincipalJaEhCondutor = cliente
-    ? fields.some((f) => f.cliente_id === cliente.id)
-    : false;
+  const clientePrincipalJaEhCondutor =
+    cliente && !isTvde ? fields.some((f) => f.cliente_id === cliente.id) : false;
+
+  const entidadeLabel = isTvde ? 'motorista' : 'cliente';
+  const placeholderTexto = isTvde ? 'Pesquisar motorista...' : 'Pesquisar cliente...';
+  const emptyTexto =
+    disponiveis.length === 0
+      ? `Todos os ${entidadeLabel}s já foram adicionados como condutores.`
+      : `Nenhum ${entidadeLabel} encontrado.`;
 
   return (
     <div className="space-y-8">
@@ -141,43 +180,104 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
                   normalizeForSearch(value).includes(normalizeForSearch(search)) ? 1 : 0
                 }
               >
-                <CommandInput placeholder="Pesquisar cliente..." className="h-9" />
+                <CommandInput placeholder={placeholderTexto} className="h-9" />
                 <CommandList>
-                  <CommandEmpty>
-                    {clientesDisponiveis.length === 0
-                      ? 'Todos os clientes já foram adicionados como condutores.'
-                      : 'Nenhum cliente encontrado.'}
-                  </CommandEmpty>
+                  <CommandEmpty>{emptyTexto}</CommandEmpty>
                   <CommandGroup>
-                    {clientesDisponiveis.map((c) => (
-                      <CommandItem
-                        key={c.id}
-                        value={`${c.nome} ${c.nif ?? ''} ${c.telefone ?? ''} ${c.codigo}`}
-                        onSelect={() => handleAdicionar(c.id)}
-                        className="cursor-pointer flex flex-col items-start gap-0.5"
-                      >
-                        <span className="font-medium">
-                          {c.nome}
-                          {c.codigo ? (
-                            <span className="ml-1 text-xs text-muted-foreground">#{c.codigo}</span>
-                          ) : null}
-                        </span>
-                        {(c.nif || c.telefone) && (
-                          <span className="text-xs text-muted-foreground">
-                            {c.nif && <>NIF {c.nif}</>}
-                            {c.nif && c.telefone && ' · '}
-                            {c.telefone}
-                          </span>
-                        )}
-                      </CommandItem>
-                    ))}
+                    {isTvde
+                      ? motoristas
+                          .filter((mo) => !fields.some((f) => f.motorista_id === mo.id))
+                          .map((mo) => (
+                            <CommandItem
+                              key={mo.id}
+                              value={`${mo.nome} ${mo.nif ?? ''} ${mo.telefone ?? ''}`}
+                              onSelect={() => handleAdicionar(mo.id)}
+                              className="cursor-pointer flex flex-col items-start gap-0.5"
+                            >
+                              <span className="font-medium">
+                                {mo.nome}
+                                {mo.codigo ? (
+                                  <span className="ml-1 text-xs text-muted-foreground">
+                                    #{mo.codigo}
+                                  </span>
+                                ) : null}
+                              </span>
+                              {(mo.nif || mo.telefone) && (
+                                <span className="text-xs text-muted-foreground">
+                                  {mo.nif && <>NIF {mo.nif}</>}
+                                  {mo.nif && mo.telefone && ' · '}
+                                  {mo.telefone}
+                                </span>
+                              )}
+                            </CommandItem>
+                          ))
+                      : clientes
+                          .filter((c) => !fields.some((f) => f.cliente_id === c.id))
+                          .map((c) => (
+                            <CommandItem
+                              key={c.id}
+                              value={`${c.nome} ${c.nif ?? ''} ${c.telefone ?? ''} ${c.codigo}`}
+                              onSelect={() => handleAdicionar(c.id)}
+                              className="cursor-pointer flex flex-col items-start gap-0.5"
+                            >
+                              <span className="font-medium">
+                                {c.nome}
+                                {c.codigo ? (
+                                  <span className="ml-1 text-xs text-muted-foreground">
+                                    #{c.codigo}
+                                  </span>
+                                ) : null}
+                              </span>
+                              {(c.nif || c.telefone) && (
+                                <span className="text-xs text-muted-foreground">
+                                  {c.nif && <>NIF {c.nif}</>}
+                                  {c.nif && c.telefone && ' · '}
+                                  {c.telefone}
+                                </span>
+                              )}
+                            </CommandItem>
+                          ))}
                   </CommandGroup>
                 </CommandList>
+                {isTvde && onCriarNovoMotorista && (
+                  <div className="border-t p-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start gap-2 text-primary"
+                      onClick={() => {
+                        setAdicionarOpen(false);
+                        onCriarNovoMotorista();
+                      }}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Novo motorista
+                    </Button>
+                  </div>
+                )}
+                {!isTvde && onCriarNovoCliente && (
+                  <div className="border-t p-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start gap-2 text-primary"
+                      onClick={() => {
+                        setAdicionarOpen(false);
+                        onCriarNovoCliente();
+                      }}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Novo cliente
+                    </Button>
+                  </div>
+                )}
               </Command>
             </PopoverContent>
           </Popover>
 
-          {cliente && !clientePrincipalJaEhCondutor && (
+          {cliente && !isTvde && !clientePrincipalJaEhCondutor && (
             <Button
               type="button"
               size="sm"
@@ -220,35 +320,39 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
                   <TableCell colSpan={5} className="py-12 text-center">
                     <p className="text-sm text-muted-foreground">Nenhum condutor adicionado.</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Usa o botão <strong>Adicionar Condutor</strong> para seleccionar clientes que
-                      podem conduzir a viatura.
+                      Usa o botão <strong>Adicionar Condutor</strong> para seleccionar{' '}
+                      {entidadeLabel}s.
                     </p>
                   </TableCell>
                 </TableRow>
               ) : (
                 fields.map((field, idx) => {
-                  const c = clientesPorId.get(field.cliente_id);
+                  const c = field.cliente_id ? clientesPorId.get(field.cliente_id) : null;
+                  const mo = field.motorista_id ? motoristasPorId.get(field.motorista_id) : null;
                   const principal = field.is_principal;
+                  const entidade = c ?? mo;
+                  const idFallback = (field.cliente_id ?? field.motorista_id ?? '').slice(0, 8);
                   return (
                     <TableRow key={field.id} className={cn(principal && 'bg-amber-500/5')}>
                       <TableCell className="font-medium">
-                        {c ? (
+                        {entidade ? (
                           <>
-                            {c.nome}
-                            {c.codigo && (
+                            {entidade.nome}
+                            {'codigo' in entidade && entidade.codigo != null && (
                               <span className="ml-1 text-xs text-muted-foreground">
-                                #{c.codigo}
+                                #{entidade.codigo}
                               </span>
                             )}
                           </>
                         ) : (
                           <span className="text-muted-foreground italic">
-                            Cliente removido ({field.cliente_id.slice(0, 8)}…)
+                            {entidadeLabel.charAt(0).toUpperCase() + entidadeLabel.slice(1)}{' '}
+                            removido ({idFallback}…)
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{c?.nif ?? '—'}</TableCell>
-                      <TableCell className="text-sm">{c?.telefone ?? '—'}</TableCell>
+                      <TableCell className="font-mono text-xs">{entidade?.nif ?? '—'}</TableCell>
+                      <TableCell className="text-sm">{entidade?.telefone ?? '—'}</TableCell>
                       <TableCell className="text-center">
                         {principal ? (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 dark:text-amber-300">

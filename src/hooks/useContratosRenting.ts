@@ -23,6 +23,7 @@ export interface UseContratosRentingOptions {
 const SELECT_COLUMNS = `
   id, org_id, codigo,
   reserva_id,
+  transferista_id,
   cliente_id,
   viatura_id, matricula, grupo,
   estacao_entrega_id, data_inicio,
@@ -38,6 +39,7 @@ const SELECT_COLUMNS = `
   local_entrega, local_recolha,
   comentarios_entrega, comentarios_recolha,
   observacoes, observacoes_internas,
+  versao, contrato_anterior_id, substituido_em, motivo_versao,
   deleted_at, created_by, updated_by, created_at, updated_at
 `;
 
@@ -217,6 +219,67 @@ export function useUpdateContratoRenting() {
       const { title, description } = contratoErrorMessage(error);
       toast({ title, description, variant: 'destructive' });
     },
+  });
+}
+
+// ────────────────────────────────────────────────────────────
+// Versionamento (upgrade/downgrade)
+// ────────────────────────────────────────────────────────────
+
+/** Cria nova versão do contrato (clone + relações) via RPC. */
+export function useCriarVersaoContrato() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (args: { contratoId: string; motivo: string }): Promise<string> => {
+      const { data, error } = await supabase.rpc('criar_versao_contrato_renting', {
+        p_contrato_id: args.contratoId,
+        p_motivo: args.motivo,
+      });
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QUERY_KEY_BASE });
+      toast({
+        title: 'Nova versão criada',
+        description: 'O contrato anterior foi marcado como substituído.',
+      });
+    },
+    onError: (error: unknown) => {
+      const description = error instanceof Error ? error.message : 'Erro inesperado';
+      toast({ title: 'Erro ao criar versão', description, variant: 'destructive' });
+    },
+  });
+}
+
+/** Carrega a cadeia de versões anteriores de um contrato (mais recente primeiro). */
+export function useContratoVersoes(contratoId: string | null | undefined) {
+  return useQuery({
+    queryKey: [...QUERY_KEY_BASE, 'versoes', contratoId ?? null],
+    queryFn: async (): Promise<ContratoRenting[]> => {
+      if (!contratoId) return [];
+      // Sobe a cadeia via contrato_anterior_id usando WITH RECURSIVE via RPC.
+      // Mais simples: pega o contrato actual, navega para trás iterativamente.
+      const versoes: ContratoRenting[] = [];
+      let cursor: string | null = contratoId;
+      while (cursor) {
+        const { data, error } = await supabase
+          .from('contratos_renting')
+          .select(SELECT_COLUMNS)
+          .eq('id', cursor)
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) break;
+        const linha = data as ContratoRenting;
+        versoes.push(linha);
+        cursor = linha.contrato_anterior_id;
+      }
+      return versoes;
+    },
+    enabled: !!contratoId,
+    staleTime: 30_000,
   });
 }
 

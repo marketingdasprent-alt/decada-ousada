@@ -105,15 +105,20 @@ export type ReservaCondutor = {
   id: string;
   org_id: string;
   reserva_id: string;
-  cliente_id: string;
+  /** XOR com motorista_id — exactamente um dos dois preenchido. */
+  cliente_id: string | null;
+  /** XOR com cliente_id — usado em regime TVDE. */
+  motorista_id: string | null;
   is_principal: boolean;
   created_by: string | null;
   created_at: string;
 };
 
-/** Forma usada no formulário antes da reserva ter ID na BD. */
+/** Forma usada no formulário antes da reserva ter ID na BD.
+ *  Exactamente um dos dois (cliente_id/motorista_id) preenchido. */
 export type CondutorFormItem = {
-  cliente_id: string;
+  cliente_id: string | null;
+  motorista_id: string | null;
   is_principal: boolean;
 };
 

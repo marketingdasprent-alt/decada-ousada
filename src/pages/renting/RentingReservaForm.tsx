@@ -11,6 +11,8 @@ import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { useClientes } from '@/hooks/useClientes';
+import { useMotoristas } from '@/hooks/useMotoristas';
+import { useToast } from '@/hooks/use-toast';
 import { useEstacoes } from '@/hooks/useEstacoes';
 import {
   useCreateReserva,
@@ -23,6 +25,8 @@ import { useReservaCondutores, useSyncReservaCondutores } from '@/hooks/useReser
 import { uploadReservaAnexoSync } from '@/hooks/useReservaAnexos';
 import { useViaturas } from '@/hooks/useViaturas';
 
+import { ClienteDialog } from '@/components/renting/ClienteDialog';
+import { MotoristaDialog } from '@/components/motoristas/MotoristaDialog';
 import { ReservaDeleteConfirm } from '@/components/renting/reservas/ReservaDeleteConfirm';
 import { ReservaResumoSidebar } from '@/components/renting/reservas/ReservaResumoSidebar';
 import {
@@ -81,6 +85,7 @@ const RentingReservaForm = () => {
   const { data: condutoresAtuais = [] } = useReservaCondutores(isEdit ? id : null);
 
   const { data: clientes = [] } = useClientes();
+  const { data: motoristas = [] } = useMotoristas({ apenasAtivos: true });
   const { data: viaturas = [] } = useViaturas({ apenasDisponiveis: !isEdit });
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
 
@@ -91,6 +96,9 @@ const RentingReservaForm = () => {
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [anexosPendentes, setAnexosPendentes] = useState<AnexoPendente[]>([]);
+  const [clienteDialogOpen, setClienteDialogOpen] = useState(false);
+  const [motoristaDialogOpen, setMotoristaDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const adicionarAnexosPendentes = (files: File[]) => {
     setAnexosPendentes((prev) => [
@@ -142,6 +150,42 @@ const RentingReservaForm = () => {
     // Ambos: só faz sentido validar uma vez quando as listas existem
   }, [isEdit, viaturaIdFromUrl, clienteIdFromUrl, viaturas, clientes, form]);
 
+  /** Adiciona um cliente recém-criado à lista de condutores (rent-a-car). */
+  const handleClienteCriado = (clienteId: string) => {
+    const existentes = (form.getValues('condutores') ?? []) as Array<{
+      cliente_id: string | null;
+      motorista_id: string | null;
+      is_principal: boolean;
+    }>;
+    if (existentes.some((c) => c.cliente_id === clienteId)) return;
+    form.setValue(
+      'condutores',
+      [
+        ...existentes,
+        { cliente_id: clienteId, motorista_id: null, is_principal: existentes.length === 0 },
+      ],
+      { shouldDirty: true, shouldValidate: true }
+    );
+  };
+
+  /** Adiciona um motorista recém-criado à lista de condutores (TVDE). */
+  const handleMotoristaCriado = (motoristaId: string) => {
+    const existentes = (form.getValues('condutores') ?? []) as Array<{
+      cliente_id: string | null;
+      motorista_id: string | null;
+      is_principal: boolean;
+    }>;
+    if (existentes.some((c) => c.motorista_id === motoristaId)) return;
+    form.setValue(
+      'condutores',
+      [
+        ...existentes,
+        { cliente_id: null, motorista_id: motoristaId, is_principal: existentes.length === 0 },
+      ],
+      { shouldDirty: true, shouldValidate: true }
+    );
+  };
+
   // Hidrata o formulário quando a reserva carrega (modo edição).
   useEffect(() => {
     if (!isEdit) return;
@@ -172,6 +216,7 @@ const RentingReservaForm = () => {
       observacoes_internas: reserva.observacoes_internas ?? '',
       condutores: condutoresAtuais.map((c) => ({
         cliente_id: c.cliente_id,
+        motorista_id: c.motorista_id,
         is_principal: c.is_principal,
       })),
     });
@@ -195,16 +240,45 @@ const RentingReservaForm = () => {
 
   const { data: temConflito } = useReservaConflito(conflitoArgs);
 
+  // Quando o user troca de regime, os condutores existentes deixam de fazer
+  // sentido (clientes vs motoristas) — limpamos a lista com aviso.
+  const regimeWatched = form.watch('regime');
+  useEffect(() => {
+    const condutores = (form.getValues('condutores') ?? []) as Array<{
+      cliente_id: string | null;
+      motorista_id: string | null;
+    }>;
+    if (condutores.length === 0) return;
+    const expectedKey: 'cliente_id' | 'motorista_id' =
+      regimeWatched === 'tvde' ? 'motorista_id' : 'cliente_id';
+    const tipoErrado = condutores.some((c) => !c[expectedKey]);
+    if (!tipoErrado) return;
+    form.setValue('condutores', [], { shouldDirty: true, shouldValidate: true });
+    toast({
+      title: 'Condutores limpos',
+      description:
+        regimeWatched === 'tvde'
+          ? 'Mudaste para TVDE — os condutores são agora motoristas. Volta a adicionar.'
+          : 'Mudaste para Rent-a-car — os condutores são agora clientes. Volta a adicionar.',
+    });
+  }, [regimeWatched, form, toast]);
+
   const onSubmit = async (values: ReservaFormValues) => {
     try {
       const viaturaSelecionada = viaturas.find((v) => v.id === values.viatura_id);
       const matriculaFinal = values.matricula || viaturaSelecionada?.matricula || null;
 
       // Condutor principal — derivado da lista para snapshot legado em reservas.
+      // Pode ser cliente (rent-a-car) ou motorista (TVDE).
       const condutorPrincipal = values.condutores.find((c) => c.is_principal) ?? null;
-      const condutorPrincipalCliente = condutorPrincipal
+      const condutorPrincipalCliente = condutorPrincipal?.cliente_id
         ? (clientes.find((c) => c.id === condutorPrincipal.cliente_id) ?? null)
         : null;
+      const condutorPrincipalMotorista = condutorPrincipal?.motorista_id
+        ? (motoristas.find((m) => m.id === condutorPrincipal.motorista_id) ?? null)
+        : null;
+      const condutorPrincipalNome =
+        condutorPrincipalCliente?.nome ?? condutorPrincipalMotorista?.nome ?? null;
 
       const payload: ReservaInsert = {
         viatura_id: values.viatura_id || null,
@@ -216,9 +290,10 @@ const RentingReservaForm = () => {
         data_fim: localInputToIso(values.data_fim),
         cliente_id: values.cliente_id || null,
         cliente_nome: values.cliente_nome || null,
-        // condutor_id refere motoristas_ativos (não clientes) — fica null
-        condutor_id: null,
-        condutor_nome: condutorPrincipalCliente?.nome ?? null,
+        // Snapshot legado de condutor (compat) — preenchido a partir da lista
+        // bifurcada. Em TVDE usa o motorista, em rent-a-car fica null.
+        condutor_id: condutorPrincipalMotorista?.id ?? null,
+        condutor_nome: condutorPrincipalNome,
         estado: values.estado,
         regime: values.regime,
         valor_total: values.valor_total,
@@ -419,7 +494,14 @@ const RentingReservaForm = () => {
                     </TabsContent>
 
                     <TabsContent value="condutores" className="pt-4">
-                      <ReservaTabCondutores form={form} clientes={clientes} />
+                      <ReservaTabCondutores
+                        form={form}
+                        regime={regimeWatched}
+                        clientes={clientes}
+                        motoristas={motoristas}
+                        onCriarNovoCliente={() => setClienteDialogOpen(true)}
+                        onCriarNovoMotorista={() => setMotoristaDialogOpen(true)}
+                      />
                     </TabsContent>
 
                     <TabsContent value="caixa" className="pt-4">
@@ -462,6 +544,20 @@ const RentingReservaForm = () => {
         reserva={reserva ?? null}
         isPending={deleteMutation.isPending}
         onConfirm={confirmDelete}
+      />
+
+      <ClienteDialog
+        open={clienteDialogOpen}
+        onOpenChange={setClienteDialogOpen}
+        cliente={null}
+        onCreated={handleClienteCriado}
+      />
+
+      <MotoristaDialog
+        open={motoristaDialogOpen}
+        onOpenChange={setMotoristaDialogOpen}
+        motorista={null}
+        onMotoristaCreated={(m) => handleMotoristaCriado(m.id)}
       />
     </>
   );

@@ -1172,6 +1172,8 @@ export type Database = {
           org_id: string | null
           origem_id: string | null
           origem_tipo: string | null
+          realizado_em: string | null
+          realizado_por_id: string | null
           tipo: string
           titulo: string
           updated_at: string
@@ -1192,6 +1194,8 @@ export type Database = {
           org_id?: string | null
           origem_id?: string | null
           origem_tipo?: string | null
+          realizado_em?: string | null
+          realizado_por_id?: string | null
           tipo?: string
           titulo: string
           updated_at?: string
@@ -1212,6 +1216,8 @@ export type Database = {
           org_id?: string | null
           origem_id?: string | null
           origem_tipo?: string | null
+          realizado_em?: string | null
+          realizado_por_id?: string | null
           tipo?: string
           titulo?: string
           updated_at?: string
@@ -2464,9 +2470,14 @@ export type Database = {
           total_final: number | null
           total_iva: number | null
           total_subtotal: number | null
+          transferista_id: string | null
           updated_at: string
           updated_by: string | null
           valor_total_manual: number | null
+          versao: number
+          contrato_anterior_id: string | null
+          substituido_em: string | null
+          motivo_versao: string | null
           viatura_id: string
           voo_referencia: string | null
           voucher_codigo: string | null
@@ -2524,9 +2535,14 @@ export type Database = {
           total_final?: number | null
           total_iva?: number | null
           total_subtotal?: number | null
+          transferista_id?: string | null
           updated_at?: string
           updated_by?: string | null
           valor_total_manual?: number | null
+          versao?: number
+          contrato_anterior_id?: string | null
+          substituido_em?: string | null
+          motivo_versao?: string | null
           viatura_id: string
           voo_referencia?: string | null
           voucher_codigo?: string | null
@@ -2584,9 +2600,14 @@ export type Database = {
           total_final?: number | null
           total_iva?: number | null
           total_subtotal?: number | null
+          transferista_id?: string | null
           updated_at?: string
           updated_by?: string | null
           valor_total_manual?: number | null
+          versao?: number
+          contrato_anterior_id?: string | null
+          substituido_em?: string | null
+          motivo_versao?: string | null
           viatura_id?: string
           voo_referencia?: string | null
           voucher_codigo?: string | null
@@ -2653,6 +2674,13 @@ export type Database = {
             columns: ["tarifa_id"]
             isOneToOne: false
             referencedRelation: "renting_tarifas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_renting_transferista_id_fkey"
+            columns: ["transferista_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -8458,6 +8486,10 @@ export type Database = {
           p_viatura_id: string
         }
         Returns: boolean
+      }
+      criar_versao_contrato_renting: {
+        Args: { p_contrato_id: string; p_motivo: string }
+        Returns: string
       }
       execute_gestor_assignment: { Args: never; Returns: number }
       fn_contrato_dias: {

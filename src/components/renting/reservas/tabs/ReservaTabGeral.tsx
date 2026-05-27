@@ -172,7 +172,9 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('renting_tarifas')
-        .select('grupo_id, nome, kms_incluidos, km_adicional_valor, preco_dia, preco_semana, preco_mes')
+        .select(
+          'grupo_id, nome, kms_incluidos, km_adicional_valor, preco_dia, preco_semana, preco_mes'
+        )
         .eq('ativa', true);
       if (error) throw error;
       return data;
@@ -480,36 +482,43 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
               </div>
             }
           />
-          <FormField
-            control={form.control}
-            name="estacao_recolha_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Estação Fim <span className="text-red-500">*</span>
-                </FormLabel>
-                <Select
-                  value={field.value ?? SENTINEL_NONE}
-                  onValueChange={(v) => field.onChange(v === SENTINEL_NONE ? null : v)}
-                >
-                  <FormControl>
-                    <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Selecciona estação..." />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value={SENTINEL_NONE}>— Sem estação —</SelectItem>
-                    {estacoes.map((e) => (
-                      <SelectItem key={e.id} value={e.id}>
-                        {e.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {regime === 'tvde' ? (
+            <div className="rounded-md border border-dashed border-muted-foreground/30 bg-muted/30 p-3 text-xs text-muted-foreground">
+              Reservas TVDE não definem estação de recolha fixa — a viatura pode ser recolhida em
+              qualquer estação no fim do contrato.
+            </div>
+          ) : (
+            <FormField
+              control={form.control}
+              name="estacao_recolha_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Estação Fim <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select
+                    value={field.value ?? SENTINEL_NONE}
+                    onValueChange={(v) => field.onChange(v === SENTINEL_NONE ? null : v)}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Selecciona estação..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={SENTINEL_NONE}>— Sem estação —</SelectItem>
+                      {estacoes.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {e.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="data_fim"
@@ -700,9 +709,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
                     {isEdit && (
                       <SelectItem value="cancelada">
                         <span className="flex items-center gap-2">
-                          <span
-                            className={cn('h-2 w-2 rounded-full', ESTADO_META.cancelada.dot)}
-                          />
+                          <span className={cn('h-2 w-2 rounded-full', ESTADO_META.cancelada.dot)} />
                           Cancelada
                         </span>
                       </SelectItem>
@@ -732,8 +739,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
               },
               {
                 label: 'Preço / semana',
-                value:
-                  tarifaAtual.preco_semana != null ? `${tarifaAtual.preco_semana} €` : '—',
+                value: tarifaAtual.preco_semana != null ? `${tarifaAtual.preco_semana} €` : '—',
               },
               {
                 label: 'Preço / mês',

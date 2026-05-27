@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertTriangle, ArrowLeft, FileText, Loader2, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Download,
+  FileText,
+  Loader2,
+  Printer,
+  Trash2,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,6 +31,7 @@ import {
   useContratoConflito,
   useContratoRenting,
   useCreateContratoRenting,
+  useCriarVersaoContrato,
   useDeleteContratoRenting,
   useUpdateContratoRenting,
 } from '@/hooks/useContratosRenting';
@@ -31,12 +40,24 @@ import { useOrgDefinicoes, ivaParaModalidade } from '@/hooks/useOrgDefinicoes';
 import { useRentingCoberturas } from '@/hooks/useRentingCoberturas';
 import { useRentingExtras } from '@/hooks/useRentingExtras';
 import { useRentingTaxas } from '@/hooks/useRentingTaxas';
+import { useEmpresas } from '@/hooks/useEmpresas';
+import { useMotoristas } from '@/hooks/useMotoristas';
 import { useReserva } from '@/hooks/useReservas';
+import { useReservaCondutores } from '@/hooks/useReservaCondutores';
 import { useViaturas } from '@/hooks/useViaturas';
 
+import { ClienteDialog } from '@/components/renting/ClienteDialog';
+import { MotoristaDialog } from '@/components/motoristas/MotoristaDialog';
+
+import { generateContratoPdf } from '@/utils/generateContratoPdf';
 import { ContratoDeleteConfirm } from '@/components/renting/contratos/ContratoDeleteConfirm';
 import { ContratoEstadoActions } from '@/components/renting/contratos/ContratoEstadoActions';
 import { ContratoFormSecoes } from '@/components/renting/contratos/ContratoFormSecoes';
+import {
+  ContratoNovaVersaoDialog,
+  type AlteracaoMaterial,
+} from '@/components/renting/contratos/ContratoNovaVersaoDialog';
+import { ContratoTabHistorico } from '@/components/renting/contratos/ContratoTabHistorico';
 import { ContratoTabAnexos } from '@/components/renting/contratos/ContratoTabAnexos';
 import { ContratoTabCobertura } from '@/components/renting/contratos/ContratoTabCobertura';
 import { ContratoTabExtras } from '@/components/renting/contratos/ContratoTabExtras';
@@ -69,6 +90,8 @@ const ContratoForm = () => {
 
   // Server state
   const { data: clientes = [] } = useClientes();
+  const { data: motoristas = [] } = useMotoristas({ apenasAtivos: true });
+  const { empresas } = useEmpresas();
   const { data: viaturas = [] } = useViaturas();
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
   const { data: coberturas = [] } = useRentingCoberturas({ apenasAtivas: true });
@@ -84,13 +107,18 @@ const ContratoForm = () => {
   const { data: reservaFromQuery } = useReserva(!isEdit ? reservaIdFromQuery : null);
   const { data: reservaDoContrato } = useReserva(isEdit ? (contrato?.reserva_id ?? null) : null);
   const reservaAssociada = reservaFromQuery ?? reservaDoContrato;
-  // Viatura é definida pela reserva — bloquear edição preserva o EXCLUDE
-  // anti-overbooking e mantém consistência cascateada.
-  const viaturaLocked = !!reservaIdActiva;
+  // Condutores da reserva — só precisamos quando estamos a criar contrato a
+  // partir dela (a hidratação do contrato em modo edit usa condutoresDb).
+  const { data: condutoresDaReserva } = useReservaCondutores(!isEdit ? reservaIdFromQuery : null);
+  // Em criação: viatura vem da reserva (fixa o snapshot inicial).
+  // Em edição: liberta-se — alterar viatura no contrato cria uma
+  // nova versão (ver fluxo de versionamento).
+  const viaturaLocked = !isEdit && !!reservaIdActiva;
 
   const createMutation = useCreateContratoRenting();
   const updateMutation = useUpdateContratoRenting();
   const deleteMutation = useDeleteContratoRenting();
+  const criarVersaoMutation = useCriarVersaoContrato();
   const syncCondutoresMutation = useSyncContratoCondutores();
   const syncCoberturasMutation = useSyncContratoCoberturas();
   const syncExtrasMutation = useSyncContratoExtras();
@@ -108,10 +136,78 @@ const ContratoForm = () => {
     syncTaxasMutation.isPending;
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [clienteDialogOpen, setClienteDialogOpen] = useState(false);
+  const [motoristaDialogOpen, setMotoristaDialogOpen] = useState(false);
+  /** Quando preenchido, dispara o dialog de confirmação de nova versão. */
+  const [novaVersaoCtx, setNovaVersaoCtx] = useState<{
+    alteracoes: AlteracaoMaterial[];
+    valores: ContratoFormValues;
+  } | null>(null);
+
+  /** Adiciona um cliente recém-criado à lista de condutores (rent-a-car). */
+  const handleClienteCriado = (clienteId: string) => {
+    const existentes = (form.getValues('condutores') ?? []) as Array<{
+      cliente_id: string | null;
+      motorista_id: string | null;
+      is_principal: boolean;
+    }>;
+    if (existentes.some((c) => c.cliente_id === clienteId)) return;
+    form.setValue(
+      'condutores',
+      [
+        ...existentes,
+        { cliente_id: clienteId, motorista_id: null, is_principal: existentes.length === 0 },
+      ],
+      { shouldDirty: true, shouldValidate: true }
+    );
+  };
+
+  /** Adiciona um motorista recém-criado à lista de condutores (TVDE). */
+  const handleMotoristaCriado = (motoristaId: string) => {
+    const existentes = (form.getValues('condutores') ?? []) as Array<{
+      cliente_id: string | null;
+      motorista_id: string | null;
+      is_principal: boolean;
+    }>;
+    if (existentes.some((c) => c.motorista_id === motoristaId)) return;
+    form.setValue(
+      'condutores',
+      [
+        ...existentes,
+        { cliente_id: null, motorista_id: motoristaId, is_principal: existentes.length === 0 },
+      ],
+      { shouldDirty: true, shouldValidate: true }
+    );
+  };
 
   const handleDelete = () => {
     if (!contrato) return;
     setConfirmDeleteOpen(true);
+  };
+
+  const handleImprimir = async (action: 'print' | 'download') => {
+    if (!contrato) return;
+    // Empresa do contrato: associada por org_id. Fallback à primeira disponível
+    // caso a tabela `empresas` ainda não tenha org_id preenchido (legacy).
+    const empresaContrato =
+      empresas.find((e) => e.orgId === contrato.org_id) ?? empresas[0] ?? null;
+    try {
+      const principal = (condutoresDb ?? []).find((c) => c.is_principal) ?? null;
+      await generateContratoPdf({
+        contrato,
+        condutorPrincipal: principal,
+        clientes,
+        motoristas,
+        empresa: empresaContrato,
+        action,
+      });
+    } catch (err) {
+      toast({
+        title: 'Erro ao gerar contrato',
+        description: err instanceof Error ? err.message : 'Erro inesperado',
+        variant: 'destructive',
+      });
+    }
   };
 
   const confirmDelete = () => {
@@ -146,6 +242,7 @@ const ContratoForm = () => {
         grupo: contrato.grupo ?? '',
         matricula: contrato.matricula ?? '',
         reserva_id: contrato.reserva_id,
+        transferista_id: contrato.transferista_id ?? null,
         estacao_entrega_id: contrato.estacao_entrega_id,
         data_inicio: isoToLocalInput(contrato.data_inicio),
         estacao_recolha_id: contrato.estacao_recolha_id,
@@ -220,11 +317,31 @@ const ContratoForm = () => {
       'condutores',
       condutoresDb.map((c) => ({
         cliente_id: c.cliente_id,
+        motorista_id: c.motorista_id,
         is_principal: c.is_principal,
       })),
       { shouldDirty: false }
     );
   }, [isEdit, contrato, condutoresDb, form]);
+
+  // Hidratação dos condutores quando se cria contrato a partir de reserva.
+  // Os condutores vivem em `reserva_condutores` (m:n) — precisam de ser
+  // copiados para o form para serem persistidos depois em `contrato_condutores`.
+  useEffect(() => {
+    if (isEdit || !reservaFromQuery || !condutoresDaReserva) return;
+    if (condutoresDaReserva.length === 0) return;
+    form.setValue(
+      'condutores',
+      condutoresDaReserva
+        .filter((c) => c.cliente_id || c.motorista_id)
+        .map((c) => ({
+          cliente_id: c.cliente_id,
+          motorista_id: c.motorista_id,
+          is_principal: c.is_principal,
+        })),
+      { shouldDirty: false }
+    );
+  }, [isEdit, reservaFromQuery, condutoresDaReserva, form]);
 
   // Hidratação das coberturas (request separado — só em modo edit)
   useEffect(() => {
@@ -293,6 +410,28 @@ const ContratoForm = () => {
     });
   }, [regime, orgDefinicoes, form]);
 
+  // Quando o user troca de regime, os condutores existentes (motoristas ou
+  // clientes) deixam de fazer sentido — limpamos a lista com aviso.
+  useEffect(() => {
+    const condutores = (form.getValues('condutores') ?? []) as Array<{
+      cliente_id: string | null;
+      motorista_id: string | null;
+    }>;
+    if (condutores.length === 0) return;
+    const expectedKey: 'cliente_id' | 'motorista_id' =
+      regime === 'tvde' ? 'motorista_id' : 'cliente_id';
+    const tipoErrado = condutores.some((c) => !c[expectedKey]);
+    if (!tipoErrado) return;
+    form.setValue('condutores', [], { shouldDirty: true, shouldValidate: true });
+    toast({
+      title: 'Condutores limpos',
+      description:
+        regime === 'tvde'
+          ? 'Mudaste para TVDE — os condutores são agora motoristas. Volta a adicionar.'
+          : 'Mudaste para Rent-a-car — os condutores são agora clientes. Volta a adicionar.',
+    });
+  }, [regime, form, toast]);
+
   // Soma do preço/dia das coberturas seleccionadas (× dias no ResumoContrato)
   const coberturasPrecoDia = useMemo(
     () => (coberturasForm ?? []).reduce((soma, c) => soma + (c.preco_dia ?? 0), 0),
@@ -315,17 +454,56 @@ const ContratoForm = () => {
 
   const { data: temConflito } = useContratoConflito(conflitoArgs);
 
+  /** Detecta alterações materiais entre o form e o contrato actual da BD.
+   *  Campos gatilho (definidos com o user): viatura, tarifa, total, desconto, IVA.
+   *  Estas alterações criam uma nova versão em vez de UPDATE in-place. */
+  const detectarAlteracoesMateriais = (values: ContratoFormValues): AlteracaoMaterial[] => {
+    if (!contrato) return [];
+    const result: AlteracaoMaterial[] = [];
+
+    if (values.viatura_id !== contrato.viatura_id) {
+      const antes = viaturas.find((v) => v.id === contrato.viatura_id)?.matricula ?? '—';
+      const depois = viaturas.find((v) => v.id === values.viatura_id)?.matricula ?? '—';
+      result.push({ label: 'Viatura', valorAntes: antes, valorDepois: depois });
+    }
+    const numPair = (label: string, antes: number | null, depois: number | null, sufixo = '') => {
+      if (antes === depois) return;
+      result.push({
+        label,
+        valorAntes: antes != null ? `${antes}${sufixo}` : '—',
+        valorDepois: depois != null ? `${depois}${sufixo}` : '—',
+      });
+    };
+    numPair('Tarifa diária', contrato.tarifa_diaria, values.tarifa_diaria, ' €');
+    numPair('Valor total', contrato.valor_total_manual, values.valor_total_manual, ' €');
+    numPair('Desconto', contrato.desconto_percentagem, values.desconto_percentagem, '%');
+    numPair('IVA', contrato.taxa_iva, values.taxa_iva, '%');
+
+    return result;
+  };
+
   const onSubmit = (values: ContratoFormValues) => {
-    // Validação cruzada: viatura do contrato tem de coincidir com a da reserva.
-    // Defesa em profundidade — a UI já bloqueia, mas guarda contra bypass.
-    if (reservaAssociada && values.viatura_id !== reservaAssociada.viatura_id) {
+    // Em criação, a viatura do contrato tem de coincidir com a da reserva
+    // (preserva o snapshot inicial e o EXCLUDE anti-overbooking).
+    // Em edição, a divergência é permitida — vai disparar uma nova versão.
+    if (!isEdit && reservaAssociada && values.viatura_id !== reservaAssociada.viatura_id) {
       toast({
         title: 'Viatura divergente da reserva',
         description:
-          'A viatura no contrato tem de ser a mesma da reserva. Edita primeiro a reserva e tenta de novo.',
+          'A viatura inicial do contrato tem de ser a mesma da reserva. Edita primeiro a reserva.',
         variant: 'destructive',
       });
       return;
+    }
+
+    // Em modo edit, verificar se as alterações justificam uma nova versão.
+    // Se sim, abrir o dialog de confirmação em vez de gravar in-place.
+    if (isEdit && contrato && contrato.substituido_em === null) {
+      const alteracoes = detectarAlteracoesMateriais(values);
+      if (alteracoes.length > 0) {
+        setNovaVersaoCtx({ alteracoes, valores: values });
+        return;
+      }
     }
 
     // Snapshot matrícula a partir da viatura se não veio do form
@@ -334,6 +512,7 @@ const ContratoForm = () => {
 
     const payload: ContratoRentingInsert = {
       reserva_id: values.reserva_id,
+      transferista_id: values.transferista_id ?? null,
       cliente_id: values.cliente_id,
       viatura_id: values.viatura_id,
       matricula: matriculaFinal,
@@ -424,6 +603,107 @@ const ContratoForm = () => {
     }
   };
 
+  /** Confirma a criação de uma nova versão: clona via RPC, aplica os novos
+   *  valores na linha nova e sincroniza condutores/coberturas/extras/taxas. */
+  const confirmarNovaVersao = (motivo: string) => {
+    if (!contrato || !novaVersaoCtx) return;
+    const motivoFinal =
+      motivo ||
+      novaVersaoCtx.alteracoes
+        .map((a) => `${a.label}: ${a.valorAntes} → ${a.valorDepois}`)
+        .join('; ');
+    criarVersaoMutation.mutate(
+      { contratoId: contrato.id, motivo: motivoFinal },
+      {
+        onSuccess: (novaId) => {
+          // Re-executa onSubmit no contexto da nova versão: precisamos de
+          // navegar primeiro (para fechar o dialog e refrescar contrato),
+          // e depois reaplicar o payload. Para evitar timing complexo,
+          // chamamos updateMutation directamente com a nova id + payload.
+          const values = novaVersaoCtx.valores;
+          const viatura = viaturas.find((v) => v.id === values.viatura_id);
+          const matriculaFinal = values.matricula || viatura?.matricula || null;
+          const msDia = 86400000;
+          const dias = Math.max(
+            1,
+            Math.ceil(
+              (new Date(values.data_fim).getTime() - new Date(values.data_inicio).getTime()) / msDia
+            )
+          );
+          const baseAluguer =
+            values.valor_total_manual != null && values.valor_total_manual > 0
+              ? values.valor_total_manual
+              : (values.tarifa_diaria ?? 0) * dias;
+          const custoCoberturas =
+            values.coberturas.reduce((s, c) => s + (c.preco_dia ?? 0), 0) * dias;
+          const condutores = values.condutores as CondutorFormItem[];
+          const coberturas = values.coberturas as CoberturaFormItem[];
+          const extras = values.extras as ExtraFormItem[];
+          const taxas = values.taxas as TaxaFormItem[];
+          const custoExtras = extras.reduce((s, e) => s + calcExtraTotal(e, dias), 0);
+          const subtotalTaxas =
+            (baseAluguer + custoCoberturas + custoExtras) *
+            (1 - (values.desconto_percentagem ?? 0) / 100);
+
+          updateMutation.mutate(
+            {
+              id: novaId,
+              reserva_id: values.reserva_id,
+              transferista_id: values.transferista_id ?? null,
+              cliente_id: values.cliente_id,
+              viatura_id: values.viatura_id,
+              matricula: matriculaFinal,
+              grupo: values.grupo || null,
+              estacao_entrega_id: values.estacao_entrega_id || null,
+              data_inicio: localInputToIso(values.data_inicio),
+              estacao_recolha_id: values.estacao_recolha_id || null,
+              data_fim: localInputToIso(values.data_fim),
+              estacao_origem_viatura_id: values.estacao_origem_viatura_id || null,
+              estado_operacional: values.estado_operacional,
+              estado_financeiro: values.estado_financeiro,
+              origem: values.origem,
+              regime: values.regime,
+              tarifa_diaria: values.tarifa_diaria,
+              desconto_percentagem: values.desconto_percentagem,
+              taxa_iva: values.taxa_iva,
+              valor_total_manual: values.valor_total_manual,
+              is_longa_duracao: values.is_longa_duracao,
+              renovacao_opcao: values.renovacao_opcao ?? null,
+              renovacao_intervalo_dias: values.renovacao_intervalo_dias,
+              franquia_valor: values.franquia_valor,
+              caucao_valor: values.caucao_valor,
+              kms_incluidos: values.kms_incluidos,
+              km_adicional_valor: values.km_adicional_valor,
+              voucher_codigo: values.voucher_codigo || null,
+              numero_processo: values.numero_processo || null,
+              voo_referencia: values.voo_referencia || null,
+              local_entrega: values.local_entrega || null,
+              local_recolha: values.local_recolha || null,
+              comentarios_entrega: values.comentarios_entrega || null,
+              comentarios_recolha: values.comentarios_recolha || null,
+              observacoes: values.observacoes || null,
+              observacoes_internas: values.observacoes_internas || null,
+            },
+            {
+              onSuccess: () => {
+                syncCondutoresMutation.mutate({ contratoId: novaId, desejados: condutores });
+                syncCoberturasMutation.mutate({ contratoId: novaId, desejadas: coberturas });
+                syncExtrasMutation.mutate({ contratoId: novaId, desejados: extras, dias });
+                syncTaxasMutation.mutate({
+                  contratoId: novaId,
+                  desejadas: taxas,
+                  subtotal: subtotalTaxas,
+                });
+                setNovaVersaoCtx(null);
+                navigate(`/renting/contratos/${novaId}`);
+              },
+            }
+          );
+        },
+      }
+    );
+  };
+
   if (isEdit && loadingContrato) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -471,6 +751,30 @@ const ContratoForm = () => {
         </Button>
         {isEdit && contrato && <ContratoEstadoActions contrato={contrato} />}
         {isEdit && contrato && (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleImprimir('print')}
+              className="gap-2"
+              title="Imprimir contrato"
+            >
+              <Printer className="h-4 w-4" />
+              Imprimir
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleImprimir('download')}
+              className="gap-2"
+              title="Descarregar contrato como PDF"
+            >
+              <Download className="h-4 w-4" />
+              PDF
+            </Button>
+          </>
+        )}
+        {isEdit && contrato && (
           <Button
             type="button"
             variant="outline"
@@ -489,13 +793,23 @@ const ContratoForm = () => {
         <Button
           type="button"
           onClick={form.handleSubmit(onSubmit)}
-          disabled={isPending}
+          disabled={isPending || contrato?.substituido_em != null}
           className="gap-2"
         >
           {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
           {isEdit ? 'Guardar' : 'Abrir Contrato'}
         </Button>
       </StickyPageHeader>
+
+      {isEdit && contrato?.substituido_em && (
+        <div className="mb-3 flex items-start gap-2 p-3 rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <p className="text-sm">
+            Esta versão foi <strong>substituída</strong>. É apenas leitura — para alterações, abre a
+            versão actual a partir do histórico.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
         <Card className="bg-card border-border">
@@ -515,13 +829,25 @@ const ContratoForm = () => {
                   }
                   condutoresContent={
                     <CondutoresFields
+                      regime={regime}
                       clientes={clientes}
+                      motoristas={motoristas}
                       clientePrincipalLabel="Cliente do contrato também conduz"
+                      onCriarNovoCliente={() => setClienteDialogOpen(true)}
+                      onCriarNovoMotorista={() => setMotoristaDialogOpen(true)}
                     />
                   }
                   coberturasContent={<ContratoTabCobertura form={form} coberturas={coberturas} />}
                   extrasContent={<ContratoTabExtras form={form} extras={extrasCatalogo} />}
                   taxasContent={<ContratoTabTaxas form={form} taxas={taxasCatalogo} />}
+                  historicoContent={
+                    isEdit && contrato ? (
+                      <ContratoTabHistorico
+                        contratoId={contrato.id}
+                        onAbrirVersao={(versaoId) => navigate(`/renting/contratos/${versaoId}`)}
+                      />
+                    ) : undefined
+                  }
                   anexosContent={<ContratoTabAnexos contratoId={contrato?.id ?? null} />}
                 />
 
@@ -564,6 +890,30 @@ const ContratoForm = () => {
         contrato={contrato ?? null}
         isPending={deleteMutation.isPending}
         onConfirm={confirmDelete}
+      />
+
+      <ClienteDialog
+        open={clienteDialogOpen}
+        onOpenChange={setClienteDialogOpen}
+        cliente={null}
+        onCreated={handleClienteCriado}
+      />
+
+      <MotoristaDialog
+        open={motoristaDialogOpen}
+        onOpenChange={setMotoristaDialogOpen}
+        motorista={null}
+        onMotoristaCreated={(m) => handleMotoristaCriado(m.id)}
+      />
+
+      <ContratoNovaVersaoDialog
+        open={novaVersaoCtx !== null}
+        onOpenChange={(o) => {
+          if (!o) setNovaVersaoCtx(null);
+        }}
+        alteracoes={novaVersaoCtx?.alteracoes ?? []}
+        isPending={criarVersaoMutation.isPending || updateMutation.isPending}
+        onConfirmar={confirmarNovaVersao}
       />
     </div>
   );

@@ -71,9 +71,7 @@ export const RegimeCards: React.FC<RegimeCardsProps> = ({ value, onChange }) => 
           <span
             className={cn(
               'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors',
-              selected
-                ? a.iconOn
-                : 'bg-muted text-muted-foreground group-hover:text-foreground'
+              selected ? a.iconOn : 'bg-muted text-muted-foreground group-hover:text-foreground'
             )}
           >
             <Icon className="h-5 w-5" />

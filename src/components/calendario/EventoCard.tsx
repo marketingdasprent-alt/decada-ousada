@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pencil, Trash2, Clock, User, MessageSquareText } from 'lucide-react';
+import { CheckCircle2, Pencil, Trash2, Clock, User, MessageSquareText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -64,6 +64,15 @@ export const EventoCard: React.FC<Props> = ({ evento, onEdit, onDelete, onDetail
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
               {TIPO_LABELS[evento.tipo] || evento.tipo}
             </span>
+            {evento.realizado_em && (
+              <span
+                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                title={`Realizado por ${evento.realizador?.nome ?? '—'}`}
+              >
+                <CheckCircle2 className="h-3 w-3" />
+                Realizado
+              </span>
+            )}
           </div>
           {!evento.dia_todo && (
             <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
@@ -82,6 +91,15 @@ export const EventoCard: React.FC<Props> = ({ evento, onEdit, onDelete, onDetail
             <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
               <User className="h-3 w-3" />
               <span>{evento.profiles.nome}</span>
+            </div>
+          )}
+          {evento.realizador?.nome && evento.realizado_em && (
+            <div className="flex items-center gap-1 mt-1 text-xs text-emerald-700 dark:text-emerald-300">
+              <CheckCircle2 className="h-3 w-3" />
+              <span>
+                Por {evento.realizador.nome}{' '}
+                {format(new Date(evento.realizado_em), "dd/MM 'às' HH:mm")}
+              </span>
             </div>
           )}
         </div>

@@ -575,9 +575,9 @@ export function MotoristaTabViaturas({ motorista }: MotoristaTabViaturasProps) {
           <DialogHeader>
             <DialogTitle>Atribuição interna</DialogTitle>
             <p className="text-xs text-muted-foreground">
-              Atribui uma viatura ao motorista <strong>sem criar contrato formal</strong>.
-              Use para trocas, viaturas substitutas ou uso interno. Para TVDE/rent-a-car
-              com cliente, cria uma reserva → contrato.
+              Atribui uma viatura ao motorista <strong>sem criar contrato formal</strong>. Use para
+              trocas, viaturas substitutas ou uso interno. Para TVDE/rent-a-car com cliente, cria
+              uma reserva → contrato.
             </p>
           </DialogHeader>
           <div className="space-y-4 py-4">

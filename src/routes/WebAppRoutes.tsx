@@ -291,9 +291,7 @@ const WebAppRoutes = () => {
           <Route
             path="/assistencia/nova"
             element={
-              <ProtectedRoute
-                requiredResource={RECURSOS.ASSISTENCIA_TICKETS}
-                             >
+              <ProtectedRoute requiredResource={RECURSOS.ASSISTENCIA_TICKETS}>
                 <DashboardLayout>
                   <AssistenciaNova />
                 </DashboardLayout>
@@ -303,9 +301,7 @@ const WebAppRoutes = () => {
           <Route
             path="/assistencia"
             element={
-              <ProtectedRoute
-                requiredResource={RECURSOS.ASSISTENCIA_TICKETS}
-                             >
+              <ProtectedRoute requiredResource={RECURSOS.ASSISTENCIA_TICKETS}>
                 <DashboardLayout>
                   <Assistencia />
                 </DashboardLayout>
@@ -315,9 +311,7 @@ const WebAppRoutes = () => {
           <Route
             path="/assistencia/:id"
             element={
-              <ProtectedRoute
-                requiredResource={RECURSOS.ASSISTENCIA_TICKETS}
-                             >
+              <ProtectedRoute requiredResource={RECURSOS.ASSISTENCIA_TICKETS}>
                 <DashboardLayout>
                   <TicketDetails />
                 </DashboardLayout>

@@ -88,6 +88,10 @@ export type ContratoRenting = {
   /** FK obrigatória — todo contrato começa em reserva. */
   reserva_id: string;
 
+  /** Colaborador interno responsável pela entrega/recolha física da viatura.
+   *  Nullable em BD durante migração, obrigatório no schema do client. */
+  transferista_id: string | null;
+
   cliente_id: string;
 
   viatura_id: string;
@@ -144,6 +148,13 @@ export type ContratoRenting = {
   observacoes: string | null;
   observacoes_internas: string | null;
 
+  // Versionamento (upgrade/downgrade)
+  versao: number;
+  contrato_anterior_id: string | null;
+  /** NULL = versão actual. NOT NULL = foi substituído nesta data. */
+  substituido_em: string | null;
+  motivo_versao: string | null;
+
   deleted_at: string | null;
   created_by: string | null;
   updated_by: string | null;
@@ -160,6 +171,10 @@ export type ContratoRentingInsert = Omit<
   | 'total_iva'
   | 'total_final'
   | 'facturado_em'
+  | 'versao'
+  | 'contrato_anterior_id'
+  | 'substituido_em'
+  | 'motivo_versao'
   | 'deleted_at'
   | 'created_by'
   | 'updated_by'
@@ -178,7 +193,10 @@ export type ContratoCondutor = {
   id: string;
   org_id: string;
   contrato_id: string;
-  cliente_id: string;
+  /** XOR com motorista_id — exactamente um dos dois preenchido. */
+  cliente_id: string | null;
+  /** XOR com cliente_id — usado em regime TVDE. */
+  motorista_id: string | null;
   is_principal: boolean;
   created_by: string | null;
   created_at: string;

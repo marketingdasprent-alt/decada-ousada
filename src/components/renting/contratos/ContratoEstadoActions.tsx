@@ -13,10 +13,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useUpdateContratoRenting } from '@/hooks/useContratosRenting';
-import type {
-  ContratoEstadoOperacional,
-  ContratoRenting,
-} from '@/types/contratoRenting';
+import type { ContratoEstadoOperacional, ContratoRenting } from '@/types/contratoRenting';
 
 type AccaoEstado = 'entrega' | 'devolucao' | 'cancelar';
 
@@ -119,10 +116,7 @@ export const ContratoEstadoActions: React.FC<ContratoEstadoActionsProps> = ({ co
         );
       })}
 
-      <AlertDialog
-        open={!!accaoAberta}
-        onOpenChange={(open) => !open && setAccaoAberta(null)}
-      >
+      <AlertDialog open={!!accaoAberta} onOpenChange={(open) => !open && setAccaoAberta(null)}>
         <AlertDialogContent>
           {accaoActiva && (
             <>

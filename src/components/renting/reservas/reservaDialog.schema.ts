@@ -52,19 +52,24 @@ export const reservaDialogSchema = z
 
     condutores: z
       .array(
-        z.object({
-          cliente_id: z.string().uuid('Cliente inválido'),
-          is_principal: z.boolean().default(false),
-        })
+        z
+          .object({
+            cliente_id: z.string().uuid().nullable().default(null),
+            motorista_id: z.string().uuid().nullable().default(null),
+            is_principal: z.boolean().default(false),
+          })
+          .refine((c) => (c.cliente_id !== null) !== (c.motorista_id !== null), {
+            message: 'Cada condutor tem que ser cliente OU motorista (não ambos).',
+          })
       )
       .min(1, 'É obrigatório pelo menos um condutor.')
       .default([])
       .refine(
         (lista) => {
-          const ids = lista.map((c) => c.cliente_id);
-          return new Set(ids).size === ids.length;
+          const chaves = lista.map((c) => c.cliente_id ?? c.motorista_id);
+          return new Set(chaves).size === chaves.length;
         },
-        { message: 'Cada cliente só pode aparecer uma vez como condutor.' }
+        { message: 'Cada entidade só pode aparecer uma vez como condutor.' }
       )
       .refine((lista) => lista.filter((c) => c.is_principal).length <= 1, {
         message: 'Apenas um condutor pode ser principal.',
