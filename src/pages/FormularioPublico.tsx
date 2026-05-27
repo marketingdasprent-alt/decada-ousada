@@ -19,7 +19,7 @@ import { FormField } from '@/components/formularios/DynamicFieldEditor';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { trackLeadOnce } from '@/lib/pixel';
+import { initPixel, trackLeadOnce } from '@/lib/pixel';
 
 interface FormData {
   [key: string]: any;
@@ -43,6 +43,8 @@ const FormularioPublico = () => {
   const totalSteps = formulario?.campos ? Math.ceil(formulario.campos.length / fieldsPerStep) : 1;
 
   useEffect(() => {
+    // Página pública → inicializa FB Pixel para PageView + Lead attribution.
+    initPixel();
     if (id) {
       fetchFormulario();
     }
