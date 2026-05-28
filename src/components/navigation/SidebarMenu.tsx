@@ -127,7 +127,7 @@ const MENU_ITEMS: MenuItem[] = [
     ],
   },
   {
-    label: 'Viaturas',
+    label: 'Frota',
     icon: Car,
     recurso: 'viaturas_ver',
     subItems: [
