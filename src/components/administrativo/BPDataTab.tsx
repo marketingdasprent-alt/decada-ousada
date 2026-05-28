@@ -241,15 +241,6 @@ export const BPDataTab: React.FC = () => {
               Dados de combustível importados da BP
             </span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowImportDialog(true)}
-            disabled={!firstActiveIntegracao}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Importar CSV BP
-          </Button>
         </div>
       </div>
 
@@ -379,12 +370,7 @@ export const BPDataTab: React.FC = () => {
       )}
 
       {firstActiveIntegracao && (
-        <ImportRobotCsvDialog
-          open={showImportDialog}
-          onOpenChange={setShowImportDialog}
-          integracaoId={firstActiveIntegracao.id}
-          onImportComplete={fetchTransacoes}
-        />
+        <>
       )}
     </div>
   );

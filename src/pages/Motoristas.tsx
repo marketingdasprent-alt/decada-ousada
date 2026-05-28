@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, ChevronUp, ChevronDown, Plus, Check, RefreshCw, Link2, CreditCard, Car } from 'lucide-react';
+import { Search, ChevronUp, ChevronDown, Plus, Check, RefreshCw, Link2, CreditCard, Car, Fuel } from 'lucide-react';
 import { startOfWeek, format as formatDate } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { MotoristaDialog } from '@/components/motoristas/MotoristaDialog';
 import { MotoristasPlataformaNaoAssociados } from '@/components/motoristas/MotoristasPlataformaNaoAssociados';
 import { CartoesNaoReconhecidos } from '@/components/motoristas/CartoesNaoReconhecidos';
 import { PortagensNaoAssociadas } from '@/components/motoristas/PortagensNaoAssociadas';
+import { BpNaoAssociadas } from '@/components/motoristas/BpNaoAssociadas';
 import { GenerateDocumentsDialog } from '@/components/motoristas/GenerateDocumentsDialog';
 import { MotoristaCard } from '@/components/motoristas/MotoristaCard';
 import {
@@ -97,6 +98,8 @@ export default function Motoristas() {
   const [cartoesCount, setCartoesCount] = useState<number>(0);
   const [portagensOpen, setPortagensOpen] = useState(false);
   const [portagensCount, setPortagensCount] = useState<number>(0);
+  const [bpNaoAssociadasOpen, setBpNaoAssociadasOpen] = useState(false);
+  const [bpNaoAssociadasCount, setBpNaoAssociadasCount] = useState<number>(0);
   const [novaFichaPrefill, setNovaFichaPrefill] = useState<{
     nome?: string;
     bolt_id?: string;
@@ -108,6 +111,7 @@ export default function Motoristas() {
     loadNaoAssociadosCount();
     loadCartoesCount();
     loadPortagensCount();
+    loadBpNaoAssociadasCount();
   }, []);
 
   const loadCartoesCount = async () => {
@@ -115,6 +119,23 @@ export default function Motoristas() {
       const desde = formatDate(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
       const { data } = await (supabase as any).rpc('get_cartoes_combustivel_nao_associados', { p_desde: desde });
       setCartoesCount((data as any[] | null)?.length ?? 0);
+    } catch {
+      /* silencioso */
+    }
+  };
+
+  const loadBpNaoAssociadasCount = async () => {
+    try {
+      const { count } = await supabase
+        .from('bp_transacoes')
+        .select('card_number', { count: 'exact', head: false })
+        .is('motorista_id', null);
+      const { data } = await supabase
+        .from('bp_transacoes')
+        .select('card_number')
+        .is('motorista_id', null);
+      const unique = new Set<string>((data || []).map((r: any) => r.card_number || '__sem_cartao__'));
+      setBpNaoAssociadasCount(unique.size);
     } catch {
       /* silencioso */
     }
@@ -623,6 +644,19 @@ export default function Motoristas() {
               </Badge>
             </Button>
           )}
+          {bpNaoAssociadasCount > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => setBpNaoAssociadasOpen(true)}
+              className="w-full sm:w-auto gap-2 border-green-500/50 text-green-700 hover:bg-green-500/10 dark:text-green-400"
+            >
+              <Fuel className="h-4 w-4" />
+              {bpNaoAssociadasCount} BP sem motorista
+              <Badge variant="secondary" className="ml-1 bg-green-500/20 text-green-700 dark:text-green-300">
+                associar
+              </Badge>
+            </Button>
+          )}
           <Button onClick={handleAddMotorista} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Motorista
@@ -845,6 +879,15 @@ export default function Motoristas() {
         onOpenChange={setPortagensOpen}
         onChanged={() => {
           loadPortagensCount();
+        }}
+      />
+
+      {/* Dialog: transações BP sem motorista associado */}
+      <BpNaoAssociadas
+        open={bpNaoAssociadasOpen}
+        onOpenChange={setBpNaoAssociadasOpen}
+        onChanged={() => {
+          loadBpNaoAssociadasCount();
         }}
       />
 

@@ -185,10 +185,6 @@ export const EdpDataTab: React.FC = () => {
             className="pl-10"
           />
         </div>
-        <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-          <Upload className="h-4 w-4 mr-2" />
-          Importar EDP
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -246,12 +242,6 @@ export const EdpDataTab: React.FC = () => {
           </Table>
         )}
       </div>
-      <ImportRobotCsvDialog
-        open={showImportDialog}
-        onOpenChange={setShowImportDialog}
-        integracaoId={selectedIntegracao}
-        onImportComplete={fetchTransacoes}
-      />
     </div>
   );
 };
