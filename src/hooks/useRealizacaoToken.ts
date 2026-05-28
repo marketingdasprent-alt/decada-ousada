@@ -127,8 +127,12 @@ export function useRealizarFromToken() {
       if (e2) throw e2;
     },
     onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ['realizacao-token', vars.token] });
+      // NOTA: NÃO invalidar a query do token aqui — o refetch dispara o
+      // RPC consumir_token_realizacao, que dá erro "token já usado" e
+      // a página entraria no estado de erro em vez do "Confirmada".
       qc.invalidateQueries({ queryKey: ['calendario-eventos'] });
+      qc.invalidateQueries({ queryKey: ['renting', 'contratos'] });
+      qc.invalidateQueries({ queryKey: ['calendario', 'eventos-pendentes-renting'] });
       toast({
         title: vars.tipo === 'entrega' ? 'Entrega confirmada' : 'Recolha confirmada',
         description: 'O evento ficou marcado como realizado.',

@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { formatMatricula, SearchableDropdown } from './calendarioUtils';
 import { RentingPendentesSection } from './RentingPendentesSection';
+import { useEventosPendentesRenting } from '@/hooks/useEventosPendentesRenting';
 import {
   CheckinDadosSection,
   emptyCheckinDados,
@@ -74,6 +75,11 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
   const [done, setDone] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Pendentes de renting — usado para o empty state e para o badge.
+  const { data: rentingRecolhasPendentes = [] } = useEventosPendentesRenting({
+    tipo: 'recolha',
+  });
 
   const { data: viaturas = [], isLoading } = useQuery({
     queryKey: ['viaturas-pendentes-recolha'],
@@ -239,10 +245,37 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
         }
       }
 
+      // Espelha no calendário: encontra o evento 'recolha' legacy pendente
+      // para esta matrícula e marca como realizado por este utilizador.
+      // Filtra origem_tipo IS NULL para não tocar nos eventos do novo
+      // sistema de renting (que são tratados pelo trigger cascata_realizacao).
+      if (selected.matricula) {
+        const { data: evMatch } = await supabase
+          .from('calendario_eventos')
+          .select('id')
+          .eq('tipo', 'recolha')
+          .eq('matricula_devolver', selected.matricula)
+          .is('realizado_em', null)
+          .is('origem_tipo', null)
+          .order('data_inicio', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (evMatch?.id) {
+          await supabase
+            .from('calendario_eventos')
+            .update({
+              realizado_em: new Date().toISOString(),
+              realizado_por_id: userId,
+            })
+            .eq('id', evMatch.id);
+        }
+      }
+
       // 5. Invalidar caches
       queryClient.invalidateQueries({ queryKey: ['viaturas-pendentes-recolha'] });
       queryClient.invalidateQueries({ queryKey: ['viaturas-calendario'] });
       queryClient.invalidateQueries({ queryKey: ['motorista-viaturas'] });
+      queryClient.invalidateQueries({ queryKey: ['calendario-eventos'] });
 
       toast.success(`Check-in de ${formatMatricula(selected.matricula)} confirmado`);
       setDone(true);
@@ -434,26 +467,28 @@ export const RecolhasPendentesDrawer: React.FC<RecolhasPendentesDrawerProps> = (
         <SheetHeader className="px-4 py-3 border-b border-border shrink-0">
           <SheetTitle className="flex items-center gap-2 text-base">
             Recolhas Pendentes de Check-in
-            {viaturas.length > 0 && (
-              <Badge className="bg-orange-500 text-white">{viaturas.length}</Badge>
+            {viaturas.length + rentingRecolhasPendentes.length > 0 && (
+              <Badge className="bg-orange-500 text-white">
+                {viaturas.length + rentingRecolhasPendentes.length}
+              </Badge>
             )}
           </SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto">
-          {/* Renting (rent-a-car / aluguer) — pendentes em primeiro com botão simples */}
-          <RentingPendentesSection tipo="recolha" />
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : viaturas.length === 0 ? (
+          ) : viaturas.length === 0 && rentingRecolhasPendentes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
               <CheckCircle className="h-10 w-10 opacity-30" />
-              <p className="text-sm">Nenhuma recolha TVDE pendente</p>
+              <p className="text-sm">Nenhuma recolha pendente</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
+              {/* Pendentes de renting — mesma estética dos legacy. */}
+              <RentingPendentesSection tipo="recolha" />
               {viaturas.map((v) => (
                 <div
                   key={v.id}

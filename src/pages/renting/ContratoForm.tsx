@@ -253,7 +253,6 @@ const ContratoForm = () => {
         grupo: contrato.grupo ?? '',
         matricula: contrato.matricula ?? '',
         reserva_id: contrato.reserva_id,
-        transferista_id: contrato.transferista_id ?? null,
         estacao_entrega_id: contrato.estacao_entrega_id,
         data_inicio: isoToLocalInput(contrato.data_inicio),
         estacao_recolha_id: contrato.estacao_recolha_id,
@@ -561,7 +560,6 @@ const ContratoForm = () => {
 
     const payload: ContratoRentingInsert = {
       reserva_id: values.reserva_id,
-      transferista_id: values.transferista_id ?? null,
       cliente_id: values.cliente_id,
       viatura_id: values.viatura_id,
       matricula: matriculaFinal,
@@ -698,7 +696,6 @@ const ContratoForm = () => {
             {
               id: novaId,
               reserva_id: values.reserva_id,
-              transferista_id: values.transferista_id ?? null,
               cliente_id: values.cliente_id,
               viatura_id: values.viatura_id,
               matricula: matriculaFinal,
@@ -945,6 +942,7 @@ const ContratoForm = () => {
         open={clienteDialogOpen}
         onOpenChange={setClienteDialogOpen}
         cliente={null}
+        defaultTipoCliente="condutor"
         onCreated={handleClienteCriado}
       />
 

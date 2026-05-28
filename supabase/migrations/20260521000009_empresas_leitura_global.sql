@@ -1,0 +1,26 @@
+-- ============================================================
+-- empresas: leitura global (remover isolamento por org)
+-- ============================================================
+-- As `empresas` são entidades legais partilhadas (papel timbrado,
+-- NIF, sede, licença TVDE) usadas na geração de documentos. O
+-- operador gere várias sociedades modeladas como orgs distintas e
+-- precisa de as ver todas independentemente da org activa.
+--
+-- A política RESTRICTIVE `rls_org_isolation` (aplicada em massa pela
+-- migration 20260520000006 a todas as tabelas com org_id) fazia AND
+-- com as permissivas e escondia empresas de outras orgs. Depois de
+-- preencher empresas.org_id (backfill 20260520900001), o fluxo de
+-- "Gerar Documentos" deixou de ver a Distância Arrojada quando o
+-- utilizador está na Década Ousada.
+--
+-- Removemos a restrição APENAS da tabela empresas. Mantêm-se:
+--   • empresas_select  (USING true)  — leitura global
+--   • empresas_admin   (admin FOR ALL) — escrita só admins
+-- O `org_id` continua na tabela para o gerador de PDF do contrato
+-- escolher a empresa certa (empresas.org_id = contrato.org_id).
+--
+-- NOTA: dívida conhecida (auditoria #1 — identidade empresas↔orgs).
+-- Esta é a correcção pragmática até ao redesenho multi-tenant.
+-- ============================================================
+
+DROP POLICY IF EXISTS rls_org_isolation ON public.empresas;

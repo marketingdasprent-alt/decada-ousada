@@ -1498,6 +1498,7 @@ export type Database = {
           org_id: string
           pais: string | null
           telefone: string | null
+          tipo_cliente: string
           updated_at: string
           updated_by: string | null
         }
@@ -1524,6 +1525,7 @@ export type Database = {
           org_id?: string
           pais?: string | null
           telefone?: string | null
+          tipo_cliente?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -1550,6 +1552,7 @@ export type Database = {
           org_id?: string
           pais?: string | null
           telefone?: string | null
+          tipo_cliente?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -2070,7 +2073,8 @@ export type Database = {
       }
       contrato_media: {
         Row: {
-          contrato_id: string
+          contrato_id: string | null
+          contrato_renting_id: string | null
           created_at: string
           criado_por: string | null
           id: string
@@ -2082,7 +2086,8 @@ export type Database = {
           url: string
         }
         Insert: {
-          contrato_id: string
+          contrato_id?: string | null
+          contrato_renting_id?: string | null
           created_at?: string
           criado_por?: string | null
           id?: string
@@ -2094,7 +2099,8 @@ export type Database = {
           url: string
         }
         Update: {
-          contrato_id?: string
+          contrato_id?: string | null
+          contrato_renting_id?: string | null
           created_at?: string
           criado_por?: string | null
           id?: string
@@ -2111,6 +2117,13 @@ export type Database = {
             columns: ["contrato_id"]
             isOneToOne: false
             referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contrato_media_contrato_renting_id_fkey"
+            columns: ["contrato_renting_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_renting"
             referencedColumns: ["id"]
           },
           {

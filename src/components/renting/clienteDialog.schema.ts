@@ -58,6 +58,8 @@ const optionalDateYear = () =>
 
 // ── Schema base (formato dos campos) ──────────────────────────
 const baseSchema = z.object({
+  tipo_cliente: z.enum(['particular', 'empresa', 'condutor']),
+  // Derivado de tipo_cliente (mantido para a lógica de validação existente).
   is_empresa: z.boolean(),
   nome: z.string().min(1, 'Nome é obrigatório'),
   nome_comercial: z.string().optional(),
@@ -128,8 +130,8 @@ function validateComum(data: ClienteFormData, ctx: Ctx) {
   exigirCampo(data, ctx, 'pais');
 }
 
-function validatePessoa(data: ClienteFormData, ctx: Ctx) {
-  // Pessoa: exigir nome + pelo menos um apelido (≥ 2 palavras)
+/** Exige nome + pelo menos um apelido (≥ 2 palavras). */
+function exigirNomeApelido(data: ClienteFormData, ctx: Ctx) {
   if (data.nome.trim()) {
     const palavras = data.nome
       .trim()
@@ -143,13 +145,31 @@ function validatePessoa(data: ClienteFormData, ctx: Ctx) {
       });
     }
   }
+}
 
-  exigirCampo(data, ctx, 'genero', 'Selecione o género');
-  exigirCampo(data, ctx, 'naturalidade');
+/** Carta de condução completa — obrigatória para quem conduz. */
+function exigirCarta(data: ClienteFormData, ctx: Ctx) {
   exigirCampo(data, ctx, 'carta_numero');
   exigirCampo(data, ctx, 'carta_pais');
   exigirCampo(data, ctx, 'carta_data_emissao');
   exigirCampo(data, ctx, 'carta_validade');
+}
+
+function validatePessoa(data: ClienteFormData, ctx: Ctx) {
+  exigirNomeApelido(data, ctx);
+  exigirCampo(data, ctx, 'genero', 'Selecione o género');
+  exigirCampo(data, ctx, 'naturalidade');
+  exigirCarta(data, ctx);
+}
+
+/**
+ * Condutor: só conduz, não é o titular/pagador. Validação mínima —
+ * nome + apelido e carta de condução. Sem IBAN, morada, NIF,
+ * documento de identificação, etc. (tudo opcional).
+ */
+function validateCondutor(data: ClienteFormData, ctx: Ctx) {
+  exigirNomeApelido(data, ctx);
+  exigirCarta(data, ctx);
 }
 
 function validateEmpresa(data: ClienteFormData, ctx: Ctx) {
@@ -180,6 +200,13 @@ function validateDocumentos(data: ClienteFormData, ctx: Ctx) {
 
 // ── Schema final exportado ────────────────────────────────────
 export const clienteFormSchema = baseSchema.superRefine((data, ctx) => {
+  // Condutor: validação leve (só identidade de condução). Não passa
+  // pelas exigências de pagador (NIF, IBAN, morada, doc identificação).
+  if (data.tipo_cliente === 'condutor') {
+    validateCondutor(data, ctx);
+    return;
+  }
+
   validateComum(data, ctx);
   validateDocumentos(data, ctx);
   if (data.is_empresa) {
@@ -191,6 +218,7 @@ export const clienteFormSchema = baseSchema.superRefine((data, ctx) => {
 
 // ── Defaults ──────────────────────────────────────────────────
 export const emptyDefaults: ClienteFormData = {
+  tipo_cliente: 'particular',
   is_empresa: false,
   nome: '',
   nome_comercial: '',
