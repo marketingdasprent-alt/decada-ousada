@@ -1,0 +1,20 @@
+-- ============================================================
+-- empresas: leitura global (reverter isolamento por org)
+-- ============================================================
+-- A migration 20260520000006_rls_org_isolation aplicou, via DO loop,
+-- uma política RESTRICTIVE `rls_org_isolation` (org_id = get_current_org_id())
+-- a TODAS as tabelas com coluna org_id — incluindo `empresas`.
+--
+-- PROBLEMA: Década Ousada e Distância Arrojada estão modeladas como
+-- duas ORGS separadas, cada uma com a sua empresa. Com a política
+-- restritiva, ao estar logado numa org só se vê a empresa dessa org —
+-- o operador deixa de ver as DUAS empresas (parte o fluxo de Gerar
+-- Documentos, que precisa de escolher entre as duas sociedades).
+--
+-- CORREÇÃO: remover a política restritiva SÓ na tabela `empresas`,
+-- voltando à leitura global (a policy original empresas_select
+-- USING (true) continua activa). É um remendo deliberado até ao
+-- redesenho SaaS (merge das duas sociedades sob UMA org). NÃO
+-- reintroduzir isolamento por org em `empresas` sem resolver esse merge.
+-- ============================================================
+DROP POLICY IF EXISTS rls_org_isolation ON public.empresas;
