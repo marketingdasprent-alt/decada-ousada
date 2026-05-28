@@ -285,7 +285,7 @@ const CRM = () => {
       // Buscar o lead atual para verificar se tem gestor
       const currentLead = leads.find((lead) => lead.id === leadId);
 
-      let updateData: any = {
+      const updateData: any = {
         status: newStatus,
         updated_at: new Date().toISOString(),
       };

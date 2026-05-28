@@ -124,7 +124,7 @@ export function ContasResumoTab() {
         let cartaoFrota = null;
         let extraCosts = { caucao: 0, seguros: 0, outros: 0 };
 
-        let resolvedMotoristaId = motorista.motorista_id || null;
+        const resolvedMotoristaId = motorista.motorista_id || null;
         if (resolvedMotoristaId) {
           const [vData, mData, aData] = await Promise.all([
             supabase

@@ -162,7 +162,7 @@ export default function Motoristas() {
   const filteredMotoristas = useMemo(() => {
     const searchNormalized = normalizeString(searchTerm);
 
-    let result = motoristas.filter((m) => {
+    const result = motoristas.filter((m) => {
       // Text search (code, name, NIF, phone)
       const matchesSearch =
         searchTerm.trim() === '' ||
@@ -356,7 +356,7 @@ export default function Motoristas() {
         const mPhone = m.telefone ? m.telefone.replace(/\D/g, '').slice(-9) : null;
         const mEmail = m.email?.toLowerCase().trim();
 
-        let updatedData: any = {};
+        const updatedData: any = {};
         let needsUpdate = false;
 
         // Tentar encontrar na Bolt

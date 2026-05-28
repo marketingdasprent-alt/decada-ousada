@@ -83,7 +83,7 @@ const Contatos = () => {
 
   // Função para extrair dados das observações quando campos principais estão vazios
   const getLeadDisplayData = (lead: Lead) => {
-    let displayData = {
+    const displayData = {
       nome: lead.nome,
       email: lead.email,
       telefone: lead.telefone,

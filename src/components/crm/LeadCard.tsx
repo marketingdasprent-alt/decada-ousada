@@ -51,7 +51,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, customTags = [] }) => 
 
   // Função para extrair dados das observações
   const getLeadDisplayData = (lead: Lead) => {
-    let displayData = {
+    const displayData = {
       nome: lead.nome,
       email: lead.email,
       telefone: lead.telefone,
