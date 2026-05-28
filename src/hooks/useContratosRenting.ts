@@ -23,7 +23,6 @@ export interface UseContratosRentingOptions {
 const SELECT_COLUMNS = `
   id, org_id, codigo,
   reserva_id,
-  transferista_id,
   cliente_id,
   viatura_id, matricula, grupo,
   estacao_entrega_id, data_inicio,

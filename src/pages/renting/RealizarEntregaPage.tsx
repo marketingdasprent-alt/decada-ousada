@@ -69,6 +69,20 @@ const RealizarEntregaPage = () => {
     setUploading(true);
     try {
       if (files.length > 0) {
+        // checkout = entrega ao cliente; checkin = recolha da viatura.
+        const mediaTipo = info.tipo === 'entrega' ? 'checkout' : 'checkin';
+        const { data: auth } = await supabase.auth.getUser();
+        const userId = auth.user?.id ?? null;
+        const registos: {
+          contrato_renting_id: string;
+          tipo: string;
+          url: string;
+          nome_ficheiro: string;
+          tipo_ficheiro: string;
+          tamanho_bytes: number;
+          criado_por: string | null;
+        }[] = [];
+
         for (const fp of files) {
           const ext = fp.file.name.split('.').pop() || 'bin';
           const path = `${info.contrato_id}/${info.tipo}/${Date.now()}_${Math.random()
@@ -78,7 +92,20 @@ const RealizarEntregaPage = () => {
             .from('contrato-media')
             .upload(path, fp.file, { contentType: fp.file.type });
           if (upErr) throw upErr;
+          registos.push({
+            contrato_renting_id: info.contrato_id,
+            tipo: mediaTipo,
+            url: path,
+            nome_ficheiro: fp.file.name,
+            tipo_ficheiro: fp.file.type,
+            tamanho_bytes: fp.file.size,
+            criado_por: userId,
+          });
         }
+
+        // Regista as fotos na BD (FK para contratos_renting via XOR).
+        const { error: insErr } = await supabase.from('contrato_media').insert(registos);
+        if (insErr) throw insErr;
       }
 
       realizar.mutate(
@@ -111,6 +138,28 @@ const RealizarEntregaPage = () => {
     );
   }
 
+  // Verificar `done` ANTES de error/missing info — após a mutation o token
+  // fica `used_at` preenchido e qualquer refetch da RPC consumir_token
+  // dá erro. Sem este check, o sucesso seria mascarado pela página de
+  // "Token expirado".
+  if (done) {
+    return (
+      <div className="max-w-md mx-auto p-6 mt-12">
+        <Card className="border-emerald-500/40 bg-emerald-500/5">
+          <CardContent className="p-6 text-center space-y-3">
+            <CheckCircle2 className="h-12 w-12 mx-auto text-emerald-600" />
+            <h2 className="font-semibold text-lg">
+              {info?.tipo === 'entrega' ? 'Entrega' : 'Recolha'} confirmada
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              O evento ficou marcado como realizado. Já podes fechar o telemóvel.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (error || !info) {
     return (
       <div className="max-w-md mx-auto p-6 mt-12">
@@ -132,24 +181,6 @@ const RealizarEntregaPage = () => {
               <ArrowLeft className="h-4 w-4" />
               Voltar
             </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (done) {
-    return (
-      <div className="max-w-md mx-auto p-6 mt-12">
-        <Card className="border-emerald-500/40 bg-emerald-500/5">
-          <CardContent className="p-6 text-center space-y-3">
-            <CheckCircle2 className="h-12 w-12 mx-auto text-emerald-600" />
-            <h2 className="font-semibold text-lg">
-              {info.tipo === 'entrega' ? 'Entrega' : 'Recolha'} confirmada
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              O evento ficou marcado como realizado. Já podes fechar o telemóvel.
-            </p>
           </CardContent>
         </Card>
       </div>

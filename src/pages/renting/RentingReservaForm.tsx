@@ -550,6 +550,7 @@ const RentingReservaForm = () => {
         open={clienteDialogOpen}
         onOpenChange={setClienteDialogOpen}
         cliente={null}
+        defaultTipoCliente="condutor"
         onCreated={handleClienteCriado}
       />
 

@@ -88,10 +88,6 @@ export type ContratoRenting = {
   /** FK obrigatória — todo contrato começa em reserva. */
   reserva_id: string;
 
-  /** Colaborador interno responsável pela entrega/recolha física da viatura.
-   *  Nullable em BD durante migração, obrigatório no schema do client. */
-  transferista_id: string | null;
-
   cliente_id: string;
 
   viatura_id: string;

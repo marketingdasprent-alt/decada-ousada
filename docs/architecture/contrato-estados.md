@@ -112,6 +112,31 @@ Listadas no schema (ver `pg_trigger` em `contratos_renting`):
 
 ---
 
+## 4b. Triggers AFTER UPDATE — invariante de coexistência
+
+Há **três triggers AFTER UPDATE** em `contratos_renting` que tocam no calendário e/ou na
+reserva. O PostgreSQL corre triggers do mesmo nível por **ordem alfabética do nome**, logo:
+
+1. `trg_contrato_renting_cascata_estado` — sincroniza reserva + apaga eventos
+2. `trg_contrato_renting_cascata_realizacao` — marca evento `realizado_em`/`realizado_por_id`
+3. `trg_contrato_renting_cascata_versao` — cria evento `troca`/`upgrade` ao mudar viatura numa versão
+
+**Invariante (porque não se contradizem):** cada um só age em condições **mutuamente
+exclusivas** dentro de uma mesma transição:
+
+- **cancelamento** (`→ cancelado`): `cascata_estado` apaga os eventos. `cascata_realizacao` não age (não é entrega/devolução). `cascata_versao` não age (`viatura_id` não muda).
+- **devolução** (`em_curso → devolvido`): `cascata_estado` **mantém** os eventos (só cancelamento apaga — ver migration `20260521000006`). `cascata_realizacao` marca a `recolha` como realizada. `cascata_versao` não age.
+- **entrega** (`agendado → em_curso`): `cascata_realizacao` marca a `entrega`. Os outros não agem.
+- **nova versão** (UPDATE de `viatura_id` numa linha com `contrato_anterior_id`): `cascata_versao` cria `troca`/`upgrade` + recolha nova. `estado_operacional` não muda nesse UPDATE, logo `cascata_estado`/`cascata_realizacao` não agem.
+
+**Cuidado ao mexer:** se algum dia um único UPDATE alterar **ao mesmo tempo** `estado_operacional`
+**e** `viatura_id`, dois destes triggers correm na mesma transição e a ordem alfabética passa a
+importar (ex.: `cascata_estado` apaga eventos que `cascata_versao` acabou de criar, ou vice-versa).
+A UI actual nunca faz isso — mas SQL livre permite. Se for preciso, consolidar num único trigger
+ou tornar a ordem explícita.
+
+---
+
 ## 5. Implicações para módulos comerciais
 
 Estes estados são **transversais** ao regime do contrato (`rent_a_car` ou `tvde`). Não há intenção de criar estados específicos por regime — a única diferença é o cálculo financeiro (cobrança única vs. semanal) e a UI que apresenta diferentes campos. A máquina de estados é a mesma.
@@ -122,12 +147,12 @@ Se aparecer pressão para criar estados específicos (`tvde_em_partilha`, `alugu
 
 ## 6. Itens em aberto
 
-- [ ] **Handler de entrega física** que faz `agendado → em_curso`. Hoje a passagem só ocorre via UI manual em `ContratoForm`. Devia ser disparada por evento de calendário de tipo `entrega` quando o colaborador faz check-in.
-- [ ] **Handler de recolha física** que faz `em_curso → devolvido`. Mesmo padrão.
+- [x] ~~**Handler de entrega física** (`agendado → em_curso`)~~ — feito via fluxo de realização por QR ([RealizarEntregaPage](../../src/pages/renting/RealizarEntregaPage.tsx)) e via Check Out drawer. A mudança de estado dispara `trg_contrato_renting_cascata_realizacao` que marca o evento `entrega`.
+- [x] ~~**Handler de recolha física** (`em_curso → devolvido`)~~ — mesmo fluxo, marca o evento `recolha`. Fotos/km/combustível registados em `contrato_media` (via `contrato_renting_id`).
 - [x] ~~**Cascata inversa em cancelamento**~~ — implementada em [migration 20260520400001](../../supabase/migrations/20260520400001_contrato_renting_cascata_estado.sql).
-- [ ] **Integração Primavera** para passagem `pendente → facturado` automática.
+- [ ] **Integração Primavera** para passagem `pendente → facturado` automática. ATENÇÃO: a imutabilidade fiscal actual (`trg_contratos_imutabilidade_facturados`) ainda **não cobre** `viatura_id`/`cliente_id`/`data_inicio`/`data_fim`/`regime` — alargar antes de ligar a Primavera.
 - [ ] **Renomear `contratos_renting` → `contratos`** quando o fluxo legacy (`contratos` tabela antiga via `gerar_contrato_atomico`) for descontinuado. O nome histórico "renting" é confuso porque a tabela suporta ambos os regimes (`rent_a_car` e `tvde`). Documentado via `COMMENT ON TABLE` em produção.
 
 ---
 
-_Última actualização: 2026-05-26 · Fase 2d (polish)_
+_Última actualização: 2026-05-28 · realização por QR + invariante de triggers_

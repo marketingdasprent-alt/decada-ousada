@@ -41,7 +41,7 @@ function isExpired(iso: string | null): boolean {
   return new Date(iso + 'T00:00:00') < new Date();
 }
 
-type TipoFiltro = 'todos' | 'pessoa' | 'empresa';
+type TipoFiltro = 'todos' | 'particular' | 'empresa' | 'condutor';
 type GeneroFiltro = 'todos' | 'M' | 'F' | 'Outro';
 type ExpiradoFiltro = 'todos' | 'expirados';
 
@@ -236,8 +236,9 @@ const RentingClientes = () => {
 
   const tipoOptions = [
     { value: 'todos', label: 'Todos' },
-    { value: 'pessoa', label: 'Pessoa' },
+    { value: 'particular', label: 'Particular' },
     { value: 'empresa', label: 'Empresa' },
+    { value: 'condutor', label: 'Condutor' },
   ];
 
   const generoOptions = [
@@ -260,9 +261,9 @@ const RentingClientes = () => {
     return clientes.filter((c) => {
       if (isVisible('codigo') && codigoFiltro && !c.codigo.toString().includes(codigoFiltro.trim()))
         return false;
-      if (isVisible('tipo')) {
-        if (tipoFiltro === 'pessoa' && c.is_empresa) return false;
-        if (tipoFiltro === 'empresa' && !c.is_empresa) return false;
+      if (isVisible('tipo') && tipoFiltro !== 'todos') {
+        const tc = c.tipo_cliente ?? (c.is_empresa ? 'empresa' : 'particular');
+        if (tc !== tipoFiltro) return false;
       }
       if (isVisible('pais') && paisFiltro !== 'todos' && c.pais !== paisFiltro) return false;
       if (isVisible('cidade') && cidadeFiltro !== 'todos' && c.cidade !== cidadeFiltro)
@@ -672,10 +673,20 @@ const RentingClientes = () => {
                   <TableCell className="font-mono text-sm">{cliente.codigo}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={cliente.is_empresa ? 'default' : 'secondary'}
+                      variant={
+                        cliente.tipo_cliente === 'empresa'
+                          ? 'default'
+                          : cliente.tipo_cliente === 'condutor'
+                            ? 'outline'
+                            : 'secondary'
+                      }
                       className="text-xs"
                     >
-                      {cliente.is_empresa ? 'Empresa' : 'Pessoa'}
+                      {cliente.tipo_cliente === 'empresa'
+                        ? 'Empresa'
+                        : cliente.tipo_cliente === 'condutor'
+                          ? 'Condutor'
+                          : 'Particular'}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-medium">

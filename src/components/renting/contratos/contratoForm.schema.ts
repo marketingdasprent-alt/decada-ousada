@@ -43,11 +43,6 @@ export const contratoFormSchema = z
     // Reserva associada (obrigatória — contrato sempre origina de reserva)
     reserva_id: z.string().uuid('Reserva inválida'),
 
-    // Transferista — preenchido implicitamente quando alguém realiza o
-    // check-in da entrega/recolha. Não é exigido na criação do contrato
-    // (modelo pool: qualquer colaborador da org pode atender o evento).
-    transferista_id: z.string().uuid().nullable().optional(),
-
     // Entrega
     estacao_entrega_id: z.string().uuid().nullable().optional(),
     data_inicio: datetimeLocal,
@@ -196,7 +191,6 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   grupo: '',
   matricula: '',
   reserva_id: '',
-  transferista_id: null,
   estacao_entrega_id: null,
   data_inicio: '',
   estacao_recolha_id: null,

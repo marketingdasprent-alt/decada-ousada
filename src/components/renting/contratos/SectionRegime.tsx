@@ -1,14 +1,6 @@
 import type React from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Car, Smartphone } from 'lucide-react';
 
 import type { ContratoFormValues } from './contratoForm.schema';
 import { SectionTitle } from './SectionTitle';
@@ -17,34 +9,30 @@ interface SectionRegimeProps {
   form: UseFormReturn<ContratoFormValues>;
 }
 
-/** Regime do contrato (rent-a-car vs TVDE) — primeira escolha do formulário. */
-export const SectionRegime: React.FC<SectionRegimeProps> = ({ form }) => (
-  <div>
-    <SectionTitle>Regime do Contrato</SectionTitle>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <FormField
-        control={form.control}
-        name="regime"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>
-              Regime <span className="text-red-500">*</span>
-            </FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
-              <FormControl>
-                <SelectTrigger className="bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="rent_a_car">Rent-a-Car</SelectItem>
-                <SelectItem value="tvde">TVDE</SelectItem>
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+/** Regime do contrato — read-only. Herdado da reserva; mudá-lo a meio
+ *  tem efeitos em cascata (condutores, IVA), por isso só se altera na reserva. */
+export const SectionRegime: React.FC<SectionRegimeProps> = ({ form }) => {
+  const regime = form.watch('regime');
+  const isTvde = regime === 'tvde';
+
+  return (
+    <div>
+      <SectionTitle>Regime do Contrato</SectionTitle>
+      <div className="flex items-center gap-3">
+        <span
+          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium ${
+            isTvde
+              ? 'border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
+              : 'border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-500/10 dark:text-green-300'
+          }`}
+        >
+          {isTvde ? <Smartphone className="h-4 w-4" /> : <Car className="h-4 w-4" />}
+          {isTvde ? 'TVDE' : 'Rent-a-Car'}
+        </span>
+        <p className="text-xs text-muted-foreground">
+          Definido pela reserva associada. Para alterar, edita a reserva.
+        </p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
