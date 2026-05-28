@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Car,
@@ -14,6 +14,9 @@ import {
   Layers,
   ChevronLeft,
   ChevronRight,
+  Printer,
+  FileSpreadsheet,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,9 +45,17 @@ import { ViaturaStatsCards } from '@/components/viaturas/ViaturaStatsCards';
 import { DeleteViaturaDialog } from '@/components/viaturas/DeleteViaturaDialog';
 import { ImportViaturasDialog } from '@/components/viaturas/ImportViaturasDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { getCategoriaBadgeClass, getStatusBadgeClass, getStatusLabel } from '@/lib/viaturas';
+import {
+  getCategoriaBadgeClass,
+  getStatusBadgeClass,
+  getStatusLabel,
+  deriveViaturaEstado,
+  ESTADOS_EM_USO,
+} from '@/lib/viaturas';
 import { cn } from '@/lib/utils';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+import { exportViaturasPdf, exportViaturasExcel } from '@/utils/viaturasExport';
+import { useViaturasOcupacao } from '@/hooks/useViaturasOcupacao';
 
 interface ViaturasTipo {
   id: string;
@@ -116,8 +127,19 @@ export default function Viaturas() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedViatura, setSelectedViatura] = useState<Viatura | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   const isMobile = useIsMobile();
+
+  // Ocupação atual (reservas/contratos/movimentos/reparações ativos) para
+  // derivar o estado de cada viatura. Uma reserva/contrato marcado para o
+  // futuro já conta como ocupação.
+  const { data: fontesMap } = useViaturasOcupacao();
+
+  const estadoDe = useCallback(
+    (v: Viatura) => deriveViaturaEstado(v, fontesMap?.get(v.id)),
+    [fontesMap]
+  );
 
   useEffect(() => {
     loadViaturas();
@@ -153,25 +175,18 @@ export default function Viaturas() {
   const stats = useMemo(() => {
     return {
       total: viaturas.length,
-      disponiveis: viaturas.filter((v) => {
-        const s = (v.status || '').toLowerCase().replace('í', 'i');
-        return s === 'disponivel' && !v.is_vendida;
-      }).length,
-      emUso: viaturas.filter((v) => {
-        const s = (v.status || '').toLowerCase();
-        return (s === 'em_uso' || s === 'em uso') && !v.is_vendida;
-      }).length,
-      manutencao: viaturas.filter((v) => {
-        const s = (v.status || '').toLowerCase().replace('ç', 'c').replace('ã', 'a');
-        return (s === 'manutencao' || s === 'manutencao') && !v.is_vendida;
-      }).length,
+      disponiveis: viaturas.filter((v) => !v.is_vendida && estadoDe(v) === 'disponivel').length,
+      emUso: viaturas.filter(
+        (v) => !v.is_vendida && (ESTADOS_EM_USO as readonly string[]).includes(estadoDe(v))
+      ).length,
+      manutencao: viaturas.filter((v) => !v.is_vendida && estadoDe(v) === 'manutencao').length,
       vendidas: viaturas.filter((v) => v.is_vendida).length,
       slot: viaturas.filter((v) => v.is_slot && !v.is_vendida).length,
       slotDisponiveis: viaturas.filter(
-        (v) => v.is_slot && !v.is_vendida && v.status === 'disponivel'
+        (v) => v.is_slot && !v.is_vendida && estadoDe(v) === 'disponivel'
       ).length,
     };
-  }, [viaturas]);
+  }, [viaturas, estadoDe]);
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn === column) {
@@ -201,24 +216,27 @@ export default function Viaturas() {
       .forEach((v) => {
         if (v.tipo_id) {
           total[v.tipo_id] = (total[v.tipo_id] || 0) + 1;
-          if (v.status === 'disponivel') disponiveis[v.tipo_id] = (disponiveis[v.tipo_id] || 0) + 1;
+          if (estadoDe(v) === 'disponivel')
+            disponiveis[v.tipo_id] = (disponiveis[v.tipo_id] || 0) + 1;
         }
       });
     return { total, disponiveis };
-  }, [viaturas, statusFilter]);
+  }, [viaturas, statusFilter, estadoDe]);
 
   const filteredViaturas = useMemo(() => {
     let result = [...viaturas];
 
-    // Âmbito de vendidas (controlado pelo filtro de status)
+    // Âmbito de vendidas + estado derivado (controlado pelo filtro de status)
     if (statusFilter === 'vendido') {
       result = result.filter((v) => v.is_vendida);
     } else if (statusFilter === 'todos_vendidos') {
       // mostra tudo, incluindo vendidas
     } else {
       result = result.filter((v) => !v.is_vendida);
-      if (statusFilter !== 'all') {
-        result = result.filter((v) => v.status === statusFilter);
+      if (statusFilter === 'em_uso') {
+        result = result.filter((v) => (ESTADOS_EM_USO as readonly string[]).includes(estadoDe(v)));
+      } else if (statusFilter !== 'all') {
+        result = result.filter((v) => estadoDe(v) === statusFilter);
       }
     }
 
@@ -255,8 +273,8 @@ export default function Viaturas() {
 
     // Ordenação
     result.sort((a, b) => {
-      let aVal: any = a[sortColumn];
-      let bVal: any = b[sortColumn];
+      let aVal: any = sortColumn === 'status' ? estadoDe(a) : a[sortColumn];
+      let bVal: any = sortColumn === 'status' ? estadoDe(b) : b[sortColumn];
 
       if (aVal === null || aVal === undefined) aVal = '';
       if (bVal === null || bVal === undefined) bVal = '';
@@ -279,6 +297,7 @@ export default function Viaturas() {
     tipoFilter,
     sortColumn,
     sortDirection,
+    estadoDe,
   ]);
 
   // Reset para a 1ª página sempre que os filtros ou o tamanho de página mudam
@@ -348,6 +367,30 @@ export default function Viaturas() {
     navigate(`/viaturas/${viatura.id}`);
   };
 
+  const viaturasParaExport = () =>
+    filteredViaturas.map((v) => ({ ...v, estado: getStatusLabel(estadoDe(v)) }));
+
+  const handlePrint = async () => {
+    setPrinting(true);
+    try {
+      await exportViaturasPdf(viaturasParaExport());
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF');
+    } finally {
+      setPrinting(false);
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      exportViaturasExcel(viaturasParaExport());
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error);
+      toast.error('Erro ao exportar Excel');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <StickyPageHeader
@@ -356,6 +399,28 @@ export default function Viaturas() {
         icon={Car}
       >
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <Button
+            variant="outline"
+            onClick={handlePrint}
+            disabled={printing || filteredViaturas.length === 0}
+            className="w-full sm:w-auto"
+          >
+            {printing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Printer className="mr-2 h-4 w-4" />
+            )}
+            Imprimir
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleExportExcel}
+            disabled={filteredViaturas.length === 0}
+            className="w-full sm:w-auto"
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Exportar Excel
+          </Button>
           <ImportViaturasDialog onImportComplete={loadViaturas} />
           <Button onClick={handleNewViatura} className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
@@ -470,6 +535,9 @@ export default function Viaturas() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="em_reserva">Em reserva</SelectItem>
+              <SelectItem value="em_contrato">Em contrato</SelectItem>
+              <SelectItem value="em_movimentacao">Em movimentação</SelectItem>
               <SelectItem value="todos_vendidos">Todos (incluindo vendidos)</SelectItem>
               <SelectItem value="vendido">Vendidos</SelectItem>
               <SelectItem value="inativo">Inativos</SelectItem>
@@ -540,8 +608,8 @@ export default function Viaturas() {
                     <Badge className={getCategoriaColor(viatura.categoria)}>
                       {viatura.categoria || 'N/D'}
                     </Badge>
-                    <Badge variant="outline" className={getStatusColor(viatura.status)}>
-                      {getStatusText(viatura.status)}
+                    <Badge variant="outline" className={getStatusColor(estadoDe(viatura))}>
+                      {getStatusText(estadoDe(viatura))}
                     </Badge>
                   </div>
                 </div>
@@ -663,9 +731,9 @@ export default function Viaturas() {
                   <TableCell className="py-2">
                     <Badge
                       variant="outline"
-                      className={`text-xs ${getStatusColor(viatura.status)}`}
+                      className={`text-xs ${getStatusColor(estadoDe(viatura))}`}
                     >
-                      {getStatusText(viatura.status)}
+                      {getStatusText(estadoDe(viatura))}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-2 text-sm">

@@ -318,7 +318,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
         cor: viatura.cor || '',
         categoria: viatura.categoria || '',
         combustivel: viatura.combustivel || '',
-        status: viatura.status || 'disponivel',
+        status: viatura.status === 'em_uso' ? 'disponivel' : viatura.status || 'disponivel',
         km_atual: viatura.km_atual?.toString() || '',
         numero_motor: viatura.numero_motor || '',
         numero_chassis: viatura.numero_chassis || '',
@@ -655,16 +655,19 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="disponivel">🟢 Disponível</SelectItem>
-                            <SelectItem value="em_uso">🔵 Em Uso</SelectItem>
-                            <SelectItem value="manutencao" disabled={field.value !== 'manutencao'}>
-                              🟠 Manutenção {field.value !== 'manutencao' && '(Apenas via Ticket)'}
-                            </SelectItem>
                             <SelectItem value="inativo">⚪ Inativo</SelectItem>
+                            <SelectItem value="manutencao" disabled={field.value !== 'manutencao'}>
+                              🟠 Manutenção {field.value !== 'manutencao' && '(Automático)'}
+                            </SelectItem>
                             <SelectItem value="vendida" disabled={field.value !== 'vendida'}>
                               🔴 Vendida {field.value !== 'vendida' && '(Apenas via Financeiro)'}
                             </SelectItem>
                           </SelectContent>
                         </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Em reserva / contrato / movimentação são automáticos. Aqui só define
+                          Disponível ou Inativo.
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}

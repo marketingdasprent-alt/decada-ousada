@@ -73,7 +73,7 @@ const items: MenuItem[] = [
       { title: 'Contratos', url: '/contratos', icon: FileSignature },
     ],
   },
-  { title: 'Viaturas', url: '/viaturas', icon: Car, recurso: RECURSOS.VIATURAS_VER },
+  { title: 'Frota', url: '/viaturas', icon: Car, recurso: RECURSOS.VIATURAS_VER },
   {
     title: 'Administrativo',
     icon: Briefcase,
