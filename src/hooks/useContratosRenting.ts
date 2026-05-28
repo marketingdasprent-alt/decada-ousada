@@ -86,6 +86,37 @@ export function useContratosRenting(options: UseContratosRentingOptions = {}) {
   });
 }
 
+export interface ContratoRefResumo {
+  id: string;
+  codigo: number | null;
+}
+
+/**
+ * Contrato ACTUAL (não substituído, não eliminado) de uma reserva, ou null.
+ * Suporta a regra 1 reserva = 1 contrato no UI: se já existe, oferecemos
+ * "Ver Contrato" em vez de deixar tentar criar um segundo (que a BD rejeita
+ * pelo índice único parcial uq_contratos_renting_reserva_id_active).
+ */
+export function useContratoIdByReserva(reservaId: string | null | undefined) {
+  return useQuery({
+    queryKey: [...QUERY_KEY_BASE, 'by-reserva', reservaId ?? null],
+    queryFn: async (): Promise<ContratoRefResumo | null> => {
+      if (!reservaId) return null;
+      const { data, error } = await supabase
+        .from('contratos_renting')
+        .select('id, codigo')
+        .eq('reserva_id', reservaId)
+        .is('deleted_at', null)
+        .is('substituido_em', null)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as ContratoRefResumo | null) ?? null;
+    },
+    enabled: !!reservaId,
+    staleTime: 30_000,
+  });
+}
+
 // ────────────────────────────────────────────────────────────
 // Totais (view contrato_renting_totais)
 // ────────────────────────────────────────────────────────────
@@ -157,6 +188,15 @@ function contratoErrorMessage(error: unknown): { title: string; description: str
     return {
       title: 'Conflito de disponibilidade',
       description: 'A viatura já tem contrato ou reserva activa sobreposta neste período.',
+    };
+  }
+  const code = (error as { code?: string }).code;
+  const message = error instanceof Error ? error.message : String(error);
+  if (code === '23505' && message.includes('uq_contratos_renting_reserva_id_active')) {
+    return {
+      title: 'Reserva já tem contrato',
+      description:
+        'Esta reserva já deu origem a um contrato. Abre o contrato existente em vez de criar outro.',
     };
   }
   const description = error instanceof Error ? error.message : 'Erro inesperado';

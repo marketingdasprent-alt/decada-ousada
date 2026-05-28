@@ -3,7 +3,6 @@ import { Lock } from 'lucide-react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -12,17 +11,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import type { Estacao } from '@/hooks/useEstacoes';
 import type { ViaturaBasic } from '@/hooks/useViaturas';
 import type { ContratoFormValues } from './contratoForm.schema';
-import { EstacaoSelectField } from './EstacaoSelectField';
 import { SectionTitle } from './SectionTitle';
 import { SENTINEL_NONE } from './contratoFormConstants';
 
 interface SectionViaturaProps {
   form: UseFormReturn<ContratoFormValues>;
   viaturas: ViaturaBasic[];
-  estacoes: Estacao[];
   /**
    * Quando true, o campo viatura fica readonly. Usado em contratos
    * vindos de reserva — a viatura é fixada pela reserva e mudar exige
@@ -35,26 +31,12 @@ interface SectionViaturaProps {
 export const SectionViatura: React.FC<SectionViaturaProps> = ({
   form,
   viaturas,
-  estacoes,
   viaturaLocked = false,
   reservaCodigo,
 }) => (
   <div>
     <SectionTitle>Viatura</SectionTitle>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <FormField
-        control={form.control}
-        name="estacao_origem_viatura_id"
-        render={({ field }) => (
-          <EstacaoSelectField
-            value={field.value}
-            onChange={field.onChange}
-            estacoes={estacoes}
-            label="Estação Origem Viatura"
-          />
-        )}
-      />
-
       <FormField
         control={form.control}
         name="viatura_id"
@@ -99,25 +81,6 @@ export const SectionViatura: React.FC<SectionViaturaProps> = ({
                 — assim a disponibilidade fica consistente.
               </p>
             )}
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="grupo"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Grupo</FormLabel>
-            <FormControl>
-              <Input
-                className="bg-background"
-                {...field}
-                value={field.value ?? ''}
-                placeholder="ex.: C4 (ou similar)"
-              />
-            </FormControl>
             <FormMessage />
           </FormItem>
         )}
