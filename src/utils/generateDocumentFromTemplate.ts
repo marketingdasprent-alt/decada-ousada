@@ -700,7 +700,12 @@ export const generateDocumentFromTemplate = async (
     if (!params.skipOutput) {
       if (action === 'print') {
         pdf.autoPrint();
-        window.open(pdf.output('bloburl'), '_blank');
+        const win = window.open(pdf.output('bloburl'), '_blank');
+        if (!win) {
+          // Pop-up bloqueado: descarregar como alternativa para não perder o documento
+          const fileName = `${templateData.nome}_${motoristaData.nome}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+          pdf.save(fileName);
+        }
       } else {
         const fileName = `${templateData.nome}_${motoristaData.nome}_${format(new Date(), 'yyyyMMdd')}.pdf`;
         pdf.save(fileName);
