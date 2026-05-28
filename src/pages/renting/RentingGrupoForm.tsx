@@ -331,7 +331,6 @@ const RentingGrupoForm = () => {
       <Tabs defaultValue="configuracoes">
         <TabsList className="mb-6">
           <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
-          <TabsTrigger value="disponibilidade">Controlo Disponibilidade</TabsTrigger>
           <TabsTrigger value="viaturas" disabled={isNew}>
             Viaturas Associadas{' '}
             {!isNew && viaturasAssociadas.length > 0 && `(${viaturasAssociadas.length})`}
@@ -506,16 +505,6 @@ const RentingGrupoForm = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </TabsContent>
-
-        {/* Tab: Disponibilidade */}
-        <TabsContent value="disponibilidade">
-          <div className="flex flex-col items-center justify-center py-16 gap-3 border rounded-lg border-dashed">
-            <Car className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Controlo de disponibilidade — em desenvolvimento
-            </p>
           </div>
         </TabsContent>
 

@@ -442,6 +442,16 @@ const ContratoForm = () => {
     });
   }, [regime, form, toast]);
 
+  // Regra de elegibilidade: qualquer viatura pode ser alugada em rent-a-car.
+  // No regime tvde só aparecem viaturas com "Elegível para TVDE? = Sim"
+  // (habilitada_tvde), opção que só existe em tipos com elegibilidade TVDE.
+  // A viatura já seleccionada mantém-se sempre visível (ex.: edição).
+  const viaturaIdSelecionada = form.watch('viatura_id');
+  const viaturasParaSelecao = useMemo(() => {
+    if (regime !== 'tvde') return viaturas;
+    return viaturas.filter((v) => v.habilitada_tvde || v.id === viaturaIdSelecionada);
+  }, [viaturas, regime, viaturaIdSelecionada]);
+
   // Soma do preço/dia das coberturas seleccionadas (× dias no ResumoContrato)
   const coberturasPrecoDia = useMemo(
     () => (coberturasForm ?? []).reduce((soma, c) => soma + (c.preco_dia ?? 0), 0),
@@ -867,7 +877,7 @@ const ContratoForm = () => {
                     <ContratoFormSecoes
                       form={form}
                       clientes={clientes}
-                      viaturas={viaturas}
+                      viaturas={viaturasParaSelecao}
                       estacoes={estacoes}
                       viaturaLocked={viaturaLocked}
                       reservaCodigo={reservaAssociada?.codigo ?? null}
