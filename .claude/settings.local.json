@@ -35,7 +35,10 @@
       "Bash(git mv *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "PowerShell(*)"
     ]
   }
 }

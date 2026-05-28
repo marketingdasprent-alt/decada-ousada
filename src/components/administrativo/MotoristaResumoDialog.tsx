@@ -382,15 +382,7 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:overflow-visible">
         <DialogHeader className="print:hidden">
-          <DialogTitle className="flex items-center justify-between">
-            <span>Resumo Financeiro</span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handlePrint}>
-                <Printer className="h-4 w-4 mr-2" />
-                Imprimir
-              </Button>
-            </div>
-          </DialogTitle>
+          <DialogTitle>Resumo Financeiro</DialogTitle>
         </DialogHeader>
 
         {/* Conteúdo do Relatório - Otimizado para Impressão */}
@@ -405,7 +397,7 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
 
           {/* Informações do Motorista */}
           <div className="bg-muted/30 rounded-lg p-4 print:p-2 print:bg-gray-50 print:border">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:gap-2">
+            <div className="grid grid-cols-2 gap-4 print:gap-2">
               <div>
                 <span className="text-sm print:text-xs text-muted-foreground">Nome</span>
                 <p className="font-semibold text-lg print:text-sm">{motorista.driver_name}</p>

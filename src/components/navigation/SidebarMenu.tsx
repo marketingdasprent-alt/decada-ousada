@@ -16,6 +16,7 @@ import {
   Mail,
   KeyRound,
   CalendarCheck,
+  ArrowRightLeft,
   Users,
   Layers,
   Tag,
@@ -24,6 +25,9 @@ import {
   Percent,
   Fuel,
   CarFront,
+  Calculator,
+  CreditCard,
+  Wifi,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
@@ -79,6 +83,12 @@ const MENU_ITEMS: MenuItem[] = [
         url: '/renting/reservas',
         icon: CalendarCheck,
         recurso: 'renting_reservas',
+      },
+      {
+        label: 'Movimentações',
+        url: '/renting/movimentacoes',
+        icon: ArrowRightLeft,
+        recurso: 'renting_movimentacoes',
       },
       {
         label: 'Clientes',
@@ -138,9 +148,18 @@ const MENU_ITEMS: MenuItem[] = [
       { label: 'Tipos', url: '/viaturas/tipos', icon: Tag },
     ],
   },
-  { label: 'Financeiro', url: '/financeiro', icon: Wallet, recurso: 'financeiro_recibos' },
+  {
+    label: 'Administrativo',
+    icon: Wallet,
+    recurso: 'financeiro_recibos',
+    subItems: [
+      { label: 'Resumos', url: '/administrativo', icon: Calculator },
+      { label: 'Cartões Frota', url: '/administrativo/cartoes', icon: CreditCard },
+      { label: 'Dispositivos OBE', url: '/administrativo/obe', icon: Wifi },
+    ],
+  },
   { label: 'Assistência', url: '/assistencia', icon: Wrench, recurso: 'assistencia_tickets' },
-  { label: 'Movimentações', url: '/calendario', icon: CalendarDays, recurso: 'calendario_ver' },
+  { label: 'Calendário', url: '/calendario', icon: CalendarDays, recurso: 'calendario_ver' },
   { label: 'Marketing', url: '/marketing', icon: Mail, recurso: 'marketing_ver' },
 ];
 

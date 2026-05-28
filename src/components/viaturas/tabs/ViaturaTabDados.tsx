@@ -74,6 +74,7 @@ const viaturaSchema = z.object({
   observacoes: z.string().optional(),
   grupo_id: z.string().optional(),
   is_slot: z.boolean().default(false),
+  habilitada_tvde: z.boolean().default(false),
   estacao_id: z.string().optional(),
   extintor_numero: z.string().optional(),
   extintor_validade: z.string().optional(),
@@ -102,6 +103,7 @@ interface Viatura {
   observacoes?: string | null;
   grupo_id?: string | null;
   is_slot?: boolean | null;
+  habilitada_tvde?: boolean | null;
   estacao_id?: string | null;
   extintor_numero?: string | null;
   extintor_validade?: string | null;
@@ -201,6 +203,7 @@ interface Estacao {
 interface ViaturasTipo {
   id: string;
   nome: string;
+  elegivel_tvde?: boolean;
 }
 
 interface RentingGrupo {
@@ -237,7 +240,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       );
     supabase
       .from('viatura_tipos')
-      .select('id, nome')
+      .select('id, nome, elegivel_tvde')
       .eq('ativo', true)
       .order('nome')
       .then(
@@ -294,6 +297,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       observacoes: '',
       grupo_id: '',
       is_slot: false,
+      habilitada_tvde: false,
       estacao_id: '',
       extintor_numero: '',
       extintor_validade: '',
@@ -322,6 +326,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
         observacoes: viatura.observacoes || '',
         grupo_id: viatura.grupo_id || '',
         is_slot: viatura.is_slot || false,
+        habilitada_tvde: viatura.habilitada_tvde || false,
         estacao_id: viatura.estacao_id || '',
         extintor_numero: viatura.extintor_numero || '',
         extintor_validade: viatura.extintor_validade || '',
@@ -399,6 +404,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
       observacoes: data.observacoes || null,
       grupo_id: data.grupo_id || null,
       is_slot: data.is_slot,
+      habilitada_tvde: data.habilitada_tvde,
       estacao_id: data.estacao_id || null,
       extintor_numero: data.extintor_numero || null,
       extintor_validade: data.extintor_validade || null,
@@ -835,7 +841,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                   {(() => {
                     const tipoId = form.watch('tipo_id');
                     const tipo = viaturasTipos.find((t) => t.id === tipoId);
-                    if (!tipo?.nome?.toLowerCase().includes('tvde')) return null;
+                    if (!tipo?.elegivel_tvde) return null;
                     return (
                       <FormField
                         control={form.control}
@@ -922,13 +928,25 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                   />
                 </div>
 
-                {/* Card Viatura SLOT — só visível para TVDE */}
+                {/* Cards TVDE — só visíveis para tipos elegíveis a TVDE */}
                 {(() => {
                   const tipoId = form.watch('tipo_id');
                   const tipo = viaturasTipos.find((t) => t.id === tipoId);
-                  if (!tipo?.nome?.toLowerCase().includes('tvde')) return null;
+                  if (!tipo?.elegivel_tvde) return null;
                   return (
-                    <div className="md:col-span-3 mt-2">
+                    <div className="md:col-span-3 mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                        <div>
+                          <p className="font-medium">Elegível para TVDE?</p>
+                          <p className="text-sm text-muted-foreground">
+                            {form.watch('habilitada_tvde') ? '🟢 Sim' : '🔴 Não'}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={form.watch('habilitada_tvde')}
+                          onCheckedChange={(checked) => form.setValue('habilitada_tvde', checked)}
+                        />
+                      </div>
                       <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
                         <div>
                           <p className="font-medium">Viatura SLOT</p>

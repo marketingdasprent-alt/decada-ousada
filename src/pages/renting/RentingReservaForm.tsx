@@ -282,6 +282,15 @@ const RentingReservaForm = () => {
     });
   }, [regimeWatched, form, toast]);
 
+  // Regra de elegibilidade: qualquer viatura pode ser alugada em rent-a-car.
+  // No regime tvde só aparecem viaturas com "Elegível para TVDE? = Sim"
+  // (habilitada_tvde), opção que só existe em tipos com elegibilidade TVDE.
+  // A viatura já seleccionada mantém-se sempre visível (ex.: edição).
+  const viaturasParaSelecao = useMemo(() => {
+    if (regimeWatched !== 'tvde') return viaturas;
+    return viaturas.filter((v) => v.habilitada_tvde || v.id === viaturaId);
+  }, [viaturas, regimeWatched, viaturaId]);
+
   const onSubmit = async (values: ReservaFormValues) => {
     try {
       const viaturaSelecionada = viaturas.find((v) => v.id === values.viatura_id);
@@ -515,7 +524,7 @@ const RentingReservaForm = () => {
                     <TabsContent value="geral" className="pt-4">
                       <ReservaTabGeral
                         form={form}
-                        viaturas={viaturas}
+                        viaturas={viaturasParaSelecao}
                         estacoes={estacoes}
                         clientes={clientes}
                       />

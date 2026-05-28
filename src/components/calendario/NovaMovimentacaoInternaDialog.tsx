@@ -207,7 +207,7 @@ export const NovaMovimentacaoInternaDialog: React.FC<NovaMovimentacaoInternaDial
   const selectedColaborador = colaboradores.find((c) => c.id === colaboradorIdSelected) ?? null;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange} modal={false}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="max-w-4xl w-[95vw] max-h-[92dvh] p-0 overflow-hidden flex flex-col"
         onPointerDownOutside={(e) => e.preventDefault()}
