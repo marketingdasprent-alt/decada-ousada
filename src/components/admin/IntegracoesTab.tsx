@@ -95,6 +95,8 @@ export const IntegracoesTab: React.FC = () => {
 
   // Dialogs
   const [newIntegracaoDialogOpen, setNewIntegracaoDialogOpen] = useState(false);
+  const [deleteIntegracaoDialogOpen, setDeleteIntegracaoDialogOpen] = useState(false);
+  const [selectedDeleteCard, setSelectedDeleteCard] = useState<IntegracaoCardData | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedIntegracao, setSelectedIntegracao] = useState<IntegracaoConfig | null>(null);
   const [viaVerdeDialogOpen, setViaVerdeDialogOpen] = useState(false);
@@ -254,6 +256,24 @@ export const IntegracoesTab: React.FC = () => {
       });
     }
 
+    // Via Verde — integrations created via IntegracaoDialog (plataforma='viaverde', manual upload)
+    integracoes
+      .filter((i) => i.plataforma === 'viaverde')
+      .forEach((i) => {
+        result.push({
+          id: i.id,
+          type: 'via_verde',
+          nome: i.nome,
+          ativo: i.ativo,
+          ultimoSync: i.ultimo_sync,
+          username: null,
+          password: null,
+          connectionMode: 'upload',
+          rawData: i,
+          logoUrl: i.logo_url || '/images/logo-via-verde.png',
+        });
+      });
+
     // Via Verde contas
     vvContas.forEach((conta) => {
       const contaActiva = conta.ftp_ativo || conta.sync_ativo;
@@ -311,6 +331,35 @@ export const IntegracoesTab: React.FC = () => {
     } else {
       setSelectedRobotIntegracaoId(integracao.id);
       setImportRobotDialogOpen(true);
+    }
+  };
+
+  const handleDelete = (card: IntegracaoCardData) => {
+    setSelectedDeleteCard(card);
+    setDeleteIntegracaoDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedDeleteCard) return;
+    try {
+      const isVvConta = selectedDeleteCard.id.startsWith('vv-');
+      if (isVvConta) {
+        const contaId = selectedDeleteCard.id.slice(3);
+        const { error } = await (supabase as any).from('via_verde_contas').delete().eq('id', contaId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('plataformas_configuracao')
+          .delete()
+          .eq('id', selectedDeleteCard.id);
+        if (error) throw error;
+      }
+      toast({ title: 'Integração eliminada.' });
+      setDeleteIntegracaoDialogOpen(false);
+      setSelectedDeleteCard(null);
+      fetchAll();
+    } catch (error: any) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -587,6 +636,7 @@ export const IntegracoesTab: React.FC = () => {
                 onExecute={
                   isRobotBacked ? handleExecuteRobot : isUberBacked ? handleExecuteUber : undefined
                 }
+                onDelete={handleDelete}
                 isExecuting={executingRobots.has(card.id)}
               />
             );
@@ -833,6 +883,30 @@ export const IntegracoesTab: React.FC = () => {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteWebhook}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Integration Confirmation */}
+      <AlertDialog open={deleteIntegracaoDialogOpen} onOpenChange={setDeleteIntegracaoDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar integração</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem a certeza que deseja eliminar "{selectedDeleteCard?.nome}"? Todos os dados
+              associados serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedDeleteCard(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Eliminar

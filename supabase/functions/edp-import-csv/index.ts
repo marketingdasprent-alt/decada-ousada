@@ -11,48 +11,88 @@ function sanitizeCard(card: string): string {
 
 function parseEdpDate(raw: string): string | null {
   if (!raw) return null;
-  // Common format: DD/MM/YYYY HH:MM:SS
-  const m = raw.trim().match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})(\s+(\d{2}):(\d{2})(:(\d{2}))?)?$/);
-  if (m) {
-    const hh = m[5] || '00';
-    const mm = m[6] || '00';
-    const ss = m[8] || '00';
-    return `${m[3]}-${m[2]}-${m[1]}T${hh}:${mm}:${ss}Z`;
+  const s = raw.trim();
+  // ISO: YYYY-MM-DD[ T]HH:MM[:SS]
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})[\sT]+(\d{2}):(\d{2})(:(\d{2}))?$/);
+  if (iso) {
+    return `${iso[1]}-${iso[2]}-${iso[3]}T${iso[4]}:${iso[5]}:${iso[7] || '00'}Z`;
   }
-  const d = new Date(raw);
+  // DD/MM/YYYY[ HH:MM:SS]
+  const eu = s.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})(\s+(\d{2}):(\d{2})(:(\d{2}))?)?$/);
+  if (eu) {
+    return `${eu[3]}-${eu[2]}-${eu[1]}T${eu[5] || '00'}:${eu[6] || '00'}:${eu[8] || '00'}Z`;
+  }
+  const d = new Date(s);
   return isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+const stripAcc = (s: string) =>
+  (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036F]/g, '');
+
+// Detecta a linha de cabe\u00E7alho real (o CSV EDP tem logo/metadados antes da tabela).
 function parseCsv(text: string): Record<string, string>[] {
   const clean = text.replace(/^\uFEFF/, '');
-  const lines = clean.split(/\r?\n/).filter(l => l.trim());
-  if (lines.length < 2) return [];
-  const headerLine = lines[0];
-  const sep = headerLine.includes(';') ? ';' : ',';
-  const headers = headerLine.split(sep).map(h => h.trim().replace(/^"|"$/g, ''));
+  const allLines = clean.split(/\r?\n/);
+
+  // Procurar a linha que parece o cabe\u00E7alho: cont\u00E9m pelo menos 2 marcadores conhecidos.
+  const marcadores = ['data e hora', 'cartao', 'energia', 'custo', 'carregador', 'localizacao'];
+  let headerIdx = -1;
+  for (let i = 0; i < allLines.length; i++) {
+    const norm = stripAcc(allLines[i]);
+    const hits = marcadores.filter((m) => norm.includes(m)).length;
+    if (hits >= 2) {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx === -1) headerIdx = 0; // fallback
+
+  // Separador detectado NA LINHA DO CABE\u00C7ALHO real (n\u00E3o no logo/metadados).
+  const headerLine = allLines[headerIdx];
+  const sep =
+    (headerLine.match(/;/g) || []).length >= (headerLine.match(/,/g) || []).length ? ';' : ',';
+
+  const headers = headerLine.split(sep).map((h) => h.trim().replace(/^"|"$/g, ''));
   const rows: Record<string, string>[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    const vals = lines[i].split(sep).map(v => v.trim().replace(/^"|"$/g, ''));
+  for (let i = headerIdx + 1; i < allLines.length; i++) {
+    if (!allLines[i].trim()) continue;
+    const vals = allLines[i].split(sep).map((v) => v.trim().replace(/^"|"$/g, ''));
     if (vals.length < 2) continue;
     const row: Record<string, string> = {};
-    headers.forEach((h, idx) => { row[h] = vals[idx] || ''; });
+    headers.forEach((h, idx) => {
+      row[h] = vals[idx] || '';
+    });
     rows.push(row);
   }
   return rows;
 }
 
+// Compara\u00E7\u00E3o tolerante a acentos.
 function findField(row: Record<string, string>, candidates: string[]): string {
   for (const c of candidates) {
-    const key = Object.keys(row).find(k => k.toLowerCase().includes(c.toLowerCase()));
+    const cn = stripAcc(c);
+    const key = Object.keys(row).find((k) => stripAcc(k).includes(cn));
     if (key && row[key]) return row[key];
   }
   return '';
 }
 
+// Robusto: lida com "15,71", "15.71", "1.234,56" e "1,234.56".
 function parseNumber(val: string): number | null {
   if (!val) return null;
-  const clean = val.replace(/\s/g, '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.]/g, '');
-  const n = parseFloat(clean);
+  let s = (val || '').replace(/[^\d.,-]/g, '').trim();
+  if (!s) return null;
+  if (s.includes(',') && s.includes('.')) {
+    // O separador decimal é o que aparece mais à direita.
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+      s = s.replace(/\./g, '').replace(',', '.'); // 1.234,56 → 1234.56
+    } else {
+      s = s.replace(/,/g, ''); // 1,234.56 → 1234.56
+    }
+  } else if (s.includes(',')) {
+    s = s.replace(',', '.'); // 15,71 → 15.71
+  }
+  const n = parseFloat(s);
   return isNaN(n) ? null : n;
 }
 
@@ -100,12 +140,14 @@ Deno.serve(async (req) => {
     let imported = 0, matched = 0, skipped = 0;
 
     for (const row of rows) {
-      const cardNumber = findField(row, ['tarjeta', 'cartao', 'card', 'id']);
-      const dateStr = findField(row, ['fecha', 'data', 'date', 'inicio', 'start']);
-      const amountStr = findField(row, ['importe', 'valor', 'total', 'amount', 'custo']);
-      const qtyStr = findField(row, ['litros', 'cantidad', 'quantidade', 'volume', 'kwh', 'energia']);
-      const station = findField(row, ['estacion', 'posto', 'station', 'ponto', 'carregador']);
-      const driverName = findField(row, ['conductor', 'motorista', 'driver', 'utilizador']);
+      // "Cartão" (PAN) — evitar "Nome cartão"; por isso candidatos específicos primeiro.
+      const cardNumber = findField(row, ['cartao', 'tarjeta', 'card', 'pan']);
+      const dateStr = findField(row, ['data e hora inicio', 'data e hora', 'data', 'fecha', 'date', 'inicio']);
+      const amountStr = findField(row, ['custo', 'importe', 'valor', 'total', 'amount']);
+      const qtyStr = findField(row, ['energia', 'kwh', 'litros', 'cantidad', 'quantidade', 'volume']);
+      // Posto: preferir morada/localização ao id do carregador
+      const station = findField(row, ['morada', 'localizacao', 'estacion', 'posto', 'station', 'carregador']);
+      const driverName = findField(row, ['conductor', 'motorista', 'driver', 'utilizador', 'nome cartao']);
 
       const txDate = parseEdpDate(dateStr);
       if (!txDate) { skipped++; continue; }
