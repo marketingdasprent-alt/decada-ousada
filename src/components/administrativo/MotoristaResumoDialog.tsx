@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
@@ -106,6 +107,9 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
   const [outrasReceitas, setOutrasReceitas] = useState(0);
   const [settings, setSettings] = useState<PrintSettings>(loadSettings);
   const [showSettings, setShowSettings] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailTo, setEmailTo] = useState('');
+  const [emailCC, setEmailCC] = useState('');
 
   useEffect(() => {
     if (open && (motorista?.motorista_id || motorista?.driver_uuid)) {
@@ -286,7 +290,149 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
     new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
 
   const handlePrint = () => {
-    window.print();
+    const fmtEur = (v: number) =>
+      new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
+
+    const periodoLabel = `${format(dateRange.from, 'dd/MM/yyyy', { locale: pt })} a ${format(dateRange.to, 'dd/MM/yyyy', { locale: pt })}`;
+    const agora = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: pt });
+    const orientation = settings.orientacao === 'landscape' ? 'landscape' : 'portrait';
+
+    const infoRows = infoFields
+      .map(
+        (f) => `
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span style="font-size:10px;color:#6b7280">${f.label}</span>
+        <span style="font-size:13px;font-weight:600;color:${(f as any).colored ? ((f as any).colored.includes('green') ? '#16a34a' : '#dc2626') : '#111827'}">${f.value ?? '—'}</span>
+      </div>`
+      )
+      .join('');
+
+    const despesasRows = [
+      ['Aluguer', despesas.aluguer],
+      ['Combustível', despesas.combustivel],
+      ['Portagens', despesas.portagens],
+      ['Outros Custos', despesas.outros_custos],
+      ['Caução', despesas.caucao],
+      ['Seguros', despesas.seguros],
+      ['Reparações', despesas.reparacoes],
+    ]
+      .map(
+        ([label, val]) =>
+          `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">
+            <span>${label}</span><span style="color:#b91c1c">${fmtEur(Number(val))}</span>
+          </div>`
+      )
+      .join('');
+
+    const ajusteRow =
+      !motorista.recibo_verde && !isImportado
+        ? `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">
+            <span>Ajuste (÷ 1.06)</span><span style="color:#ea580c">-${fmtEur(totalAReceber - liquido)}</span>
+          </div>`
+        : '';
+
+    const liquidoColor = liquido >= 0 ? '#2563eb' : '#f97316';
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Resumo Financeiro — ${motorista.driver_name}</title>
+      <style>
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+        body{font-family:'Segoe UI',Arial,sans-serif;color:#111827;background:#fff;padding:24px 32px}
+        @page{size:${orientation};margin:12mm}
+      </style>
+    </head>
+    <body onload="window.print()">
+
+      <!-- Cabeçalho -->
+      <div style="text-align:center;border-bottom:1px solid #e5e7eb;padding-bottom:16px;margin-bottom:16px">
+        <img src="${logoSrc}" alt="WeGest" style="height:56px;margin-bottom:8px"/>
+        <h1 style="font-size:16px;font-weight:700;letter-spacing:.05em">RESUMO FINANCEIRO DO MOTORISTA</h1>
+      </div>
+
+      <!-- Cards de totais -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+        <div style="background:#22c55e;border-radius:10px;padding:14px;text-align:center;color:#fff">
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;opacity:.85;margin-bottom:4px">Total Receitas</div>
+          <div style="font-size:20px;font-weight:700">${fmtEur(totalReceitas)}</div>
+        </div>
+        <div style="background:#ef4444;border-radius:10px;padding:14px;text-align:center;color:#fff">
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;opacity:.85;margin-bottom:4px">Total Despesas</div>
+          <div style="font-size:20px;font-weight:700">${fmtEur(totalDespesas)}</div>
+        </div>
+        <div style="background:${liquidoColor};border-radius:10px;padding:14px;text-align:center;color:#fff">
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;opacity:.85;margin-bottom:4px">Líquido a Receber</div>
+          <div style="font-size:20px;font-weight:700">${fmtEur(liquido)}</div>
+        </div>
+      </div>
+
+      <!-- Info motorista -->
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        ${infoRows}
+      </div>
+
+      <!-- Receitas e Despesas -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <!-- Receitas -->
+        <div style="border:1px solid #bbf7d0;border-radius:8px;overflow:hidden">
+          <div style="background:#22c55e;padding:8px 14px">
+            <span style="color:#fff;font-weight:700;font-size:13px">↗ RECEITAS</span>
+          </div>
+          <div style="background:#f0fdf4;padding:12px 14px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span>Bolt</span><span style="color:#15803d">${fmtEur(receitas.bolt)}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span>Uber</span><span style="color:#15803d">${fmtEur(receitas.uber)}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span>Outras Receitas</span><span style="color:#15803d">${fmtEur(receitas.outras_receitas)}</span></div>
+            <div style="border-top:1px solid #86efac;margin:6px 0"></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding:3px 0"><span>TOTAL RECEITAS</span><span style="color:#15803d">${fmtEur(totalReceitas)}</span></div>
+          </div>
+        </div>
+        <!-- Despesas -->
+        <div style="border:1px solid #fecaca;border-radius:8px;overflow:hidden">
+          <div style="background:#ef4444;padding:8px 14px">
+            <span style="color:#fff;font-weight:700;font-size:13px">↘ DESPESAS</span>
+          </div>
+          <div style="background:#fff1f2;padding:12px 14px">
+            ${despesasRows}
+            <div style="border-top:1px solid #fca5a5;margin:6px 0"></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding:3px 0"><span>TOTAL DESPESAS</span><span style="color:#b91c1c">${fmtEur(totalDespesas)}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumo Final -->
+      <div style="border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">
+        <div style="background:#2563eb;padding:8px 14px">
+          <span style="color:#fff;font-weight:700;font-size:13px">⊟ RESUMO FINAL</span>
+        </div>
+        <div style="background:#eff6ff;padding:12px 14px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span>Valores a Transportar (Semana Anterior)</span><span style="color:#1d4ed8">${fmtEur(valoresSemanaAnterior)}</span></div>
+          <div style="border-top:1px solid #93c5fd;margin:6px 0"></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span>Total a Receber</span><span style="color:${totalAReceber >= 0 ? '#15803d' : '#dc2626'}">${fmtEur(totalAReceber)}</span></div>
+          ${ajusteRow}
+          <div style="background:#2563eb;margin:-12px -14px;margin-top:10px;padding:12px 14px;display:flex;justify-content:space-between">
+            <span style="color:#fff;font-weight:700;font-size:14px">VALOR LÍQUIDO A RECEBER</span>
+            <span style="color:#fff;font-weight:700;font-size:18px">${fmtEur(liquido)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rodapé -->
+      <div style="margin-top:16px;padding-top:10px;border-top:1px solid #e5e7eb;text-align:center;font-size:10px;color:#9ca3af">
+        <div>Documento gerado em ${agora}</div>
+        <div>WeGest, Lda. • NIF: 515127850</div>
+      </div>
+
+    </body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+  };
+
+  const handleOpenEmail = () => {
+    setEmailTo(motoristaEmail || '');
+    setEmailCC('');
+    setShowEmailDialog(true);
   };
 
   const handleSendEmail = () => {
@@ -294,7 +440,9 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
     const body =
       `Olá ${motorista.driver_name},\n\nSegue o resumo financeiro do período ${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}:\n\n` +
       `Receitas: ${fmt(totalReceitas)}\nDespesas: ${fmt(totalDespesas)}\nLíquido a Receber: ${fmt(liquido)}\n\nCumprimentos,\nEquipa WeGest`;
-    window.location.href = `mailto:${motoristaEmail || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const cc = emailCC.trim() ? `&cc=${encodeURIComponent(emailCC.trim())}` : '';
+    window.open(`mailto:${encodeURIComponent(emailTo)}?subject=${encodeURIComponent(subject)}${cc}&body=${encodeURIComponent(body)}`);
+    setShowEmailDialog(false);
   };
 
   const handleSendWhatsApp = () => {
@@ -417,11 +565,9 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
   ].filter((f) => f.always || f.show);
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* Inject landscape CSS when needed */}
-      {settings.orientacao === 'landscape' && (
-        <style>{`@media print { @page { size: landscape; } }`}</style>
-      )}
 
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:overflow-visible">
         <DialogHeader className="print:hidden">
@@ -488,7 +634,11 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
         </div>
 
         {/* Conteúdo do Relatório */}
-        <div className="space-y-4 print:space-y-3 print-content" id="relatorio-motorista">
+        <div
+          className="space-y-4 print:space-y-3 print-content"
+          id="relatorio-motorista"
+          style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' } as any}
+        >
           {/* Cabeçalho */}
           <div className="text-center border-b pb-4 print:pb-2">
             <img src={logoSrc} alt="Logo" className="h-24 mx-auto mb-3 print:h-16 print:mb-2" />
@@ -497,22 +647,20 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
 
           {/* Cards de resumo coloridos */}
           <div className="grid grid-cols-3 gap-3 print:gap-2">
-            <div className="rounded-xl bg-green-500 text-white p-4 print:p-3 print:rounded-lg text-center">
-              <p className="text-xs font-medium uppercase tracking-wide opacity-80 print:text-[10px]">
+            <div className="rounded-xl p-4 print:p-3 print:rounded-lg text-center" style={{ backgroundColor: '#22c55e', color: '#fff' }}>
+              <p className="text-xs font-medium uppercase tracking-wide print:text-[10px]" style={{ opacity: 0.85 }}>
                 Total Receitas
               </p>
               <p className="text-2xl print:text-lg font-bold mt-1">{fmt(totalReceitas)}</p>
             </div>
-            <div className="rounded-xl bg-red-500 text-white p-4 print:p-3 print:rounded-lg text-center">
-              <p className="text-xs font-medium uppercase tracking-wide opacity-80 print:text-[10px]">
+            <div className="rounded-xl p-4 print:p-3 print:rounded-lg text-center" style={{ backgroundColor: '#ef4444', color: '#fff' }}>
+              <p className="text-xs font-medium uppercase tracking-wide print:text-[10px]" style={{ opacity: 0.85 }}>
                 Total Despesas
               </p>
               <p className="text-2xl print:text-lg font-bold mt-1">{fmt(totalDespesas)}</p>
             </div>
-            <div
-              className={`rounded-xl text-white p-4 print:p-3 print:rounded-lg text-center ${liquido >= 0 ? 'bg-blue-600' : 'bg-orange-500'}`}
-            >
-              <p className="text-xs font-medium uppercase tracking-wide opacity-80 print:text-[10px]">
+            <div className="rounded-xl p-4 print:p-3 print:rounded-lg text-center" style={{ backgroundColor: liquido >= 0 ? '#2563eb' : '#f97316', color: '#fff' }}>
+              <p className="text-xs font-medium uppercase tracking-wide print:text-[10px]" style={{ opacity: 0.85 }}>
                 Líquido a Receber
               </p>
               <p className="text-2xl print:text-lg font-bold mt-1">{fmt(liquido)}</p>
@@ -545,8 +693,8 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:gap-3 print:grid-cols-2">
             {/* Receitas */}
             <div className="rounded-lg overflow-hidden border border-green-200 print:border-green-300">
-              <div className="bg-green-500 px-4 py-2 print:px-3 print:py-1.5">
-                <h2 className="font-semibold flex items-center gap-2 text-white text-sm print:text-xs">
+              <div className="px-4 py-2 print:px-3 print:py-1.5" style={{ backgroundColor: '#22c55e' }}>
+                <h2 className="font-semibold flex items-center gap-2 text-sm print:text-xs" style={{ color: '#fff' }}>
                   <TrendingUp className="h-4 w-4" />
                   RECEITAS
                 </h2>
@@ -566,8 +714,8 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
 
             {/* Despesas */}
             <div className="rounded-lg overflow-hidden border border-red-200 print:border-red-300">
-              <div className="bg-red-500 px-4 py-2 print:px-3 print:py-1.5">
-                <h2 className="font-semibold flex items-center gap-2 text-white text-sm print:text-xs">
+              <div className="px-4 py-2 print:px-3 print:py-1.5" style={{ backgroundColor: '#ef4444' }}>
+                <h2 className="font-semibold flex items-center gap-2 text-sm print:text-xs" style={{ color: '#fff' }}>
                   <TrendingDown className="h-4 w-4" />
                   DESPESAS
                 </h2>
@@ -588,8 +736,8 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
 
           {/* Resumo Final */}
           <div className="rounded-lg overflow-hidden border border-blue-200 print:border-blue-300">
-            <div className="bg-blue-600 px-4 py-2 print:px-3 print:py-1.5">
-              <h2 className="font-semibold flex items-center gap-2 text-white text-sm print:text-xs">
+            <div className="px-4 py-2 print:px-3 print:py-1.5" style={{ backgroundColor: '#2563eb' }}>
+              <h2 className="font-semibold flex items-center gap-2 text-sm print:text-xs" style={{ color: '#fff' }}>
                 <Calculator className="h-4 w-4" />
                 RESUMO FINAL
               </h2>
@@ -614,11 +762,11 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
                 />
               )}
               <Separator className="my-2 print:my-1 bg-blue-200" />
-              <div className="flex justify-between items-center bg-blue-600 -mx-4 px-4 py-3 print:py-2 print:-mx-3 print:px-3">
-                <span className="font-bold text-white text-sm print:text-xs">
+              <div className="flex justify-between items-center -mx-4 px-4 py-3 print:py-2 print:-mx-3 print:px-3" style={{ backgroundColor: '#2563eb' }}>
+                <span className="font-bold text-sm print:text-xs" style={{ color: '#fff' }}>
                   VALOR LÍQUIDO A RECEBER
                 </span>
-                <span className={`font-bold text-xl print:text-base text-white`}>
+                <span className="font-bold text-xl print:text-base" style={{ color: '#fff' }}>
                   {fmt(liquido)}
                 </span>
               </div>
@@ -655,7 +803,7 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
                 <MessageSquare className="h-4 w-4 mr-2 text-green-500" />
                 WhatsApp
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleSendEmail}>
+              <DropdownMenuItem onClick={handleOpenEmail}>
                 <Mail className="h-4 w-4 mr-2 text-blue-500" />
                 Email
               </DropdownMenuItem>
@@ -673,6 +821,52 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
         </div>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-blue-500" />
+            Enviar Resumo por Email
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="email-to">Para</Label>
+            <Input
+              id="email-to"
+              type="email"
+              value={emailTo}
+              onChange={(e) => setEmailTo(e.target.value)}
+              placeholder="email@motorista.pt"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="email-cc">CC <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+            <Input
+              id="email-cc"
+              type="email"
+              value={emailCC}
+              onChange={(e) => setEmailCC(e.target.value)}
+              placeholder="gestor@empresa.pt"
+            />
+          </div>
+          <div className="bg-muted/40 rounded-lg p-3 text-sm text-muted-foreground space-y-1">
+            <p><strong>Assunto:</strong> Resumo Financeiro - {motorista.driver_name}</p>
+            <p><strong>Período:</strong> {format(dateRange.from, 'dd/MM/yyyy', { locale: pt })} a {format(dateRange.to, 'dd/MM/yyyy', { locale: pt })}</p>
+            <p><strong>Líquido:</strong> {fmt(liquido)}</p>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setShowEmailDialog(false)}>Cancelar</Button>
+            <Button onClick={handleSendEmail} disabled={!emailTo.trim()}>
+              <Mail className="h-4 w-4 mr-2" />
+              Abrir no email
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

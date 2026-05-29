@@ -26,7 +26,7 @@ import {
 
 import { useClientes } from '@/hooks/useClientes';
 
-import { cn, normalizeString } from '@/lib/utils';
+import { cn, matchesSearch } from '@/lib/utils';
 
 import type { ClienteComDocumentos } from '@/types/cliente';
 
@@ -255,7 +255,6 @@ const RentingClientes = () => {
 
   // Aplicação dos filtros (só os visíveis afectam o resultado)
   const filtered = useMemo(() => {
-    const q = normalizeString(search.trim());
     const isVisible = (k: FilterKey) => visibleFilters.includes(k);
 
     return clientes.filter((c) => {
@@ -286,7 +285,7 @@ const RentingClientes = () => {
       if (
         isVisible('email') &&
         emailFiltro &&
-        !normalizeString(c.email || '').includes(normalizeString(emailFiltro))
+        !matchesSearch(c.email, emailFiltro)
       )
         return false;
       if (
@@ -302,15 +301,15 @@ const RentingClientes = () => {
       }
 
       // Pesquisa global (sempre activa)
-      if (q) {
+      if (search.trim()) {
         const hit =
           c.codigo.toString().includes(search) ||
-          normalizeString(c.nome).includes(q) ||
-          (c.nome_comercial && normalizeString(c.nome_comercial).includes(q)) ||
+          matchesSearch(c.nome, search) ||
+          matchesSearch(c.nome_comercial, search) ||
           (c.nif && c.nif.includes(search)) ||
           (c.telefone && c.telefone.includes(search)) ||
-          (c.email && normalizeString(c.email).includes(q)) ||
-          (c.morada && normalizeString(c.morada).includes(q));
+          matchesSearch(c.email, search) ||
+          matchesSearch(c.morada, search);
         if (!hit) return false;
       }
       return true;

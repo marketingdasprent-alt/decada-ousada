@@ -31,6 +31,7 @@ import {
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+import { matchesSearch } from '@/lib/utils';
 
 import type { TicketEnriched as Ticket, TicketCategoria as Categoria } from '@/types/ticket';
 import { statusConfig, prioridadeConfig } from '@/lib/ticketsConfig';
@@ -215,11 +216,11 @@ const Assistencia = () => {
   };
 
   const filteredTickets = tickets.filter((ticket) => {
-    const matchesSearch =
-      ticket.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.viatura?.matricula.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearchResult =
+      matchesSearch(ticket.titulo, searchTerm) ||
+      matchesSearch(ticket.viatura?.matricula, searchTerm) ||
       ticket.numero.toString().includes(searchTerm) ||
-      ticket.criador?.nome.toLowerCase().includes(searchTerm.toLowerCase());
+      matchesSearch(ticket.criador?.nome, searchTerm);
 
     // Status filter - "pendentes" shows open, in progress, and waiting
     let matchesStatus = true;
@@ -247,7 +248,7 @@ const Assistencia = () => {
     if (ticket.status === 'pendente' && !canSeePendente) return false;
 
     return (
-      matchesSearch &&
+      matchesSearchResult &&
       matchesStatus &&
       matchesPrioridade &&
       matchesCategoria &&

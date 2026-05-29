@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useTenant } from '@/contexts/TenantContext';
+import { matchesSearch } from '@/lib/utils';
 
 interface Marca {
   id: string;
@@ -164,7 +165,7 @@ const ViaturaMarcasModelos = () => {
   });
 
   const filteredMarcas = marcas.filter(
-    (m) => !search || m.nome.toLowerCase().includes(search.toLowerCase())
+    (m) => !search || matchesSearch(m.nome, search)
   );
 
   // --- Marca handlers ---

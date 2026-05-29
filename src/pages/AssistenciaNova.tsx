@@ -49,6 +49,7 @@ import {
   Eraser,
 } from 'lucide-react';
 import { AssistenciaMultimediaUpload } from '@/components/assistencia/AssistenciaMultimediaUpload';
+import { matchesSearch } from '@/lib/utils';
 
 interface Viatura {
   id: string;
@@ -143,13 +144,12 @@ export default function AssistenciaNova() {
   };
 
   useEffect(() => {
-    const term = searchTerm.toLowerCase();
     setFilteredViaturas(
       viaturas.filter(
         (v) =>
-          v.matricula.toLowerCase().includes(term) ||
-          v.marca.toLowerCase().includes(term) ||
-          v.modelo.toLowerCase().includes(term)
+          matchesSearch(v.matricula, searchTerm) ||
+          matchesSearch(v.marca, searchTerm) ||
+          matchesSearch(v.modelo, searchTerm)
       )
     );
   }, [searchTerm, viaturas]);
@@ -852,9 +852,7 @@ export default function AssistenciaNova() {
                               <div className="max-h-32 overflow-y-auto space-y-1">
                                 {viaturasDisponiveis
                                   .filter((v) =>
-                                    v.matricula
-                                      .toLowerCase()
-                                      .includes(substituteSearchTerm.toLowerCase())
+                                    matchesSearch(v.matricula, substituteSearchTerm)
                                   )
                                   .map((v) => (
                                     <button

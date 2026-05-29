@@ -18,7 +18,7 @@ import { useCampaignTags } from '@/hooks/useCampaignTags';
 import { useRealTimeLeads } from '@/hooks/useRealTimeLeads';
 import { useFormularioTags } from '@/hooks/useFormularioTags';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { normalizeString } from '@/lib/utils';
+import { matchesSearch } from '@/lib/utils';
 
 import { LeadCard } from '@/components/crm/LeadCard';
 import { ColumnContainer } from '@/components/crm/ColumnContainer';
@@ -205,12 +205,11 @@ const CRM = () => {
 
     // Search filter
     if (filters.search) {
-      const searchNormalized = normalizeString(filters.search);
       result = result.filter(
         (lead) =>
-          normalizeString(lead.nome).includes(searchNormalized) ||
-          normalizeString(lead.email).includes(searchNormalized) ||
-          (lead.telefone && normalizeString(lead.telefone).includes(searchNormalized))
+          matchesSearch(lead.nome, filters.search) ||
+          matchesSearch(lead.email, filters.search) ||
+          matchesSearch(lead.telefone, filters.search)
       );
     }
 

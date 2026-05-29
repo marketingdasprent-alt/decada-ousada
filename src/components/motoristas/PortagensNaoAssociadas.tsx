@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Loader2, Search, Link2, ChevronsUpDown, Car, Printer } from 'lucide-react';
+import { matchesSearch } from '@/lib/utils';
 import { DialogFooter } from '@/components/ui/dialog';
 
 interface ViaturaPortagem {
@@ -47,8 +48,6 @@ interface Props {
 const fmtEur = (v: number) =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v || 0);
 
-const normalize = (s: string) =>
-  (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 
 export const PortagensNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, onChanged }) => {
   const { toast } = useToast();
@@ -157,8 +156,7 @@ export const PortagensNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, on
 
   const filtered = useMemo(() => {
     if (!search) return viaturas;
-    const t = normalize(search);
-    return viaturas.filter((v) => normalize(v.matricula).includes(t));
+    return viaturas.filter((v) => matchesSearch(v.matricula, search));
   }, [viaturas, search]);
 
   const totals = useMemo(

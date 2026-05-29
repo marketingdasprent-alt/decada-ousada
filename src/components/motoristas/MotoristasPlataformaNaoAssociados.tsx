@@ -31,7 +31,7 @@ import {
   ChevronsUpDown,
   Printer,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, matchesSearch } from '@/lib/utils';
 import { generateNaoAssociadosPDF } from '@/utils/generateNaoAssociadosPDF';
 import { useThemedLogo } from '@/hooks/useThemedLogo';
 
@@ -309,8 +309,7 @@ export const MotoristasPlataformaNaoAssociados: React.FC<Props> = ({
 
   const filtered = useMemo(() => {
     if (!search) return naoAssociados;
-    const t = normalize(search);
-    return naoAssociados.filter((n) => normalize(n.nome).includes(t));
+    return naoAssociados.filter((n) => matchesSearch(n.nome, search));
   }, [naoAssociados, search]);
 
   const totalFaturado = useMemo(

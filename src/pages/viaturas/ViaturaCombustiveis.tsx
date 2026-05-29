@@ -36,6 +36,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useTenant } from '@/contexts/TenantContext';
+import { matchesSearch } from '@/lib/utils';
 
 interface Combustivel {
   id: string;
@@ -81,7 +82,7 @@ const ViaturaCombustiveis = () => {
   });
 
   const filtered = combustiveis.filter(
-    (c) => !search || c.nome.toLowerCase().includes(search.toLowerCase())
+    (c) => !search || matchesSearch(c.nome, search)
   );
 
   const openNew = () => {

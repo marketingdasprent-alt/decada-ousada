@@ -38,6 +38,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useTenant } from '@/contexts/TenantContext';
+import { matchesSearch } from '@/lib/utils';
 
 interface RentingTaxa {
   id: string;
@@ -95,7 +96,7 @@ const RentingTaxas = () => {
   });
 
   const filtered = taxas.filter(
-    (t) => !search || t.nome.toLowerCase().includes(search.toLowerCase())
+    (t) => !search || matchesSearch(t.nome, search)
   );
 
   const openNew = () => {

@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Car, Loader2, Search } from 'lucide-react';
 import type { Viatura } from './types';
+import { matchesSearch } from '@/lib/utils';
 
 interface Props {
   open: boolean;
@@ -49,14 +50,11 @@ export const TicketSubstitutaModal: React.FC<Props> = ({
       </div>
       <div className="overflow-y-auto flex-1 space-y-2">
         {viaturasDisponiveis
-          .filter((v) => {
-            const s = search.toLowerCase();
-            return (
-              v.matricula.toLowerCase().includes(s) ||
-              v.marca.toLowerCase().includes(s) ||
-              v.modelo.toLowerCase().includes(s)
-            );
-          })
+          .filter((v) => (
+            matchesSearch(v.matricula, search) ||
+            matchesSearch(v.marca, search) ||
+            matchesSearch(v.modelo, search)
+          ))
           .map((v) => (
             <button
               key={v.id}

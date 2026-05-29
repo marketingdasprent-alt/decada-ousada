@@ -44,6 +44,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useTenant } from '@/contexts/TenantContext';
+import { matchesSearch } from '@/lib/utils';
 
 interface RentingExtra {
   id: string;
@@ -100,7 +101,7 @@ const RentingExtras = () => {
   });
 
   const filtered = extras.filter(
-    (e) => !search || e.nome.toLowerCase().includes(search.toLowerCase())
+    (e) => !search || matchesSearch(e.nome, search)
   );
 
   const openNew = () => {

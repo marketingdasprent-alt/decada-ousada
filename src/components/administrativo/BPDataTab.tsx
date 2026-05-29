@@ -32,6 +32,7 @@ import {
   MapPin,
   Calendar as CalendarIcon,
 } from 'lucide-react';
+import { matchesSearch } from '@/lib/utils';
 import { format, subDays } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
@@ -141,12 +142,11 @@ export const BPDataTab: React.FC = () => {
 
   const filteredTransacoes = useMemo(() => {
     if (!searchTerm) return transacoes;
-    const term = searchTerm.toLowerCase();
     return transacoes.filter(
       (t) =>
-        (t.motorista?.nome || '').toLowerCase().includes(term) ||
-        (t.fuel_type || '').toLowerCase().includes(term) ||
-        (t.station_name || '').toLowerCase().includes(term)
+        matchesSearch(t.motorista?.nome, searchTerm) ||
+        matchesSearch(t.fuel_type, searchTerm) ||
+        matchesSearch(t.station_name, searchTerm)
     );
   }, [transacoes, searchTerm]);
 
