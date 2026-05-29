@@ -28,15 +28,12 @@ import {
   Fuel,
   Euro,
   X,
-  Upload,
   CheckCircle2,
   MapPin,
   Calendar as CalendarIcon,
 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
-import { ImportRobotCsvDialog } from '@/components/admin/ImportRobotCsvDialog';
 import { DateRange } from 'react-day-picker';
 
 interface BpTransacao {
@@ -165,8 +162,6 @@ export const BPDataTab: React.FC = () => {
     setSelectedIntegracao('all');
     setDateRange({ from: subDays(new Date(), 30), to: new Date() });
   };
-
-  const firstActiveIntegracao = integracoes.find((i) => i.ativo);
 
   return (
     <div className="space-y-4">
@@ -369,9 +364,6 @@ export const BPDataTab: React.FC = () => {
         </div>
       )}
 
-      {firstActiveIntegracao && (
-        <>
-      )}
     </div>
   );
 };
