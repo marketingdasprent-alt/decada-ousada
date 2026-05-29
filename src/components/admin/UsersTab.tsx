@@ -412,9 +412,32 @@ export const UsersTab = () => {
         },
       });
 
-      if (error) throw error;
+      // invoke marca `error` em qualquer resposta não-2xx — a mensagem amigável
+      // vem no corpo (error.context). Sem isto, mostrava o genérico "non-2xx".
+      if (error) {
+        let description = 'Não foi possível resetar a password. Tenta novamente.';
+        const ctx = (error as { context?: Response }).context;
+        if (ctx && typeof ctx.json === 'function') {
+          try {
+            const body = await ctx.json();
+            if (
+              body?.code === 'weak_password' ||
+              /Password should contain|weak[_ ]?password/i.test(body?.error ?? '')
+            ) {
+              description =
+                'A palavra-passe é demasiado fraca. Tem de incluir pelo menos uma letra minúscula, uma maiúscula, um número e um símbolo (ex.: ! @ # $ % &).';
+            } else if (body?.error) {
+              description = body.error;
+            }
+          } catch {
+            /* corpo não-JSON — fica a mensagem genérica */
+          }
+        }
+        toast({ title: 'Erro ao resetar password', description, variant: 'destructive' });
+        return;
+      }
 
-      if (data.error) {
+      if (data?.error) {
         toast({
           title: 'Erro ao resetar password',
           description: data.error,
@@ -874,6 +897,9 @@ export const UsersTab = () => {
                 placeholder="Mínimo 6 caracteres"
                 className="bg-background border-border"
               />
+              <p className="text-xs text-muted-foreground">
+                Deve incluir minúscula, maiúscula, número e símbolo (ex.: ! @ # $ %).
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword" className="text-foreground">
