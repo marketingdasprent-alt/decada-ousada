@@ -68,7 +68,7 @@ export const BpNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, onChanged
   const carregar = async () => {
     setLoading(true);
     try {
-      const [{ data: crm }, { data: txs, error }] = await Promise.all([
+      const [crmResult, txResult] = await Promise.all([
         supabase.from('motoristas_ativos').select('id, nome, cartao_bp').order('nome'),
         supabase
           .from('bp_transacoes')
@@ -76,12 +76,19 @@ export const BpNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, onChanged
           .is('motorista_id', null)
           .order('transaction_date', { ascending: false }),
       ]);
-      if (error) throw error;
-      setMotoristas((crm || []) as Motorista[]);
+      if (txResult.error) throw txResult.error;
+      setMotoristas((crmResult.data || []) as Motorista[]);
 
       // Group by card_number
       const map = new Map<string, GrupoCartao>();
-      for (const tx of txs || []) {
+      const txData = (txResult.data || []) as unknown as Array<{
+        id: string;
+        card_number: string | null;
+        amount: number | null;
+        quantity: number | null;
+        transaction_date: string;
+      }>;
+      for (const tx of txData) {
         const key = tx.card_number || '__sem_cartao__';
         if (!map.has(key)) {
           map.set(key, {
@@ -102,7 +109,11 @@ export const BpNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, onChanged
       }
       setGrupos(Array.from(map.values()).sort((a, b) => b.total_valor - a.total_valor));
     } catch (err: any) {
-      toast({ title: 'Erro', description: 'Falha ao carregar transações BP.', variant: 'destructive' });
+      toast({
+        title: 'Erro',
+        description: 'Falha ao carregar transações BP.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -137,7 +148,11 @@ export const BpNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, onChanged
       setGrupos((prev) => prev.filter((g) => (g.card_number || '__sem_cartao__') !== key));
       onChanged?.();
     } catch (err: any) {
-      toast({ title: 'Erro', description: err.message || 'Falha ao associar.', variant: 'destructive' });
+      toast({
+        title: 'Erro',
+        description: err.message || 'Falha ao associar.',
+        variant: 'destructive',
+      });
     } finally {
       setAssociando(null);
     }
@@ -233,10 +248,7 @@ const LinhaGrupo: React.FC<{
             <span>·</span>
             <span className="font-medium text-foreground">{fmtEur(grupo.total_valor)}</span>
             <span>·</span>
-            <span>
-              última{' '}
-              {format(new Date(grupo.ultima_data), 'dd/MM/yyyy', { locale: pt })}
-            </span>
+            <span>última {format(new Date(grupo.ultima_data), 'dd/MM/yyyy', { locale: pt })}</span>
           </div>
         </div>
       </div>

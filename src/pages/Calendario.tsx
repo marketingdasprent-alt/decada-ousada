@@ -20,6 +20,7 @@ import {
   CalendarDays,
   Clock,
   FileDown,
+  Info,
   LogOut,
   PackageCheck,
   Settings,
@@ -379,6 +380,17 @@ const Calendario: React.FC = () => {
             )}
           </div>
         </StickyPageHeader>
+
+        <div className="shrink-0 mt-2 flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground shadow-sm">
+          <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <p className="leading-relaxed">
+            <strong className="font-semibold text-primary">Os eventos são automáticos.</strong>{' '}
+            Entregas, recolhas, trocas e upgrades vêm dos{' '}
+            <strong className="font-semibold">contratos</strong> (ao criar ou versionar); as
+            transferências internas vêm das <strong className="font-semibold">movimentações</strong>
+            . Aqui só consultas e fazes check-in / check-out.
+          </p>
+        </div>
 
         <div className="flex-1 min-h-0">
           <CalendarioGrid

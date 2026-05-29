@@ -38,7 +38,18 @@ import {
 import { MotoristaResumoDialog } from './MotoristaResumoDialog';
 import { ImportarDadosWizard } from './ImportarDadosWizard';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Printer, Mail, Send, FileDown, ChevronDown, FileText, Files, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import {
+  Printer,
+  Mail,
+  Send,
+  FileDown,
+  ChevronDown,
+  FileText,
+  Files,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 import { generateFinanceiroPDF } from '@/utils/generateFinanceiroPDF';
 import { generateContasConsolidadoPDF } from '@/utils/generateContasConsolidadoPDF';
 import { useThemedLogo } from '@/hooks/useThemedLogo';
@@ -103,7 +114,15 @@ export function ContasResumoTab() {
   const logoSrc = useThemedLogo();
 
   // Sorting
-  type SortField = 'driver_name' | 'total_faturado' | 'liquido' | 'aluguer' | 'combustivel' | 'portagens' | 'outros_custos' | 'reparacoes';
+  type SortField =
+    | 'driver_name'
+    | 'total_faturado'
+    | 'liquido'
+    | 'aluguer'
+    | 'combustivel'
+    | 'portagens'
+    | 'outros_custos'
+    | 'reparacoes';
   const [sortField, setSortField] = useState<SortField>('total_faturado');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -129,71 +148,64 @@ export function ContasResumoTab() {
     const progressToastId = toast.loading(`A gerar 0 / ${total} relatórios…`);
 
     try {
-      const selectedResumos = resumos.filter((r) =>
-        !!r._uid && selectedIds.has(r._uid)
-      );
-      const motoristaIds = selectedResumos
-        .map((r) => r.motorista_id)
-        .filter((id): id is string => !!id);
-
-      // Batch fetch das 3 tabelas auxiliares (em vez de 3 queries × 268 motoristas).
-      const [viaturasRes, motoristasRes, custosRes] = await Promise.all([
-        motoristaIds.length
-          ? supabase
-              .from('motorista_viaturas')
-              .select('motorista_id, viaturas(matricula)')
-              .in('motorista_id', motoristaIds)
-              .eq('status', 'ativo')
-          : Promise.resolve({ data: [] as any[] }),
-        motoristaIds.length
-          ? supabase
-              .from('motoristas_ativos')
-              .select('id, cartao_frota, cartao_bp, cartao_repsol, cartao_edp')
-              .in('id', motoristaIds)
-          : Promise.resolve({ data: [] as any[] }),
-        motoristaIds.length
-          ? supabase
-              .from('motorista_custos_adicionais')
-              .select('motorista_id, tipo, valor')
-              .in('motorista_id', motoristaIds)
-              .gte('semana_referencia', format(weekStart, 'yyyy-MM-dd'))
-              .lte('semana_referencia', format(weekEnd, 'yyyy-MM-dd'))
-          : Promise.resolve({ data: [] as any[] }),
-      ]);
-
-      const matriculaByMot = new Map<string, string>();
-      (viaturasRes.data || []).forEach((v: any) => {
-        if (v.motorista_id && v.viaturas?.matricula) {
-          matriculaByMot.set(v.motorista_id, v.viaturas.matricula);
-        }
-      });
-
-      const cartaoByMot = new Map<string, string>();
-      (motoristasRes.data || []).forEach((m: any) => {
-        const c = [m.cartao_bp, m.cartao_repsol, m.cartao_edp, m.cartao_frota]
-          .filter((x) => !!x)
-          .join(' / ');
-        cartaoByMot.set(m.id, c || 'N/A');
-      });
-
-      const custosByMot = new Map<string, { caucao: number; seguros: number; outros: number }>();
-      (custosRes.data || []).forEach((c: any) => {
-        const acc = custosByMot.get(c.motorista_id) || { caucao: 0, seguros: 0, outros: 0 };
-        const val = Number(c.valor) || 0;
-        if (c.tipo === 'Caução') acc.caucao += val;
-        else if (c.tipo === 'Seguros') acc.seguros += val;
-        else acc.outros += val;
-        custosByMot.set(c.motorista_id, acc);
-      });
+      const selectedResumos = resumos.filter((r) => !!r._uid && selectedIds.has(r._uid));
 
       let combinedPdf = null;
 
       for (let i = 0; i < selectedResumos.length; i++) {
         const motorista = selectedResumos[i];
-        const mid = motorista.motorista_id || '';
-        const matricula = matriculaByMot.get(mid) || null;
-        const cartaoFrota = cartaoByMot.get(mid) || null;
-        const extraCosts = custosByMot.get(mid) || { caucao: 0, seguros: 0, outros: 0 };
+
+        let matricula = null;
+        let cartaoFrota = null;
+        let extraCosts = { caucao: 0, seguros: 0, outros: 0 };
+
+        const resolvedMotoristaId = motorista.motorista_id || null;
+        if (resolvedMotoristaId) {
+          const [vData, mData, aData] = await Promise.all([
+            supabase
+              .from('motorista_viaturas')
+              .select('motorista_id, viaturas(matricula)')
+              .eq('motorista_id', resolvedMotoristaId)
+              .eq('status', 'ativo')
+              .maybeSingle(),
+            supabase
+              .from('motoristas_ativos')
+              .select('id, cartao_frota, cartao_bp, cartao_repsol, cartao_edp')
+              .eq('id', resolvedMotoristaId)
+              .maybeSingle(),
+            supabase
+              .from('motorista_custos_adicionais')
+              .select('motorista_id, tipo, valor')
+              .eq('motorista_id', resolvedMotoristaId)
+              .gte('semana_referencia', format(weekStart, 'yyyy-MM-dd'))
+              .lte('semana_referencia', format(weekEnd, 'yyyy-MM-dd')),
+          ]);
+
+          if (vData.data?.viaturas) matricula = (vData.data.viaturas as any).matricula;
+          if (mData.data) {
+            cartaoFrota =
+              [
+                mData.data.cartao_bp,
+                mData.data.cartao_repsol,
+                mData.data.cartao_edp,
+                mData.data.cartao_frota,
+              ]
+                .filter((c) => !!c)
+                .join(' / ') || 'N/A';
+          }
+          if (aData.data) {
+            extraCosts = aData.data.reduce(
+              (acc, curr) => {
+                const val = Number(curr.valor) || 0;
+                if (curr.tipo === 'Caução') acc.caucao += val;
+                else if (curr.tipo === 'Seguros') acc.seguros += val;
+                else acc.outros += val;
+                return acc;
+              },
+              { caucao: 0, seguros: 0, outros: 0 }
+            );
+          }
+        }
 
         const receitaAjustada = motorista.recibo_verde
           ? motorista.total_faturado
@@ -237,7 +249,6 @@ export function ContasResumoTab() {
 
         combinedPdf = await generateFinanceiroPDF(pdfData, combinedPdf || undefined);
 
-        // Atualiza toast a cada 10 e dá ao browser tempo para respirar
         if ((i + 1) % 10 === 0 || i + 1 === selectedResumos.length) {
           toast.loading(`A gerar ${i + 1} / ${total} relatórios…`, { id: progressToastId });
           await new Promise((r) => setTimeout(r, 0));
@@ -273,7 +284,9 @@ export function ContasResumoTab() {
         reader.onloadend = () => resolve(reader.result as string);
         reader.readAsDataURL(blob);
       });
-    } catch { logoUrl = '/Logo.png'; }
+    } catch {
+      logoUrl = '/Logo.png';
+    }
 
     const fmtEur = (v: number) =>
       new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
@@ -281,11 +294,13 @@ export function ContasResumoTab() {
     const date = format(new Date(), 'dd/MM/yyyy HH:mm', { locale: pt });
 
     const totalFaturado = selectedResumos.reduce((s, r) => s + r.total_faturado, 0);
-    const totalLiquido  = selectedResumos.reduce((s, r) => s + r.liquido, 0);
-    const totalAluguer  = selectedResumos.reduce((s, r) => s + r.aluguer, 0);
-    const totalCombust  = selectedResumos.reduce((s, r) => s + r.combustivel, 0);
+    const totalLiquido = selectedResumos.reduce((s, r) => s + r.liquido, 0);
+    const totalAluguer = selectedResumos.reduce((s, r) => s + r.aluguer, 0);
+    const totalCombust = selectedResumos.reduce((s, r) => s + r.combustivel, 0);
 
-    const rows = selectedResumos.map((r) => `<tr>
+    const rows = selectedResumos
+      .map(
+        (r) => `<tr>
       <td>${r.driver_name}</td>
       <td style="text-align:right">${fmtEur(r.total_faturado)}</td>
       <td style="text-align:right">${fmtEur(r.combustivel)}</td>
@@ -294,11 +309,14 @@ export function ContasResumoTab() {
       <td style="text-align:right">${fmtEur(r.outros_custos)}</td>
       <td style="text-align:right">${fmtEur(r.aluguer)}</td>
       <td style="text-align:right;font-weight:600">${fmtEur(r.liquido)}</td>
-    </tr>`).join('');
+    </tr>`
+      )
+      .join('');
 
     const w = window.open('', '_blank');
     if (!w) return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Resumos Semanais — WeGest</title><link rel="icon" href="${logoUrl}" type="image/png">
+    w.document
+      .write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Resumos Semanais — WeGest</title><link rel="icon" href="${logoUrl}" type="image/png">
     <style>
       *{margin:0;padding:0;box-sizing:border-box}
       body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#1a1a1a;background:white}
@@ -352,9 +370,9 @@ export function ContasResumoTab() {
           <td>Total</td>
           <td class="r">${fmtEur(totalFaturado)}</td>
           <td class="r">${fmtEur(totalCombust)}</td>
-          <td class="r">${fmtEur(selectedResumos.reduce((s,r)=>s+r.portagens,0))}</td>
-          <td class="r">${fmtEur(selectedResumos.reduce((s,r)=>s+r.reparacoes,0))}</td>
-          <td class="r">${fmtEur(selectedResumos.reduce((s,r)=>s+r.outros_custos,0))}</td>
+          <td class="r">${fmtEur(selectedResumos.reduce((s, r) => s + r.portagens, 0))}</td>
+          <td class="r">${fmtEur(selectedResumos.reduce((s, r) => s + r.reparacoes, 0))}</td>
+          <td class="r">${fmtEur(selectedResumos.reduce((s, r) => s + r.outros_custos, 0))}</td>
           <td class="r">${fmtEur(totalAluguer)}</td>
           <td class="r">${fmtEur(totalLiquido)}</td>
         </tr></tfoot>
@@ -391,9 +409,7 @@ export function ContasResumoTab() {
     if (selectedIds.size === filteredResumos.length) {
       setSelectedIds(new Set());
     } else {
-      const allIds = filteredResumos
-        .map((r) => r._uid)
-        .filter((u): u is string => !!u);
+      const allIds = filteredResumos.map((r) => r._uid).filter((u): u is string => !!u);
       setSelectedIds(new Set(allIds));
     }
   };
@@ -425,7 +441,6 @@ export function ContasResumoTab() {
   useEffect(() => {
     loadResumos();
   }, [selectedWeek]);
-
 
   // Normalizar nome para matching (lowercase, sem acentos, sem espaços extra)
   function normalizeName(name: string): string {
@@ -547,14 +562,12 @@ export function ContasResumoTab() {
         .gte('payment_confirmed_timestamp', weekStart.toISOString())
         .lte('payment_confirmed_timestamp', weekEnd.toISOString());
 
-
       // 4. Buscar transações Uber no mesmo período
       let uberQuery = supabase
         .from('uber_transactions')
         .select('uber_driver_id, gross_amount, raw_transaction')
         .gte('occurred_at', weekStart.toISOString())
         .lte('occurred_at', weekEnd.toISOString());
-
 
       // 4b. Buscar atividade Uber (viagens_concluidas reais) para o período
       // Gerar período normalizado: Segunda → Domingo (YYYYMMDD-YYYYMMDD)
@@ -565,7 +578,6 @@ export function ContasResumoTab() {
         .from('uber_atividade_motoristas')
         .select('uber_driver_id, viagens_concluidas')
         .eq('periodo', periodoStr);
-
 
       // 4c. Buscar uber_drivers para mapeamento uber_driver_id → motorista_id
       const uberDriversQuery = supabase
@@ -608,7 +620,6 @@ export function ContasResumoTab() {
         .select('motorista_id, viaturas(valor_aluguer)')
         .eq('status', 'ativo');
 
-
       // 4e. Buscar resumos semanais Bolt (dados CSV) cujo intervalo intersecte a semana seleccionada
       const weekStartStr = format(weekStart, 'yyyy-MM-dd');
       const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
@@ -628,7 +639,6 @@ export function ContasResumoTab() {
         )
         .lte('periodo_inicio', weekEndStr)
         .gte('periodo_fim', weekStartStr);
-
 
       const [
         boltResult,
@@ -1041,9 +1051,7 @@ export function ContasResumoTab() {
           // Homónimos reais (motorista_ids diferentes) — não fundir entre si.
           // Mas ainda podemos agregar os SEM id ao primeiro com id.
           const primaria = comId[0];
-          keys
-            .filter((k) => !agrupado[k]?.motorista_id)
-            .forEach((k) => fundir(primaria, k));
+          keys.filter((k) => !agrupado[k]?.motorista_id).forEach((k) => fundir(primaria, k));
           continue;
         }
         const primaryKey =
@@ -1056,8 +1064,7 @@ export function ContasResumoTab() {
       const resumosCalculados = Object.values(agrupado).map((m) => {
         // Nome canónico: se há motorista_id mapeado, usar SEMPRE o nome do CRM
         // (evita mostrar "Roberto Guilherme Neto" da plataforma quando o CRM diz "Roberto Rocha").
-        const displayNameFinal =
-          (m.motorista_id && crmNomeById[m.motorista_id]) || m.driver_name;
+        const displayNameFinal = (m.motorista_id && crmNomeById[m.motorista_id]) || m.driver_name;
         const extrasValor = m.motorista_id ? extrasByMotorista[m.motorista_id] || 0 : 0;
         const totalFaturado = m.faturado_bolt + m.faturado_uber + extrasValor;
         const totalViagens = m.viagens_bolt + m.viagens_uber;
@@ -1099,10 +1106,7 @@ export function ContasResumoTab() {
       // Atribuir _uid único e estável por linha (usado em selectedIds e React keys).
       const comUid: MotoristaResumo[] = resumosCalculados.map((r, idx) => ({
         ...r,
-        _uid:
-          r.motorista_id ||
-          r.driver_uuid ||
-          `${r.driver_name || 'sem-nome'}__${idx}`,
+        _uid: r.motorista_id || r.driver_uuid || `${r.driver_name || 'sem-nome'}__${idx}`,
       }));
       setResumos(comUid);
     } catch (error) {
@@ -1114,13 +1118,16 @@ export function ContasResumoTab() {
   }
 
   const isCompanyName = (name: string) =>
-    /\b(lda\.?|ldª|s\.?a\.?|sarl|unipessoal|unip\.?|sociedade|cooperativa|associa[cç][aã]o)\b|,\s*lda/i.test(name);
+    /\b(lda\.?|ldª|s\.?a\.?|sarl|unipessoal|unip\.?|sociedade|cooperativa|associa[cç][aã]o)\b|,\s*lda/i.test(
+      name
+    );
 
   // Filtrar + ordenar
   const filteredResumos = useMemo(() => {
     let result = resumos.filter((r) => {
       if (isCompanyName(r.driver_name)) return false;
-      if (searchTerm && !normalizeString(r.driver_name).includes(normalizeString(searchTerm))) return false;
+      if (searchTerm && !normalizeString(r.driver_name).includes(normalizeString(searchTerm)))
+        return false;
       if (filterRecibo === 'verde' && !r.recibo_verde) return false;
       if (filterRecibo === 'nao_verde' && r.recibo_verde) return false;
       if (filterSaldo === 'negativos' && r.liquido >= 0) return false;
@@ -1128,9 +1135,12 @@ export function ContasResumoTab() {
       return true;
     });
     result = [...result].sort((a, b) => {
-      const av = sortField === 'driver_name' ? a.driver_name : (a[sortField] as number) ?? 0;
-      const bv = sortField === 'driver_name' ? b.driver_name : (b[sortField] as number) ?? 0;
-      if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv as string) : (bv as string).localeCompare(av);
+      const av = sortField === 'driver_name' ? a.driver_name : ((a[sortField] as number) ?? 0);
+      const bv = sortField === 'driver_name' ? b.driver_name : ((b[sortField] as number) ?? 0);
+      if (typeof av === 'string')
+        return sortDir === 'asc'
+          ? av.localeCompare(bv as string)
+          : (bv as string).localeCompare(av);
       return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
     return result;
@@ -1175,16 +1185,20 @@ export function ContasResumoTab() {
         reader.onloadend = () => resolve(reader.result as string);
         reader.readAsDataURL(blob);
       });
-    } catch { logoUrl = '/Logo.png'; }
+    } catch {
+      logoUrl = '/Logo.png';
+    }
     const fmtEur = (v: number) =>
       new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
     const periodoLabel = `${format(weekStart, 'dd/MM/yyyy', { locale: pt })} — ${format(weekEnd, 'dd/MM/yyyy', { locale: pt })}`;
     const date = format(new Date(), 'dd/MM/yyyy HH:mm', { locale: pt });
     const totalFaturado = list.reduce((s, r) => s + r.total_faturado, 0);
-    const totalLiquido  = list.reduce((s, r) => s + r.liquido, 0);
-    const totalAluguer  = list.reduce((s, r) => s + r.aluguer, 0);
-    const totalCombust  = list.reduce((s, r) => s + r.combustivel, 0);
-    const rows = list.map((r) => `<tr>
+    const totalLiquido = list.reduce((s, r) => s + r.liquido, 0);
+    const totalAluguer = list.reduce((s, r) => s + r.aluguer, 0);
+    const totalCombust = list.reduce((s, r) => s + r.combustivel, 0);
+    const rows = list
+      .map(
+        (r) => `<tr>
       <td>${r.driver_name}</td>
       <td style="text-align:right">${fmtEur(r.total_faturado)}</td>
       <td style="text-align:right">${fmtEur(r.combustivel)}</td>
@@ -1193,10 +1207,13 @@ export function ContasResumoTab() {
       <td style="text-align:right">${fmtEur(r.outros_custos)}</td>
       <td style="text-align:right">${fmtEur(r.aluguer)}</td>
       <td style="text-align:right;font-weight:600">${fmtEur(r.liquido)}</td>
-    </tr>`).join('');
+    </tr>`
+      )
+      .join('');
     const w = window.open('', '_blank');
     if (!w) return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Resumos Semanais — WeGest</title><link rel="icon" href="${logoUrl}" type="image/png">
+    w.document
+      .write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Resumos Semanais — WeGest</title><link rel="icon" href="${logoUrl}" type="image/png">
     <style>
       *{margin:0;padding:0;box-sizing:border-box}
       body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#1a1a1a;background:white}
@@ -1247,9 +1264,9 @@ export function ContasResumoTab() {
           <td>Total</td>
           <td class="r">${fmtEur(totalFaturado)}</td>
           <td class="r">${fmtEur(totalCombust)}</td>
-          <td class="r">${fmtEur(list.reduce((s,r)=>s+r.portagens,0))}</td>
-          <td class="r">${fmtEur(list.reduce((s,r)=>s+r.reparacoes,0))}</td>
-          <td class="r">${fmtEur(list.reduce((s,r)=>s+r.outros_custos,0))}</td>
+          <td class="r">${fmtEur(list.reduce((s, r) => s + r.portagens, 0))}</td>
+          <td class="r">${fmtEur(list.reduce((s, r) => s + r.reparacoes, 0))}</td>
+          <td class="r">${fmtEur(list.reduce((s, r) => s + r.outros_custos, 0))}</td>
           <td class="r">${fmtEur(totalAluguer)}</td>
           <td class="r">${fmtEur(totalLiquido)}</td>
         </tr></tfoot>
@@ -1262,7 +1279,7 @@ export function ContasResumoTab() {
   const handleExportAll = () => {
     const fmtEur = (v: number) => Number(v.toFixed(2));
     const rows = filteredResumos.map((r) => ({
-      'Motorista': r.driver_name,
+      Motorista: r.driver_name,
       'Faturado (€)': fmtEur(r.total_faturado),
       'Combustível (€)': fmtEur(r.combustivel),
       'Portagens (€)': fmtEur(r.portagens),
@@ -1419,7 +1436,10 @@ export function ContasResumoTab() {
           </button>
           {(filterRecibo !== 'todos' || filterSaldo !== 'todos') && (
             <button
-              onClick={() => { setFilterRecibo('todos'); setFilterSaldo('todos'); }}
+              onClick={() => {
+                setFilterRecibo('todos');
+                setFilterSaldo('todos');
+              }}
               className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-1"
             >
               Limpar filtros
@@ -1486,146 +1506,179 @@ export function ContasResumoTab() {
 
       {/* Sortable header helper */}
       {(() => {
-        const SortTh = ({ field, children, right }: { field: SortField; children: React.ReactNode; right?: boolean }) => {
+        const SortTh = ({
+          field,
+          children,
+          right,
+        }: {
+          field: SortField;
+          children: React.ReactNode;
+          right?: boolean;
+        }) => {
           const Icon = sortField !== field ? ArrowUpDown : sortDir === 'desc' ? ArrowDown : ArrowUp;
           return (
             <TableHead
-              className={cn('cursor-pointer select-none hover:bg-muted/50 transition-colors', right && 'text-right')}
+              className={cn(
+                'cursor-pointer select-none hover:bg-muted/50 transition-colors',
+                right && 'text-right'
+              )}
               onClick={() => handleSort(field)}
             >
               <span className={cn('inline-flex items-center gap-1', right && 'justify-end w-full')}>
                 {children}
-                <Icon className={cn('h-3 w-3', sortField === field ? 'text-primary' : 'text-muted-foreground/50')} />
+                <Icon
+                  className={cn(
+                    'h-3 w-3',
+                    sortField === field ? 'text-primary' : 'text-muted-foreground/50'
+                  )}
+                />
               </span>
             </TableHead>
           );
         };
 
         return (
-      <div className="hidden md:block rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[40px]">
-                <Checkbox
-                  checked={
-                    selectedIds.size === filteredResumos.length && filteredResumos.length > 0
-                  }
-                  onCheckedChange={toggleSelectAll}
-                />
-              </TableHead>
-              <SortTh field="driver_name">Nome</SortTh>
-              <SortTh field="total_faturado" right>Faturado</SortTh>
-              <SortTh field="liquido" right>Líquido</SortTh>
-              <SortTh field="aluguer" right>Aluguer</SortTh>
-              <SortTh field="combustivel" right>Combustível</SortTh>
-              <SortTh field="portagens" right>Portagens</SortTh>
-              <SortTh field="outros_custos" right>Outros Custos</SortTh>
-              <SortTh field="reparacoes" right>Reparações</SortTh>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredResumos.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                  Nenhum dado encontrado para o período selecionado
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredResumos.map((resumo, idx) => {
-                const rowId = resumo._uid || `row-${idx}`;
-                return (
-                  <TableRow
-                    key={rowId}
-                    className={cn(
-                      "cursor-pointer transition-colors hover:bg-muted/50",
-                      resumo.liquido < 0 && "[box-shadow:inset_4px_0_0_0_#ef4444]"
-                    )}
-                  >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedIds.has(rowId)}
-                        onCheckedChange={() => toggleSelectOne(rowId)}
-                      />
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        'font-bold',
-                        resumo.recibo_verde ? 'text-green-600' : 'text-orange-500'
-                      )}
-                      onClick={() => handleRowClick(resumo)}
-                    >
-                      {resumo.driver_name}
-                    </TableCell>
-                    <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
-                      <span className="text-green-600 font-medium">
-                        {formatCurrency(resumo.total_faturado)}
-                      </span>
-                      {resumo.faturado_bolt > 0 && resumo.faturado_uber > 0 && (
-                        <div className="text-xs text-muted-foreground">
-                          B: {formatCurrency(resumo.faturado_bolt)} | U:{' '}
-                          {formatCurrency(resumo.faturado_uber)}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell
-                      className={cn("text-right font-bold", resumo.liquido < 0 && "text-red-500")}
-                      onClick={() => handleRowClick(resumo)}
-                    >
-                      {formatCurrency(resumo.liquido)}
-                    </TableCell>
-                    <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
-                      {resumo.aluguer > 0 ? (
-                        <span className="font-medium text-purple-600">
-                          {formatCurrency(resumo.aluguer)}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">€0,00</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
-                      {resumo.combustivel > 0 ? (
-                        <span className="font-medium text-orange-600">
-                          {formatCurrency(resumo.combustivel)}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">€0,00</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
-                      {resumo.portagens > 0 ? (
-                        <span className="font-medium text-green-700">
-                          {formatCurrency(resumo.portagens)}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">€0,00</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
-                      {resumo.outros_custos > 0 ? (
-                        <span className="font-medium text-destructive">
-                          {formatCurrency(resumo.outros_custos)}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">€0,00</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
-                      {resumo.reparacoes > 0 ? (
-                        <span className="font-medium text-red-600">
-                          {formatCurrency(resumo.reparacoes)}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">€0,00</span>
-                      )}
+          <div className="hidden md:block rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[40px]">
+                    <Checkbox
+                      checked={
+                        selectedIds.size === filteredResumos.length && filteredResumos.length > 0
+                      }
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
+                  <SortTh field="driver_name">Nome</SortTh>
+                  <SortTh field="total_faturado" right>
+                    Faturado
+                  </SortTh>
+                  <SortTh field="liquido" right>
+                    Líquido
+                  </SortTh>
+                  <SortTh field="aluguer" right>
+                    Aluguer
+                  </SortTh>
+                  <SortTh field="combustivel" right>
+                    Combustível
+                  </SortTh>
+                  <SortTh field="portagens" right>
+                    Portagens
+                  </SortTh>
+                  <SortTh field="outros_custos" right>
+                    Outros Custos
+                  </SortTh>
+                  <SortTh field="reparacoes" right>
+                    Reparações
+                  </SortTh>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredResumos.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      Nenhum dado encontrado para o período selecionado
                     </TableCell>
                   </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                ) : (
+                  filteredResumos.map((resumo, idx) => {
+                    const rowId = resumo._uid || `row-${idx}`;
+                    return (
+                      <TableRow
+                        key={rowId}
+                        className={cn(
+                          'cursor-pointer transition-colors hover:bg-muted/50',
+                          resumo.liquido < 0 && '[box-shadow:inset_4px_0_0_0_#ef4444]'
+                        )}
+                      >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.has(rowId)}
+                            onCheckedChange={() => toggleSelectOne(rowId)}
+                          />
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            'font-bold',
+                            resumo.recibo_verde ? 'text-green-600' : 'text-orange-500'
+                          )}
+                          onClick={() => handleRowClick(resumo)}
+                        >
+                          {resumo.driver_name}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
+                          <span className="text-green-600 font-medium">
+                            {formatCurrency(resumo.total_faturado)}
+                          </span>
+                          {resumo.faturado_bolt > 0 && resumo.faturado_uber > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              B: {formatCurrency(resumo.faturado_bolt)} | U:{' '}
+                              {formatCurrency(resumo.faturado_uber)}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            'text-right font-bold',
+                            resumo.liquido < 0 && 'text-red-500'
+                          )}
+                          onClick={() => handleRowClick(resumo)}
+                        >
+                          {formatCurrency(resumo.liquido)}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
+                          {resumo.aluguer > 0 ? (
+                            <span className="font-medium text-purple-600">
+                              {formatCurrency(resumo.aluguer)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">€0,00</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
+                          {resumo.combustivel > 0 ? (
+                            <span className="font-medium text-orange-600">
+                              {formatCurrency(resumo.combustivel)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">€0,00</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
+                          {resumo.portagens > 0 ? (
+                            <span className="font-medium text-green-700">
+                              {formatCurrency(resumo.portagens)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">€0,00</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
+                          {resumo.outros_custos > 0 ? (
+                            <span className="font-medium text-destructive">
+                              {formatCurrency(resumo.outros_custos)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">€0,00</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
+                          {resumo.reparacoes > 0 ? (
+                            <span className="font-medium text-red-600">
+                              {formatCurrency(resumo.reparacoes)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">€0,00</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
         );
       })()}
 
@@ -1641,7 +1694,13 @@ export function ContasResumoTab() {
           filteredResumos.map((resumo, idx) => {
             const rowId = resumo._uid || `row-${idx}`;
             return (
-              <Card key={rowId} className={cn("cursor-pointer transition-colors hover:bg-muted/50", resumo.liquido < 0 && "border-l-4 border-l-red-500")}>
+              <Card
+                key={rowId}
+                className={cn(
+                  'cursor-pointer transition-colors hover:bg-muted/50',
+                  resumo.liquido < 0 && 'border-l-4 border-l-red-500'
+                )}
+              >
                 <CardContent className="pt-4 pb-3 space-y-3">
                   {/* Header */}
                   <div className="flex justify-between items-start">
@@ -1690,7 +1749,14 @@ export function ContasResumoTab() {
                     onClick={() => handleRowClick(resumo)}
                   >
                     <span className="font-semibold">Líquido</span>
-                    <span className={cn("font-bold", resumo.liquido < 0 ? "text-red-500" : "text-primary")}>{formatCurrency(resumo.liquido)}</span>
+                    <span
+                      className={cn(
+                        'font-bold',
+                        resumo.liquido < 0 ? 'text-red-500' : 'text-primary'
+                      )}
+                    >
+                      {formatCurrency(resumo.liquido)}
+                    </span>
                   </div>
 
                   {/* Despesas */}

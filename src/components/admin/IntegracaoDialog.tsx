@@ -187,13 +187,11 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
 
       // Via Verde: integração manual (sem robot/Apify/credenciais).
       if (isViaVerde) {
-        const { error: vvError } = await supabase
-          .from('plataformas_configuracao')
-          .insert({
-            nome: formData.nome,
-            plataforma: 'viaverde',
-            ativo: true,
-          });
+        const { error: vvError } = await supabase.from('plataformas_configuracao').insert({
+          nome: formData.nome,
+          plataforma: 'viaverde',
+          ativo: true,
+        });
         if (vvError) throw vvError;
         toast({ title: 'Integração criada', description: `Via Verde "${formData.nome}" criada.` });
         setSaving(false);
@@ -404,7 +402,11 @@ export const IntegracaoDialog: React.FC<IntegracaoDialogProps> = ({
                         className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2"
                         onClick={() => setShowPassword(!showPassword)}
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </div>

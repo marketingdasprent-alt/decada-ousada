@@ -258,7 +258,7 @@ export const IntegracoesTab: React.FC = () => {
 
     // Via Verde — integrations created via IntegracaoDialog (plataforma='viaverde', manual upload)
     integracoes
-      .filter((i) => i.plataforma === 'viaverde')
+      .filter((i) => i.plataforma === ('viaverde' as any))
       .forEach((i) => {
         result.push({
           id: i.id,
@@ -345,7 +345,10 @@ export const IntegracoesTab: React.FC = () => {
       const isVvConta = selectedDeleteCard.id.startsWith('vv-');
       if (isVvConta) {
         const contaId = selectedDeleteCard.id.slice(3);
-        const { error } = await (supabase as any).from('via_verde_contas').delete().eq('id', contaId);
+        const { error } = await (supabase as any)
+          .from('via_verde_contas')
+          .delete()
+          .eq('id', contaId);
         if (error) throw error;
       } else {
         const { error } = await supabase

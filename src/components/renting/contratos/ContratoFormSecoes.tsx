@@ -42,7 +42,6 @@ export const ContratoFormSecoes: React.FC<ContratoFormSecoesProps> = ({
     <SectionViatura
       form={form}
       viaturas={viaturas}
-      estacoes={estacoes}
       viaturaLocked={viaturaLocked}
       reservaCodigo={reservaCodigo}
     />

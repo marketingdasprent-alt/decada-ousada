@@ -94,8 +94,10 @@ export const PortagensNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, on
         entry.total_portagens += 1;
         entry.total_valor += Number(row.amount) || 0;
         if (row.transaction_date) {
-          if (!entry.data_min || row.transaction_date < entry.data_min) entry.data_min = row.transaction_date;
-          if (!entry.data_max || row.transaction_date > entry.data_max) entry.data_max = row.transaction_date;
+          if (!entry.data_min || row.transaction_date < entry.data_min)
+            entry.data_min = row.transaction_date;
+          if (!entry.data_max || row.transaction_date > entry.data_max)
+            entry.data_max = row.transaction_date;
         }
         if (!entry.viatura_id && row.viatura_id) entry.viatura_id = row.viatura_id;
       }
@@ -117,7 +119,12 @@ export const PortagensNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, on
           : format(new Date(), 'yyyy-MM-dd');
 
         const { error: mvError } = await supabase.from('motorista_viaturas').upsert(
-          { viatura_id: viatura.viatura_id, motorista_id: motoristaId, data_inicio: dataInicio, data_fim: null },
+          {
+            viatura_id: viatura.viatura_id,
+            motorista_id: motoristaId,
+            data_inicio: dataInicio,
+            data_fim: null,
+          },
           { onConflict: 'viatura_id,data_inicio' }
         );
         if (mvError) throw mvError;
@@ -138,7 +145,11 @@ export const PortagensNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, on
       setViaturas((prev) => prev.filter((v) => v.matricula !== viatura.matricula));
       onChanged?.();
     } catch (err: any) {
-      toast({ title: 'Erro', description: err.message || 'Falha ao associar.', variant: 'destructive' });
+      toast({
+        title: 'Erro',
+        description: err.message || 'Falha ao associar.',
+        variant: 'destructive',
+      });
     } finally {
       setAssociando(null);
     }
@@ -162,7 +173,11 @@ export const PortagensNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, on
   const handlePrint = () => {
     const fmtDate = (s: string | null) => {
       if (!s) return '';
-      try { return format(new Date(s), 'dd/MM/yyyy'); } catch { return s.slice(0, 10); }
+      try {
+        return format(new Date(s), 'dd/MM/yyyy');
+      } catch {
+        return s.slice(0, 10);
+      }
     };
     const rows = viaturas
       .map(
@@ -197,7 +212,10 @@ export const PortagensNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, on
       <script>window.onload=()=>window.print();<\/script>
       </body></html>`;
     const w = window.open('', '_blank');
-    if (w) { w.document.write(html); w.document.close(); }
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+    }
   };
 
   return (

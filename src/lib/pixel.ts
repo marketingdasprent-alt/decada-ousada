@@ -41,8 +41,8 @@ export function initPixel(): void {
   // Stub fbq que vai bufferizar chamadas até o script real carregar.
   (function (f: Window, b: Document, e: string, v: string) {
     const n: any = function () {
-      // eslint-disable-next-line prefer-rest-params, prefer-spread, no-unused-expressions
-      n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+      // eslint-disable-next-line prefer-rest-params
+      return n.callMethod ? n.callMethod(...arguments) : n.queue.push(arguments);
     };
     f.fbq = n;
     if (!f._fbq) f._fbq = n;

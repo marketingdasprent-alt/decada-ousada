@@ -143,12 +143,6 @@ export const contratoFormSchema = z
 
     // Voucher + info adicional
     voucher_codigo: z.string().max(50).optional().nullable(),
-    numero_processo: z.string().max(100).optional().nullable(),
-    voo_referencia: z.string().max(100).optional().nullable(),
-    local_entrega: z.string().max(255).optional().nullable(),
-    local_recolha: z.string().max(255).optional().nullable(),
-    comentarios_entrega: z.string().max(2000).optional().nullable(),
-    comentarios_recolha: z.string().max(2000).optional().nullable(),
 
     observacoes: z.string().max(2000).optional().nullable(),
     observacoes_internas: z.string().max(2000).optional().nullable(),
@@ -215,12 +209,6 @@ export const DEFAULT_CONTRATO_VALUES: ContratoFormValues = {
   extras: [],
   taxas: [],
   voucher_codigo: '',
-  numero_processo: '',
-  voo_referencia: '',
-  local_entrega: '',
-  local_recolha: '',
-  comentarios_entrega: '',
-  comentarios_recolha: '',
   observacoes: '',
   observacoes_internas: '',
   condutores: [],
