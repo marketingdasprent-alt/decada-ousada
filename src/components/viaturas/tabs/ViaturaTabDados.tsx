@@ -899,10 +899,7 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                         <FormLabel>
                           Estação <span className="text-red-500">*</span>
                         </FormLabel>
-                        <Select
-                          value={field.value || ''}
-                          onValueChange={(v) => field.onChange(v)}
-                        >
+                        <Select value={field.value || ''} onValueChange={(v) => field.onChange(v)}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecionar estação..." />

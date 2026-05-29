@@ -45,278 +45,278 @@ const normalizeForSearch = (s: string) =>
 export const SectionGeral: React.FC<SectionGeralProps> = ({ form, clientes }) => {
   const [clientePopoverOpen, setClientePopoverOpen] = useState(false);
   return (
-  <div>
-    <SectionTitle>Geral</SectionTitle>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <FormField
-        control={form.control}
-        name="cliente_id"
-        render={({ field }) => {
-          const selected = field.value
-            ? (clientes.find((c) => c.id === field.value) ?? null)
-            : null;
-          return (
-            <FormItem>
-              <FormLabel>
-                Cliente <span className="text-red-500">*</span>
-              </FormLabel>
-              <Popover
-                open={clientePopoverOpen}
-                onOpenChange={setClientePopoverOpen}
-                modal={false}
-              >
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={clientePopoverOpen}
-                      className="w-full justify-between font-normal bg-background"
-                    >
-                      {selected
-                        ? `${selected.nome}${selected.codigo ? ` (#${selected.codigo})` : ''}`
-                        : 'Clique ou escreva para procurar cliente...'}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[var(--radix-popover-trigger-width)] p-0"
-                  align="start"
+    <div>
+      <SectionTitle>Geral</SectionTitle>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FormField
+          control={form.control}
+          name="cliente_id"
+          render={({ field }) => {
+            const selected = field.value
+              ? (clientes.find((c) => c.id === field.value) ?? null)
+              : null;
+            return (
+              <FormItem>
+                <FormLabel>
+                  Cliente <span className="text-red-500">*</span>
+                </FormLabel>
+                <Popover
+                  open={clientePopoverOpen}
+                  onOpenChange={setClientePopoverOpen}
+                  modal={false}
                 >
-                  <Command
-                    filter={(value, search) => {
-                      const v = normalizeForSearch(value);
-                      const s = normalizeForSearch(search);
-                      return s === '' || v.includes(s) ? 1 : 0;
-                    }}
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={clientePopoverOpen}
+                        className="w-full justify-between font-normal bg-background"
+                      >
+                        {selected
+                          ? `${selected.nome}${selected.codigo ? ` (#${selected.codigo})` : ''}`
+                          : 'Clique ou escreva para procurar cliente...'}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[var(--radix-popover-trigger-width)] p-0"
+                    align="start"
                   >
-                    <CommandInput placeholder="Pesquisar por nome, NIF..." className="h-9" />
-                    <CommandList>
-                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                      <CommandGroup>
-                        {clientes.map((c) => (
-                          <CommandItem
-                            key={c.id}
-                            value={`${c.nome} ${c.nif ?? ''} ${c.codigo ?? ''}`}
-                            onSelect={() => {
-                              field.onChange(c.id);
-                              setClientePopoverOpen(false);
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <Check
-                              className={cn(
-                                'mr-2 h-4 w-4',
-                                field.value === c.id ? 'opacity-100' : 'opacity-0'
+                    <Command
+                      filter={(value, search) => {
+                        const v = normalizeForSearch(value);
+                        const s = normalizeForSearch(search);
+                        return s === '' || v.includes(s) ? 1 : 0;
+                      }}
+                    >
+                      <CommandInput placeholder="Pesquisar por nome, NIF..." className="h-9" />
+                      <CommandList>
+                        <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {clientes.map((c) => (
+                            <CommandItem
+                              key={c.id}
+                              value={`${c.nome} ${c.nif ?? ''} ${c.codigo ?? ''}`}
+                              onSelect={() => {
+                                field.onChange(c.id);
+                                setClientePopoverOpen(false);
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  field.value === c.id ? 'opacity-100' : 'opacity-0'
+                                )}
+                              />
+                              {c.nome}
+                              {c.codigo && (
+                                <span className="ml-1 text-muted-foreground">(#{c.codigo})</span>
                               )}
-                            />
-                            {c.nome}
-                            {c.codigo && (
-                              <span className="ml-1 text-muted-foreground">(#{c.codigo})</span>
-                            )}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
+
+        <FormField
+          control={form.control}
+          name="origem"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Origem</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {ORIGEM_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
-          );
-        }}
-      />
+          )}
+        />
 
-      <FormField
-        control={form.control}
-        name="origem"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Origem</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+        <FormField
+          control={form.control}
+          name="estado_operacional"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Estado Operacional</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {ESTADO_OP_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="estado_financeiro"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Estado Financeiro</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {ESTADO_FIN_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="tarifa_diaria"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tarifa diária (€)</FormLabel>
               <FormControl>
-                <SelectTrigger className="bg-background">
-                  <SelectValue />
-                </SelectTrigger>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="bg-background"
+                  value={field.value ?? ''}
+                  onChange={(e) =>
+                    field.onChange(e.target.value === '' ? null : Number(e.target.value))
+                  }
+                />
               </FormControl>
-              <SelectContent>
-                {ORIGEM_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <FormField
-        control={form.control}
-        name="estado_operacional"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Estado Operacional</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+        <FormField
+          control={form.control}
+          name="valor_total_manual"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Valor total manual (€)</FormLabel>
               <FormControl>
-                <SelectTrigger className="bg-background">
-                  <SelectValue />
-                </SelectTrigger>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="bg-background"
+                  placeholder="Opcional — sobrepõe cálculo"
+                  value={field.value ?? ''}
+                  onChange={(e) =>
+                    field.onChange(e.target.value === '' ? null : Number(e.target.value))
+                  }
+                />
               </FormControl>
-              <SelectContent>
-                {ESTADO_OP_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <FormField
-        control={form.control}
-        name="estado_financeiro"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Estado Financeiro</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+        <FormField
+          control={form.control}
+          name="desconto_percentagem"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Desconto (%)</FormLabel>
               <FormControl>
-                <SelectTrigger className="bg-background">
-                  <SelectValue />
-                </SelectTrigger>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  className="bg-background"
+                  value={field.value ?? ''}
+                  onChange={(e) =>
+                    field.onChange(e.target.value === '' ? null : Number(e.target.value))
+                  }
+                />
               </FormControl>
-              <SelectContent>
-                {ESTADO_FIN_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <FormField
-        control={form.control}
-        name="tarifa_diaria"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Tarifa diária (€)</FormLabel>
-            <FormControl>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                className="bg-background"
-                value={field.value ?? ''}
-                onChange={(e) =>
-                  field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                }
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+        <FormField
+          control={form.control}
+          name="taxa_iva"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>IVA (%)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  readOnly
+                  tabIndex={-1}
+                  className="bg-muted/50 cursor-not-allowed"
+                  value={field.value ?? DEFAULT_IVA_PERCENTAGE}
+                />
+              </FormControl>
+              <p className="text-xs text-muted-foreground">
+                Definido pelo regime e pelas taxas da organização (Definições › Fiscal).
+              </p>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <FormField
-        control={form.control}
-        name="valor_total_manual"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Valor total manual (€)</FormLabel>
-            <FormControl>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                className="bg-background"
-                placeholder="Opcional — sobrepõe cálculo"
-                value={field.value ?? ''}
-                onChange={(e) =>
-                  field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                }
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="desconto_percentagem"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Desconto (%)</FormLabel>
-            <FormControl>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                className="bg-background"
-                value={field.value ?? ''}
-                onChange={(e) =>
-                  field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                }
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="taxa_iva"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>IVA (%)</FormLabel>
-            <FormControl>
-              <Input
-                type="number"
-                readOnly
-                tabIndex={-1}
-                className="bg-muted/50 cursor-not-allowed"
-                value={field.value ?? DEFAULT_IVA_PERCENTAGE}
-              />
-            </FormControl>
-            <p className="text-xs text-muted-foreground">
-              Definido pelo regime e pelas taxas da organização (Definições › Fiscal).
-            </p>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="voucher_codigo"
-        render={({ field }) => (
-          <FormItem className="sm:col-span-2">
-            <FormLabel>Voucher</FormLabel>
-            <FormControl>
-              <Input
-                className="bg-background"
-                {...field}
-                value={field.value ?? ''}
-                placeholder="Código promocional"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+        <FormField
+          control={form.control}
+          name="voucher_codigo"
+          render={({ field }) => (
+            <FormItem className="sm:col-span-2">
+              <FormLabel>Voucher</FormLabel>
+              <FormControl>
+                <Input
+                  className="bg-background"
+                  {...field}
+                  value={field.value ?? ''}
+                  placeholder="Código promocional"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
     </div>
-  </div>
   );
 };

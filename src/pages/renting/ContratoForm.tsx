@@ -43,7 +43,10 @@ import { ContratoTabExtras } from '@/components/renting/contratos/ContratoTabExt
 import { ContratoTabTaxas } from '@/components/renting/contratos/ContratoTabTaxas';
 import { ContratoTabsPlaceholder } from '@/components/renting/contratos/ContratoTabsPlaceholder';
 import { ResumoContrato } from '@/components/renting/contratos/ResumoContrato';
-import { CondutoresFields, type CondutorPessoa } from '@/components/renting/shared/CondutoresFields';
+import {
+  CondutoresFields,
+  type CondutorPessoa,
+} from '@/components/renting/shared/CondutoresFields';
 import {
   DEFAULT_CONTRATO_VALUES,
   contratoFormSchema,
@@ -119,8 +122,7 @@ const ContratoForm = () => {
     const messages = collectErrorMessages(errors);
     toast({
       title: 'Não foi possível guardar',
-      description:
-        messages[0] ?? 'Há campos obrigatórios por preencher. Verifique o formulário.',
+      description: messages[0] ?? 'Há campos obrigatórios por preencher. Verifique o formulário.',
       variant: 'destructive',
     });
   };

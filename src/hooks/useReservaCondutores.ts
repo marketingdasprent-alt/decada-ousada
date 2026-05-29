@@ -14,12 +14,12 @@ export function useReservaCondutores(reservaId: string | null | undefined) {
       const { data, error } = await supabase
         .from('reserva_condutores')
         .select(
-          'id, org_id, reserva_id, cliente_id, motorista_id, is_principal, created_by, created_at'
+          'id, org_id, reserva_id, cliente_id, motorista_id, is_principal, created_by, created_at' as string
         )
         .eq('reserva_id', reservaId)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      return (data ?? []) as ReservaCondutor[];
+      return (data ?? []) as unknown as ReservaCondutor[];
     },
     enabled: !!reservaId,
     staleTime: 30_000,
@@ -45,14 +45,14 @@ export function useSyncReservaCondutores() {
 
       const { data: actuais, error: fetchErr } = await supabase
         .from('reserva_condutores')
-        .select('id, cliente_id, motorista_id, is_principal')
+        .select('id, cliente_id, motorista_id, is_principal' as string)
         .eq('reserva_id', reservaId);
       if (fetchErr) throw fetchErr;
 
       type Linha = { id: string; cliente_id: string | null; motorista_id: string | null };
       const pessoaIdDe = (r: Linha) => r.cliente_id ?? r.motorista_id ?? '';
 
-      const lista = (actuais ?? []) as Linha[];
+      const lista = (actuais ?? []) as unknown as Linha[];
       const actuaisPorPessoa = new Map(lista.map((c) => [pessoaIdDe(c), c]));
       const desejadosIds = new Set(desejados.map((c) => c.pessoa_id));
 
@@ -89,7 +89,7 @@ export function useSyncReservaCondutores() {
           .from('reserva_condutores')
           .update({ is_principal: true })
           .eq('reserva_id', reservaId)
-          .eq(coluna, principal.pessoa_id);
+          .eq(coluna as string, principal.pessoa_id);
         if (error) throw error;
       }
     },

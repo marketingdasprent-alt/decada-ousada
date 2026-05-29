@@ -21,9 +21,7 @@ interface FranquiaKmsFieldsShape extends FieldValues {
   km_adicional_valor: number | null;
 }
 
-export const FranquiaKmsFields: React.FC<{ kmsReadOnly?: boolean }> = ({
-  kmsReadOnly = false,
-}) => {
+export const FranquiaKmsFields: React.FC<{ kmsReadOnly?: boolean }> = ({ kmsReadOnly = false }) => {
   const form = useFormContext<FranquiaKmsFieldsShape>();
 
   return (

@@ -589,8 +589,7 @@ export const UberDataTab: React.FC = () => {
     return <Badge variant="secondary">{formatted}</Badge>;
   };
 
-  const hasActiveFilters =
-    searchTerm || selectedIntegracao !== 'all' || selectedStatus !== 'all';
+  const hasActiveFilters = searchTerm || selectedIntegracao !== 'all' || selectedStatus !== 'all';
   void hasActiveFilters;
 
   const hasLocalFilters = searchTerm || selectedStatus !== 'all';
@@ -844,7 +843,6 @@ export const UberDataTab: React.FC = () => {
             </Table>
           </div>
         )}
-
       </TabsContent>
 
       <TabsContent value="viagens">

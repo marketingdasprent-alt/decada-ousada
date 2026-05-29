@@ -302,7 +302,6 @@ export const BPDataTab: React.FC = () => {
           </Table>
         </div>
       )}
-
     </div>
   );
 };

@@ -127,8 +127,8 @@ export const SectionViatura: React.FC<SectionViaturaProps> = ({ form, viaturas, 
             <span>
               {estacaoViaturaNome ? (
                 <>
-                  A viatura encontra-se na estação <strong>{estacaoViaturaNome}</strong> —
-                  diferente da estação de entrega.
+                  A viatura encontra-se na estação <strong>{estacaoViaturaNome}</strong> — diferente
+                  da estação de entrega.
                 </>
               ) : (
                 <>A viatura não tem estação definida.</>

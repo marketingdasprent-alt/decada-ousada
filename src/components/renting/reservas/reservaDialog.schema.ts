@@ -20,10 +20,7 @@ const datetimeLocal = (label: string) =>
 
 /** UUID opcional — string vazia conta como ausente (null), não como erro. */
 const optionalUuid = (msg = 'Valor inválido') =>
-  z.preprocess(
-    (v) => (v === '' || v === undefined ? null : v),
-    z.string().uuid(msg).nullable()
-  );
+  z.preprocess((v) => (v === '' || v === undefined ? null : v), z.string().uuid(msg).nullable());
 
 export const reservaDialogSchema = z
   .object({

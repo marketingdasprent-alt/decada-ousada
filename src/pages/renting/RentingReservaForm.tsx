@@ -291,8 +291,7 @@ const RentingReservaForm = () => {
     const messages = collectErrorMessages(errors);
     toast({
       title: 'Não foi possível guardar',
-      description:
-        messages[0] ?? 'Há campos obrigatórios por preencher. Verifique o formulário.',
+      description: messages[0] ?? 'Há campos obrigatórios por preencher. Verifique o formulário.',
       variant: 'destructive',
     });
   };

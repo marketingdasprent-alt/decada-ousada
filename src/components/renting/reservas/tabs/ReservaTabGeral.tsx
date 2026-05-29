@@ -174,7 +174,9 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('renting_tarifas')
-        .select('grupo_id, nome, kms_incluidos, km_adicional_valor, preco_dia, preco_semana, preco_mes')
+        .select(
+          'grupo_id, nome, kms_incluidos, km_adicional_valor, preco_dia, preco_semana, preco_mes'
+        )
         .eq('ativa', true);
       if (error) throw error;
       return data;
@@ -733,9 +735,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
                     {isEdit && (
                       <SelectItem value="cancelada">
                         <span className="flex items-center gap-2">
-                          <span
-                            className={cn('h-2 w-2 rounded-full', ESTADO_META.cancelada.dot)}
-                          />
+                          <span className={cn('h-2 w-2 rounded-full', ESTADO_META.cancelada.dot)} />
                           Cancelada
                         </span>
                       </SelectItem>
@@ -793,8 +793,7 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
               },
               {
                 label: 'Preço / semana',
-                value:
-                  tarifaAtual.preco_semana != null ? `${tarifaAtual.preco_semana} €` : '—',
+                value: tarifaAtual.preco_semana != null ? `${tarifaAtual.preco_semana} €` : '—',
               },
               {
                 label: 'Preço / mês',

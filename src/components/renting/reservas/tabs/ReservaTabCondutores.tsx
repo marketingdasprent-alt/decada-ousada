@@ -1,4 +1,7 @@
-import { CondutoresFields, type CondutorPessoa } from '@/components/renting/shared/CondutoresFields';
+import {
+  CondutoresFields,
+  type CondutorPessoa,
+} from '@/components/renting/shared/CondutoresFields';
 
 interface ReservaTabCondutoresProps {
   /** Clientes (rent-a-car) ou motoristas (TVDE), conforme o regime. */

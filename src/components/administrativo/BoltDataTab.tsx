@@ -192,18 +192,6 @@ export const BoltDataTab: React.FC = () => {
     return { total, totalViagens, totalBruto, totalLiquido };
   }, [filteredResumos]);
 
-  const handleDateRangeSelect = (range: DateRange | undefined) => {
-    if (rangeClickCount === 0) {
-      // First click: start fresh with just this date
-      setDateRange({ from: range?.from, to: undefined });
-      setRangeClickCount(1);
-    } else {
-      // Second click: complete the range
-      setDateRange(range);
-      setRangeClickCount(0);
-    }
-  };
-
   const firstActiveIntegracao = integracoes.find((i) => i.ativo);
 
   const formatMinutes = (min: number | null) => {
@@ -317,7 +305,6 @@ export const BoltDataTab: React.FC = () => {
               </span>
             )}
           </div>
-
         </div>
       </div>
 
@@ -483,7 +470,6 @@ export const BoltDataTab: React.FC = () => {
           </Table>
         </div>
       )}
-
     </div>
   );
 };

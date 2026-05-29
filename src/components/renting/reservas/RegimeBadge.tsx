@@ -15,9 +15,7 @@ const ICON: Record<ReservaRegime, LucideIcon> = {
 };
 
 /** Chip de regime (Rent-a-Car / TVDE) com ícone e cor. */
-export const RegimeBadge: React.FC<{ regime: ReservaRegime | null | undefined }> = ({
-  regime,
-}) => {
+export const RegimeBadge: React.FC<{ regime: ReservaRegime | null | undefined }> = ({ regime }) => {
   const safe: ReservaRegime = regime ?? 'rent_a_car';
   const Icon = ICON[safe];
   return (

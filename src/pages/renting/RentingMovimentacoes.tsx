@@ -101,9 +101,7 @@ const RentingMovimentacoes = () => {
                               {estacaoNome(m.estacao_origem_id)}
                             </span>
                             <ArrowRight className="h-3.5 w-3.5 text-primary shrink-0" />
-                            <span className="font-medium">
-                              {estacaoNome(m.estacao_destino_id)}
-                            </span>
+                            <span className="font-medium">{estacaoNome(m.estacao_destino_id)}</span>
                           </span>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">

@@ -80,7 +80,8 @@ export const AdminFiltros: React.FC<AdminFiltrosProps> = ({
     return isCurrentWeek ? `${label} (Semana Actual)` : label;
   };
 
-  const mostrarIntegracoes = !!integracoes && integracoes.length > 0 && !!onSelectedIntegracaoChange;
+  const mostrarIntegracoes =
+    !!integracoes && integracoes.length > 0 && !!onSelectedIntegracaoChange;
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">

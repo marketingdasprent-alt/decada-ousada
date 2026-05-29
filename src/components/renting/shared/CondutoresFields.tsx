@@ -23,8 +23,7 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-const normalizeForSearch = (s: string) =>
-  s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const normalizeForSearch = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 /** Pessoa que pode ser condutor — cliente (rent-a-car) ou motorista (TVDE). */
 export interface CondutorPessoa {
