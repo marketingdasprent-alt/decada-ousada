@@ -6,6 +6,8 @@ interface ContratoTabsPlaceholderProps {
   geralContent: React.ReactNode;
   /** Conteúdo da tab "Condutores" — passado pela página pai. */
   condutoresContent: React.ReactNode;
+  /** Label da tab de condutores ('Condutores' ou 'Motoristas'). */
+  condutoresLabel?: string;
   /** Conteúdo da tab "Coberturas" — passado pela página pai. */
   coberturasContent: React.ReactNode;
   /** Conteúdo da tab "Extras" — passado pela página pai. */
@@ -21,6 +23,7 @@ const PLACEHOLDER_TABS = [{ value: 'outros', label: 'Outros' }] as const;
 export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = ({
   geralContent,
   condutoresContent,
+  condutoresLabel = 'Condutores',
   coberturasContent,
   extrasContent,
   taxasContent,
@@ -32,7 +35,7 @@ export const ContratoTabsPlaceholder: React.FC<ContratoTabsPlaceholderProps> = (
     <Tabs value={active} onValueChange={setActive} className="w-full">
       <TabsList className="w-full justify-start overflow-x-auto">
         <TabsTrigger value="geral">Geral</TabsTrigger>
-        <TabsTrigger value="condutores">Condutores</TabsTrigger>
+        <TabsTrigger value="condutores">{condutoresLabel}</TabsTrigger>
         <TabsTrigger value="coberturas">Coberturas</TabsTrigger>
         <TabsTrigger value="extras">Extras</TabsTrigger>
         <TabsTrigger value="taxas">Taxas</TabsTrigger>

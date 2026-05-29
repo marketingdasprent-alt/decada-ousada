@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { RENOVACAO_OPCOES, RESERVA_ESTADOS } from '@/types/reserva';
-import { CONTRATO_MODALIDADES } from '@/types/contratoRenting';
+import { RENOVACAO_OPCOES, RESERVA_ESTADOS, RESERVA_REGIMES } from '@/types/reserva';
 
 const optionalNumber = z
   .union([z.number(), z.string()])
@@ -12,35 +11,41 @@ const optionalNumber = z
     return Number.isFinite(n) ? n : null;
   });
 
-const datetimeLocal = z
-  .string()
-  .min(1, 'Data obrigatória')
-  .refine((v) => !Number.isNaN(new Date(v).getTime()), 'Data inválida');
+/** Data/hora obrigatória, com mensagem amigável por campo. */
+const datetimeLocal = (label: string) =>
+  z
+    .string()
+    .min(1, `Indique a ${label}`)
+    .refine((v) => !Number.isNaN(new Date(v).getTime()), `A ${label} é inválida`);
+
+/** UUID opcional — string vazia conta como ausente (null), não como erro. */
+const optionalUuid = (msg = 'Valor inválido') =>
+  z.preprocess((v) => (v === '' || v === undefined ? null : v), z.string().uuid(msg).nullable());
 
 export const reservaDialogSchema = z
   .object({
-    viatura_id: z.string().uuid('Viatura inválida').nullable().optional(),
+    viatura_id: optionalUuid('Viatura inválida'),
     matricula: z.string().max(20).optional().nullable(),
     grupo: z.string().max(50).optional().nullable(),
 
-    estacao_entrega_id: z.string().uuid().nullable().optional(),
-    estacao_recolha_id: z.string().uuid().nullable().optional(),
+    estacao_entrega_id: optionalUuid('Estação de início inválida'),
+    estacao_recolha_id: optionalUuid('Estação de fim inválida'),
 
-    data_inicio: datetimeLocal,
-    data_fim: datetimeLocal,
+    data_inicio: datetimeLocal('data de início'),
+    data_fim: datetimeLocal('data de fim'),
 
-    cliente_id: z.string().uuid().nullable().optional(),
+    cliente_id: optionalUuid('Cliente inválido'),
     cliente_nome: z.string().max(255).optional().nullable(),
 
-    condutor_id: z.string().uuid().nullable().optional(),
+    condutor_id: optionalUuid('Condutor inválido'),
     condutor_nome: z.string().max(255).optional().nullable(),
 
     estado: z.enum(RESERVA_ESTADOS),
-
-    // Modalidade — determina a taxa de IVA (rent-a-car vs TVDE)
-    modalidade: z.enum(CONTRATO_MODALIDADES),
+    regime: z.enum(RESERVA_REGIMES).default('rent_a_car'),
 
     valor_total: optionalNumber,
+    desconto: optionalNumber,
+    valor_total_manual: optionalNumber,
     franquia_valor: optionalNumber,
     caucao_valor: optionalNumber,
     kms_incluidos: optionalNumber,
@@ -56,17 +61,18 @@ export const reservaDialogSchema = z
     condutores: z
       .array(
         z.object({
-          cliente_id: z.string().uuid('Cliente inválido'),
+          pessoa_id: z.string().uuid('Condutor inválido'),
           is_principal: z.boolean().default(false),
         })
       )
+      .min(1, 'É obrigatório pelo menos um condutor/motorista.')
       .default([])
       .refine(
         (lista) => {
-          const ids = lista.map((c) => c.cliente_id);
+          const ids = lista.map((c) => c.pessoa_id);
           return new Set(ids).size === ids.length;
         },
-        { message: 'Cada cliente só pode aparecer uma vez como condutor.' }
+        { message: 'Cada pessoa só pode aparecer uma vez.' }
       )
       .refine((lista) => lista.filter((c) => c.is_principal).length <= 1, {
         message: 'Apenas um condutor pode ser principal.',
@@ -95,28 +101,49 @@ export const reservaDialogSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['cliente_id'],
-        message: 'Cliente obrigatório quando a reserva é confirmada ou está em curso',
+        message: 'Indique o cliente da reserva',
       });
     }
     if (!d.viatura_id) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['viatura_id'],
-        message: 'Viatura obrigatória quando a reserva é confirmada ou está em curso',
+        message: 'Indique a viatura',
       });
     }
     if (!d.estacao_entrega_id) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['estacao_entrega_id'],
-        message: 'Estação de entrega obrigatória',
+        message: 'Indique a estação de início',
       });
     }
     if (!d.estacao_recolha_id) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['estacao_recolha_id'],
-        message: 'Estação de recolha obrigatória',
+        message: 'Indique a estação de fim',
+      });
+    }
+  })
+  // Renovação: o aluguer de longa duração obriga a escolher a opção de renovação.
+  .superRefine((d, ctx) => {
+    if (d.is_longa_duracao && !d.renovacao_opcao) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['renovacao_opcao'],
+        message: 'Escolha a opção de renovação.',
+      });
+    }
+    if (
+      d.is_longa_duracao &&
+      d.renovacao_opcao === 'intervalo_dias' &&
+      (d.renovacao_intervalo_dias == null || d.renovacao_intervalo_dias <= 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['renovacao_intervalo_dias'],
+        message: 'Indique o intervalo de dias da renovação.',
       });
     }
   });

@@ -33,11 +33,9 @@ import {
   MapPin,
   Calendar as CalendarIcon,
 } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
-import { ImportRobotCsvDialog } from '@/components/admin/ImportRobotCsvDialog';
-import { DateRange } from 'react-day-picker';
+import { AdminFiltros } from './AdminFiltros';
 
 interface BpTransacao {
   id: string;
@@ -67,15 +65,10 @@ export const BPDataTab: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [transacoes, setTransacoes] = useState<BpTransacao[]>([]);
   const [integracoes, setIntegracoes] = useState<Integracao[]>([]);
-  const [showImportDialog, setShowImportDialog] = useState(false);
-
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIntegracao, setSelectedIntegracao] = useState('all');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
-    to: new Date(),
-  });
+  const [selectedWeek, setSelectedWeek] = useState<Date>(subWeeks(new Date(), 1));
 
   useEffect(() => {
     fetchIntegracoes();
@@ -83,7 +76,7 @@ export const BPDataTab: React.FC = () => {
 
   useEffect(() => {
     fetchTransacoes();
-  }, [selectedIntegracao, dateRange]);
+  }, [selectedIntegracao, selectedWeek]);
 
   const fetchIntegracoes = async () => {
     try {
@@ -113,16 +106,13 @@ export const BPDataTab: React.FC = () => {
         )
         .order('transaction_date', { ascending: false });
 
-      if (dateRange?.from) {
-        const fromISO = new Date(dateRange.from);
-        fromISO.setHours(0, 0, 0, 0);
-        query = query.gte('transaction_date', fromISO.toISOString());
-      }
-      if (dateRange?.to) {
-        const toISO = new Date(dateRange.to);
-        toISO.setHours(23, 59, 59, 999);
-        query = query.lte('transaction_date', toISO.toISOString());
-      }
+      const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 });
+      weekStart.setHours(0, 0, 0, 0);
+      weekEnd.setHours(23, 59, 59, 999);
+      query = query
+        .gte('transaction_date', weekStart.toISOString())
+        .lte('transaction_date', weekEnd.toISOString());
       if (selectedIntegracao !== 'all') {
         query = query.eq('integracao_id', selectedIntegracao);
       }
@@ -160,79 +150,23 @@ export const BPDataTab: React.FC = () => {
     return { total, totalLitros, totalValor };
   }, [filteredTransacoes]);
 
-  const handleClearFilters = () => {
-    setSearchTerm('');
-    setSelectedIntegracao('all');
-    setDateRange({ from: subDays(new Date(), 30), to: new Date() });
-  };
-
   const firstActiveIntegracao = integracoes.find((i) => i.ativo);
+  void firstActiveIntegracao;
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
+      {/* Filtros — iguais à tab Contas */}
       <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="w-[280px] justify-start text-left font-normal">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange?.from ? (
-                  dateRange.to ? (
-                    <>
-                      {format(dateRange.from, 'dd/MM/yyyy')} - {format(dateRange.to, 'dd/MM/yyyy')}
-                    </>
-                  ) : (
-                    format(dateRange.from, 'dd/MM/yyyy')
-                  )
-                ) : (
-                  <span>Selecionar período</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={dateRange?.from}
-                selected={dateRange}
-                onSelect={setDateRange}
-                numberOfMonths={2}
-                locale={pt}
-              />
-            </PopoverContent>
-          </Popover>
-
-          <Select value={selectedIntegracao} onValueChange={setSelectedIntegracao}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Integração" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as integrações</SelectItem>
-              {integracoes.map((int) => (
-                <SelectItem key={int.id} value={int.id}>
-                  {int.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Pesquisar motorista ou posto..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {(searchTerm || selectedIntegracao !== 'all') && (
-            <Button variant="ghost" size="icon" onClick={handleClearFilters}>
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+        <AdminFiltros
+          selectedWeek={selectedWeek}
+          onSelectedWeekChange={setSelectedWeek}
+          integracoes={integracoes}
+          selectedIntegracao={selectedIntegracao}
+          onSelectedIntegracaoChange={setSelectedIntegracao}
+          searchTerm={searchTerm}
+          onSearchTermChange={setSearchTerm}
+          searchPlaceholder="Pesquisar motorista ou posto..."
+        />
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -241,15 +175,6 @@ export const BPDataTab: React.FC = () => {
               Dados de combustível importados da BP
             </span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowImportDialog(true)}
-            disabled={!firstActiveIntegracao}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Importar CSV BP
-          </Button>
         </div>
       </div>
 
@@ -376,15 +301,6 @@ export const BPDataTab: React.FC = () => {
             </TableBody>
           </Table>
         </div>
-      )}
-
-      {firstActiveIntegracao && (
-        <ImportRobotCsvDialog
-          open={showImportDialog}
-          onOpenChange={setShowImportDialog}
-          integracaoId={firstActiveIntegracao.id}
-          onImportComplete={fetchTransacoes}
-        />
       )}
     </div>
   );

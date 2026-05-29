@@ -24,6 +24,7 @@ export const COMBUSTIVEIS = [
 
 export const STATUS_OPTIONS = [
   { value: 'disponivel', label: 'Disponível' },
+  { value: 'reservada', label: 'Reservada' },
   { value: 'em_uso', label: 'Em Uso' },
   { value: 'manutencao', label: 'Manutenção' },
   { value: 'inativo', label: 'Inativo' },
@@ -52,6 +53,8 @@ export const getStatusBadgeClass = (status?: string | null) => {
   switch (s) {
     case 'disponivel':
       return 'bg-green-500/10 text-green-600 border-green-500/20';
+    case 'reservada':
+      return 'bg-violet-500/10 text-violet-600 border-violet-500/20';
     case 'em_uso':
     case 'em uso':
       return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
@@ -72,6 +75,8 @@ export const getStatusColorClass = (status?: string | null) => {
   switch (s) {
     case 'disponivel':
       return 'bg-green-500 text-white hover:bg-green-600';
+    case 'reservada':
+      return 'bg-violet-500 text-white hover:bg-violet-600';
     case 'em_uso':
     case 'em uso':
       return 'bg-blue-500 text-white hover:bg-blue-600';
@@ -92,6 +97,8 @@ export const getStatusLabel = (status?: string | null) => {
   switch (s) {
     case 'disponivel':
       return 'Disponível';
+    case 'reservada':
+      return 'Reservada';
     case 'em_uso':
     case 'em uso':
       return 'Em Uso';

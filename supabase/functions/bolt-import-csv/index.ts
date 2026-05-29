@@ -65,6 +65,26 @@ const NUMERIC_COLUMNS = new Set([
 
 const INTEGER_COLUMNS = new Set(['viagens_terminadas']);
 
+/**
+ * Normaliza um cabeçalho CSV — torna o matching tolerante a maiúsculas,
+ * acentos e ao sufixo de unidade (ex.: "|€", "|€/h", "|%").
+ * "Ganhos Líquidos|€", "ganhos liquidos" e "Ganhos líquidos" passam todos
+ * a casar com a mesma chave.
+ */
+const normHeader = (s: string): string =>
+  s
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // strip accents
+    .replace(/\|.*$/, '')                              // strip unit suffix
+    .replace(/\s+/g, ' ')
+    .trim();
+
+// Pré-calcula o map com chaves normalizadas — usado em runtime.
+const COLUMN_MAP_NORM: Record<string, string> = {};
+for (const [k, v] of Object.entries(COLUMN_MAP)) {
+  COLUMN_MAP_NORM[normHeader(k)] = v;
+}
+
 function parseCSV(csvContent: string): Record<string, string>[] {
   const lines = csvContent.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   if (lines.length < 2) return [];
@@ -161,14 +181,45 @@ Deno.serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 
+    // Aceita service_role_key (chamadas internas — cron/outros edge functions)
+    // OU token de utilizador (upload manual pelo wizard de importação).
     const authHeader = req.headers.get('authorization') || '';
     const token = authHeader.replace('Bearer ', '');
-    if (token !== SERVICE_ROLE_KEY) {
+
+    if (!token) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Não autorizado' }),
+        JSON.stringify({ success: false, error: 'Token em falta' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
+    }
+
+    if (token !== SERVICE_ROLE_KEY) {
+      // Valida o JWT do utilizador via Supabase auth.
+      const supabaseAuth = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      });
+      const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Sessão inválida' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      // Exige admin (mesmo critério do robot-manual-import).
+      const supabaseCheck = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+      const { data: profile } = await supabaseCheck
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+      if (!profile?.is_admin) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Sem permissão de administrador' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
     }
 
     const body = await req.json();
@@ -189,6 +240,27 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    // Obter o org_id da integração — necessário para o RLS multi-tenant.
+    // (Edge functions correm com service_role e não têm sessão de user, por isso
+    // o default `get_current_org_id()` devolve NULL e os registos ficariam invisíveis.)
+    const { data: integracaoData, error: integracaoError } = await supabase
+      .from('plataformas_configuracao')
+      .select('org_id')
+      .eq('id', integracao_id)
+      .single();
+
+    if (integracaoError || !integracaoData?.org_id) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Integração não encontrada ou sem org_id (${integracao_id})`,
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const orgId = integracaoData.org_id as string;
 
     // Parse CSV
     const rows = parseCSV(dados_csv_bolt);
@@ -319,16 +391,19 @@ Deno.serve(async (req) => {
       try {
         const record: Record<string, any> = {
           integracao_id,
+          org_id: orgId,
           periodo: periodoValue,
           raw_data: row,
+          updated_at: new Date().toISOString(),
           ...(periodoInicioValue && { periodo_inicio: periodoInicioValue }),
           ...(periodoFimValue && { periodo_fim: periodoFimValue }),
         };
 
-        // Map CSV columns to DB columns
-        for (const [csvCol, dbCol] of Object.entries(COLUMN_MAP)) {
-          const value = row[csvCol];
+        // Map CSV columns to DB columns — matching tolerante (normHeader).
+        for (const [csvHeader, value] of Object.entries(row)) {
           if (value === undefined) continue;
+          const dbCol = COLUMN_MAP_NORM[normHeader(csvHeader)];
+          if (!dbCol) continue;
 
           if (NUMERIC_COLUMNS.has(dbCol)) {
             record[dbCol] = parseNumber(value);

@@ -510,6 +510,25 @@ const loadLookups = async (supabase: ReturnType<typeof createClient>, integracao
   return { motoristasByEmail, motoristasByPhone, motoristasByName, viaturasByPlate, uberDriverToMotorista, uberVehicleToViatura };
 };
 
+// Cache de org_id por integração para evitar lookups repetidos.
+const orgIdCache = new Map<string, string>();
+
+const resolveOrgId = async (
+  supabase: ReturnType<typeof createClient>,
+  integracaoId: string,
+): Promise<string | null> => {
+  const cached = orgIdCache.get(integracaoId);
+  if (cached) return cached;
+  const { data } = await supabase
+    .from("plataformas_configuracao")
+    .select("org_id")
+    .eq("id", integracaoId)
+    .single();
+  const orgId = (data as { org_id?: string } | null)?.org_id ?? null;
+  if (orgId) orgIdCache.set(integracaoId, orgId);
+  return orgId;
+};
+
 const upsertRows = async ({
   supabase,
   table,
@@ -526,6 +545,14 @@ const upsertRows = async ({
   rows: Record<string, unknown>[];
 }) => {
   if (rows.length === 0) return { inserted: 0, updated: 0 };
+
+  // Injectar org_id em todas as linhas que não o tenham (RLS multi-tenant).
+  const orgId = await resolveOrgId(supabase, integracaoId);
+  if (orgId) {
+    for (const row of rows) {
+      if (row.org_id == null) row.org_id = orgId;
+    }
+  }
 
   const ids = rows
     .map((row) => row[idColumn])

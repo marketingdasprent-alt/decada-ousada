@@ -5,7 +5,7 @@ import type { CondutorFormItem, ReservaCondutor } from '@/types/reserva';
 
 const QUERY_KEY_BASE = ['renting', 'reserva-condutores'] as const;
 
-/** Carrega os condutores de uma reserva. */
+/** Carrega os condutores de uma reserva (clientes ou motoristas). */
 export function useReservaCondutores(reservaId: string | null | undefined) {
   return useQuery({
     queryKey: [...QUERY_KEY_BASE, reservaId ?? null],
@@ -13,11 +13,13 @@ export function useReservaCondutores(reservaId: string | null | undefined) {
       if (!reservaId) return [];
       const { data, error } = await supabase
         .from('reserva_condutores')
-        .select('id, org_id, reserva_id, cliente_id, is_principal, created_by, created_at')
+        .select(
+          'id, org_id, reserva_id, cliente_id, motorista_id, is_principal, created_by, created_at' as string
+        )
         .eq('reserva_id', reservaId)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      return (data ?? []) as ReservaCondutor[];
+      return (data ?? []) as unknown as ReservaCondutor[];
     },
     enabled: !!reservaId,
     staleTime: 30_000,
@@ -27,55 +29,52 @@ export function useReservaCondutores(reservaId: string | null | undefined) {
 interface SyncArgs {
   reservaId: string;
   desejados: CondutorFormItem[];
+  /** 'cliente' (rent-a-car) ou 'motorista' (TVDE) — define a coluna usada. */
+  tipo: 'cliente' | 'motorista';
 }
 
 /**
- * Sincroniza a lista de condutores duma reserva contra o estado actual na BD:
- *   • Apaga os condutores que existem na BD mas não estão na lista desejada.
- *   • Insere os condutores que estão na lista mas ainda não existem.
- *   • Garante que apenas um condutor é principal — limpa a flag em todos e
- *     marca o desejado.
+ * Sincroniza a lista de condutores duma reserva contra o estado actual na BD.
+ * `pessoa_id` é escrito em cliente_id ou motorista_id conforme o `tipo`.
  */
 export function useSyncReservaCondutores() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ reservaId, desejados }: SyncArgs): Promise<void> => {
+    mutationFn: async ({ reservaId, desejados, tipo }: SyncArgs): Promise<void> => {
+      const coluna = tipo === 'motorista' ? 'motorista_id' : 'cliente_id';
+
       const { data: actuais, error: fetchErr } = await supabase
         .from('reserva_condutores')
-        .select('id, cliente_id, is_principal')
+        .select('id, cliente_id, motorista_id, is_principal' as string)
         .eq('reserva_id', reservaId);
       if (fetchErr) throw fetchErr;
 
-      const actuaisPorCliente = new Map((actuais ?? []).map((c) => [c.cliente_id, c]));
-      const desejadosClientes = new Set(desejados.map((c) => c.cliente_id));
+      type Linha = { id: string; cliente_id: string | null; motorista_id: string | null };
+      const pessoaIdDe = (r: Linha) => r.cliente_id ?? r.motorista_id ?? '';
+
+      const lista = (actuais ?? []) as unknown as Linha[];
+      const actuaisPorPessoa = new Map(lista.map((c) => [pessoaIdDe(c), c]));
+      const desejadosIds = new Set(desejados.map((c) => c.pessoa_id));
 
       // 1) Apagar os que sobram
-      const idsApagar = (actuais ?? [])
-        .filter((c) => !desejadosClientes.has(c.cliente_id))
-        .map((c) => c.id);
+      const idsApagar = lista.filter((c) => !desejadosIds.has(pessoaIdDe(c))).map((c) => c.id);
       if (idsApagar.length > 0) {
         const { error } = await supabase.from('reserva_condutores').delete().in('id', idsApagar);
         if (error) throw error;
       }
 
-      // 2) Inserir os que faltam (sempre is_principal=false; corrigimos depois)
+      // 2) Inserir os que faltam (org_id é preenchido por trigger na BD)
       const aInserir = desejados
-        .filter((c) => !actuaisPorCliente.has(c.cliente_id))
-        .map((c) => ({
-          reserva_id: reservaId,
-          cliente_id: c.cliente_id,
-          is_principal: false,
-        }));
+        .filter((c) => !actuaisPorPessoa.has(c.pessoa_id))
+        .map((c) => ({ reserva_id: reservaId, [coluna]: c.pessoa_id, is_principal: false }));
       if (aInserir.length > 0) {
-        // org_id é preenchido por trigger na BD — daí o cast.
         const { error } = await supabase
           .from('reserva_condutores')
-          .insert(aInserir as TablesInsert<'reserva_condutores'>[]);
+          .insert(aInserir as unknown as TablesInsert<'reserva_condutores'>[]);
         if (error) throw error;
       }
 
-      // 3) Resetar todos para is_principal=false (necessário antes de marcar
-      //    o novo principal por causa do índice único parcial).
+      // 3) Resetar todos para is_principal=false (índice único parcial).
       const { error: errReset } = await supabase
         .from('reserva_condutores')
         .update({ is_principal: false })
@@ -90,7 +89,7 @@ export function useSyncReservaCondutores() {
           .from('reserva_condutores')
           .update({ is_principal: true })
           .eq('reserva_id', reservaId)
-          .eq('cliente_id', principal.cliente_id);
+          .eq(coluna as string, principal.pessoa_id);
         if (error) throw error;
       }
     },

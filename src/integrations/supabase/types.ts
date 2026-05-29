@@ -2404,7 +2404,6 @@ export type Database = {
           local_entrega: string | null
           local_recolha: string | null
           matricula: string | null
-          modalidade: Database["public"]["Enums"]["contrato_modalidade_enum"]
           numero_processo: string | null
           observacoes: string | null
           observacoes_internas: string | null
@@ -2465,7 +2464,6 @@ export type Database = {
           local_entrega?: string | null
           local_recolha?: string | null
           matricula?: string | null
-          modalidade?: Database["public"]["Enums"]["contrato_modalidade_enum"]
           numero_processo?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
@@ -2526,7 +2524,6 @@ export type Database = {
           local_entrega?: string | null
           local_recolha?: string | null
           matricula?: string | null
-          modalidade?: Database["public"]["Enums"]["contrato_modalidade_enum"]
           numero_processo?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
@@ -5710,7 +5707,6 @@ export type Database = {
           km_adicional_valor: number | null
           kms_incluidos: number | null
           matricula: string | null
-          modalidade: Database["public"]["Enums"]["contrato_modalidade_enum"]
           observacoes: string | null
           observacoes_internas: string | null
           org_id: string
@@ -5754,7 +5750,6 @@ export type Database = {
           km_adicional_valor?: number | null
           kms_incluidos?: number | null
           matricula?: string | null
-          modalidade?: Database["public"]["Enums"]["contrato_modalidade_enum"]
           observacoes?: string | null
           observacoes_internas?: string | null
           org_id?: string
@@ -5798,7 +5793,6 @@ export type Database = {
           km_adicional_valor?: number | null
           kms_incluidos?: number | null
           matricula?: string | null
-          modalidade?: Database["public"]["Enums"]["contrato_modalidade_enum"]
           observacoes?: string | null
           observacoes_internas?: string | null
           org_id?: string
@@ -8311,7 +8305,6 @@ export type Database = {
         | "em_curso"
         | "devolvido"
         | "cancelado"
-      contrato_modalidade_enum: "rent_a_car" | "tvde"
       contrato_origem_enum: "sistema" | "online" | "telefone" | "balcao"
       contrato_regime_enum: "rent_a_car" | "tvde"
       contrato_renovacao_opcao_enum:
@@ -8473,7 +8466,6 @@ export const Constants = {
         "devolvido",
         "cancelado",
       ],
-      contrato_modalidade_enum: ["rent_a_car", "tvde"],
       contrato_origem_enum: ["sistema", "online", "telefone", "balcao"],
       contrato_regime_enum: ["rent_a_car", "tvde"],
       contrato_renovacao_opcao_enum: [

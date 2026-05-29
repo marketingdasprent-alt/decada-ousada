@@ -61,7 +61,7 @@ const MENU_ITEMS: MenuItem[] = [
     ],
   },
   { label: 'Viaturas', url: '/viaturas', icon: Car, recurso: 'viaturas_ver' },
-  { label: 'Financeiro', url: '/financeiro', icon: Wallet, recurso: 'financeiro_recibos' },
+  { label: 'Administrativo', url: '/financeiro', icon: Wallet, recurso: 'financeiro_recibos' },
   { label: 'Assistência', url: '/assistencia', icon: Wrench, recurso: 'assistencia_tickets' },
   { label: 'Calendário', url: '/calendario', icon: CalendarDays, recurso: 'calendario_ver' },
   { label: 'Marketing', url: '/marketing', icon: Mail, recurso: 'marketing_ver' },

@@ -74,7 +74,7 @@ const viaturaSchema = z.object({
   observacoes: z.string().optional(),
   grupo_id: z.string().optional(),
   is_slot: z.boolean().default(false),
-  estacao_id: z.string().optional(),
+  estacao_id: z.string().min(1, 'A estação é obrigatória'),
   extintor_numero: z.string().optional(),
   extintor_validade: z.string().optional(),
   tipo_id: z.string().optional(),
@@ -896,18 +896,16 @@ export function ViaturaTabDados({ viatura, isNew, onSave, saving }: ViaturaTabDa
                     name="estacao_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Estação</FormLabel>
-                        <Select
-                          value={field.value || ''}
-                          onValueChange={(v) => field.onChange(v === 'none' ? '' : v)}
-                        >
+                        <FormLabel>
+                          Estação <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Select value={field.value || ''} onValueChange={(v) => field.onChange(v)}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecionar estação..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">— Sem estação —</SelectItem>
                             {estacoes.map((e) => (
                               <SelectItem key={e.id} value={e.id}>
                                 {e.nome}

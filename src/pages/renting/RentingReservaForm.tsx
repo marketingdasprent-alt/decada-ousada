@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, ArrowLeft, CalendarCheck, FileText, Loader2, Trash2 } from 'lucide-react';
 
@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { useClientes } from '@/hooks/useClientes';
 import { useEstacoes } from '@/hooks/useEstacoes';
+import { useToast } from '@/hooks/use-toast';
 import {
   useCreateReserva,
   useDeleteReserva,
@@ -22,6 +23,8 @@ import {
 import { useReservaCondutores, useSyncReservaCondutores } from '@/hooks/useReservaCondutores';
 import { uploadReservaAnexoSync } from '@/hooks/useReservaAnexos';
 import { useViaturas } from '@/hooks/useViaturas';
+import { useMotoristas } from '@/hooks/useMotoristas';
+import type { CondutorPessoa } from '@/components/renting/shared/CondutoresFields';
 
 import { ReservaDeleteConfirm } from '@/components/renting/reservas/ReservaDeleteConfirm';
 import { ReservaResumoSidebar } from '@/components/renting/reservas/ReservaResumoSidebar';
@@ -29,7 +32,6 @@ import {
   ReservaTabAnexos,
   type AnexoPendente,
 } from '@/components/renting/reservas/tabs/ReservaTabAnexos';
-import { ReservaTabCaixa } from '@/components/renting/reservas/tabs/ReservaTabCaixa';
 import { ReservaTabCondutores } from '@/components/renting/reservas/tabs/ReservaTabCondutores';
 import { ReservaTabGeral } from '@/components/renting/reservas/tabs/ReservaTabGeral';
 import {
@@ -53,9 +55,11 @@ const DEFAULT_VALUES: ReservaFormValues = {
   cliente_nome: '',
   condutor_id: null,
   condutor_nome: '',
-  estado: 'confirmada',
-  modalidade: 'rent_a_car',
+  estado: 'pendente',
+  regime: 'rent_a_car',
   valor_total: null,
+  desconto: null,
+  valor_total_manual: null,
   franquia_valor: null,
   caucao_valor: null,
   kms_incluidos: null,
@@ -68,6 +72,17 @@ const DEFAULT_VALUES: ReservaFormValues = {
   condutores: [],
 };
 
+/** Recolhe as mensagens de erro de validação para mostrar ao utilizador. */
+function collectErrorMessages(errors: FieldErrors<ReservaFormValues>): string[] {
+  const out: string[] = [];
+  for (const val of Object.values(errors)) {
+    if (val && typeof val === 'object' && 'message' in val && typeof val.message === 'string') {
+      out.push(val.message);
+    }
+  }
+  return out;
+}
+
 const RentingReservaForm = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -79,12 +94,15 @@ const RentingReservaForm = () => {
   const { data: clientes = [] } = useClientes();
   const { data: viaturas = [] } = useViaturas({ apenasDisponiveis: !isEdit });
   const { data: estacoes = [] } = useEstacoes({ apenasAtivas: false });
+  const { data: motoristas = [] } = useMotoristas({ apenasAtivos: true });
 
   const createMutation = useCreateReserva();
   const updateMutation = useUpdateReserva();
   const deleteMutation = useDeleteReserva();
   const syncCondutoresMutation = useSyncReservaCondutores();
 
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('geral');
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [anexosPendentes, setAnexosPendentes] = useState<AnexoPendente[]>([]);
 
@@ -118,6 +136,10 @@ const RentingReservaForm = () => {
     defaultValues: DEFAULT_VALUES,
   });
 
+  // TVDE → condutores são motoristas; rent-a-car → clientes.
+  const isTvde = form.watch('regime') === 'tvde';
+  const condutorPessoas: CondutorPessoa[] = isTvde ? motoristas : clientes;
+
   // Hidrata o formulário quando a reserva carrega (modo edição).
   useEffect(() => {
     if (!isEdit) return;
@@ -135,8 +157,10 @@ const RentingReservaForm = () => {
       condutor_id: reserva.condutor_id,
       condutor_nome: reserva.condutor_nome ?? '',
       estado: reserva.estado,
-      modalidade: reserva.modalidade,
+      regime: reserva.regime,
       valor_total: reserva.valor_total,
+      desconto: reserva.desconto,
+      valor_total_manual: reserva.valor_total_manual,
       franquia_valor: reserva.franquia_valor,
       caucao_valor: reserva.caucao_valor,
       kms_incluidos: reserva.kms_incluidos,
@@ -147,7 +171,7 @@ const RentingReservaForm = () => {
       observacoes: reserva.observacoes ?? '',
       observacoes_internas: reserva.observacoes_internas ?? '',
       condutores: condutoresAtuais.map((c) => ({
-        cliente_id: c.cliente_id,
+        pessoa_id: (c.cliente_id ?? c.motorista_id) as string,
         is_principal: c.is_principal,
       })),
     });
@@ -176,10 +200,10 @@ const RentingReservaForm = () => {
       const viaturaSelecionada = viaturas.find((v) => v.id === values.viatura_id);
       const matriculaFinal = values.matricula || viaturaSelecionada?.matricula || null;
 
-      // Condutor principal — derivado da lista para snapshot legado em reservas.
+      // Condutor principal — derivado da lista para snapshot na reserva.
       const condutorPrincipal = values.condutores.find((c) => c.is_principal) ?? null;
-      const condutorPrincipalCliente = condutorPrincipal
-        ? (clientes.find((c) => c.id === condutorPrincipal.cliente_id) ?? null)
+      const condutorPrincipalPessoa = condutorPrincipal
+        ? (condutorPessoas.find((p) => p.id === condutorPrincipal.pessoa_id) ?? null)
         : null;
 
       const payload: ReservaInsert = {
@@ -192,12 +216,14 @@ const RentingReservaForm = () => {
         data_fim: localInputToIso(values.data_fim),
         cliente_id: values.cliente_id || null,
         cliente_nome: values.cliente_nome || null,
-        // condutor_id refere motoristas_ativos (não clientes) — fica null
-        condutor_id: null,
-        condutor_nome: condutorPrincipalCliente?.nome ?? null,
+        // condutor_id refere motoristas_ativos — preenchido só em TVDE.
+        condutor_id: isTvde ? (condutorPrincipal?.pessoa_id ?? null) : null,
+        condutor_nome: condutorPrincipalPessoa?.nome ?? null,
         estado: values.estado,
-        modalidade: values.modalidade,
+        regime: values.regime,
         valor_total: values.valor_total,
+        desconto: values.desconto,
+        valor_total_manual: values.valor_total_manual,
         franquia_valor: values.franquia_valor,
         caucao_valor: values.caucao_valor,
         kms_incluidos: values.kms_incluidos,
@@ -214,12 +240,29 @@ const RentingReservaForm = () => {
 
       if (isEdit && reserva) {
         // Editar: ficar na própria página (utilizador vê toast e continua a trabalhar).
-        updateMutation.mutate({ id: reserva.id, ...payload });
+        updateMutation.mutate(
+          { id: reserva.id, ...payload },
+          {
+            onSuccess: () => {
+              syncCondutoresMutation.mutate({
+                reservaId: reserva.id,
+                desejados: values.condutores,
+                tipo: isTvde ? 'motorista' : 'cliente',
+              });
+            },
+          }
+        );
       } else {
         // Criar: navegar para modo edição da nova reserva.
         // Permite clicar logo "Criar Contrato" sem voltar à lista.
         createMutation.mutate(payload, {
           onSuccess: async (created) => {
+            // Sincroniza os condutores na nova reserva.
+            syncCondutoresMutation.mutate({
+              reservaId: created.id,
+              desejados: values.condutores,
+              tipo: isTvde ? 'motorista' : 'cliente',
+            });
             // Upload em batch dos anexos pendentes — best-effort.
             if (anexosPendentes.length > 0) {
               for (const p of anexosPendentes) {
@@ -240,6 +283,17 @@ const RentingReservaForm = () => {
     } catch {
       // Erros são reportados via toast pelas mutations
     }
+  };
+
+  // Validação falhou — avisa o utilizador (senão "não acontece nada" ao Guardar).
+  const onInvalid = (errors: FieldErrors<ReservaFormValues>) => {
+    if (errors.condutores) setActiveTab('condutores');
+    const messages = collectErrorMessages(errors);
+    toast({
+      title: 'Não foi possível guardar',
+      description: messages[0] ?? 'Há campos obrigatórios por preencher. Verifique o formulário.',
+      variant: 'destructive',
+    });
   };
 
   const handleDelete = () => {
@@ -336,7 +390,7 @@ const RentingReservaForm = () => {
             )}
           <Button
             type="button"
-            onClick={form.handleSubmit(onSubmit)}
+            onClick={form.handleSubmit(onSubmit, onInvalid)}
             disabled={isPending}
             className="gap-2"
           >
@@ -346,7 +400,7 @@ const RentingReservaForm = () => {
         </StickyPageHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-4">
             {temConflito && (
               <div className="flex items-start gap-2 p-3 rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300">
                 <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
@@ -360,11 +414,12 @@ const RentingReservaForm = () => {
             <div className="grid grid-cols-1 xl:grid-cols-[1fr_240px] gap-4 items-start">
               <Card className="bg-card border-border">
                 <CardContent className="p-4 sm:p-6">
-                  <Tabs defaultValue="geral" className="w-full">
-                    <TabsList className="grid grid-cols-4 w-full sm:w-auto sm:inline-flex">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid grid-cols-3 w-full sm:w-auto sm:inline-flex">
                       <TabsTrigger value="geral">Geral</TabsTrigger>
-                      <TabsTrigger value="condutores">Condutores</TabsTrigger>
-                      <TabsTrigger value="caixa">Caixa</TabsTrigger>
+                      <TabsTrigger value="condutores">
+                        {isTvde ? 'Motoristas' : 'Condutores'}
+                      </TabsTrigger>
                       <TabsTrigger value="anexos">Anexos</TabsTrigger>
                     </TabsList>
 
@@ -374,18 +429,14 @@ const RentingReservaForm = () => {
                         viaturas={viaturas}
                         estacoes={estacoes}
                         clientes={clientes}
+                        isEdit={isEdit}
                       />
                     </TabsContent>
 
                     <TabsContent value="condutores" className="pt-4">
-                      <ReservaTabCondutores form={form} clientes={clientes} />
-                    </TabsContent>
-
-                    <TabsContent value="caixa" className="pt-4">
-                      <ReservaTabCaixa
-                        form={form}
-                        estacoes={estacoes}
-                        reservaCodigo={reserva?.codigo ?? null}
+                      <ReservaTabCondutores
+                        pessoas={condutorPessoas}
+                        tipo={isTvde ? 'motorista' : 'cliente'}
                       />
                     </TabsContent>
 

@@ -23,63 +23,78 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-import type { ClienteComDocumentos } from '@/types/cliente';
-
 const normalizeForSearch = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
+/** Pessoa que pode ser condutor — cliente (rent-a-car) ou motorista (TVDE). */
+export interface CondutorPessoa {
+  id: string;
+  nome: string;
+  nif?: string | null;
+  telefone?: string | null;
+  codigo?: string | number | null;
+}
+
 /**
- * Campos partilhados de Condutores Autorizados entre Reserva e Contrato.
+ * Campos partilhados de Condutores entre Reserva e Contrato.
  * Usa useFormContext — o form pai precisa de ter:
- *   - condutores: { cliente_id: string; is_principal: boolean }[]
- *   - cliente_id: string | null (opcional — usado para shortcut "também conduz")
+ *   - condutores: { pessoa_id: string; is_principal: boolean }[]
+ *   - cliente_id: string | null (opcional — atalho "também conduz")
  */
 interface CondutoresFieldsShape extends FieldValues {
   cliente_id: string | null;
-  condutores: { cliente_id: string; is_principal: boolean }[];
+  condutores: { pessoa_id: string; is_principal: boolean }[];
 }
 
 interface CondutoresFieldsProps {
-  clientes: ClienteComDocumentos[];
-  /** Label para o botão de "X da Reserva/Contrato também conduz". */
+  /** Lista de pessoas a escolher — clientes ou motoristas. */
+  pessoas: CondutorPessoa[];
+  /** 'cliente' (rent-a-car) ou 'motorista' (TVDE). */
+  tipo?: 'cliente' | 'motorista';
+  /** Label do atalho "X também conduz" — só usado em tipo='cliente'. */
   clientePrincipalLabel?: string;
 }
 
 export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
-  clientes,
+  pessoas,
+  tipo = 'cliente',
   clientePrincipalLabel = 'Cliente do contrato também conduz',
 }) => {
   const form = useFormContext<CondutoresFieldsShape>();
   const [adicionarOpen, setAdicionarOpen] = useState(false);
 
+  const isMotorista = tipo === 'motorista';
+  const termo = isMotorista ? 'Motorista' : 'Condutor';
+  const titulo = isMotorista ? 'Motoristas' : 'Condutores Autorizados';
+
   const clienteId = form.watch('cliente_id');
-  const cliente = clienteId ? (clientes.find((c) => c.id === clienteId) ?? null) : null;
+  const cliente =
+    !isMotorista && clienteId ? (pessoas.find((p) => p.id === clienteId) ?? null) : null;
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'condutores',
   });
 
-  const clientesPorId = useMemo(() => {
-    const m = new Map<string, ClienteComDocumentos>();
-    clientes.forEach((c) => m.set(c.id, c));
+  const pessoasPorId = useMemo(() => {
+    const m = new Map<string, CondutorPessoa>();
+    pessoas.forEach((p) => m.set(p.id, p));
     return m;
-  }, [clientes]);
+  }, [pessoas]);
 
-  const clientesDisponiveis = useMemo(() => {
-    const usados = new Set(fields.map((f) => f.cliente_id));
-    return clientes.filter((c) => !usados.has(c.id));
-  }, [clientes, fields]);
+  const pessoasDisponiveis = useMemo(() => {
+    const usados = new Set(fields.map((f) => f.pessoa_id));
+    return pessoas.filter((p) => !usados.has(p.id));
+  }, [pessoas, fields]);
 
-  const handleAdicionar = (newClienteId: string) => {
-    if (fields.some((f) => f.cliente_id === newClienteId)) return;
+  const handleAdicionar = (novoId: string) => {
+    if (fields.some((f) => f.pessoa_id === novoId)) return;
     const isFirst = fields.length === 0;
-    append({ cliente_id: newClienteId, is_principal: isFirst });
+    append({ pessoa_id: novoId, is_principal: isFirst });
     setAdicionarOpen(false);
   };
 
   const handleAdicionarClientePrincipal = () => {
-    if (!cliente) return;
-    handleAdicionar(cliente.id);
+    if (cliente) handleAdicionar(cliente.id);
   };
 
   const handleDefinirPrincipal = (idx: number) => {
@@ -109,7 +124,7 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
   };
 
   const clientePrincipalJaEhCondutor = cliente
-    ? fields.some((f) => f.cliente_id === cliente.id)
+    ? fields.some((f) => f.pessoa_id === cliente.id)
     : false;
 
   return (
@@ -118,7 +133,7 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
         <div className="flex items-center justify-between gap-2 pb-2 border-b mb-4">
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            <h3 className="text-base font-semibold">Condutores Autorizados</h3>
+            <h3 className="text-base font-semibold">{titulo}</h3>
             {fields.length > 0 && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 font-semibold">
                 {fields.length}
@@ -132,7 +147,7 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
             <PopoverTrigger asChild>
               <Button type="button" size="sm" className="gap-2">
                 <Plus className="h-4 w-4" />
-                Adicionar Condutor
+                Adicionar {termo}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[360px] p-0" align="start">
@@ -141,32 +156,35 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
                   normalizeForSearch(value).includes(normalizeForSearch(search)) ? 1 : 0
                 }
               >
-                <CommandInput placeholder="Pesquisar cliente..." className="h-9" />
+                <CommandInput
+                  placeholder={`Pesquisar ${isMotorista ? 'motorista' : 'cliente'}...`}
+                  className="h-9"
+                />
                 <CommandList>
                   <CommandEmpty>
-                    {clientesDisponiveis.length === 0
-                      ? 'Todos os clientes já foram adicionados como condutores.'
-                      : 'Nenhum cliente encontrado.'}
+                    {pessoasDisponiveis.length === 0
+                      ? `Todos já foram adicionados.`
+                      : `Nenhum ${isMotorista ? 'motorista' : 'cliente'} encontrado.`}
                   </CommandEmpty>
                   <CommandGroup>
-                    {clientesDisponiveis.map((c) => (
+                    {pessoasDisponiveis.map((p) => (
                       <CommandItem
-                        key={c.id}
-                        value={`${c.nome} ${c.nif ?? ''} ${c.telefone ?? ''} ${c.codigo}`}
-                        onSelect={() => handleAdicionar(c.id)}
+                        key={p.id}
+                        value={`${p.nome} ${p.nif ?? ''} ${p.telefone ?? ''} ${p.codigo ?? ''}`}
+                        onSelect={() => handleAdicionar(p.id)}
                         className="cursor-pointer flex flex-col items-start gap-0.5"
                       >
                         <span className="font-medium">
-                          {c.nome}
-                          {c.codigo ? (
-                            <span className="ml-1 text-xs text-muted-foreground">#{c.codigo}</span>
+                          {p.nome}
+                          {p.codigo ? (
+                            <span className="ml-1 text-xs text-muted-foreground">#{p.codigo}</span>
                           ) : null}
                         </span>
-                        {(c.nif || c.telefone) && (
+                        {(p.nif || p.telefone) && (
                           <span className="text-xs text-muted-foreground">
-                            {c.nif && <>NIF {c.nif}</>}
-                            {c.nif && c.telefone && ' · '}
-                            {c.telefone}
+                            {p.nif && <>NIF {p.nif}</>}
+                            {p.nif && p.telefone && ' · '}
+                            {p.telefone}
                           </span>
                         )}
                       </CommandItem>
@@ -207,9 +225,9 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
                 <TableHead className="text-center w-36">
                   <Star
                     className="h-4 w-4 inline-block text-amber-500"
-                    aria-label="Condutor Principal"
+                    aria-label={`${termo} Principal`}
                   />
-                  <span className="sr-only">Condutor Principal</span>
+                  <span className="sr-only">{termo} Principal</span>
                 </TableHead>
                 <TableHead className="w-20" />
               </TableRow>
@@ -218,37 +236,39 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
               {fields.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-12 text-center">
-                    <p className="text-sm text-muted-foreground">Nenhum condutor adicionado.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum {termo.toLowerCase()} adicionado.
+                    </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Usa o botão <strong>Adicionar Condutor</strong> para seleccionar clientes que
-                      podem conduzir a viatura.
+                      Usa o botão <strong>Adicionar {termo}</strong> para seleccionar quem pode
+                      conduzir a viatura.
                     </p>
                   </TableCell>
                 </TableRow>
               ) : (
                 fields.map((field, idx) => {
-                  const c = clientesPorId.get(field.cliente_id);
+                  const p = pessoasPorId.get(field.pessoa_id);
                   const principal = field.is_principal;
                   return (
                     <TableRow key={field.id} className={cn(principal && 'bg-amber-500/5')}>
                       <TableCell className="font-medium">
-                        {c ? (
+                        {p ? (
                           <>
-                            {c.nome}
-                            {c.codigo && (
+                            {p.nome}
+                            {p.codigo && (
                               <span className="ml-1 text-xs text-muted-foreground">
-                                #{c.codigo}
+                                #{p.codigo}
                               </span>
                             )}
                           </>
                         ) : (
                           <span className="text-muted-foreground italic">
-                            Cliente removido ({field.cliente_id.slice(0, 8)}…)
+                            {termo} removido ({field.pessoa_id.slice(0, 8)}…)
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{c?.nif ?? '—'}</TableCell>
-                      <TableCell className="text-sm">{c?.telefone ?? '—'}</TableCell>
+                      <TableCell className="font-mono text-xs">{p?.nif ?? '—'}</TableCell>
+                      <TableCell className="text-sm">{p?.telefone ?? '—'}</TableCell>
                       <TableCell className="text-center">
                         {principal ? (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
@@ -275,7 +295,7 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
                           variant="ghost"
                           onClick={() => handleRemover(idx)}
                           className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          title="Remover condutor"
+                          title={`Remover ${termo.toLowerCase()}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -291,7 +311,7 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
         {fields.length > 0 && !fields.some((f) => f.is_principal) && (
           <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
             <Info className="h-3.5 w-3.5" />
-            Define um condutor principal — será o snapshot usado no contrato.
+            Define um {termo.toLowerCase()} principal — será o snapshot usado no contrato.
           </p>
         )}
 

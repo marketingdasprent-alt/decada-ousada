@@ -101,6 +101,20 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { integracao_id, combustivel_csv, movimentos } = body;
 
+    // Buscar org_id da integração (necessário para RLS multi-tenant).
+    const { data: integracaoData, error: integracaoError } = await supabase
+      .from('plataformas_configuracao')
+      .select('org_id')
+      .eq('id', integracao_id)
+      .single();
+
+    if (integracaoError || !integracaoData?.org_id) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Integração não encontrada ou sem org_id (${integracao_id})` }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    const orgId = integracaoData.org_id as string;
+
     let rows: Record<string, string>[] = [];
     if (movimentos && Array.isArray(movimentos)) {
       rows = movimentos.map(m => {
@@ -172,6 +186,7 @@ Deno.serve(async (req) => {
       // Usar Map para pre-deduplicar as transações gémeas do pacote.
       upsertMap.set(txId, {
         integracao_id,
+        org_id: orgId,
         transaction_id: txId,
         transaction_date: txDate,
         card_number: sanitized || null,

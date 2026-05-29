@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -10,12 +10,29 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Upload, Loader2, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
+
+interface IntegracaoOption {
+  id: string;
+  nome: string;
+  company_name?: string | null;
+}
 
 interface ImportUberCsvDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Integração pré-selecionada (compat). */
   integracaoId: string;
+  /** Lista de integrações Uber disponíveis — se passada com >1 item, mostra seletor. */
+  integracoes?: IntegracaoOption[];
   onImportComplete: () => void;
 }
 
@@ -23,12 +40,22 @@ export const ImportUberCsvDialog: React.FC<ImportUberCsvDialogProps> = ({
   open,
   onOpenChange,
   integracaoId,
+  integracoes,
   onImportComplete,
 }) => {
   const [importing, setImporting] = useState(false);
+  const [selectedId, setSelectedId] = useState<string>(integracaoId);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Reset da seleção ao abrir o diálogo.
+  useEffect(() => {
+    if (open) setSelectedId(integracaoId);
+  }, [open, integracaoId]);
+
+  const mostrarSeletor = !!integracoes && integracoes.length > 1;
+  const nomeAtual = integracoes?.find((i) => i.id === selectedId)?.nome;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
@@ -53,7 +80,7 @@ export const ImportUberCsvDialog: React.FC<ImportUberCsvDialogProps> = ({
 
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       // Usa uber-webhook com dados_csv_brutos — aceita utilizadores admin autenticados normalmente
-      const url = `https://${projectId}.supabase.co/functions/v1/uber-webhook?integracao_id=${integracaoId}`;
+      const url = `https://${projectId}.supabase.co/functions/v1/uber-webhook?integracao_id=${selectedId}`;
 
       const response = await fetch(url, {
         method: 'POST',
@@ -62,7 +89,7 @@ export const ImportUberCsvDialog: React.FC<ImportUberCsvDialogProps> = ({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          integracao_id: integracaoId,
+          integracao_id: selectedId,
           dados_csv_brutos: csvText,
           origem: 'Upload Manual (Integrações)',
           nome_original: selectedFile.name,
@@ -116,6 +143,33 @@ export const ImportUberCsvDialog: React.FC<ImportUberCsvDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Seletor de integração — só quando há múltiplas instâncias */}
+          {mostrarSeletor && (
+            <div className="space-y-2">
+              <Label>
+                Conta Uber <span className="text-red-500">*</span>
+              </Label>
+              <Select value={selectedId} onValueChange={setSelectedId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Escolhe a conta..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {integracoes!.map((i) => (
+                    <SelectItem key={i.id} value={i.id}>
+                      {i.nome}
+                      {i.company_name ? ` — ${i.company_name}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {!mostrarSeletor && nomeAtual && (
+            <p className="text-xs text-muted-foreground">
+              Conta: <strong>{nomeAtual}</strong>
+            </p>
+          )}
+
           {/* File Input */}
           <div
             className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"

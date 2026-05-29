@@ -40,17 +40,6 @@ export const CONTRATO_ORIGEM_LABELS: Record<ContratoOrigem, string> = {
 };
 
 // ============================================================
-// Modalidade (rent-a-car vs TVDE — determina a taxa de IVA)
-// ============================================================
-export const CONTRATO_MODALIDADES = ['rent_a_car', 'tvde'] as const;
-export type ContratoModalidade = (typeof CONTRATO_MODALIDADES)[number];
-
-export const CONTRATO_MODALIDADE_LABELS: Record<ContratoModalidade, string> = {
-  rent_a_car: 'Rent-a-car',
-  tvde: 'TVDE',
-};
-
-// ============================================================
 // Renovação (ALD — espelha reserva)
 // ============================================================
 export const CONTRATO_RENOVACAO_OPCOES = [
@@ -64,6 +53,17 @@ export const CONTRATO_RENOVACAO_OPCAO_LABELS: Record<ContratoRenovacaoOpcao, str
   primeiro_dia_mes: 'Ao primeiro dia de cada mês',
   mesmo_dia_cada_mes: 'No mesmo dia em cada mês',
   intervalo_dias: 'A cada intervalo específico de dias',
+};
+
+// ============================================================
+// Regime (rent-a-car vs TVDE)
+// ============================================================
+export const CONTRATO_REGIMES = ['rent_a_car', 'tvde'] as const;
+export type ContratoRegime = (typeof CONTRATO_REGIMES)[number];
+
+export const CONTRATO_REGIME_LABELS: Record<ContratoRegime, string> = {
+  rent_a_car: 'Rent-a-Car',
+  tvde: 'TVDE',
 };
 
 // ============================================================
@@ -94,14 +94,13 @@ export type ContratoRenting = {
   estado_operacional: ContratoEstadoOperacional;
   estado_financeiro: ContratoEstadoFinanceiro;
   origem: ContratoOrigem;
-
-  /** rent_a_car ou tvde — determina a taxa de IVA (ver org_definicoes). */
-  modalidade: ContratoModalidade;
+  /** rent_a_car ou tvde — determina o regime e a taxa de IVA (ver org_definicoes). */
+  regime: ContratoRegime;
 
   // Tarifário simples (MVP)
   tarifa_diaria: number | null;
   desconto_percentagem: number | null;
-  /** Taxa de IVA aplicada — derivada da modalidade + config da org. */
+  /** Taxa de IVA aplicada — derivada do regime + config da org. */
   taxa_iva: number;
   valor_total_manual: number | null;
 
@@ -168,7 +167,10 @@ export type ContratoCondutor = {
   id: string;
   org_id: string;
   contrato_id: string;
-  cliente_id: string;
+  /** Preenchido em rent-a-car (FK clientes). */
+  cliente_id: string | null;
+  /** Preenchido em TVDE (FK motoristas_ativos). */
+  motorista_id: string | null;
   is_principal: boolean;
   created_by: string | null;
   created_at: string;
