@@ -264,7 +264,10 @@ export const MotoristasPlataformaNaoAssociados: React.FC<Props> = ({
       if (uberId) fichaUpdate.uber_uuid = uberId;
       if (boltId) fichaUpdate.bolt_id = boltId;
       if (Object.keys(fichaUpdate).length > 0) {
-        await supabase.from('motoristas_ativos').update(fichaUpdate as any).eq('id', motoristaId);
+        await supabase
+          .from('motoristas_ativos')
+          .update(fichaUpdate as any)
+          .eq('id', motoristaId);
       }
 
       if (uberId) {
