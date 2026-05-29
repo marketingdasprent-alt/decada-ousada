@@ -42,7 +42,7 @@ export function initPixel(): void {
   (function (f: Window, b: Document, e: string, v: string) {
     const n: any = function () {
       // eslint-disable-next-line prefer-rest-params
-      n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+      return n.callMethod ? n.callMethod(...arguments) : n.queue.push(arguments);
     };
     f.fbq = n;
     if (!f._fbq) f._fbq = n;

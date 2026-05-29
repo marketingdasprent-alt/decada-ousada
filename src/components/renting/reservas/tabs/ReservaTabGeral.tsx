@@ -46,24 +46,19 @@ import type { ReservaFormValues } from '../reservaDialog.schema';
 import type { ViaturaBasic } from '@/hooks/useViaturas';
 import type { Estacao } from '@/hooks/useEstacoes';
 import type { ClienteComDocumentos } from '@/types/cliente';
-import { ESTADO_LABELS, type ReservaEstado } from '@/types/reserva';
 import { SectionHeader } from '../SectionHeader';
 import { RegimeCards } from '../RegimeCards';
-import { ESTADO_META } from '../EstadoBadge';
 
 const SENTINEL_NONE = '__none__';
 
 const normalizeForSearch = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[-\s]/g, '');
 
-const ESTADOS_EDITAVEIS: ReservaEstado[] = ['pendente', 'confirmada', 'cancelada'];
-
 interface ReservaTabGeralProps {
   form: UseFormReturn<ReservaFormValues>;
   viaturas: ViaturaBasic[];
   estacoes: Estacao[];
   clientes: ClienteComDocumentos[];
-  isEdit: boolean;
 }
 
 function diferencaDias(inicio: string, fim: string): number | null {
@@ -132,13 +127,11 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
   viaturas,
   estacoes,
   clientes,
-  isEdit,
 }) => {
   const [viaturaPopoverOpen, setViaturaPopoverOpen] = useState(false);
   const [clientePopoverOpen, setClientePopoverOpen] = useState(false);
 
   const clienteId = form.watch('cliente_id');
-  const estadoAtual = form.watch('estado');
   const dataInicio = form.watch('data_inicio');
   const dataFim = form.watch('data_fim');
 
@@ -214,9 +207,6 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
       }
     }
   }, [modoMensal, dataInicio, dataFim, form]);
-
-  const estadoExtra =
-    estadoAtual && !ESTADOS_EDITAVEIS.includes(estadoAtual as ReservaEstado) ? estadoAtual : null;
 
   const handleDiasManualChange = (raw: string) => {
     const cleaned = raw.replace(/\D/g, '');
@@ -664,58 +654,6 @@ export const ReservaTabGeral: React.FC<ReservaTabGeralProps> = ({
                     readOnly
                   />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="estado"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Estado</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className="bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {estadoExtra && (
-                      <SelectItem value={estadoExtra}>
-                        <span className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              'h-2 w-2 rounded-full',
-                              ESTADO_META[estadoExtra as ReservaEstado].dot
-                            )}
-                          />
-                          {ESTADO_LABELS[estadoExtra as ReservaEstado]} (automático)
-                        </span>
-                      </SelectItem>
-                    )}
-                    <SelectItem value="pendente">
-                      <span className="flex items-center gap-2">
-                        <span className={cn('h-2 w-2 rounded-full', ESTADO_META.pendente.dot)} />
-                        Pendente
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="confirmada">
-                      <span className="flex items-center gap-2">
-                        <span className={cn('h-2 w-2 rounded-full', ESTADO_META.confirmada.dot)} />
-                        Confirmada
-                      </span>
-                    </SelectItem>
-                    {isEdit && (
-                      <SelectItem value="cancelada">
-                        <span className="flex items-center gap-2">
-                          <span className={cn('h-2 w-2 rounded-full', ESTADO_META.cancelada.dot)} />
-                          Cancelada
-                        </span>
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
                 <FormMessage />
               </FormItem>
             )}

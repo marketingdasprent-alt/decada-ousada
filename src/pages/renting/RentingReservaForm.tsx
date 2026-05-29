@@ -22,6 +22,7 @@ import {
   useUpdateReserva,
 } from '@/hooks/useReservas';
 import { useReservaCondutores, useSyncReservaCondutores } from '@/hooks/useReservaCondutores';
+import { useContratoIdByReserva } from '@/hooks/useContratosRenting';
 import { uploadReservaAnexoSync } from '@/hooks/useReservaAnexos';
 import { useViaturas } from '@/hooks/useViaturas';
 
@@ -83,6 +84,7 @@ const RentingReservaForm = () => {
 
   const { data: reserva, isLoading: loadingReserva } = useReserva(isEdit ? id : null);
   const { data: condutoresAtuais = [] } = useReservaCondutores(isEdit ? id : null);
+  const { data: contratoExistente } = useContratoIdByReserva(isEdit ? id : null);
 
   const { data: clientes = [] } = useClientes();
   const { data: motoristas = [] } = useMotoristas({ apenasAtivos: true });
@@ -239,6 +241,23 @@ const RentingReservaForm = () => {
   }, [viaturaId, dataInicio, dataFim, reserva?.id]);
 
   const { data: temConflito } = useReservaConflito(conflitoArgs);
+
+  // "Criar Contrato" está sempre presente em edição, mas só fica activo quando a
+  // reserva GUARDADA tem os campos obrigatórios e não há alterações por gravar —
+  // o contrato é gerado a partir da reserva persistida (reserva_id), não do form.
+  const reservaCompleta = !!(
+    reserva &&
+    reserva.cliente_id &&
+    reserva.viatura_id &&
+    reserva.estacao_entrega_id &&
+    reserva.estacao_recolha_id
+  );
+  const podeCriarContrato = reservaCompleta && !form.formState.isDirty;
+  const motivoContratoBloqueado = !reservaCompleta
+    ? 'Preenche cliente, viatura e estações (entrega e recolha) e guarda a reserva.'
+    : form.formState.isDirty
+      ? 'Guarda as alterações antes de criar o contrato.'
+      : undefined;
 
   // Quando o user troca de regime, os condutores existentes deixam de fazer
   // sentido (clientes vs motoristas) — limpamos a lista com aviso.
@@ -445,19 +464,29 @@ const RentingReservaForm = () => {
           )}
           {isEdit &&
             reserva &&
-            reserva.cliente_id &&
-            reserva.viatura_id &&
-            (reserva.estado === 'confirmada' || reserva.estado === 'em_curso') && (
+            (contratoExistente ? (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => navigate(`/renting/contratos/${contratoExistente.id}`)}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Ver Contrato{contratoExistente.codigo ? ` #${contratoExistente.codigo}` : ''}
+              </Button>
+            ) : (
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => navigate(`/renting/contratos/novo?reserva_id=${reserva.id}`)}
+                disabled={!podeCriarContrato}
+                title={motivoContratoBloqueado}
                 className="gap-2"
               >
                 <FileText className="h-4 w-4" />
                 Criar Contrato
               </Button>
-            )}
+            ))}
           <Button
             type="button"
             onClick={form.handleSubmit(onSubmit)}
@@ -498,7 +527,6 @@ const RentingReservaForm = () => {
                         viaturas={viaturasParaSelecao}
                         estacoes={estacoes}
                         clientes={clientes}
-                        isEdit={isEdit}
                       />
                     </TabsContent>
 

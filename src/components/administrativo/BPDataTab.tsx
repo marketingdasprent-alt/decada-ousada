@@ -370,7 +370,12 @@ export const BPDataTab: React.FC = () => {
       )}
 
       {firstActiveIntegracao && (
-        <>
+        <ImportRobotCsvDialog
+          open={showImportDialog}
+          onOpenChange={setShowImportDialog}
+          integracaoId={firstActiveIntegracao.id}
+          onImportComplete={fetchTransacoes}
+        />
       )}
     </div>
   );

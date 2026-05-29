@@ -134,13 +134,6 @@ export type ContratoRenting = {
 
   voucher_codigo: string | null;
 
-  numero_processo: string | null;
-  voo_referencia: string | null;
-  local_entrega: string | null;
-  local_recolha: string | null;
-  comentarios_entrega: string | null;
-  comentarios_recolha: string | null;
-
   observacoes: string | null;
   observacoes_internas: string | null;
 

@@ -103,13 +103,7 @@ export function generateNaoAssociadosPDF({ linhas, logoSrc }: Opcoes): jsPDF {
       doc.rect(marginX, y, tableWidth, rowH, 'F');
     }
     let x = marginX;
-    const vals = [
-      String(idx + 1),
-      l.nome,
-      l.plataforma,
-      fmt(l.faturado),
-      String(l.transacoes),
-    ];
+    const vals = [String(idx + 1), l.nome, l.plataforma, fmt(l.faturado), String(l.transacoes)];
     cols.forEach((c, i) => {
       const tx = c.align === 'right' ? x + c.w - 2 : x + 2;
       let text = vals[i];

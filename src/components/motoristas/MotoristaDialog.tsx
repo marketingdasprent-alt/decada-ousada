@@ -118,8 +118,14 @@ export function MotoristaDialog({
   const { toast } = useToast();
 
   type CartaoItem = { id: string; numero: string; motorista_id: string | null };
-  const [cartoesFrota, setCartoesFrota] = useState<{ bp: CartaoItem[]; repsol: CartaoItem[]; edp: CartaoItem[] }>({ bp: [], repsol: [], edp: [] });
-  const [selectedCartao, setSelectedCartao] = useState<{ bp: string; repsol: string; edp: string }>({ bp: '', repsol: '', edp: '' });
+  const [cartoesFrota, setCartoesFrota] = useState<{
+    bp: CartaoItem[];
+    repsol: CartaoItem[];
+    edp: CartaoItem[];
+  }>({ bp: [], repsol: [], edp: [] });
+  const [selectedCartao, setSelectedCartao] = useState<{ bp: string; repsol: string; edp: string }>(
+    { bp: '', repsol: '', edp: '' }
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -133,11 +139,22 @@ export function MotoristaDialog({
         const all = (data || []) as (CartaoItem & { tipo: string })[];
         const filterTipo = (t: string) =>
           all.filter((c) => c.tipo === t && (!c.motorista_id || c.motorista_id === motorista?.id));
-        setCartoesFrota({ bp: filterTipo('bp'), repsol: filterTipo('repsol'), edp: filterTipo('edp') });
+        setCartoesFrota({
+          bp: filterTipo('bp'),
+          repsol: filterTipo('repsol'),
+          edp: filterTipo('edp'),
+        });
         // Pre-select cartão actualmente atribuído ao motorista
-        const atribuido = (t: string) => all.find((c) => c.tipo === t && c.motorista_id === motorista?.id)?.id || '';
-        setSelectedCartao({ bp: atribuido('bp'), repsol: atribuido('repsol'), edp: atribuido('edp') });
-      } catch { /* silencioso */ }
+        const atribuido = (t: string) =>
+          all.find((c) => c.tipo === t && c.motorista_id === motorista?.id)?.id || '';
+        setSelectedCartao({
+          bp: atribuido('bp'),
+          repsol: atribuido('repsol'),
+          edp: atribuido('edp'),
+        });
+      } catch {
+        /* silencioso */
+      }
     };
     loadCartoes();
   }, [open, motorista?.id]);
@@ -295,7 +312,9 @@ export function MotoristaDialog({
             .eq('id', cartaoId);
         }
       }
-    } catch { /* silencioso — não bloqueia o save do motorista */ }
+    } catch {
+      /* silencioso — não bloqueia o save do motorista */
+    }
   };
 
   const onSubmit = async (values: FormValues) => {
@@ -695,18 +714,26 @@ export function MotoristaDialog({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {(['bp', 'repsol', 'edp'] as const).map((tipo) => (
                       <div key={tipo} className="space-y-1">
-                        <label className="text-xs font-medium text-muted-foreground uppercase">{tipo === 'edp' ? 'EDP' : tipo === 'bp' ? 'BP' : 'Repsol'}</label>
+                        <label className="text-xs font-medium text-muted-foreground uppercase">
+                          {tipo === 'edp' ? 'EDP' : tipo === 'bp' ? 'BP' : 'Repsol'}
+                        </label>
                         <Select
                           value={selectedCartao[tipo]}
-                          onValueChange={(v) => setSelectedCartao((s) => ({ ...s, [tipo]: v === '__none__' ? '' : v }))}
+                          onValueChange={(v) =>
+                            setSelectedCartao((s) => ({ ...s, [tipo]: v === '__none__' ? '' : v }))
+                          }
                         >
                           <SelectTrigger className="h-9 bg-background text-sm">
                             <SelectValue placeholder="Sem cartão" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="__none__"><span className="text-muted-foreground italic">Sem cartão</span></SelectItem>
+                            <SelectItem value="__none__">
+                              <span className="text-muted-foreground italic">Sem cartão</span>
+                            </SelectItem>
                             {cartoesFrota[tipo].map((c) => (
-                              <SelectItem key={c.id} value={c.id}>{c.numero}</SelectItem>
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.numero}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

@@ -1,6 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, ChevronUp, ChevronDown, Plus, Check, RefreshCw, Link2, CreditCard, Car, Fuel } from 'lucide-react';
+import {
+  Search,
+  ChevronUp,
+  ChevronDown,
+  Plus,
+  Check,
+  RefreshCw,
+  Link2,
+  CreditCard,
+  Car,
+  Fuel,
+} from 'lucide-react';
 import { startOfWeek, format as formatDate } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -117,7 +128,9 @@ export default function Motoristas() {
   const loadCartoesCount = async () => {
     try {
       const desde = formatDate(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
-      const { data } = await (supabase as any).rpc('get_cartoes_combustivel_nao_associados', { p_desde: desde });
+      const { data } = await (supabase as any).rpc('get_cartoes_combustivel_nao_associados', {
+        p_desde: desde,
+      });
       setCartoesCount((data as any[] | null)?.length ?? 0);
     } catch {
       /* silencioso */
@@ -134,7 +147,9 @@ export default function Motoristas() {
         .from('bp_transacoes')
         .select('card_number')
         .is('motorista_id', null);
-      const unique = new Set<string>((data || []).map((r: any) => r.card_number || '__sem_cartao__'));
+      const unique = new Set<string>(
+        (data || []).map((r: any) => r.card_number || '__sem_cartao__')
+      );
       setBpNaoAssociadasCount(unique.size);
     } catch {
       /* silencioso */
@@ -148,7 +163,7 @@ export default function Motoristas() {
         .select('matricula', { count: 'exact', head: false })
         .is('motorista_id', null)
         .not('matricula', 'is', null);
-      const unique = new Set<string>((data as any[] || []).map((r: any) => r.matricula));
+      const unique = new Set<string>(((data as any[]) || []).map((r: any) => r.matricula));
       setPortagensCount(unique.size);
     } catch {
       /* silencioso */
@@ -162,9 +177,7 @@ export default function Motoristas() {
       const desdeDate = desde.toISOString().slice(0, 10);
 
       // IDs de plataforma já "ligados" — via ficha OU via motorista_id em qualquer registo.
-      const { data: crm } = await supabase
-        .from('motoristas_ativos')
-        .select('uber_uuid, bolt_id');
+      const { data: crm } = await supabase.from('motoristas_ativos').select('uber_uuid, bolt_id');
       const uberLigados = new Set<string>(
         (crm || []).map((m: any) => m.uber_uuid).filter((x: any) => !!x)
       );
@@ -290,7 +303,7 @@ export default function Motoristas() {
   const filteredMotoristas = useMemo(() => {
     const searchNormalized = normalizeString(searchTerm);
 
-    let result = motoristas.filter((m) => {
+    const result = motoristas.filter((m) => {
       // Text search (code, name, NIF, phone)
       const matchesSearch =
         searchTerm.trim() === '' ||
@@ -487,7 +500,7 @@ export default function Motoristas() {
         const mPhone = m.telefone ? m.telefone.replace(/\D/g, '').slice(-9) : null;
         const mEmail = m.email?.toLowerCase().trim();
 
-        let updatedData: any = {};
+        const updatedData: any = {};
         let needsUpdate = false;
 
         // Tentar encontrar na Bolt
@@ -613,7 +626,10 @@ export default function Motoristas() {
             >
               <Link2 className="h-4 w-4" />
               {naoAssociadosCount} sem ficha
-              <Badge variant="secondary" className="ml-1 bg-amber-500/20 text-amber-700 dark:text-amber-300">
+              <Badge
+                variant="secondary"
+                className="ml-1 bg-amber-500/20 text-amber-700 dark:text-amber-300"
+              >
                 associar
               </Badge>
             </Button>
@@ -626,7 +642,10 @@ export default function Motoristas() {
             >
               <CreditCard className="h-4 w-4" />
               {cartoesCount} cartões
-              <Badge variant="secondary" className="ml-1 bg-orange-500/20 text-orange-700 dark:text-orange-300">
+              <Badge
+                variant="secondary"
+                className="ml-1 bg-orange-500/20 text-orange-700 dark:text-orange-300"
+              >
                 associar
               </Badge>
             </Button>
@@ -639,7 +658,10 @@ export default function Motoristas() {
             >
               <Car className="h-4 w-4" />
               {portagensCount} sem portagens
-              <Badge variant="secondary" className="ml-1 bg-blue-500/20 text-blue-700 dark:text-blue-300">
+              <Badge
+                variant="secondary"
+                className="ml-1 bg-blue-500/20 text-blue-700 dark:text-blue-300"
+              >
                 associar
               </Badge>
             </Button>
@@ -652,7 +674,10 @@ export default function Motoristas() {
             >
               <Fuel className="h-4 w-4" />
               {bpNaoAssociadasCount} BP sem motorista
-              <Badge variant="secondary" className="ml-1 bg-green-500/20 text-green-700 dark:text-green-300">
+              <Badge
+                variant="secondary"
+                className="ml-1 bg-green-500/20 text-green-700 dark:text-green-300"
+              >
                 associar
               </Badge>
             </Button>

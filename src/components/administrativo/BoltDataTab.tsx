@@ -394,7 +394,6 @@ export const BoltDataTab: React.FC = () => {
               </span>
             )}
           </div>
-
         </div>
       </div>
 
@@ -560,7 +559,6 @@ export const BoltDataTab: React.FC = () => {
           </Table>
         </div>
       )}
-
     </div>
   );
 };

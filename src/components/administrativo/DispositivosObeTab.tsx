@@ -10,29 +10,64 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from '@/components/ui/sheet';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Plus, Pencil, Trash2, History, Loader2, Search,
-  Upload, Download, AlertTriangle, CheckCircle2, Car, Wifi,
-  ArrowUpDown, ArrowUp, ArrowDown, Printer, FileDown, ChevronDown,
+  Plus,
+  Pencil,
+  Trash2,
+  History,
+  Loader2,
+  Search,
+  Upload,
+  Download,
+  AlertTriangle,
+  CheckCircle2,
+  Car,
+  Wifi,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Printer,
+  FileDown,
+  ChevronDown,
 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -73,56 +108,83 @@ interface ImportRow {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-const fmtEur  = (v: number | null) =>
-  v == null ? '-' : new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
+const fmtEur = (v: number | null) =>
+  v == null
+    ? '-'
+    : new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
 const fmtDT = (s: string | null) => {
   if (!s) return '-';
-  try { return format(new Date(s), 'dd/MM/yyyy HH:mm', { locale: pt }); } catch { return s.slice(0, 16); }
+  try {
+    return format(new Date(s), 'dd/MM/yyyy HH:mm', { locale: pt });
+  } catch {
+    return s.slice(0, 16);
+  }
 };
-const norm = (s: string) =>
-  (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+const norm = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 
 function colKey(h: string) {
   return h.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim().replace(/\s+/g, '_');
 }
 
 const COL_MAP: Record<string, keyof Omit<ImportRow, '_row' | 'erros'>> = {
-  nr_equipamento: 'nr_equipamento', equipamento: 'nr_equipamento', serial: 'nr_equipamento',
-  numero: 'nr_equipamento', obe: 'nr_equipamento', dispositivo: 'nr_equipamento',
-  contrato: 'contrato', contract: 'contrato',
-  matricula: 'matricula', matrícula: 'matricula', viatura: 'matricula', plate: 'matricula',
-  notas: 'notas', notes: 'notas', observacoes: 'notas', observações: 'notas',
+  nr_equipamento: 'nr_equipamento',
+  equipamento: 'nr_equipamento',
+  serial: 'nr_equipamento',
+  numero: 'nr_equipamento',
+  obe: 'nr_equipamento',
+  dispositivo: 'nr_equipamento',
+  contrato: 'contrato',
+  contract: 'contrato',
+  matricula: 'matricula',
+  matrícula: 'matricula',
+  viatura: 'matricula',
+  plate: 'matricula',
+  notas: 'notas',
+  notes: 'notas',
+  observacoes: 'notas',
+  observações: 'notas',
 };
 
 function parseSheet(wb: XLSX.WorkBook, viaturas: Viatura[]): ImportRow[] {
-  const ws  = wb.Sheets[wb.SheetNames[0]];
+  const ws = wb.Sheets[wb.SheetNames[0]];
   const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) as unknown[][];
   if (raw.length < 2) return [];
 
   const headers = (raw[0] as unknown[]).map((h) => colKey(String(h)));
   const fieldMap: Record<number, keyof Omit<ImportRow, '_row' | 'erros'>> = {};
-  headers.forEach((h, i) => { if (COL_MAP[h]) fieldMap[i] = COL_MAP[h]; });
+  headers.forEach((h, i) => {
+    if (COL_MAP[h]) fieldMap[i] = COL_MAP[h];
+  });
 
   const matriculaMap = new Map(viaturas.map((v) => [v.matricula.toUpperCase(), v]));
 
-  return (raw.slice(1) as unknown[][]).map((row, idx) => {
-    const r: ImportRow = { _row: idx + 2, nr_equipamento: '', contrato: '', matricula: '', notas: '', erros: [] };
-    row.forEach((cell, i) => {
-      const field = fieldMap[i];
-      if (field) (r as any)[field] = String(cell || '').trim();
-    });
-    if (!r.nr_equipamento) r.erros.push('Nº Equipamento em falta');
-    if (r.matricula && !matriculaMap.has(r.matricula.toUpperCase()))
-      r.erros.push(`Matrícula "${r.matricula}" não encontrada`);
-    return r;
-  }).filter((r) => r.nr_equipamento || r.matricula);
+  return (raw.slice(1) as unknown[][])
+    .map((row, idx) => {
+      const r: ImportRow = {
+        _row: idx + 2,
+        nr_equipamento: '',
+        contrato: '',
+        matricula: '',
+        notas: '',
+        erros: [],
+      };
+      row.forEach((cell, i) => {
+        const field = fieldMap[i];
+        if (field) (r as any)[field] = String(cell || '').trim();
+      });
+      if (!r.nr_equipamento) r.erros.push('Nº Equipamento em falta');
+      if (r.matricula && !matriculaMap.has(r.matricula.toUpperCase()))
+        r.erros.push(`Matrícula "${r.matricula}" não encontrada`);
+      return r;
+    })
+    .filter((r) => r.nr_equipamento || r.matricula);
 }
 
 function downloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
     ['Nr_Equipamento', 'Contrato', 'Matricula', 'Notas'],
     ['123456789', 'VV-12345', 'AA-00-AA', ''],
-    ['987654321', '',         'BB-11-BB', 'OBE reserva'],
+    ['987654321', '', 'BB-11-BB', 'OBE reserva'],
   ]);
   ws['!cols'] = [16, 12, 10, 20].map((w) => ({ wch: w }));
   const wb = XLSX.utils.book_new();
@@ -140,40 +202,46 @@ type FormState = {
 };
 
 const emptyForm = (): FormState => ({
-  nr_equipamento: '', viatura_id: '', contrato: '', ativo: true, notas: '',
+  nr_equipamento: '',
+  viatura_id: '',
+  contrato: '',
+  ativo: true,
+  notas: '',
 });
 
 export function DispositivosObeTab() {
   const { toast } = useToast();
   const [dispositivos, setDispositivos] = useState<DispositivoObe[]>([]);
-  const [viaturas, setViaturas]         = useState<Viatura[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [search, setSearch]             = useState('');
+  const [viaturas, setViaturas] = useState<Viatura[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const [apenasAtivos, setApenasAtivos] = useState(false);
-  const [sortField, setSortField]       = useState<string>('nr_equipamento');
-  const [sortDir, setSortDir]           = useState<'asc' | 'desc'>('asc');
+  const [sortField, setSortField] = useState<string>('nr_equipamento');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   // CRUD Dialog
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing]       = useState<DispositivoObe | null>(null);
-  const [saving, setSaving]         = useState(false);
-  const [form, setForm]             = useState<FormState>(emptyForm());
+  const [editing, setEditing] = useState<DispositivoObe | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<FormState>(emptyForm());
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<DispositivoObe | null>(null);
 
   // History Sheet
-  const [historyDev, setHistoryDev]         = useState<DispositivoObe | null>(null);
-  const [historico, setHistorico]           = useState<HistoricoItem[]>([]);
+  const [historyDev, setHistoryDev] = useState<DispositivoObe | null>(null);
+  const [historico, setHistorico] = useState<HistoricoItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Import
-  const fileInputRef              = useRef<HTMLInputElement>(null);
-  const [importOpen, setImportOpen]   = useState(false);
-  const [importRows, setImportRows]   = useState<ImportRow[]>([]);
-  const [importing, setImporting]     = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRows, setImportRows] = useState<ImportRow[]>([]);
+  const [importing, setImporting] = useState(false);
 
-  useEffect(() => { carregar(); }, []);
+  useEffect(() => {
+    carregar();
+  }, []);
 
   const carregar = async () => {
     setLoading(true);
@@ -211,10 +279,19 @@ export function DispositivosObeTab() {
     list.sort((a, b) => {
       let va: string | number = '';
       let vb: string | number = '';
-      if (sortField === 'nr_equipamento') { va = a.nr_equipamento; vb = b.nr_equipamento; }
-      else if (sortField === 'contrato') { va = a.contrato || ''; vb = b.contrato || ''; }
-      else if (sortField === 'viatura') { va = a.viatura?.matricula || ''; vb = b.viatura?.matricula || ''; }
-      else if (sortField === 'estado') { va = a.ativo ? 0 : 1; vb = b.ativo ? 0 : 1; }
+      if (sortField === 'nr_equipamento') {
+        va = a.nr_equipamento;
+        vb = b.nr_equipamento;
+      } else if (sortField === 'contrato') {
+        va = a.contrato || '';
+        vb = b.contrato || '';
+      } else if (sortField === 'viatura') {
+        va = a.viatura?.matricula || '';
+        vb = b.viatura?.matricula || '';
+      } else if (sortField === 'estado') {
+        va = a.ativo ? 0 : 1;
+        vb = b.ativo ? 0 : 1;
+      }
       if (va < vb) return sortDir === 'asc' ? -1 : 1;
       if (va > vb) return sortDir === 'asc' ? 1 : -1;
       return 0;
@@ -272,9 +349,14 @@ export function DispositivosObeTab() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     const { error } = await (supabase as any)
-      .from('dispositivos_obe').delete().eq('id', deleteTarget.id);
+      .from('dispositivos_obe')
+      .delete()
+      .eq('id', deleteTarget.id);
     if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-    else { toast({ title: 'Dispositivo eliminado' }); carregar(); }
+    else {
+      toast({ title: 'Dispositivo eliminado' });
+      carregar();
+    }
     setDeleteTarget(null);
   };
 
@@ -284,12 +366,17 @@ export function DispositivosObeTab() {
     setHistorico([]);
     setLoadingHistory(true);
     try {
-      const { data, error } = await (supabase as any)
-        .rpc('get_obe_historico_portagens', { p_nr_equipamento: d.nr_equipamento });
+      const { data, error } = await (supabase as any).rpc('get_obe_historico_portagens', {
+        p_nr_equipamento: d.nr_equipamento,
+      });
       if (error) throw error;
       setHistorico(data || []);
     } catch (err: any) {
-      toast({ title: 'Erro ao carregar histórico', description: err.message, variant: 'destructive' });
+      toast({
+        title: 'Erro ao carregar histórico',
+        description: err.message,
+        variant: 'destructive',
+      });
     } finally {
       setLoadingHistory(false);
     }
@@ -297,18 +384,18 @@ export function DispositivosObeTab() {
 
   const totalHistorico = useMemo(
     () => historico.reduce((s, r) => s + (r.amount || 0), 0),
-    [historico],
+    [historico]
   );
 
   // ── Export / Print ───────────────────────────────────────────────────────
   const handleExport = () => {
     const rows = filtered.map((d) => ({
       'Nº Equipamento': d.nr_equipamento,
-      'Contrato': d.contrato || '',
+      Contrato: d.contrato || '',
       'Viatura (Matrícula)': d.viatura?.matricula || '',
       'Viatura (Marca/Modelo)': d.viatura ? `${d.viatura.marca} ${d.viatura.modelo}` : '',
-      'Estado': d.ativo ? 'Ativo' : 'Inativo',
-      'Notas': d.notas || '',
+      Estado: d.ativo ? 'Ativo' : 'Inativo',
+      Notas: d.notas || '',
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
@@ -326,19 +413,26 @@ export function DispositivosObeTab() {
         reader.onloadend = () => resolve(reader.result as string);
         reader.readAsDataURL(blob);
       });
-    } catch { logoUrl = '/Logo.png'; }
+    } catch {
+      logoUrl = '/Logo.png';
+    }
     const date = fmtDT(new Date().toISOString());
     const ativos = filtered.filter((d) => d.ativo).length;
     const comViatura = filtered.filter((d) => d.viatura).length;
-    const rows = filtered.map((d) => `<tr>
+    const rows = filtered
+      .map(
+        (d) => `<tr>
       <td class="mono">${d.nr_equipamento}</td>
       <td>${d.contrato || '<span class="muted">-</span>'}</td>
       <td>${d.viatura ? `<strong>${d.viatura.matricula}</strong> <span class="muted">${d.viatura.marca} ${d.viatura.modelo}</span>` : '<span class="muted">Sem viatura</span>'}</td>
       <td><span class="badge ${d.ativo ? 'badge-ativo' : 'badge-inativo'}">${d.ativo ? 'Ativo' : 'Inativo'}</span></td>
-    </tr>`).join('');
+    </tr>`
+      )
+      .join('');
     const w = window.open('', '_blank');
     if (!w) return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Dispositivos OBE — WeGest</title><link rel="icon" href="${logoUrl}" type="image/png">
+    w.document
+      .write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Dispositivos OBE — WeGest</title><link rel="icon" href="${logoUrl}" type="image/png">
     <style>
       *{margin:0;padding:0;box-sizing:border-box}
       body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#1a1a1a;background:white}
@@ -400,7 +494,7 @@ export function DispositivosObeTab() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
-        const wb   = XLSX.read(ev.target?.result, { type: 'array', cellDates: false });
+        const wb = XLSX.read(ev.target?.result, { type: 'array', cellDates: false });
         const rows = parseSheet(wb, viaturas);
         if (rows.length === 0) {
           toast({ title: 'Ficheiro vazio ou sem dados reconhecidos', variant: 'destructive' });
@@ -409,7 +503,11 @@ export function DispositivosObeTab() {
         setImportRows(rows);
         setImportOpen(true);
       } catch {
-        toast({ title: 'Erro ao ler ficheiro', description: 'Certifique-se que é um .xlsx ou .xls válido.', variant: 'destructive' });
+        toast({
+          title: 'Erro ao ler ficheiro',
+          description: 'Certifique-se que é um .xlsx ou .xls válido.',
+          variant: 'destructive',
+        });
       }
     };
     reader.readAsArrayBuffer(file);
@@ -424,11 +522,11 @@ export function DispositivosObeTab() {
     try {
       const { data: orgId } = await (supabase as any).rpc('get_current_org_id');
       const payload = valid.map((r) => ({
-        org_id:         orgId,
+        org_id: orgId,
         nr_equipamento: r.nr_equipamento,
-        contrato:       r.contrato || null,
-        viatura_id:     r.matricula ? (matriculaMap.get(r.matricula.toUpperCase()) ?? null) : null,
-        notas:          r.notas || null,
+        contrato: r.contrato || null,
+        viatura_id: r.matricula ? (matriculaMap.get(r.matricula.toUpperCase()) ?? null) : null,
+        notas: r.notas || null,
       }));
       const { error } = await (supabase as any)
         .from('dispositivos_obe')
@@ -493,7 +591,13 @@ export function DispositivosObeTab() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={handleFileChange}
+          />
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar OBE
@@ -519,16 +623,31 @@ export function DispositivosObeTab() {
             <TableHeader>
               {(() => {
                 const handleSort = (f: string) => {
-                  if (sortField === f) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-                  else { setSortField(f); setSortDir('asc'); }
+                  if (sortField === f) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+                  else {
+                    setSortField(f);
+                    setSortDir('asc');
+                  }
                 };
-                const SortTh = ({ field, children, className }: { field: string; children: React.ReactNode; className?: string }) => {
+                const SortTh = ({
+                  field,
+                  children,
+                  className,
+                }: {
+                  field: string;
+                  children: React.ReactNode;
+                  className?: string;
+                }) => {
                   const active = sortField === field;
                   const Icon = active ? (sortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
                   return (
                     <TableHead className={className}>
-                      <button onClick={() => handleSort(field)} className={`flex items-center gap-1 text-xs font-medium hover:text-foreground transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
-                        {children}<Icon className="h-3 w-3 shrink-0" />
+                      <button
+                        onClick={() => handleSort(field)}
+                        className={`flex items-center gap-1 text-xs font-medium hover:text-foreground transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`}
+                      >
+                        {children}
+                        <Icon className="h-3 w-3 shrink-0" />
                       </button>
                     </TableHead>
                   );
@@ -547,39 +666,59 @@ export function DispositivosObeTab() {
             <TableBody>
               {filtered.map((d) => (
                 <TableRow key={d.id}>
-                  <TableCell className="font-mono font-medium text-sm">{d.nr_equipamento}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{d.contrato || '-'}</TableCell>
+                  <TableCell className="font-mono font-medium text-sm">
+                    {d.nr_equipamento}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {d.contrato || '-'}
+                  </TableCell>
                   <TableCell>
                     {d.viatura ? (
                       <span className="flex items-center gap-1.5 text-sm">
                         <Car className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <span className="font-medium">{d.viatura.matricula}</span>
-                        <span className="text-muted-foreground text-xs">{d.viatura.marca} {d.viatura.modelo}</span>
+                        <span className="text-muted-foreground text-xs">
+                          {d.viatura.marca} {d.viatura.modelo}
+                        </span>
                       </span>
                     ) : (
                       <span className="text-sm text-muted-foreground">Sem viatura</span>
                     )}
                   </TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
-                      d.ativo
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
+                    <span
+                      className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                        d.ativo
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
                       <Wifi className="h-3 w-3" />
                       {d.ativo ? 'Ativo' : 'Inativo'}
                     </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openHistory(d)} title="Histórico de portagens">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openHistory(d)}
+                        title="Histórico de portagens"
+                      >
                         <History className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(d)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openEdit(d)}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="ghost" size="icon"
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => setDeleteTarget(d)}
                       >
@@ -648,7 +787,9 @@ export function DispositivosObeTab() {
                 checked={form.ativo}
                 onCheckedChange={(v) => setForm((f) => ({ ...f, ativo: v }))}
               />
-              <Label htmlFor="ativo-switch" className="cursor-pointer">Dispositivo ativo</Label>
+              <Label htmlFor="ativo-switch" className="cursor-pointer">
+                Dispositivo ativo
+              </Label>
             </div>
 
             <div className="space-y-1.5">
@@ -663,7 +804,9 @@ export function DispositivosObeTab() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancelar
+            </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {editing ? 'Guardar' : 'Criar'}
@@ -678,12 +821,16 @@ export function DispositivosObeTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar dispositivo?</AlertDialogTitle>
             <AlertDialogDescription>
-              O equipamento <strong>{deleteTarget?.nr_equipamento}</strong> será eliminado permanentemente.
+              O equipamento <strong>{deleteTarget?.nr_equipamento}</strong> será eliminado
+              permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={handleDelete}>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={handleDelete}
+            >
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -700,7 +847,7 @@ export function DispositivosObeTab() {
             </DialogTitle>
           </DialogHeader>
           {(() => {
-            const valid   = importRows.filter((r) => r.erros.length === 0);
+            const valid = importRows.filter((r) => r.erros.length === 0);
             const invalid = importRows.filter((r) => r.erros.length > 0);
             return (
               <>
@@ -733,15 +880,25 @@ export function DispositivosObeTab() {
                         const ok = r.erros.length === 0;
                         return (
                           <TableRow key={r._row} className={!ok ? 'bg-destructive/5' : ''}>
-                            <TableCell className="text-xs text-muted-foreground">{r._row}</TableCell>
-                            <TableCell className="font-mono text-sm">{r.nr_equipamento || <span className="text-destructive text-xs">em falta</span>}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{r.contrato || '-'}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {r._row}
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {r.nr_equipamento || (
+                                <span className="text-destructive text-xs">em falta</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {r.contrato || '-'}
+                            </TableCell>
                             <TableCell className="text-sm">{r.matricula || '-'}</TableCell>
                             <TableCell>
                               {ok ? (
                                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                               ) : (
-                                <span className="text-xs text-destructive">{r.erros.join(', ')}</span>
+                                <span className="text-xs text-destructive">
+                                  {r.erros.join(', ')}
+                                </span>
                               )}
                             </TableCell>
                           </TableRow>
@@ -752,7 +909,9 @@ export function DispositivosObeTab() {
                 </div>
 
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setImportOpen(false)}>Cancelar</Button>
+                  <Button variant="outline" onClick={() => setImportOpen(false)}>
+                    Cancelar
+                  </Button>
                   <Button onClick={handleImportConfirm} disabled={importing || valid.length === 0}>
                     {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     Importar {valid.length} dispositivo(s)
@@ -806,11 +965,19 @@ export function DispositivosObeTab() {
                 <TableBody>
                   {historico.map((h, i) => (
                     <TableRow key={i}>
-                      <TableCell className="text-xs whitespace-nowrap">{fmtDT(h.transaction_date)}</TableCell>
-                      <TableCell className="text-xs max-w-[120px] truncate">{h.barreira_entrada || '-'}</TableCell>
-                      <TableCell className="text-xs max-w-[120px] truncate">{h.barreira_saida || '-'}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {fmtDT(h.transaction_date)}
+                      </TableCell>
+                      <TableCell className="text-xs max-w-[120px] truncate">
+                        {h.barreira_entrada || '-'}
+                      </TableCell>
+                      <TableCell className="text-xs max-w-[120px] truncate">
+                        {h.barreira_saida || '-'}
+                      </TableCell>
                       <TableCell className="text-xs">{h.motorista_nome || '-'}</TableCell>
-                      <TableCell className="text-xs text-right font-medium">{fmtEur(h.amount)}</TableCell>
+                      <TableCell className="text-xs text-right font-medium">
+                        {fmtEur(h.amount)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
