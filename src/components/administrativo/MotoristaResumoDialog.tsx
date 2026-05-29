@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +13,7 @@ import {
   Mail,
   MessageSquare,
   UserCheck,
+  Settings,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -22,9 +23,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { generateFinanceiroPDF } from '@/utils/generateFinanceiroPDF';
-
 import { Separator } from '@/components/ui/separator';
 import { useThemedLogo } from '@/hooks/useThemedLogo';
 
@@ -56,24 +58,54 @@ interface Props {
   dateRange: { from: Date; to: Date };
 }
 
+interface PrintSettings {
+  mostrarMatricula: boolean;
+  mostrarGestor: boolean;
+  mostrarCartaoFrota: boolean;
+  mostrarIBAN: boolean;
+  mostrarReciboVerde: boolean;
+  orientacao: 'portrait' | 'landscape';
+}
+
+const DEFAULT_SETTINGS: PrintSettings = {
+  mostrarMatricula: true,
+  mostrarGestor: false,
+  mostrarCartaoFrota: true,
+  mostrarIBAN: true,
+  mostrarReciboVerde: true,
+  orientacao: 'portrait',
+};
+
+const SETTINGS_KEY = 'resumo_print_settings';
+
+function loadSettings(): PrintSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+  } catch {}
+  return DEFAULT_SETTINGS;
+}
+
+function saveSettings(s: PrintSettings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+}
+
 export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange }: Props) {
   const logoSrc = useThemedLogo();
   const [loading, setLoading] = useState(false);
   const [matricula, setMatricula] = useState<string | null>(null);
   const [cartaoFrota, setCartaoFrota] = useState<string | null>(null);
-  // aluguer comes pre-calculated from ContasResumoTab (bulk query, reliable)
+  const [gestor, setGestor] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [motoristaEmail, setMotoristaEmail] = useState<string | null>(null);
   const [motoristaTelefone, setMotoristaTelefone] = useState<string | null>(null);
   const [motoristaIban, setMotoristaIban] = useState<string | null>(null);
   const [extraCosts, setExtraCosts] = useState<{ caucao: number; seguros: number; outros: number }>(
-    {
-      caucao: 0,
-      seguros: 0,
-      outros: 0,
-    }
+    { caucao: 0, seguros: 0, outros: 0 }
   );
   const [outrasReceitas, setOutrasReceitas] = useState(0);
+  const [settings, setSettings] = useState<PrintSettings>(loadSettings);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     if (open && (motorista?.motorista_id || motorista?.driver_uuid)) {
@@ -81,35 +113,37 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
     }
   }, [open, motorista?.motorista_id, motorista?.driver_uuid]);
 
+  const updateSetting = <K extends keyof PrintSettings>(key: K, value: PrintSettings[K]) => {
+    const next = { ...settings, [key]: value };
+    setSettings(next);
+    saveSettings(next);
+  };
+
   async function fetchDadosMotorista() {
     if (!motorista?.motorista_id && !motorista?.driver_uuid) return;
 
     setLoading(true);
     setMatricula(null);
     setCartaoFrota(null);
+    setGestor(null);
     setMotoristaIban(null);
     setExtraCosts({ caucao: 0, seguros: 0, outros: 0 });
 
     try {
-      // Usar motorista_id directamente se disponível
       let resolvedMotoristaId = motorista.motorista_id || null;
 
-      // Fallback 1: Match por IDs de Plataforma (Uber/Bolt) na tabela motoristas_ativos
       if (!resolvedMotoristaId) {
         const query = supabase.from('motoristas_ativos').select('id');
-
         if (motorista.driver_uuid) {
           const { data } = await query.eq('uber_uuid', motorista.driver_uuid).maybeSingle();
           if (data) resolvedMotoristaId = data.id;
         }
-
         if (!resolvedMotoristaId && motorista.identificador_bolt) {
           const { data } = await query.eq('bolt_id', motorista.identificador_bolt).maybeSingle();
           if (data) resolvedMotoristaId = data.id;
         }
       }
 
-      // Fallback 2: Mapeamento histórico Bolt
       if (!resolvedMotoristaId && motorista.driver_uuid) {
         const { data: mapeamento } = await supabase
           .from('bolt_mapeamento_motoristas')
@@ -119,7 +153,6 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
         resolvedMotoristaId = mapeamento?.motorista_id || null;
       }
 
-      // Fallback 3: Busca por nome (último recurso)
       if (!resolvedMotoristaId && motorista.driver_name) {
         const { data: matched } = await supabase
           .from('motoristas_ativos')
@@ -136,16 +169,16 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
             .from('motorista_viaturas')
             .select('viatura_id, viaturas(matricula, valor_aluguer)')
             .eq('motorista_id', resolvedMotoristaId)
-            // A viatura deve ter começado antes do fim do período
             .lte('data_inicio', format(dateRange.to, 'yyyy-MM-dd'))
-            // E deve ter terminado depois do início do período (ou não ter terminado)
             .or(`data_fim.is.null,data_fim.gte.${format(dateRange.from, 'yyyy-MM-dd')}`)
             .order('data_inicio', { ascending: false })
             .limit(1)
             .maybeSingle(),
           supabase
             .from('motoristas_ativos')
-            .select('cartao_frota, cartao_bp, cartao_repsol, cartao_edp, email, telefone, iban')
+            .select(
+              'cartao_frota, cartao_bp, cartao_repsol, cartao_edp, email, telefone, iban, gestor_responsavel'
+            )
             .eq('id', resolvedMotoristaId)
             .maybeSingle(),
           supabase
@@ -163,22 +196,18 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
         if (viaturaData?.viaturas) {
           const viatura = viaturaData.viaturas as any;
           setMatricula(viatura.matricula);
-          // Note: valor_aluguer is provided via prop from ContasResumoTab (bulk query)
-          // We only use it here as a fallback if prop is 0
-          if (!motorista.aluguer) {
-            // No-op: prop takes precedence
-          }
         }
 
         if (motoristaData) {
-          const m = motoristaData;
+          const m = motoristaData as any;
           const cards = [m.cartao_bp, m.cartao_repsol, m.cartao_edp, m.cartao_frota]
-            .filter((c) => !!c)
+            .filter((c: any) => !!c)
             .join(' / ');
           setCartaoFrota(cards || 'N/A');
           setMotoristaEmail(m.email);
           setMotoristaTelefone(m.telefone);
           setMotoristaIban(m.iban);
+          setGestor(m.gestor_responsavel || null);
         }
 
         if (financeiroData) {
@@ -187,25 +216,19 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
             (acc, curr) => {
               if (curr.categoria === 'reparacao') return acc;
               if (curr.categoria === 'renda_viatura') return acc;
-
               const val = Number(curr.valor) || 0;
-
               if (curr.tipo === 'credito') {
-                // Não incluir caução como receita/crédito no recibo semanal
                 if (curr.categoria === 'caucao') return acc;
                 recExtras += val;
                 return acc;
               }
-
               if (curr.categoria === 'caucao') acc.caucao += val;
               else if (curr.categoria === 'seguros') acc.seguros += val;
               else acc.outros += val;
-
               return acc;
             },
             { caucao: 0, seguros: 0, outros: 0 }
           );
-
           setExtraCosts(totals);
           setOutrasReceitas(recExtras);
         }
@@ -219,7 +242,6 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
 
   if (!motorista) return null;
 
-  // Cálculos financeiros
   const isImportado = motorista.tem_recibo_importado === true;
 
   const receitas = {
@@ -249,10 +271,7 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
         reparacoes: motorista.reparacoes || 0,
       };
   const totalDespesas = Object.values(despesas).reduce((a, b) => a + b, 0);
-
   const valoresSemanaAnterior = 0;
-
-  // Quando é recibo importado: valores do PDF são finais — usar liquido directamente
   const receitaAjustada = isImportado
     ? totalReceitas
     : motorista.recibo_verde
@@ -263,12 +282,8 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
     : receitaAjustada - totalDespesas + valoresSemanaAnterior;
   const liquido = isImportado ? motorista.liquido : totalAReceber;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-PT', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
+  const fmt = (value: number) =>
+    new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
 
   const handlePrint = () => {
     window.print();
@@ -278,28 +293,20 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
     const subject = `Resumo Financeiro - ${motorista.driver_name} - ${format(dateRange.from, 'dd/MM/yyyy')}`;
     const body =
       `Olá ${motorista.driver_name},\n\nSegue o resumo financeiro do período ${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}:\n\n` +
-      `Receitas: ${formatCurrency(totalReceitas)}\n` +
-      `Despesas: ${formatCurrency(totalDespesas)}\n` +
-      `Líquido a Receber: ${formatCurrency(liquido)}\n\n` +
-      `Cumprimentos,\nEquipa WeGest`;
-
-    const mailto = `mailto:${motoristaEmail || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
+      `Receitas: ${fmt(totalReceitas)}\nDespesas: ${fmt(totalDespesas)}\nLíquido a Receber: ${fmt(liquido)}\n\nCumprimentos,\nEquipa WeGest`;
+    window.location.href = `mailto:${motoristaEmail || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   const handleSendWhatsApp = () => {
     const message =
-      `*RESUMO FINANCEIRO - WeGest*\n\n` +
-      `Olá *${motorista.driver_name}*,\n` +
+      `*RESUMO FINANCEIRO - WeGest*\n\nOlá *${motorista.driver_name}*,\n` +
       `Período: ${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}\n\n` +
-      `💰 *Receitas:* ${formatCurrency(totalReceitas)}\n` +
-      `💸 *Despesas:* ${formatCurrency(totalDespesas)}\n` +
-      `🏁 *Líquido Final:* ${formatCurrency(liquido)}\n\n` +
-      `Se tiver alguma dúvida, por favor contacte-nos.`;
-
+      `💰 *Receitas:* ${fmt(totalReceitas)}\n💸 *Despesas:* ${fmt(totalDespesas)}\n🏁 *Líquido Final:* ${fmt(liquido)}\n\nSe tiver alguma dúvida, por favor contacte-nos.`;
     const phone = motoristaTelefone?.replace(/\s/g, '') || '';
-    const whatsappUrl = `https://wa.me/${phone.startsWith('+') ? phone : '+351' + phone}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+    window.open(
+      `https://wa.me/${phone.startsWith('+') ? phone : '+351' + phone}?text=${encodeURIComponent(message)}`,
+      '_blank'
+    );
   };
 
   const handleSendAccount = async () => {
@@ -307,7 +314,6 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
       toast.error('ID do motorista não disponível para envio à conta.');
       return;
     }
-
     try {
       setIsSending(true);
       const pdf = await generateFinanceiroPDF({
@@ -331,24 +337,20 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
           total: totalDespesas,
         },
         resumo: {
-          totalAReceber: totalAReceber,
+          totalAReceber,
           ajuste: motorista.recibo_verde ? undefined : totalAReceber - liquido,
-          liquido: liquido,
+          liquido,
         },
-        logoSrc: logoSrc,
+        logoSrc,
       });
 
       const fileName = `resumo_${motorista.motorista_id}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
       const pdfBlob = pdf.output('blob');
-
-      // Upload to storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('motorista-recibos')
         .upload(`${motorista.motorista_id}/${fileName}`, pdfBlob);
-
       if (uploadError) throw uploadError;
 
-      // Insert or Update record in motorista_recibos
       const { error: dbError } = await supabase.from('motorista_recibos').upsert(
         {
           motorista_id: motorista.motorista_id,
@@ -362,245 +364,275 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
           data_validacao: new Date().toISOString(),
           tipo: 'relatorio',
         },
-        {
-          onConflict: 'motorista_id,semana_referencia_inicio',
-        }
+        { onConflict: 'motorista_id,semana_referencia_inicio' }
       );
-
       if (dbError) throw dbError;
-
       toast.success('Resumo enviado para a conta do motorista com sucesso!');
     } catch (error: any) {
-      console.error('Erro ao enviar para conta:', error);
       toast.error('Erro ao enviar resumo: ' + (error.message || String(error)));
     } finally {
       setIsSending(false);
     }
   };
 
+  const infoFields = [
+    { key: 'nome', label: 'Nome', value: motorista.driver_name, always: true },
+    {
+      key: 'matricula',
+      label: 'Matrícula',
+      value: loading ? null : matricula || 'N/A',
+      show: settings.mostrarMatricula,
+    },
+    {
+      key: 'gestor',
+      label: 'Gestor Responsável',
+      value: loading ? null : gestor || 'N/A',
+      show: settings.mostrarGestor,
+    },
+    {
+      key: 'cartaoFrota',
+      label: 'Cartão Frota',
+      value: loading ? null : cartaoFrota || 'N/A',
+      show: settings.mostrarCartaoFrota,
+    },
+    {
+      key: 'periodo',
+      label: 'Período',
+      value: `${format(dateRange.from, 'dd/MM/yyyy', { locale: pt })} a ${format(dateRange.to, 'dd/MM/yyyy', { locale: pt })}`,
+      always: true,
+    },
+    {
+      key: 'iban',
+      label: 'IBAN',
+      value: loading ? null : motoristaIban || 'N/A',
+      show: settings.mostrarIBAN,
+    },
+    {
+      key: 'reciboVerde',
+      label: 'Recibo Verde',
+      value: motorista.recibo_verde ? 'Sim' : 'Não',
+      colored: motorista.recibo_verde ? 'text-green-600' : 'text-red-600',
+      show: settings.mostrarReciboVerde,
+    },
+  ].filter((f) => f.always || f.show);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* Inject landscape CSS when needed */}
+      {settings.orientacao === 'landscape' && (
+        <style>{`@media print { @page { size: landscape; } }`}</style>
+      )}
+
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:overflow-visible">
         <DialogHeader className="print:hidden">
           <DialogTitle>Resumo Financeiro</DialogTitle>
         </DialogHeader>
 
-        {/* Conteúdo do Relatório - Otimizado para Impressão */}
-        <div className="space-y-6 print:space-y-2 print-content" id="relatorio-motorista">
-          {/* Cabeçalho com Logo */}
-          <div className="text-center border-b pb-6 print:pb-2">
-            <img src={logoSrc} alt="Logo" className="h-32 mx-auto mb-4 print:h-24 print:mb-4" />
-            <h1 className="text-2xl print:text-lg font-bold text-foreground print:text-black">
-              RESUMO FINANCEIRO DO MOTORISTA
-            </h1>
+        {/* Painel de configuração (oculto na impressão) */}
+        <div className="print:hidden">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2 text-muted-foreground"
+            onClick={() => setShowSettings((v) => !v)}
+          >
+            <Settings className="h-4 w-4" />
+            Configurar folha de impressão
+          </Button>
+
+          {showSettings && (
+            <div className="mt-3 p-4 border rounded-lg bg-muted/30 space-y-4">
+              <p className="text-sm font-medium text-muted-foreground mb-2">
+                Campos a mostrar na impressão
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {[
+                  { key: 'mostrarMatricula', label: 'Matrícula' },
+                  { key: 'mostrarGestor', label: 'Gestor Responsável' },
+                  { key: 'mostrarCartaoFrota', label: 'Cartão Frota' },
+                  { key: 'mostrarIBAN', label: 'IBAN' },
+                  { key: 'mostrarReciboVerde', label: 'Recibo Verde' },
+                ].map(({ key, label }) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <Switch
+                      id={key}
+                      checked={settings[key as keyof PrintSettings] as boolean}
+                      onCheckedChange={(v) =>
+                        updateSetting(key as keyof PrintSettings, v as any)
+                      }
+                    />
+                    <Label htmlFor={key} className="text-sm cursor-pointer">
+                      {label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              <Separator />
+              <div className="flex items-center gap-4">
+                <p className="text-sm font-medium text-muted-foreground">Orientação</p>
+                <div className="flex gap-2">
+                  {(['portrait', 'landscape'] as const).map((o) => (
+                    <Button
+                      key={o}
+                      size="sm"
+                      variant={settings.orientacao === o ? 'default' : 'outline'}
+                      onClick={() => updateSetting('orientacao', o)}
+                    >
+                      {o === 'portrait' ? 'Vertical' : 'Horizontal'}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Conteúdo do Relatório */}
+        <div className="space-y-4 print:space-y-3 print-content" id="relatorio-motorista">
+          {/* Cabeçalho */}
+          <div className="text-center border-b pb-4 print:pb-2">
+            <img src={logoSrc} alt="Logo" className="h-24 mx-auto mb-3 print:h-16 print:mb-2" />
+            <h1 className="text-2xl print:text-base font-bold">RESUMO FINANCEIRO DO MOTORISTA</h1>
           </div>
 
-          {/* Informações do Motorista */}
-          <div className="bg-muted/30 rounded-lg p-4 print:p-2 print:bg-gray-50 print:border">
-            <div className="grid grid-cols-2 gap-4 print:gap-2">
-              <div>
-                <span className="text-sm print:text-xs text-muted-foreground">Nome</span>
-                <p className="font-semibold text-lg print:text-sm">{motorista.driver_name}</p>
-              </div>
-              <div>
-                <span className="text-sm print:text-xs text-muted-foreground">Matrícula</span>
-                <p className="font-semibold text-lg print:text-sm">
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin inline" />
-                  ) : (
-                    matricula || 'N/A'
-                  )}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm print:text-xs text-muted-foreground">Cartão Frota</span>
-                <p className="font-semibold text-lg print:text-sm">
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin inline" />
-                  ) : (
-                    cartaoFrota || 'N/A'
-                  )}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm print:text-xs text-muted-foreground">Período</span>
-                <p className="font-semibold text-lg print:text-sm">
-                  {format(dateRange.from, 'dd/MM/yyyy', { locale: pt })} a{' '}
-                  {format(dateRange.to, 'dd/MM/yyyy', { locale: pt })}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm print:text-xs text-muted-foreground">IBAN</span>
-                <p className="font-semibold text-lg print:text-sm">
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin inline" />
-                  ) : (
-                    motoristaIban || 'N/A'
-                  )}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm print:text-xs text-muted-foreground">Recibo Verde</span>
-                <p
-                  className={`font-semibold text-lg print:text-sm ${motorista.recibo_verde ? 'text-green-600' : 'text-red-600'}`}
-                >
-                  {motorista.recibo_verde ? 'Sim' : 'Não'}
-                </p>
-              </div>
+          {/* Cards de resumo coloridos */}
+          <div className="grid grid-cols-3 gap-3 print:gap-2">
+            <div className="rounded-xl bg-green-500 text-white p-4 print:p-3 print:rounded-lg text-center">
+              <p className="text-xs font-medium uppercase tracking-wide opacity-80 print:text-[10px]">
+                Total Receitas
+              </p>
+              <p className="text-2xl print:text-lg font-bold mt-1">{fmt(totalReceitas)}</p>
+            </div>
+            <div className="rounded-xl bg-red-500 text-white p-4 print:p-3 print:rounded-lg text-center">
+              <p className="text-xs font-medium uppercase tracking-wide opacity-80 print:text-[10px]">
+                Total Despesas
+              </p>
+              <p className="text-2xl print:text-lg font-bold mt-1">{fmt(totalDespesas)}</p>
+            </div>
+            <div
+              className={`rounded-xl text-white p-4 print:p-3 print:rounded-lg text-center ${liquido >= 0 ? 'bg-blue-600' : 'bg-orange-500'}`}
+            >
+              <p className="text-xs font-medium uppercase tracking-wide opacity-80 print:text-[10px]">
+                Líquido a Receber
+              </p>
+              <p className="text-2xl print:text-lg font-bold mt-1">{fmt(liquido)}</p>
             </div>
           </div>
 
-          {/* Grid de Receitas e Despesas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-2 print:grid-cols-2">
+          {/* Informações do Motorista */}
+          <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:p-3 print:bg-slate-50 border">
+            <div
+              className={`grid gap-3 print:gap-2 ${infoFields.length <= 4 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}
+            >
+              {infoFields.map((f) => (
+                <div key={f.key}>
+                  <span className="text-xs text-muted-foreground print:text-[10px]">{f.label}</span>
+                  {f.value === null ? (
+                    <Loader2 className="h-4 w-4 animate-spin mt-1" />
+                  ) : (
+                    <p
+                      className={`font-semibold print:text-xs ${(f as any).colored || 'text-foreground'}`}
+                    >
+                      {f.value}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Receitas e Despesas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:gap-3 print:grid-cols-2">
             {/* Receitas */}
-            <div className="border rounded-lg overflow-hidden">
-              <div className="bg-green-50 dark:bg-green-950/30 px-4 py-3 print:px-2 print:py-1 border-b print:bg-green-50">
-                <h2 className="font-semibold flex items-center gap-2 text-green-700 dark:text-green-400 print:text-green-700 print:text-sm">
-                  <TrendingUp className="h-5 w-5 print:h-4 print:w-4" />
+            <div className="rounded-lg overflow-hidden border border-green-200 print:border-green-300">
+              <div className="bg-green-500 px-4 py-2 print:px-3 print:py-1.5">
+                <h2 className="font-semibold flex items-center gap-2 text-white text-sm print:text-xs">
+                  <TrendingUp className="h-4 w-4" />
                   RECEITAS
                 </h2>
               </div>
-              <div className="p-4 print:p-2 space-y-3 print:space-y-1">
-                <div className="flex justify-between items-center print:text-xs">
-                  <span>Bolt</span>
-                  <span className="font-medium text-green-600">
-                    {formatCurrency(receitas.bolt)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center print:text-xs">
-                  <span>Uber</span>
-                  <span
-                    className={
-                      receitas.uber > 0 ? 'font-medium text-green-600' : 'text-muted-foreground'
-                    }
-                  >
-                    {formatCurrency(receitas.uber)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center print:text-xs">
-                  <span>Outras Receitas (Ajustes)</span>
-                  <span className="font-medium text-green-600">
-                    {formatCurrency(receitas.outras_receitas)}
-                  </span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center font-bold print:text-xs">
-                  <span>TOTAL RECEITAS</span>
-                  <span className="text-green-600 text-lg print:text-sm">
-                    {formatCurrency(totalReceitas)}
-                  </span>
-                </div>
+              <div className="p-4 print:p-3 space-y-2 print:space-y-1 bg-green-50 print:bg-green-50">
+                <Row label="Bolt" value={fmt(receitas.bolt)} colored="text-green-700" />
+                <Row label="Uber" value={fmt(receitas.uber)} colored="text-green-700" />
+                <Row
+                  label="Outras Receitas"
+                  value={fmt(receitas.outras_receitas)}
+                  colored="text-green-700"
+                />
+                <Separator className="bg-green-200" />
+                <Row label="TOTAL RECEITAS" value={fmt(totalReceitas)} bold colored="text-green-700" />
               </div>
             </div>
 
             {/* Despesas */}
-            <div className="border rounded-lg overflow-hidden">
-              <div className="bg-red-50 dark:bg-red-950/30 px-4 py-3 print:px-2 print:py-1 border-b print:bg-red-50">
-                <h2 className="font-semibold flex items-center gap-2 text-red-700 dark:text-red-400 print:text-red-700 print:text-sm">
-                  <TrendingDown className="h-5 w-5 print:h-4 print:w-4" />
+            <div className="rounded-lg overflow-hidden border border-red-200 print:border-red-300">
+              <div className="bg-red-500 px-4 py-2 print:px-3 print:py-1.5">
+                <h2 className="font-semibold flex items-center gap-2 text-white text-sm print:text-xs">
+                  <TrendingDown className="h-4 w-4" />
                   DESPESAS
                 </h2>
               </div>
-              <div className="p-4 print:p-2 space-y-3 print:space-y-1">
-                <div className="flex justify-between items-center print:text-xs">
-                  <span>Aluguer</span>
-                  <span className="text-muted-foreground">{formatCurrency(despesas.aluguer)}</span>
-                </div>
-                <div className="flex justify-between items-center print:text-xs">
-                  <span>Combustível</span>
-                  <span className="text-muted-foreground">
-                    {formatCurrency(despesas.combustivel)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center print:text-xs">
-                  <span>Portagens</span>
-                  <span className="text-muted-foreground">
-                    {formatCurrency(despesas.portagens)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center print:text-xs">
-                  <span>Outros Custos</span>
-                  <span className="text-muted-foreground">
-                    {formatCurrency(despesas.outros_custos)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center print:text-xs">
-                  <span>Caução</span>
-                  <span className="text-muted-foreground">{formatCurrency(despesas.caucao)}</span>
-                </div>
-                <div className="flex justify-between items-center print:text-xs">
-                  <span>Seguros</span>
-                  <span className="text-muted-foreground">{formatCurrency(despesas.seguros)}</span>
-                </div>
-                <div className="flex justify-between items-center print:text-xs">
-                  <span>Reparações</span>
-                  <span className="text-muted-foreground">
-                    {formatCurrency(despesas.reparacoes)}
-                  </span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center font-bold print:text-xs">
-                  <span>TOTAL DESPESAS</span>
-                  <span className="text-red-600 text-lg print:text-sm">
-                    {formatCurrency(totalDespesas)}
-                  </span>
-                </div>
+              <div className="p-4 print:p-3 space-y-2 print:space-y-1 bg-red-50 print:bg-red-50">
+                <Row label="Aluguer" value={fmt(despesas.aluguer)} colored="text-red-700" />
+                <Row label="Combustível" value={fmt(despesas.combustivel)} colored="text-red-700" />
+                <Row label="Portagens" value={fmt(despesas.portagens)} colored="text-red-700" />
+                <Row label="Outros Custos" value={fmt(despesas.outros_custos)} colored="text-red-700" />
+                <Row label="Caução" value={fmt(despesas.caucao)} colored="text-red-700" />
+                <Row label="Seguros" value={fmt(despesas.seguros)} colored="text-red-700" />
+                <Row label="Reparações" value={fmt(despesas.reparacoes)} colored="text-red-700" />
+                <Separator className="bg-red-200" />
+                <Row label="TOTAL DESPESAS" value={fmt(totalDespesas)} bold colored="text-red-700" />
               </div>
             </div>
           </div>
 
           {/* Resumo Final */}
-          <div className="border rounded-lg overflow-hidden">
-            <div className="bg-blue-50 dark:bg-blue-950/30 px-4 py-3 print:px-2 print:py-1 border-b print:bg-blue-50">
-              <h2 className="font-semibold flex items-center gap-2 text-blue-700 dark:text-blue-400 print:text-blue-700 print:text-sm">
-                <Calculator className="h-5 w-5 print:h-4 print:w-4" />
+          <div className="rounded-lg overflow-hidden border border-blue-200 print:border-blue-300">
+            <div className="bg-blue-600 px-4 py-2 print:px-3 print:py-1.5">
+              <h2 className="font-semibold flex items-center gap-2 text-white text-sm print:text-xs">
+                <Calculator className="h-4 w-4" />
                 RESUMO FINAL
               </h2>
             </div>
-            <div className="p-4 print:p-2 space-y-3 print:space-y-1">
-              <div className="flex justify-between items-center print:text-xs">
-                <span>Valores a Transportar (Semana Anterior)</span>
-                <span className="text-muted-foreground">
-                  {formatCurrency(valoresSemanaAnterior)}
-                </span>
-              </div>
-              <Separator />
-              <div className="flex justify-between items-center print:text-xs">
-                <span className="font-medium">Total a Receber</span>
-                <span
-                  className={`font-medium ${totalAReceber >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                >
-                  {formatCurrency(totalAReceber)}
-                </span>
-              </div>
+            <div className="p-4 print:p-3 space-y-2 print:space-y-1 bg-blue-50 print:bg-blue-50">
+              <Row
+                label="Valores a Transportar (Semana Anterior)"
+                value={fmt(valoresSemanaAnterior)}
+                colored="text-blue-700"
+              />
+              <Separator className="bg-blue-200" />
+              <Row
+                label="Total a Receber"
+                value={fmt(totalAReceber)}
+                colored={totalAReceber >= 0 ? 'text-green-700' : 'text-red-700'}
+              />
               {!motorista.recibo_verde && !isImportado && (
-                <div className="flex justify-between items-center print:text-xs">
-                  <span>Ajuste (÷ 1.06)</span>
-                  <span className="text-orange-600">
-                    -{formatCurrency(totalAReceber - liquido)}
-                  </span>
-                </div>
+                <Row
+                  label="Ajuste (÷ 1.06)"
+                  value={`-${fmt(totalAReceber - liquido)}`}
+                  colored="text-orange-600"
+                />
               )}
-              <Separator className="my-4 print:my-1" />
-              <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-950/20 -mx-4 px-4 py-4 print:py-2 print:bg-blue-50">
-                <span className="font-bold text-lg print:text-sm">VALOR LÍQUIDO A RECEBER</span>
-                <span
-                  className={`font-bold text-2xl print:text-lg ${liquido >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                >
-                  {formatCurrency(liquido)}
+              <Separator className="my-2 print:my-1 bg-blue-200" />
+              <div className="flex justify-between items-center bg-blue-600 -mx-4 px-4 py-3 print:py-2 print:-mx-3 print:px-3">
+                <span className="font-bold text-white text-sm print:text-xs">
+                  VALOR LÍQUIDO A RECEBER
+                </span>
+                <span className={`font-bold text-xl print:text-base text-white`}>
+                  {fmt(liquido)}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Rodapé para Impressão */}
-          <div className="hidden print:block text-center text-xs text-gray-500 pt-2 border-t mt-2">
+          {/* Rodapé impressão */}
+          <div className="hidden print:block text-center text-[10px] text-gray-500 pt-2 border-t mt-2">
             <p>Documento gerado em {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: pt })}</p>
             <p className="mt-0.5">WeGest, Lda. • NIF: 515127850</p>
           </div>
         </div>
 
-        {/* Botões de Ação - Hidden on Print */}
+        {/* Botões de Ação */}
         <div className="flex justify-end gap-3 pt-4 border-t print:hidden">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             <X className="h-4 w-4 mr-2" />
@@ -641,5 +673,24 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function Row({
+  label,
+  value,
+  bold,
+  colored,
+}: {
+  label: string;
+  value: string;
+  bold?: boolean;
+  colored?: string;
+}) {
+  return (
+    <div className={`flex justify-between items-center print:text-xs ${bold ? 'font-bold' : ''}`}>
+      <span>{label}</span>
+      <span className={colored}>{value}</span>
+    </div>
   );
 }
