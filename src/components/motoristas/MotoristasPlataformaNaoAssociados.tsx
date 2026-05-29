@@ -20,7 +20,17 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Loader2, Search, Link2, UserPlus, Car, Zap, Check, ChevronsUpDown, Printer } from 'lucide-react';
+import {
+  Loader2,
+  Search,
+  Link2,
+  UserPlus,
+  Car,
+  Zap,
+  Check,
+  ChevronsUpDown,
+  Printer,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateNaoAssociadosPDF } from '@/utils/generateNaoAssociadosPDF';
 import { useThemedLogo } from '@/hooks/useThemedLogo';
@@ -54,11 +64,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onChanged?: () => void;
-  onCriarFicha?: (prefill: {
-    nome: string;
-    uberId?: string;
-    boltId?: string;
-  }) => void;
+  onCriarFicha?: (prefill: { nome: string; uberId?: string; boltId?: string }) => void;
 }
 
 const fmtEur = (v: number) =>
@@ -128,9 +134,7 @@ export const MotoristasPlataformaNaoAssociados: React.FC<Props> = ({
       const uberJaLigados = new Set(
         crmList.map((m) => m.uber_uuid).filter((x): x is string => !!x)
       );
-      const boltJaLigados = new Set(
-        crmList.map((m) => m.bolt_id).filter((x): x is string => !!x)
-      );
+      const boltJaLigados = new Set(crmList.map((m) => m.bolt_id).filter((x): x is string => !!x));
 
       const [uberLigadosDb, boltLigadosDb] = await Promise.all([
         supabase
@@ -176,7 +180,11 @@ export const MotoristasPlataformaNaoAssociados: React.FC<Props> = ({
         const id = t.uber_driver_id;
         if (!id || !uberNomeById.has(id)) return;
         if (uberJaLigados.has(id)) return;
-        const cur = fontesUber.get(id) || { nome: uberNomeById.get(id)!, faturado: 0, transacoes: 0 };
+        const cur = fontesUber.get(id) || {
+          nome: uberNomeById.get(id)!,
+          faturado: 0,
+          transacoes: 0,
+        };
         cur.faturado += Number(t.gross_amount) || 0;
         cur.transacoes += 1;
         fontesUber.set(id, cur);
@@ -235,7 +243,11 @@ export const MotoristasPlataformaNaoAssociados: React.FC<Props> = ({
       const todos = [...grupos.values()].sort((a, b) => b.faturado - a.faturado);
       setNaoAssociados(todos);
     } catch (err: any) {
-      toast({ title: 'Erro', description: 'Falha ao carregar não-associados.', variant: 'destructive' });
+      toast({
+        title: 'Erro',
+        description: 'Falha ao carregar não-associados.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -282,7 +294,11 @@ export const MotoristasPlataformaNaoAssociados: React.FC<Props> = ({
       setNaoAssociados((prev) => prev.filter((n) => n.key !== item.key));
       onChanged?.();
     } catch (err: any) {
-      toast({ title: 'Erro', description: err.message || 'Falha ao associar.', variant: 'destructive' });
+      toast({
+        title: 'Erro',
+        description: err.message || 'Falha ao associar.',
+        variant: 'destructive',
+      });
     } finally {
       setAssociando(null);
     }
@@ -383,10 +399,14 @@ const LinhaNaoAssociado: React.FC<{
 
   // Sugestão fuzzy: motorista CRM cujo 1º+último nome coincide
   const sugestaoId = useMemo(() => {
-    const partes = normalize(item.nome).split(' ').filter((p) => p.length > 2);
+    const partes = normalize(item.nome)
+      .split(' ')
+      .filter((p) => p.length > 2);
     if (partes.length < 1) return null;
     const match = motoristas.find((m) => {
-      const mp = normalize(m.nome).split(' ').filter((p) => p.length > 2);
+      const mp = normalize(m.nome)
+        .split(' ')
+        .filter((p) => p.length > 2);
       const comuns = partes.filter((p) => mp.includes(p));
       return comuns.length >= 2;
     });
@@ -487,7 +507,13 @@ const LinhaNaoAssociado: React.FC<{
           </PopoverContent>
         </Popover>
 
-        <Button variant="ghost" size="sm" className="gap-1.5" onClick={onCriar} disabled={associando}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-1.5"
+          onClick={onCriar}
+          disabled={associando}
+        >
           <UserPlus className="h-3.5 w-3.5" />
           Criar ficha
         </Button>

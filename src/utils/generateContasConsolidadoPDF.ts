@@ -31,7 +31,12 @@ const fmt = (v: number) =>
  * Gera um único PDF (1+ páginas) com uma tabela consolidada dos motoristas
  * selecionados — Nome / Faturado / Aluguer / Combustível / Outros / Reparações / Líquido.
  */
-export function generateContasConsolidadoPDF({ linhas, weekStart, weekEnd, logoSrc }: Opcoes): jsPDF {
+export function generateContasConsolidadoPDF({
+  linhas,
+  weekStart,
+  weekEnd,
+  logoSrc,
+}: Opcoes): jsPDF {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -204,12 +209,9 @@ export function generateContasConsolidadoPDF({ linhas, weekStart, weekEnd, logoS
   doc.setTextColor(130);
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
-    doc.text(
-      `Página ${p} de ${totalPages}`,
-      pageWidth - marginX,
-      pageHeight - 6,
-      { align: 'right' }
-    );
+    doc.text(`Página ${p} de ${totalPages}`, pageWidth - marginX, pageHeight - 6, {
+      align: 'right',
+    });
   }
 
   return doc;

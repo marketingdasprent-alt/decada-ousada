@@ -381,9 +381,7 @@ export const ImportarDadosWizard: React.FC<ImportarDadosWizardProps> = ({
 
         if (cancelled) return;
         setExisteImportacao(
-          (result.count ?? 0) > 0
-            ? { quantidade: result.count!, ultimaData: result.latest }
-            : null
+          (result.count ?? 0) > 0 ? { quantidade: result.count!, ultimaData: result.latest } : null
         );
       } catch (err) {
         if (!cancelled) setExisteImportacao(null);
@@ -522,9 +520,7 @@ export const ImportarDadosWizard: React.FC<ImportarDadosWizardProps> = ({
         <StepIndicator passo={passo} accent={cfg?.accent ?? 'bg-primary'} />
 
         <div className="min-h-[280px] py-2">
-          {passo === 1 && (
-            <PassoPlataforma plataforma={plataforma} onSelect={setPlataforma} />
-          )}
+          {passo === 1 && <PassoPlataforma plataforma={plataforma} onSelect={setPlataforma} />}
           {passo === 2 && cfg && (
             <PassoConta
               cfg={cfg}
@@ -579,10 +575,7 @@ export const ImportarDadosWizard: React.FC<ImportarDadosWizardProps> = ({
             type="button"
             onClick={avancar}
             disabled={!podeAvancar}
-            className={cn(
-              'gap-2 text-white',
-              cfg ? cn(cfg.accent, 'hover:opacity-90') : ''
-            )}
+            className={cn('gap-2 text-white', cfg ? cn(cfg.accent, 'hover:opacity-90') : '')}
           >
             {importando ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {passo === 4 ? 'Importar' : 'Continuar'}
@@ -706,7 +699,9 @@ const PassoConta: React.FC<{
   return (
     <div>
       <div className="mb-3 flex items-center gap-2">
-        <span className={cn('flex h-7 w-7 items-center justify-center rounded-lg', cfg.bg, cfg.text)}>
+        <span
+          className={cn('flex h-7 w-7 items-center justify-center rounded-lg', cfg.bg, cfg.text)}
+        >
           <Icon className="h-4 w-4" />
         </span>
         <p className="text-sm text-muted-foreground">
@@ -838,11 +833,14 @@ const PassoSemana: React.FC<{
   return (
     <div>
       <div className="mb-3 flex items-center gap-2">
-        <span className={cn('flex h-7 w-7 items-center justify-center rounded-lg', cfg.bg, cfg.text)}>
+        <span
+          className={cn('flex h-7 w-7 items-center justify-center rounded-lg', cfg.bg, cfg.text)}
+        >
           <Icon className="h-4 w-4" />
         </span>
         <p className="text-sm text-muted-foreground">
-          Qual semana corresponde a este ficheiro <strong className="text-foreground">{cfg.label}</strong>?
+          Qual semana corresponde a este ficheiro{' '}
+          <strong className="text-foreground">{cfg.label}</strong>?
         </p>
       </div>
 
@@ -919,8 +917,7 @@ const PassoSemana: React.FC<{
 
       {verificando && (
         <div className="mt-3 flex items-center gap-2 rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          A verificar importações anteriores…
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />A verificar importações anteriores…
         </div>
       )}
 
@@ -967,12 +964,12 @@ const PassoFicheiro: React.FC<{
   return (
     <div>
       <div className="mb-3 flex items-center gap-2">
-        <span className={cn('flex h-7 w-7 items-center justify-center rounded-lg', cfg.bg, cfg.text)}>
+        <span
+          className={cn('flex h-7 w-7 items-center justify-center rounded-lg', cfg.bg, cfg.text)}
+        >
           <Icon className="h-4 w-4" />
         </span>
-        <p className="text-sm text-muted-foreground">
-          Carrega o ficheiro CSV.
-        </p>
+        <p className="text-sm text-muted-foreground">Carrega o ficheiro CSV.</p>
       </div>
 
       <div className="mb-3 grid grid-cols-1 gap-2 rounded-lg border bg-muted/10 p-3 text-xs sm:grid-cols-3">
@@ -996,8 +993,10 @@ const PassoFicheiro: React.FC<{
         <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 p-2.5 text-xs">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
           <span className="text-amber-700 dark:text-amber-300">
-            <strong>Já existe importação</strong> para esta semana ({existeImportacao.quantidade} registo
-            {existeImportacao.quantidade !== 1 ? 's' : ''}). Importar de novo substitui pelos novos valores.
+            <strong>Já existe importação</strong> para esta semana ({existeImportacao.quantidade}{' '}
+            registo
+            {existeImportacao.quantidade !== 1 ? 's' : ''}). Importar de novo substitui pelos novos
+            valores.
           </span>
         </div>
       )}

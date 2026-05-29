@@ -24,12 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -121,7 +116,9 @@ interface ImportRow {
 const VALID_TIPOS: TipoCartao[] = ['bp', 'repsol', 'edp'];
 
 function parseTipo(raw: unknown): TipoCartao | '' {
-  const s = String(raw || '').toLowerCase().trim();
+  const s = String(raw || '')
+    .toLowerCase()
+    .trim();
   if (VALID_TIPOS.includes(s as TipoCartao)) return s as TipoCartao;
   return '';
 }
@@ -131,29 +128,50 @@ function parseExcelDate(raw: unknown): string {
   // Excel serial number
   if (typeof raw === 'number') {
     const d = XLSX.SSF.parse_date_code(raw);
-    if (d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+    if (d) return `${d.y}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')}`;
   }
   const s = String(raw).trim();
   // dd/mm/yyyy
   const m1 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if (m1) return `${m1[3]}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`;
+  if (m1) return `${m1[3]}-${m1[2].padStart(2, '0')}-${m1[1].padStart(2, '0')}`;
   // yyyy-mm-dd
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   return s;
 }
 
 function colKey(header: string) {
-  return header.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim().replace(/\s+/g,'_');
+  return header.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim().replace(/\s+/g, '_');
 }
 
 const COL_MAP: Record<string, keyof Omit<ImportRow, '_row' | 'erros'>> = {
-  tipo: 'tipo', type: 'tipo',
-  numero: 'numero', number: 'numero', num: 'numero', card: 'numero', cartao: 'numero', cartão: 'numero',
-  ambito: 'ambito', âmbito: 'ambito', ambience: 'ambito', scope: 'ambito',
-  limite: 'limite', limit: 'limite', budget: 'limite', orcamento: 'limite', orçamento: 'limite',
+  tipo: 'tipo',
+  type: 'tipo',
+  numero: 'numero',
+  number: 'numero',
+  num: 'numero',
+  card: 'numero',
+  cartao: 'numero',
+  cartão: 'numero',
+  ambito: 'ambito',
+  âmbito: 'ambito',
+  ambience: 'ambito',
+  scope: 'ambito',
+  limite: 'limite',
+  limit: 'limite',
+  budget: 'limite',
+  orcamento: 'limite',
+  orçamento: 'limite',
   pin: 'pin',
-  validade: 'data_validade', data_validade: 'data_validade', expiry: 'data_validade', expiracao: 'data_validade', expiração: 'data_validade', validity: 'data_validade',
-  notas: 'notas', notes: 'notas', observacoes: 'notas', observações: 'notas',
+  validade: 'data_validade',
+  data_validade: 'data_validade',
+  expiry: 'data_validade',
+  expiracao: 'data_validade',
+  expiração: 'data_validade',
+  validity: 'data_validade',
+  notas: 'notas',
+  notes: 'notas',
+  observacoes: 'notas',
+  observações: 'notas',
 };
 
 function parseSheet(wb: XLSX.WorkBook): ImportRow[] {
@@ -163,87 +181,150 @@ function parseSheet(wb: XLSX.WorkBook): ImportRow[] {
 
   const headers = (raw[0] as unknown[]).map((h) => colKey(String(h)));
   const fieldMap: Record<number, keyof Omit<ImportRow, '_row' | 'erros'>> = {};
-  headers.forEach((h, i) => { if (COL_MAP[h]) fieldMap[i] = COL_MAP[h]; });
+  headers.forEach((h, i) => {
+    if (COL_MAP[h]) fieldMap[i] = COL_MAP[h];
+  });
 
-  return raw.slice(1).map((row, idx) => {
-    const r: ImportRow = { _row: idx + 2, tipo: '', numero: '', ambito: '', limite: '', pin: '', data_validade: '', notas: '', erros: [] };
-    (row as unknown[]).forEach((cell, i) => {
-      const field = fieldMap[i];
-      if (!field) return;
-      if (field === 'tipo') { r.tipo = parseTipo(cell); }
-      else if (field === 'data_validade') { r.data_validade = parseExcelDate(cell); }
-      else { (r as any)[field] = String(cell || '').trim(); }
-    });
-    // Validate
-    if (!r.numero) r.erros.push('Número em falta');
-    if (!r.tipo)   r.erros.push(`Tipo inválido (use bp/repsol/edp)`);
-    if (r.limite && isNaN(Number(r.limite))) r.erros.push('Limite inválido');
-    return r;
-  }).filter((r) => r.numero || r.tipo); // skip empty rows
+  return raw
+    .slice(1)
+    .map((row, idx) => {
+      const r: ImportRow = {
+        _row: idx + 2,
+        tipo: '',
+        numero: '',
+        ambito: '',
+        limite: '',
+        pin: '',
+        data_validade: '',
+        notas: '',
+        erros: [],
+      };
+      (row as unknown[]).forEach((cell, i) => {
+        const field = fieldMap[i];
+        if (!field) return;
+        if (field === 'tipo') {
+          r.tipo = parseTipo(cell);
+        } else if (field === 'data_validade') {
+          r.data_validade = parseExcelDate(cell);
+        } else {
+          (r as any)[field] = String(cell || '').trim();
+        }
+      });
+      // Validate
+      if (!r.numero) r.erros.push('Número em falta');
+      if (!r.tipo) r.erros.push(`Tipo inválido (use bp/repsol/edp)`);
+      if (r.limite && isNaN(Number(r.limite))) r.erros.push('Limite inválido');
+      return r;
+    })
+    .filter((r) => r.numero || r.tipo); // skip empty rows
 }
 
 function downloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
     ['Tipo', 'Numero', 'Ambito', 'Limite', 'PIN', 'Validade', 'Notas'],
-    ['bp',   '1234567890', 'Combustível', '200', '1234', '31/12/2026', ''],
-    ['repsol','9876543210', 'Geral',       '',    '',    '',            ''],
-    ['edp',  '5551234567', 'Elétrico',    '150', '',    '30/06/2027', 'Carreg. rápido'],
+    ['bp', '1234567890', 'Combustível', '200', '1234', '31/12/2026', ''],
+    ['repsol', '9876543210', 'Geral', '', '', '', ''],
+    ['edp', '5551234567', 'Elétrico', '150', '', '30/06/2027', 'Carreg. rápido'],
   ]);
-  ws['!cols'] = [8,14,14,8,6,12,20].map((w) => ({ wch: w }));
+  ws['!cols'] = [8, 14, 14, 8, 6, 12, 20].map((w) => ({ wch: w }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Cartões');
   XLSX.writeFile(wb, 'template_cartoes_frota.xlsx');
 }
 
 const TIPO_INFO = {
-  bp:     { label: 'BP',     Icon: Fuel, badgeCls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
-  repsol: { label: 'Repsol', Icon: Fuel, badgeCls: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' },
-  edp:    { label: 'EDP',    Icon: Zap,  badgeCls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' },
+  bp: {
+    label: 'BP',
+    Icon: Fuel,
+    badgeCls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  },
+  repsol: {
+    label: 'Repsol',
+    Icon: Fuel,
+    badgeCls: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+  },
+  edp: {
+    label: 'EDP',
+    Icon: Zap,
+    badgeCls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  },
 } as const;
 
-const fmtEur  = (v: number | null) => v == null ? '-' : new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
-const fmtDate = (s: string | null) => { if (!s) return '-'; try { return format(new Date(s), 'dd/MM/yyyy', { locale: pt }); } catch { return s.slice(0, 10); } };
-const fmtDT   = (s: string | null) => { if (!s) return '-'; try { return format(new Date(s), 'dd/MM/yyyy HH:mm', { locale: pt }); } catch { return s.slice(0, 16); } };
-const norm    = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+const fmtEur = (v: number | null) =>
+  v == null
+    ? '-'
+    : new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
+const fmtDate = (s: string | null) => {
+  if (!s) return '-';
+  try {
+    return format(new Date(s), 'dd/MM/yyyy', { locale: pt });
+  } catch {
+    return s.slice(0, 10);
+  }
+};
+const fmtDT = (s: string | null) => {
+  if (!s) return '-';
+  try {
+    return format(new Date(s), 'dd/MM/yyyy HH:mm', { locale: pt });
+  } catch {
+    return s.slice(0, 16);
+  }
+};
+const norm = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 
 type FormState = {
-  numero: string; tipo: 'bp' | 'repsol' | 'edp';
-  data_validade: string; limite: string; pin: string; ambito: string; notas: string;
+  numero: string;
+  tipo: 'bp' | 'repsol' | 'edp';
+  data_validade: string;
+  limite: string;
+  pin: string;
+  ambito: string;
+  notas: string;
 };
 
-const emptyForm = (): FormState => ({ numero: '', tipo: 'bp', data_validade: '', limite: '', pin: '', ambito: '', notas: '' });
+const emptyForm = (): FormState => ({
+  numero: '',
+  tipo: 'bp',
+  data_validade: '',
+  limite: '',
+  pin: '',
+  ambito: '',
+  notas: '',
+});
 
 export function CartoesFlotaTab() {
   const { toast } = useToast();
-  const [cartoes, setCartoes]   = useState<CartaoFrota[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [search, setSearch]     = useState('');
+  const [cartoes, setCartoes] = useState<CartaoFrota[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const [tipoFilter, setTipoFilter] = useState<'todos' | 'bp' | 'repsol' | 'edp'>('todos');
   const [sortField, setSortField] = useState<string>('numero');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   // CRUD Dialog
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing]   = useState<CartaoFrota | null>(null);
-  const [saving, setSaving]     = useState(false);
-  const [form, setForm]         = useState<FormState>(emptyForm());
-  const [showPin, setShowPin]   = useState(false);
+  const [editing, setEditing] = useState<CartaoFrota | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<FormState>(emptyForm());
+  const [showPin, setShowPin] = useState(false);
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<CartaoFrota | null>(null);
 
   // History Sheet
   const [historyCartao, setHistoryCartao] = useState<CartaoFrota | null>(null);
-  const [historico, setHistorico]         = useState<HistoricoItem[]>([]);
+  const [historico, setHistorico] = useState<HistoricoItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Import
-  const fileInputRef              = useRef<HTMLInputElement>(null);
-  const [importOpen, setImportOpen]     = useState(false);
-  const [importRows, setImportRows]     = useState<ImportRow[]>([]);
-  const [importing, setImporting]       = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRows, setImportRows] = useState<ImportRow[]>([]);
+  const [importing, setImporting] = useState(false);
 
-  useEffect(() => { carregar(); }, []);
+  useEffect(() => {
+    carregar();
+  }, []);
 
   const carregar = async () => {
     setLoading(true);
@@ -267,23 +348,35 @@ export function CartoesFlotaTab() {
       if (tipoFilter !== 'todos' && c.tipo !== tipoFilter) return false;
       if (!search) return true;
       const t = norm(search);
-      return norm(c.numero).includes(t)
-        || norm(c.motorista?.nome || '').includes(t)
-        || norm(c.cliente?.nome || '').includes(t)
-        || norm(c.ambito || '').includes(t);
+      return (
+        norm(c.numero).includes(t) ||
+        norm(c.motorista?.nome || '').includes(t) ||
+        norm(c.cliente?.nome || '').includes(t) ||
+        norm(c.ambito || '').includes(t)
+      );
     });
     list.sort((a, b) => {
       let va: string | number = '';
       let vb: string | number = '';
-      if (sortField === 'tipo') { va = a.tipo; vb = b.tipo; }
-      else if (sortField === 'numero') { va = a.numero; vb = b.numero; }
-      else if (sortField === 'ambito') { va = a.ambito || ''; vb = b.ambito || ''; }
-      else if (sortField === 'titular') {
+      if (sortField === 'tipo') {
+        va = a.tipo;
+        vb = b.tipo;
+      } else if (sortField === 'numero') {
+        va = a.numero;
+        vb = b.numero;
+      } else if (sortField === 'ambito') {
+        va = a.ambito || '';
+        vb = b.ambito || '';
+      } else if (sortField === 'titular') {
         va = a.motorista?.nome || a.cliente?.nome || '';
         vb = b.motorista?.nome || b.cliente?.nome || '';
+      } else if (sortField === 'limite') {
+        va = a.limite ?? -Infinity;
+        vb = b.limite ?? -Infinity;
+      } else if (sortField === 'validade') {
+        va = a.data_validade || '';
+        vb = b.data_validade || '';
       }
-      else if (sortField === 'limite') { va = a.limite ?? -Infinity; vb = b.limite ?? -Infinity; }
-      else if (sortField === 'validade') { va = a.data_validade || ''; vb = b.data_validade || ''; }
       if (va < vb) return sortDir === 'asc' ? -1 : 1;
       if (va > vb) return sortDir === 'asc' ? 1 : -1;
       return 0;
@@ -302,7 +395,8 @@ export function CartoesFlotaTab() {
   const openEdit = (c: CartaoFrota) => {
     setEditing(c);
     setForm({
-      numero: c.numero, tipo: c.tipo,
+      numero: c.numero,
+      tipo: c.tipo,
       data_validade: c.data_validade || '',
       limite: c.limite != null ? String(c.limite) : '',
       pin: c.pin || '',
@@ -314,7 +408,10 @@ export function CartoesFlotaTab() {
   };
 
   const handleSave = async () => {
-    if (!form.numero.trim()) { toast({ title: 'Número obrigatório', variant: 'destructive' }); return; }
+    if (!form.numero.trim()) {
+      toast({ title: 'Número obrigatório', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -342,9 +439,15 @@ export function CartoesFlotaTab() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const { error } = await (supabase as any).from('cartoes_frota').delete().eq('id', deleteTarget.id);
+    const { error } = await (supabase as any)
+      .from('cartoes_frota')
+      .delete()
+      .eq('id', deleteTarget.id);
     if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-    else { toast({ title: 'Cartão eliminado' }); carregar(); }
+    else {
+      toast({ title: 'Cartão eliminado' });
+      carregar();
+    }
     setDeleteTarget(null);
   };
 
@@ -354,17 +457,27 @@ export function CartoesFlotaTab() {
     setHistorico([]);
     setLoadingHistory(true);
     try {
-      const { data, error } = await (supabase as any).rpc('get_cartao_historico_consumo', { p_tipo: c.tipo, p_numero: c.numero });
+      const { data, error } = await (supabase as any).rpc('get_cartao_historico_consumo', {
+        p_tipo: c.tipo,
+        p_numero: c.numero,
+      });
       if (error) throw error;
       setHistorico(data || []);
     } catch (err: any) {
-      toast({ title: 'Erro ao carregar histórico', description: err.message, variant: 'destructive' });
+      toast({
+        title: 'Erro ao carregar histórico',
+        description: err.message,
+        variant: 'destructive',
+      });
     } finally {
       setLoadingHistory(false);
     }
   };
 
-  const totalHistorico = useMemo(() => historico.reduce((s, r) => s + (r.amount || 0), 0), [historico]);
+  const totalHistorico = useMemo(
+    () => historico.reduce((s, r) => s + (r.amount || 0), 0),
+    [historico]
+  );
 
   // ── IMPORT ────────────────────────────────────────────────────────────
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -382,7 +495,11 @@ export function CartoesFlotaTab() {
         setImportRows(rows);
         setImportOpen(true);
       } catch {
-        toast({ title: 'Erro ao ler ficheiro', description: 'Certifique-se que é um ficheiro .xlsx ou .xls válido.', variant: 'destructive' });
+        toast({
+          title: 'Erro ao ler ficheiro',
+          description: 'Certifique-se que é um ficheiro .xlsx ou .xls válido.',
+          variant: 'destructive',
+        });
       }
     };
     reader.readAsArrayBuffer(file);
@@ -396,14 +513,14 @@ export function CartoesFlotaTab() {
     try {
       const { data: orgId } = await (supabase as any).rpc('get_current_org_id');
       const payload = valid.map((r) => ({
-        org_id:        orgId,
-        numero:        r.numero,
-        tipo:          r.tipo as TipoCartao,
-        ambito:        r.ambito || null,
-        limite:        r.limite ? Number(r.limite) : null,
-        pin:           r.pin || null,
+        org_id: orgId,
+        numero: r.numero,
+        tipo: r.tipo as TipoCartao,
+        ambito: r.ambito || null,
+        limite: r.limite ? Number(r.limite) : null,
+        pin: r.pin || null,
         data_validade: r.data_validade || null,
-        notas:         r.notas || null,
+        notas: r.notas || null,
       }));
       const { error } = await (supabase as any)
         .from('cartoes_frota')
@@ -421,15 +538,15 @@ export function CartoesFlotaTab() {
 
   const handleExport = () => {
     const rows = filtered.map((c) => ({
-      'Tipo': TIPO_INFO[c.tipo].label,
-      'Número': c.numero,
-      'Âmbito': c.ambito || '',
-      'Titular': c.motorista?.nome || c.cliente?.nome || '',
+      Tipo: TIPO_INFO[c.tipo].label,
+      Número: c.numero,
+      Âmbito: c.ambito || '',
+      Titular: c.motorista?.nome || c.cliente?.nome || '',
       'Tipo Titular': c.motorista ? 'Motorista' : c.cliente ? 'Cliente' : '',
       'Limite (€)': c.limite ?? '',
-      'Validade': c.data_validade ? fmtDate(c.data_validade) : '',
-      'Estado': c.ativo ? 'Ativo' : 'Inativo',
-      'Notas': c.notas || '',
+      Validade: c.data_validade ? fmtDate(c.data_validade) : '',
+      Estado: c.ativo ? 'Ativo' : 'Inativo',
+      Notas: c.notas || '',
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
@@ -447,16 +564,20 @@ export function CartoesFlotaTab() {
         reader.onloadend = () => resolve(reader.result as string);
         reader.readAsDataURL(blob);
       });
-    } catch { logoUrl = '/Logo.png'; }
+    } catch {
+      logoUrl = '/Logo.png';
+    }
     const date = fmtDT(new Date().toISOString());
     const ativos = filtered.filter((c) => c.ativo).length;
     const bpCount = filtered.filter((c) => c.tipo === 'bp').length;
     const repsolCount = filtered.filter((c) => c.tipo === 'repsol').length;
     const edpCount = filtered.filter((c) => c.tipo === 'edp').length;
-    const rows = filtered.map((c) => {
-      const t = titularLabel(c);
-      const badgeCls = c.tipo === 'bp' ? 'badge-bp' : c.tipo === 'repsol' ? 'badge-repsol' : 'badge-edp';
-      return `<tr>
+    const rows = filtered
+      .map((c) => {
+        const t = titularLabel(c);
+        const badgeCls =
+          c.tipo === 'bp' ? 'badge-bp' : c.tipo === 'repsol' ? 'badge-repsol' : 'badge-edp';
+        return `<tr>
         <td><span class="badge ${badgeCls}">${TIPO_INFO[c.tipo].label}</span></td>
         <td class="mono">${c.numero}</td>
         <td>${c.ambito || '<span class="muted">-</span>'}</td>
@@ -465,10 +586,12 @@ export function CartoesFlotaTab() {
         <td>${fmtDate(c.data_validade)}</td>
         <td><span class="badge ${c.ativo ? 'badge-ativo' : 'badge-inativo'}">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
       </tr>`;
-    }).join('');
+      })
+      .join('');
     const w = window.open('', '_blank');
     if (!w) return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cartões Frota — WeGest</title><link rel="icon" href="${logoUrl}" type="image/png">
+    w.document
+      .write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cartões Frota — WeGest</title><link rel="icon" href="${logoUrl}" type="image/png">
     <style>
       *{margin:0;padding:0;box-sizing:border-box}
       body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#1a1a1a;background:white}
@@ -528,7 +651,7 @@ export function CartoesFlotaTab() {
 
   const titularLabel = (c: CartaoFrota) => {
     if (c.motorista) return { texto: c.motorista.nome, tipo: 'motorista' as const };
-    if (c.cliente)   return { texto: c.cliente.nome,   tipo: 'cliente' as const };
+    if (c.cliente) return { texto: c.cliente.nome, tipo: 'cliente' as const };
     return null;
   };
 
@@ -588,7 +711,13 @@ export function CartoesFlotaTab() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={handleFileChange}
+          />
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Cartão
@@ -614,16 +743,31 @@ export function CartoesFlotaTab() {
             <TableHeader>
               {(() => {
                 const handleSort = (f: string) => {
-                  if (sortField === f) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-                  else { setSortField(f); setSortDir('asc'); }
+                  if (sortField === f) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+                  else {
+                    setSortField(f);
+                    setSortDir('asc');
+                  }
                 };
-                const SortTh = ({ field, children, className }: { field: string; children: React.ReactNode; className?: string }) => {
+                const SortTh = ({
+                  field,
+                  children,
+                  className,
+                }: {
+                  field: string;
+                  children: React.ReactNode;
+                  className?: string;
+                }) => {
                   const active = sortField === field;
                   const Icon = active ? (sortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
                   return (
                     <TableHead className={className}>
-                      <button onClick={() => handleSort(field)} className={`flex items-center gap-1 text-xs font-medium hover:text-foreground transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
-                        {children}<Icon className="h-3 w-3 shrink-0" />
+                      <button
+                        onClick={() => handleSort(field)}
+                        className={`flex items-center gap-1 text-xs font-medium hover:text-foreground transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`}
+                      >
+                        {children}
+                        <Icon className="h-3 w-3 shrink-0" />
                       </button>
                     </TableHead>
                   );
@@ -634,7 +778,9 @@ export function CartoesFlotaTab() {
                     <SortTh field="numero">Número</SortTh>
                     <SortTh field="ambito">Âmbito</SortTh>
                     <SortTh field="titular">Titular</SortTh>
-                    <SortTh field="limite" className="text-right">Limite</SortTh>
+                    <SortTh field="limite" className="text-right">
+                      Limite
+                    </SortTh>
                     <SortTh field="validade">Validade</SortTh>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -643,26 +789,32 @@ export function CartoesFlotaTab() {
             </TableHeader>
             <TableBody>
               {filtered.map((c) => {
-                const info    = TIPO_INFO[c.tipo];
-                const Icon    = info.Icon;
+                const info = TIPO_INFO[c.tipo];
+                const Icon = info.Icon;
                 const titular = titularLabel(c);
                 return (
                   <TableRow key={c.id}>
                     <TableCell>
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${info.badgeCls}`}>
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${info.badgeCls}`}
+                      >
                         <Icon className="h-3 w-3" />
                         {info.label}
                       </span>
                     </TableCell>
                     <TableCell className="font-mono font-medium text-sm">{c.numero}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.ambito || '-'}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {c.ambito || '-'}
+                    </TableCell>
                     <TableCell>
                       {titular ? (
                         <span className="flex items-center gap-1.5 text-sm">
                           <UserCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                           <span className="truncate max-w-[160px]">{titular.texto}</span>
                           {titular.tipo === 'cliente' && (
-                            <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1">cliente</Badge>
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1">
+                              cliente
+                            </Badge>
                           )}
                         </span>
                       ) : (
@@ -675,17 +827,31 @@ export function CartoesFlotaTab() {
                     <TableCell className="text-right text-sm font-medium">
                       {c.limite != null ? fmtEur(c.limite) : '-'}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{fmtDate(c.data_validade)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {fmtDate(c.data_validade)}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openHistory(c)} title="Histórico de consumo">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => openHistory(c)}
+                          title="Histórico de consumo"
+                        >
                           <History className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => openEdit(c)}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="ghost" size="icon"
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => setDeleteTarget(c)}
                         >
@@ -717,7 +883,9 @@ export function CartoesFlotaTab() {
                   value={form.tipo}
                   onValueChange={(v) => setForm((f) => ({ ...f, tipo: v as typeof f.tipo }))}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="bp">BP</SelectItem>
                     <SelectItem value="repsol">Repsol</SelectItem>
@@ -804,7 +972,9 @@ export function CartoesFlotaTab() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancelar
+            </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {editing ? 'Guardar' : 'Criar'}
@@ -819,12 +989,16 @@ export function CartoesFlotaTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar cartão?</AlertDialogTitle>
             <AlertDialogDescription>
-              O cartão <strong>{deleteTarget?.numero}</strong> ({deleteTarget?.tipo?.toUpperCase()}) será eliminado permanentemente.
+              O cartão <strong>{deleteTarget?.numero}</strong> ({deleteTarget?.tipo?.toUpperCase()})
+              será eliminado permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={handleDelete}>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={handleDelete}
+            >
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -842,7 +1016,7 @@ export function CartoesFlotaTab() {
           </DialogHeader>
 
           {(() => {
-            const valid   = importRows.filter((r) => r.erros.length === 0);
+            const valid = importRows.filter((r) => r.erros.length === 0);
             const invalid = importRows.filter((r) => r.erros.length > 0);
             return (
               <>
@@ -878,27 +1052,43 @@ export function CartoesFlotaTab() {
                         const info = r.tipo ? TIPO_INFO[r.tipo] : null;
                         return (
                           <TableRow key={r._row} className={!ok ? 'bg-destructive/5' : ''}>
-                            <TableCell className="text-xs text-muted-foreground">{r._row}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {r._row}
+                            </TableCell>
                             <TableCell>
                               {info ? (
-                                <span className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full ${info.badgeCls}`}>
+                                <span
+                                  className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full ${info.badgeCls}`}
+                                >
                                   {info.label}
                                 </span>
                               ) : (
-                                <span className="text-xs text-destructive">{String(r.tipo || '-')}</span>
+                                <span className="text-xs text-destructive">
+                                  {String(r.tipo || '-')}
+                                </span>
                               )}
                             </TableCell>
-                            <TableCell className="font-mono text-sm">{r.numero || <span className="text-destructive text-xs">em falta</span>}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{r.ambito || '-'}</TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {r.numero || (
+                                <span className="text-destructive text-xs">em falta</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {r.ambito || '-'}
+                            </TableCell>
                             <TableCell className="text-right text-sm">
                               {r.limite ? `${Number(r.limite).toFixed(2)} €` : '-'}
                             </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{r.data_validade ? fmtDate(r.data_validade) : '-'}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {r.data_validade ? fmtDate(r.data_validade) : '-'}
+                            </TableCell>
                             <TableCell>
                               {ok ? (
                                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                               ) : (
-                                <span className="text-xs text-destructive">{r.erros.join(', ')}</span>
+                                <span className="text-xs text-destructive">
+                                  {r.erros.join(', ')}
+                                </span>
                               )}
                             </TableCell>
                           </TableRow>
@@ -909,7 +1099,9 @@ export function CartoesFlotaTab() {
                 </div>
 
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setImportOpen(false)}>Cancelar</Button>
+                  <Button variant="outline" onClick={() => setImportOpen(false)}>
+                    Cancelar
+                  </Button>
                   <Button onClick={handleImportConfirm} disabled={importing || valid.length === 0}>
                     {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     Importar {valid.length} cartão(ões)
@@ -929,7 +1121,9 @@ export function CartoesFlotaTab() {
               <History className="h-5 w-5 text-muted-foreground" />
               Histórico de Consumo
               {historyCartao && (
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TIPO_INFO[historyCartao.tipo].badgeCls}`}>
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${TIPO_INFO[historyCartao.tipo].badgeCls}`}
+                >
                   {TIPO_INFO[historyCartao.tipo].label} · {historyCartao.numero}
                 </span>
               )}
@@ -954,7 +1148,14 @@ export function CartoesFlotaTab() {
                 <div className="mb-3 px-1 text-xs text-muted-foreground">
                   Limite: <strong>{fmtEur(historyCartao.limite)}</strong>
                   {' · '}
-                  Consumido: <strong className={totalHistorico > historyCartao.limite ? 'text-destructive' : 'text-foreground'}>{fmtEur(totalHistorico)}</strong>
+                  Consumido:{' '}
+                  <strong
+                    className={
+                      totalHistorico > historyCartao.limite ? 'text-destructive' : 'text-foreground'
+                    }
+                  >
+                    {fmtEur(totalHistorico)}
+                  </strong>
                   {' · '}
                   Disponível: <strong>{fmtEur(historyCartao.limite - totalHistorico)}</strong>
                 </div>
@@ -972,11 +1173,19 @@ export function CartoesFlotaTab() {
                 <TableBody>
                   {historico.map((h, i) => (
                     <TableRow key={i}>
-                      <TableCell className="text-xs whitespace-nowrap">{fmtDT(h.transaction_date)}</TableCell>
-                      <TableCell className="text-xs max-w-[140px] truncate">{h.station_name || '-'}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {fmtDT(h.transaction_date)}
+                      </TableCell>
+                      <TableCell className="text-xs max-w-[140px] truncate">
+                        {h.station_name || '-'}
+                      </TableCell>
                       <TableCell className="text-xs">{h.fuel_type || '-'}</TableCell>
-                      <TableCell className="text-xs text-right">{h.quantity != null ? Number(h.quantity).toFixed(2) : '-'}</TableCell>
-                      <TableCell className="text-xs text-right font-medium">{fmtEur(h.amount)}</TableCell>
+                      <TableCell className="text-xs text-right">
+                        {h.quantity != null ? Number(h.quantity).toFixed(2) : '-'}
+                      </TableCell>
+                      <TableCell className="text-xs text-right font-medium">
+                        {fmtEur(h.amount)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -80,8 +80,8 @@ export const CartoesNaoReconhecidos: React.FC<Props> = ({ open, onOpenChange, on
           .select('id, nome, cartao_bp, cartao_repsol, cartao_edp')
           .order('nome'),
         (supabase as any).rpc('get_cartoes_combustivel_nao_associados', {
-        p_desde: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
-      }),
+          p_desde: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+        }),
       ]);
       if (error) throw error;
       setMotoristas((crm || []) as MotoristaCRM[]);
@@ -117,11 +117,17 @@ export const CartoesNaoReconhecidos: React.FC<Props> = ({ open, onOpenChange, on
         description: `Cartão ${cartao.card_number} (${PLAT_INFO[cartao.plataforma].label}) ligado.`,
       });
       setCartoes((prev) =>
-        prev.filter((c) => !(c.plataforma === cartao.plataforma && c.card_number === cartao.card_number))
+        prev.filter(
+          (c) => !(c.plataforma === cartao.plataforma && c.card_number === cartao.card_number)
+        )
       );
       onChanged?.();
     } catch (err: any) {
-      toast({ title: 'Erro', description: err.message || 'Falha ao associar.', variant: 'destructive' });
+      toast({
+        title: 'Erro',
+        description: err.message || 'Falha ao associar.',
+        variant: 'destructive',
+      });
     } finally {
       setAssociando(null);
     }
@@ -147,7 +153,8 @@ export const CartoesNaoReconhecidos: React.FC<Props> = ({ open, onOpenChange, on
           </DialogTitle>
           <DialogDescription>
             {cartoes.length} cartão(ões) BP/Repsol/EDP com transações que não estão ligadas a uma
-            ficha. Total: <strong>{fmtEur(total)}</strong>. Associa cada cartão ao motorista correto.
+            ficha. Total: <strong>{fmtEur(total)}</strong>. Associa cada cartão ao motorista
+            correto.
           </DialogDescription>
         </DialogHeader>
 
@@ -206,7 +213,9 @@ const LinhaCartao: React.FC<{
     if (!cartao.nome) return null;
     const n = normalize(cartao.nome);
     const m = motoristas.find((mt) => {
-      const partes = normalize(mt.nome).split(' ').filter((p) => p.length > 2);
+      const partes = normalize(mt.nome)
+        .split(' ')
+        .filter((p) => p.length > 2);
       return partes.length >= 2 && partes.every((p) => n.includes(p));
     });
     return m?.id || null;

@@ -520,7 +520,11 @@ export const UberDataTab: React.FC = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
-              €{stats.totalValor.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              €
+              {stats.totalValor.toLocaleString('pt-PT', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </p>
           </CardContent>
         </Card>
@@ -534,7 +538,11 @@ export const UberDataTab: React.FC = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-400">
-              €{stats.totalEarnings.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              €
+              {stats.totalEarnings.toLocaleString('pt-PT', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </p>
           </CardContent>
         </Card>
