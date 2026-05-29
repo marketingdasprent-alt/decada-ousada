@@ -63,7 +63,7 @@ const PLATFORM_META: Record<IntegracaoCardType, { label: string; logo: string; c
   },
   via_verde: {
     label: 'Via Verde',
-    logo: '/images/x-saver.png',
+    logo: '/images/logo-via-verde.png',
     color: 'hsl(var(--chart-2))',
   },
   combustivel: {

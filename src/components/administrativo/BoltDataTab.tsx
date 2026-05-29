@@ -367,16 +367,6 @@ export const BoltDataTab: React.FC = () => {
             />
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleFetchFromApify}
-            className="text-xs text-muted-foreground hidden md:flex items-center gap-1"
-          >
-            <Clock className="h-3 w-3" />
-            Resgatar do Apify
-          </Button>
-
           {hasActiveFilters && (
             <Button variant="ghost" size="icon" onClick={handleClearFilters}>
               <X className="h-4 w-4" />
@@ -405,15 +395,6 @@ export const BoltDataTab: React.FC = () => {
             )}
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowImportDialog(true)}
-            disabled={!firstActiveIntegracao}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Importar CSV
-          </Button>
         </div>
       </div>
 
@@ -580,15 +561,6 @@ export const BoltDataTab: React.FC = () => {
         </div>
       )}
 
-      {/* Import CSV Dialog */}
-      {firstActiveIntegracao && (
-        <ImportRobotCsvDialog
-          open={showImportDialog}
-          onOpenChange={setShowImportDialog}
-          integracaoId={firstActiveIntegracao.id}
-          onImportComplete={handleImportComplete}
-        />
-      )}
     </div>
   );
 };

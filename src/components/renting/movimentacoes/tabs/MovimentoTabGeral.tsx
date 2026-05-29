@@ -1,19 +1,7 @@
-import { useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { Check, ChevronsUpDown } from 'lucide-react';
 
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
 import {
   Select,
   SelectContent,
@@ -21,7 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+
+import { ViaturaDisponibilidadeSelect } from '@/components/viaturas/ViaturaDisponibilidadeSelect';
+import { localInputToIso } from '../movimentosUtils';
 
 import type { MovimentoFormValues } from '../movimentoForm.schema';
 import { MovimentoTipoSelector } from '../MovimentoTipoSelector';
@@ -31,21 +21,26 @@ import { MOVIMENTO_ESTADO_LABELS, MOVIMENTO_ESTADOS } from '@/types/movimento';
 
 const SENTINEL_NONE = '__none__';
 
-const normalizeForSearch = (s: string) =>
-  s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[-\s]/g, '');
-
 interface MovimentoTabGeralProps {
   form: UseFormReturn<MovimentoFormValues>;
   viaturas: ViaturaBasic[];
   colaboradores: Colaborador[];
+  /**
+   * ID do movimento em edição (para excluir-se da verificação de
+   * conflitos — não queremos que ele apareça como conflito de si
+   * próprio). Omitir em criação.
+   */
+  movimentoId?: string | null;
 }
 
 export const MovimentoTabGeral: React.FC<MovimentoTabGeralProps> = ({
   form,
   viaturas,
   colaboradores,
+  movimentoId = null,
 }) => {
-  const [viaturaPopoverOpen, setViaturaPopoverOpen] = useState(false);
+  const dataPartida = form.watch('data_partida');
+  const dataChegada = form.watch('data_chegada');
 
   return (
     <div className="space-y-8">
@@ -66,91 +61,35 @@ export const MovimentoTabGeral: React.FC<MovimentoTabGeralProps> = ({
           <FormField
             control={form.control}
             name="viatura_id"
-            render={({ field }) => {
-              const selected = field.value ? viaturas.find((x) => x.id === field.value) : null;
-              return (
-                <FormItem>
-                  <FormLabel>
-                    Viatura <span className="text-destructive">*</span>
-                  </FormLabel>
-                  <Popover
-                    open={viaturaPopoverOpen}
-                    onOpenChange={setViaturaPopoverOpen}
-                    modal={false}
-                  >
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={viaturaPopoverOpen}
-                          className="w-full justify-between font-normal bg-background"
-                        >
-                          {selected
-                            ? `${selected.matricula} — ${selected.marca} ${selected.modelo}`
-                            : 'Pesquisa por matrícula...'}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-[var(--radix-popover-trigger-width)] p-0"
-                      align="start"
-                    >
-                      <Command
-                        filter={(value, search) => {
-                          const v = normalizeForSearch(value);
-                          const s = normalizeForSearch(search);
-                          return s === '' || v.includes(s) ? 1 : 0;
-                        }}
-                      >
-                        <CommandInput placeholder="Pesquisar por matrícula..." className="h-9" />
-                        <CommandList>
-                          <CommandEmpty>Nenhuma viatura disponível.</CommandEmpty>
-                          <CommandGroup>
-                            {viaturas.map((v) => (
-                              <CommandItem
-                                key={v.id}
-                                value={`${v.matricula} ${v.marca} ${v.modelo} ${v.categoria ?? ''}`}
-                                onSelect={() => {
-                                  field.onChange(v.id);
-                                  form.setValue('matricula', v.matricula);
-                                  // Pré-preenche o KM inicial com o KM atual da viatura.
-                                  if (
-                                    v.km_atual != null &&
-                                    (form.getValues('km_inicial') == null ||
-                                      form.getValues('km_inicial') === undefined)
-                                  ) {
-                                    form.setValue('km_inicial', v.km_atual);
-                                  }
-                                  setViaturaPopoverOpen(false);
-                                }}
-                                className="cursor-pointer"
-                              >
-                                <Check
-                                  className={cn(
-                                    'mr-2 h-4 w-4',
-                                    field.value === v.id ? 'opacity-100' : 'opacity-0'
-                                  )}
-                                />
-                                {v.matricula} — {v.marca} {v.modelo}
-                                {v.categoria && (
-                                  <span className="ml-1 text-muted-foreground">
-                                    ({v.categoria})
-                                  </span>
-                                )}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Viatura <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <ViaturaDisponibilidadeSelect
+                    viaturas={viaturas}
+                    value={field.value ?? null}
+                    onChange={(v) => {
+                      field.onChange(v?.id ?? null);
+                      if (v) {
+                        form.setValue('matricula', v.matricula);
+                        // Pré-preenche o KM inicial com o KM atual da viatura.
+                        if (v.km_atual != null && form.getValues('km_inicial') == null) {
+                          form.setValue('km_inicial', v.km_atual);
+                        }
+                      }
+                    }}
+                    dataInicio={localInputToIso(dataPartida)}
+                    dataFim={localInputToIso(dataChegada)}
+                    excluir={{ movimentoId }}
+                    permitirOcupadas={!!movimentoId}
+                    placeholder="Pesquisa por matrícula..."
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
 
           <FormField

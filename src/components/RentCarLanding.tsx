@@ -8,6 +8,7 @@ import { FormField } from '@/components/formularios/DynamicFieldEditor';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { initPixel } from '@/lib/pixel';
 
 export const RentCarLanding = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -23,6 +24,8 @@ export const RentCarLanding = () => {
   const fieldsPerStep = 2; // Número de campos por step
 
   useEffect(() => {
+    // Landing pública → carrega FB Pixel + dispara PageView.
+    initPixel();
     fetchFormulario();
   }, []);
   const fetchFormulario = async () => {

@@ -41,9 +41,10 @@ interface ViatTipo {
   id: string;
   nome: string;
   ativo: boolean;
+  elegivel_tvde: boolean;
 }
 
-const EMPTY_FORM = { nome: '', ativo: true };
+const EMPTY_FORM = { nome: '', ativo: true, elegivel_tvde: false };
 
 const ViaturaTipos = () => {
   const { toast } = useToast();
@@ -91,7 +92,7 @@ const ViaturaTipos = () => {
   };
   const openEdit = (t: ViatTipo) => {
     setEditing(t);
-    setForm({ nome: t.nome, ativo: t.ativo });
+    setForm({ nome: t.nome, ativo: t.ativo, elegivel_tvde: t.elegivel_tvde ?? false });
     setDialogOpen(true);
   };
 
@@ -102,7 +103,11 @@ const ViaturaTipos = () => {
     }
     try {
       setSaving(true);
-      const payload = { nome: form.nome.trim(), ativo: form.ativo };
+      const payload = {
+        nome: form.nome.trim(),
+        ativo: form.ativo,
+        elegivel_tvde: form.elegivel_tvde,
+      };
       if (editing) {
         const { error } = await supabase.from('viatura_tipos').update(payload).eq('id', editing.id);
         if (error) throw error;
@@ -241,6 +246,18 @@ const ViaturaTipos = () => {
               <Switch
                 checked={form.ativo}
                 onCheckedChange={(v) => setForm((p) => ({ ...p, ativo: v }))}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <Label>Elegibilidade TVDE</Label>
+                <p className="text-xs text-muted-foreground">
+                  Viaturas deste tipo podem ser marcadas como elegíveis para TVDE.
+                </p>
+              </div>
+              <Switch
+                checked={form.elegivel_tvde}
+                onCheckedChange={(v) => setForm((p) => ({ ...p, elegivel_tvde: v }))}
               />
             </div>
           </div>

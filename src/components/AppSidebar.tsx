@@ -16,6 +16,9 @@ import {
   Briefcase,
   CalendarDays,
   LayoutDashboard,
+  CreditCard,
+  Wifi,
+  Calculator,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { RECURSOS } from '@/utils/permissions';
@@ -73,9 +76,13 @@ const items: MenuItem[] = [
   { title: 'Viaturas', url: '/viaturas', icon: Car, recurso: RECURSOS.VIATURAS_VER },
   {
     title: 'Administrativo',
-    url: '/administrativo',
     icon: Briefcase,
     recurso: RECURSOS.FINANCEIRO_RECIBOS,
+    subItems: [
+      { title: 'Resumos', url: '/administrativo', icon: Calculator },
+      { title: 'Cartões Frota', url: '/administrativo/cartoes', icon: CreditCard },
+      { title: 'Dispositivos OBE', url: '/administrativo/obe', icon: Wifi },
+    ],
   },
   { title: 'Calendário', url: '/calendario', icon: CalendarDays, recurso: RECURSOS.CALENDARIO_VER },
   {

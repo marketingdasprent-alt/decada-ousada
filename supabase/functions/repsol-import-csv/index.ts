@@ -80,8 +80,30 @@ function findField(row: Record<string, string>, candidates: string[]): string {
 
 function parseNumber(val: string): number | null {
   if (!val) return null;
-  const clean = val.replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
-  const n = parseFloat(clean);
+  let s = (val || '').replace(/[^\d.,-]/g, '').trim();
+  if (!s) return null;
+  if (s.includes(',') && s.includes('.')) {
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+      s = s.replace(/\./g, '').replace(',', '.'); // 1.234,56 → 1234.56
+    } else {
+      s = s.replace(/,/g, ''); // 1,234.56 → 1234.56
+    }
+  } else if (s.includes(',')) {
+    const afterComma = s.substring(s.lastIndexOf(',') + 1);
+    if (afterComma.length <= 2) {
+      s = s.replace(',', '.'); // 15,96 → 15.96
+    } else {
+      s = s.replace(/,/g, ''); // 1,596 → 1596
+    }
+  } else if (s.includes('.')) {
+    const parts = s.split('.');
+    const afterLastDot = parts[parts.length - 1];
+    if (parts.length > 2 || afterLastDot.length === 3) {
+      s = s.replace(/\./g, ''); // 1.596 → 1596
+    }
+    // else: 15.96 → keep as is (dot is decimal separator)
+  }
+  const n = parseFloat(s);
   return isNaN(n) ? null : n;
 }
 

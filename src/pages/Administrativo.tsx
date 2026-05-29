@@ -50,7 +50,6 @@ export default function Administrativo() {
   useEffect(() => {
     loadData();
 
-    // Configurar real-time updates
     const channel = supabase
       .channel('financeiro-recibos')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'motorista_recibos' }, () => {
@@ -58,34 +57,21 @@ export default function Administrativo() {
       })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   async function loadData() {
     setLoading(true);
     try {
-      // Carregar recibos com dados do motorista
       const { data: recibosData, error: recibosError } = await supabase
         .from('motorista_recibos')
-        .select(
-          `
-          *,
-          motoristas_ativos!motorista_recibos_motorista_id_fkey (
-            id,
-            codigo,
-            nome
-          )
-        `
-        )
+        .select(`*, motoristas_ativos!motorista_recibos_motorista_id_fkey (id, codigo, nome)`)
         .eq('tipo', 'recibo')
         .order('created_at', { ascending: false });
 
       if (recibosError) throw recibosError;
       setRecibos(recibosData || []);
 
-      // Carregar lista de motoristas para o filtro
       const { data: motoristasData, error: motoristasError } = await supabase
         .from('motoristas_ativos')
         .select('id, codigo, nome')
@@ -102,31 +88,22 @@ export default function Administrativo() {
     }
   }
 
-  // Aplicar filtros
   const filteredRecibos = useMemo(() => {
     return recibos.filter((recibo) => {
-      // Pesquisa unificada
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const codigoRecibo = String(recibo.codigo).padStart(4, '0');
         const codigoMotorista = String(recibo.motoristas_ativos?.codigo || '').padStart(4, '0');
         const nomeMotorista = (recibo.motoristas_ativos?.nome || '').toLowerCase();
         const valorStr = String(recibo.valor_total || 0);
-
         const matches =
           codigoRecibo.includes(term.replace('#', '')) ||
           codigoMotorista.includes(term.replace('#', '')) ||
           nomeMotorista.includes(term) ||
           valorStr.includes(term);
-
         if (!matches) return false;
       }
-
-      // Filtro por status
-      if (selectedStatus !== 'all' && recibo.status !== selectedStatus) {
-        return false;
-      }
-
+      if (selectedStatus !== 'all' && recibo.status !== selectedStatus) return false;
       return true;
     });
   }, [recibos, searchTerm, selectedStatus]);
@@ -145,71 +122,68 @@ export default function Administrativo() {
   }
 
   return (
-    <Tabs defaultValue="recibos" className="w-full">
+    <Tabs defaultValue="resumos" className="w-full">
       <StickyPageHeader
         title="Administrativo"
         description="Gestão financeira e dados de plataformas"
         icon={Briefcase}
-        className="pb-0"
-      >
-        <TabsList className="flex w-full overflow-x-auto justify-start no-scrollbar border-b rounded-none bg-transparent h-auto p-0 gap-6">
-          <TabsTrigger
-            value="recibos"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Receipt className="h-4 w-4" />
-            Recibos
-          </TabsTrigger>
-          <TabsTrigger
-            value="bolt"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Zap className="h-4 w-4" />
-            Bolt
-          </TabsTrigger>
-          <TabsTrigger
-            value="uber"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Car className="h-4 w-4" />
-            Uber
-          </TabsTrigger>
-          <TabsTrigger
-            value="bp"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Fuel className="h-4 w-4 text-orange-400" />
-            BP
-          </TabsTrigger>
-          <TabsTrigger
-            value="repsol"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Fuel className="h-4 w-4 text-orange-500" />
-            Repsol
-          </TabsTrigger>
-          <TabsTrigger
-            value="edp"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Zap className="h-4 w-4 text-green-500" />
-            EDP
-          </TabsTrigger>
-          <TabsTrigger
-            value="contas"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
-          >
-            <Calculator className="h-4 w-4" />
-            Contas
-          </TabsTrigger>
-        </TabsList>
-      </StickyPageHeader>
+      />
+
+      <TabsList className="flex w-full overflow-x-auto justify-start no-scrollbar border-b rounded-none bg-transparent h-auto p-0 gap-6 mb-2">
+        <TabsTrigger
+          value="resumos"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Calculator className="h-4 w-4" />
+          Resumos
+        </TabsTrigger>
+        <TabsTrigger
+          value="recibos"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Receipt className="h-4 w-4" />
+          Recibos Verdes
+        </TabsTrigger>
+        <TabsTrigger
+          value="bolt"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Zap className="h-4 w-4" />
+          Bolt
+        </TabsTrigger>
+        <TabsTrigger
+          value="uber"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Car className="h-4 w-4" />
+          Uber
+        </TabsTrigger>
+        <TabsTrigger
+          value="bp"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Fuel className="h-4 w-4 text-orange-400" />
+          BP
+        </TabsTrigger>
+        <TabsTrigger
+          value="repsol"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Fuel className="h-4 w-4 text-orange-500" />
+          Repsol
+        </TabsTrigger>
+        <TabsTrigger
+          value="edp"
+          className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 pb-2 h-auto gap-2 text-xs"
+        >
+          <Zap className="h-4 w-4 text-green-500" />
+          EDP
+        </TabsTrigger>
+      </TabsList>
 
       <div className="space-y-6">
         <TabsContent value="recibos" className="space-y-4 mt-4">
           <FinanceiroStats recibos={recibos} />
-
-          {/* Filtros */}
           <FinanceiroFilters
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
@@ -217,44 +191,34 @@ export default function Administrativo() {
             setSelectedStatus={setSelectedStatus}
             onClearFilters={handleClearFilters}
           />
-
-          {/* Contador de resultados */}
           <div className="text-sm text-muted-foreground">
             {filteredRecibos.length} {filteredRecibos.length === 1 ? 'recibo' : 'recibos'}{' '}
             encontrado{filteredRecibos.length !== 1 && 's'}
           </div>
-
-          {/* Tabela de Recibos */}
           <RecibosTable recibos={filteredRecibos} onReciboUpdated={loadData} />
         </TabsContent>
 
-        {/* Tab Bolt */}
         <TabsContent value="bolt" className="mt-4">
           <BoltDataTab />
         </TabsContent>
 
-        {/* Tab Uber */}
         <TabsContent value="uber" className="mt-4">
           <UberDataTab />
         </TabsContent>
 
-        {/* Tab BP */}
         <TabsContent value="bp" className="mt-0">
           <BPDataTab />
         </TabsContent>
 
-        {/* Tab Repsol */}
         <TabsContent value="repsol" className="mt-0">
           <RepsolDataTab />
         </TabsContent>
 
-        {/* Tab EDP */}
         <TabsContent value="edp" className="mt-0">
           <EdpDataTab />
         </TabsContent>
 
-        {/* Tab Contas */}
-        <TabsContent value="contas" className="mt-4">
+        <TabsContent value="resumos" className="mt-4">
           <ContasResumoTab />
         </TabsContent>
       </div>

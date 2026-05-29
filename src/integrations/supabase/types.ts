@@ -8150,6 +8150,7 @@ export type Database = {
         Row: {
           ativo: boolean
           criado_em: string
+          elegivel_tvde: boolean
           id: string
           nome: string
           org_id: string
@@ -8158,6 +8159,7 @@ export type Database = {
         Insert: {
           ativo?: boolean
           criado_em?: string
+          elegivel_tvde?: boolean
           id?: string
           nome: string
           org_id?: string
@@ -8166,6 +8168,7 @@ export type Database = {
         Update: {
           ativo?: boolean
           criado_em?: string
+          elegivel_tvde?: boolean
           id?: string
           nome?: string
           org_id?: string
