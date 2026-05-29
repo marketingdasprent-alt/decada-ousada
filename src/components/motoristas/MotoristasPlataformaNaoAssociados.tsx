@@ -260,11 +260,11 @@ export const MotoristasPlataformaNaoAssociados: React.FC<Props> = ({
       const boltId = item.fontes.find((f) => f.plataforma === 'bolt')?.id_plataforma;
 
       // Liga TODAS as plataformas deste motorista de uma só vez.
-      const fichaUpdate: Record<string, string> = {};
+      const fichaUpdate: Record<string, any> = {};
       if (uberId) fichaUpdate.uber_uuid = uberId;
       if (boltId) fichaUpdate.bolt_id = boltId;
       if (Object.keys(fichaUpdate).length > 0) {
-        await supabase.from('motoristas_ativos').update(fichaUpdate).eq('id', motoristaId);
+        await supabase.from('motoristas_ativos').update(fichaUpdate as any).eq('id', motoristaId);
       }
 
       if (uberId) {

@@ -258,7 +258,7 @@ export const IntegracoesTab: React.FC = () => {
 
     // Via Verde — integrations created via IntegracaoDialog (plataforma='viaverde', manual upload)
     integracoes
-      .filter((i) => i.plataforma === 'viaverde')
+      .filter((i) => i.plataforma === ('viaverde' as any))
       .forEach((i) => {
         result.push({
           id: i.id,

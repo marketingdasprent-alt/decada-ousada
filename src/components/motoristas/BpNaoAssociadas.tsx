@@ -68,7 +68,7 @@ export const BpNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, onChanged
   const carregar = async () => {
     setLoading(true);
     try {
-      const [{ data: crm }, { data: txs, error }] = await Promise.all([
+      const [crmResult, txResult] = await Promise.all([
         supabase.from('motoristas_ativos').select('id, nome, cartao_bp').order('nome'),
         supabase
           .from('bp_transacoes')
@@ -76,12 +76,19 @@ export const BpNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, onChanged
           .is('motorista_id', null)
           .order('transaction_date', { ascending: false }),
       ]);
-      if (error) throw error;
-      setMotoristas((crm || []) as Motorista[]);
+      if (txResult.error) throw txResult.error;
+      setMotoristas((crmResult.data || []) as Motorista[]);
 
       // Group by card_number
       const map = new Map<string, GrupoCartao>();
-      for (const tx of txs || []) {
+      const txData = (txResult.data || []) as unknown as Array<{
+        id: string;
+        card_number: string | null;
+        amount: number | null;
+        quantity: number | null;
+        transaction_date: string;
+      }>;
+      for (const tx of txData) {
         const key = tx.card_number || '__sem_cartao__';
         if (!map.has(key)) {
           map.set(key, {
