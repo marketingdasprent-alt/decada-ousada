@@ -1144,7 +1144,7 @@ export function ContasResumoTab() {
       return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
     return result;
-  }, [resumos, searchTerm, filterRecibo, sortField, sortDir]);
+  }, [resumos, searchTerm, filterRecibo, filterSaldo, sortField, sortDir]);
 
   // Totais gerais
   const totais = useMemo(() => {
