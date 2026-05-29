@@ -118,17 +118,15 @@ export const PortagensNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, on
           ? viatura.data_min.slice(0, 10)
           : format(new Date(), 'yyyy-MM-dd');
 
-        const { error: mvError } = await supabase
-          .from('motorista_viaturas')
-          .upsert(
-            {
-              viatura_id: viatura.viatura_id,
-              motorista_id: motoristaId,
-              data_inicio: dataInicio,
-              data_fim: null,
-            },
-            { onConflict: 'viatura_id,data_inicio' }
-          );
+        const { error: mvError } = await supabase.from('motorista_viaturas').upsert(
+          {
+            viatura_id: viatura.viatura_id,
+            motorista_id: motoristaId,
+            data_inicio: dataInicio,
+            data_fim: null,
+          },
+          { onConflict: 'viatura_id,data_inicio' }
+        );
         if (mvError) throw mvError;
       }
 
