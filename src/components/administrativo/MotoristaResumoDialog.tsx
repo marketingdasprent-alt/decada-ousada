@@ -441,7 +441,9 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
       `Olá ${motorista.driver_name},\n\nSegue o resumo financeiro do período ${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}:\n\n` +
       `Receitas: ${fmt(totalReceitas)}\nDespesas: ${fmt(totalDespesas)}\nLíquido a Receber: ${fmt(liquido)}\n\nCumprimentos,\nEquipa WeGest`;
     const cc = emailCC.trim() ? `&cc=${encodeURIComponent(emailCC.trim())}` : '';
-    window.open(`mailto:${encodeURIComponent(emailTo)}?subject=${encodeURIComponent(subject)}${cc}&body=${encodeURIComponent(body)}`);
+    window.open(
+      `mailto:${encodeURIComponent(emailTo)}?subject=${encodeURIComponent(subject)}${cc}&body=${encodeURIComponent(body)}`
+    );
     setShowEmailDialog(false);
   };
 
@@ -566,306 +568,376 @@ export function MotoristaResumoDialog({ open, onOpenChange, motorista, dateRange
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* Inject landscape CSS when needed */}
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        {/* Inject landscape CSS when needed */}
 
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:overflow-visible">
-        <DialogHeader className="print:hidden">
-          <DialogTitle>Resumo Financeiro</DialogTitle>
-        </DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:overflow-visible">
+          <DialogHeader className="print:hidden">
+            <DialogTitle>Resumo Financeiro</DialogTitle>
+          </DialogHeader>
 
-        {/* Painel de configuração (oculto na impressão) */}
-        <div className="print:hidden">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-2 text-muted-foreground"
-            onClick={() => setShowSettings((v) => !v)}
+          {/* Painel de configuração (oculto na impressão) */}
+          <div className="print:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-muted-foreground"
+              onClick={() => setShowSettings((v) => !v)}
+            >
+              <Settings className="h-4 w-4" />
+              Configurar folha de impressão
+            </Button>
+
+            {showSettings && (
+              <div className="mt-3 p-4 border rounded-lg bg-muted/30 space-y-4">
+                <p className="text-sm font-medium text-muted-foreground mb-2">
+                  Campos a mostrar na impressão
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    { key: 'mostrarMatricula', label: 'Matrícula' },
+                    { key: 'mostrarGestor', label: 'Gestor Responsável' },
+                    { key: 'mostrarCartaoFrota', label: 'Cartão Frota' },
+                    { key: 'mostrarIBAN', label: 'IBAN' },
+                    { key: 'mostrarReciboVerde', label: 'Recibo Verde' },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Switch
+                        id={key}
+                        checked={settings[key as keyof PrintSettings] as boolean}
+                        onCheckedChange={(v) => updateSetting(key as keyof PrintSettings, v as any)}
+                      />
+                      <Label htmlFor={key} className="text-sm cursor-pointer">
+                        {label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                <Separator />
+                <div className="flex items-center gap-4">
+                  <p className="text-sm font-medium text-muted-foreground">Orientação</p>
+                  <div className="flex gap-2">
+                    {(['portrait', 'landscape'] as const).map((o) => (
+                      <Button
+                        key={o}
+                        size="sm"
+                        variant={settings.orientacao === o ? 'default' : 'outline'}
+                        onClick={() => updateSetting('orientacao', o)}
+                      >
+                        {o === 'portrait' ? 'Vertical' : 'Horizontal'}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Conteúdo do Relatório */}
+          <div
+            className="space-y-4 print:space-y-3 print-content"
+            id="relatorio-motorista"
+            style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' } as any}
           >
-            <Settings className="h-4 w-4" />
-            Configurar folha de impressão
-          </Button>
+            {/* Cabeçalho */}
+            <div className="text-center border-b pb-4 print:pb-2">
+              <img src={logoSrc} alt="Logo" className="h-24 mx-auto mb-3 print:h-16 print:mb-2" />
+              <h1 className="text-2xl print:text-base font-bold">RESUMO FINANCEIRO DO MOTORISTA</h1>
+            </div>
 
-          {showSettings && (
-            <div className="mt-3 p-4 border rounded-lg bg-muted/30 space-y-4">
-              <p className="text-sm font-medium text-muted-foreground mb-2">
-                Campos a mostrar na impressão
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {[
-                  { key: 'mostrarMatricula', label: 'Matrícula' },
-                  { key: 'mostrarGestor', label: 'Gestor Responsável' },
-                  { key: 'mostrarCartaoFrota', label: 'Cartão Frota' },
-                  { key: 'mostrarIBAN', label: 'IBAN' },
-                  { key: 'mostrarReciboVerde', label: 'Recibo Verde' },
-                ].map(({ key, label }) => (
-                  <div key={key} className="flex items-center gap-2">
-                    <Switch
-                      id={key}
-                      checked={settings[key as keyof PrintSettings] as boolean}
-                      onCheckedChange={(v) =>
-                        updateSetting(key as keyof PrintSettings, v as any)
-                      }
-                    />
-                    <Label htmlFor={key} className="text-sm cursor-pointer">
-                      {label}
-                    </Label>
+            {/* Cards de resumo coloridos */}
+            <div className="grid grid-cols-3 gap-3 print:gap-2">
+              <div
+                className="rounded-xl p-4 print:p-3 print:rounded-lg text-center"
+                style={{ backgroundColor: '#22c55e', color: '#fff' }}
+              >
+                <p
+                  className="text-xs font-medium uppercase tracking-wide print:text-[10px]"
+                  style={{ opacity: 0.85 }}
+                >
+                  Total Receitas
+                </p>
+                <p className="text-2xl print:text-lg font-bold mt-1">{fmt(totalReceitas)}</p>
+              </div>
+              <div
+                className="rounded-xl p-4 print:p-3 print:rounded-lg text-center"
+                style={{ backgroundColor: '#ef4444', color: '#fff' }}
+              >
+                <p
+                  className="text-xs font-medium uppercase tracking-wide print:text-[10px]"
+                  style={{ opacity: 0.85 }}
+                >
+                  Total Despesas
+                </p>
+                <p className="text-2xl print:text-lg font-bold mt-1">{fmt(totalDespesas)}</p>
+              </div>
+              <div
+                className="rounded-xl p-4 print:p-3 print:rounded-lg text-center"
+                style={{ backgroundColor: liquido >= 0 ? '#2563eb' : '#f97316', color: '#fff' }}
+              >
+                <p
+                  className="text-xs font-medium uppercase tracking-wide print:text-[10px]"
+                  style={{ opacity: 0.85 }}
+                >
+                  Líquido a Receber
+                </p>
+                <p className="text-2xl print:text-lg font-bold mt-1">{fmt(liquido)}</p>
+              </div>
+            </div>
+
+            {/* Informações do Motorista */}
+            <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:p-3 print:bg-slate-50 border">
+              <div
+                className={`grid gap-3 print:gap-2 ${infoFields.length <= 4 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}
+              >
+                {infoFields.map((f) => (
+                  <div key={f.key}>
+                    <span className="text-xs text-muted-foreground print:text-[10px]">
+                      {f.label}
+                    </span>
+                    {f.value === null ? (
+                      <Loader2 className="h-4 w-4 animate-spin mt-1" />
+                    ) : (
+                      <p
+                        className={`font-semibold print:text-xs ${(f as any).colored || 'text-foreground'}`}
+                      >
+                        {f.value}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
-              <Separator />
-              <div className="flex items-center gap-4">
-                <p className="text-sm font-medium text-muted-foreground">Orientação</p>
-                <div className="flex gap-2">
-                  {(['portrait', 'landscape'] as const).map((o) => (
-                    <Button
-                      key={o}
-                      size="sm"
-                      variant={settings.orientacao === o ? 'default' : 'outline'}
-                      onClick={() => updateSetting('orientacao', o)}
-                    >
-                      {o === 'portrait' ? 'Vertical' : 'Horizontal'}
-                    </Button>
-                  ))}
+            </div>
+
+            {/* Receitas e Despesas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:gap-3 print:grid-cols-2">
+              {/* Receitas */}
+              <div className="rounded-lg overflow-hidden border border-green-200 print:border-green-300">
+                <div
+                  className="px-4 py-2 print:px-3 print:py-1.5"
+                  style={{ backgroundColor: '#22c55e' }}
+                >
+                  <h2
+                    className="font-semibold flex items-center gap-2 text-sm print:text-xs"
+                    style={{ color: '#fff' }}
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    RECEITAS
+                  </h2>
+                </div>
+                <div className="p-4 print:p-3 space-y-2 print:space-y-1 bg-green-50 print:bg-green-50">
+                  <Row label="Bolt" value={fmt(receitas.bolt)} colored="text-green-700" />
+                  <Row label="Uber" value={fmt(receitas.uber)} colored="text-green-700" />
+                  <Row
+                    label="Outras Receitas"
+                    value={fmt(receitas.outras_receitas)}
+                    colored="text-green-700"
+                  />
+                  <Separator className="bg-green-200" />
+                  <Row
+                    label="TOTAL RECEITAS"
+                    value={fmt(totalReceitas)}
+                    bold
+                    colored="text-green-700"
+                  />
+                </div>
+              </div>
+
+              {/* Despesas */}
+              <div className="rounded-lg overflow-hidden border border-red-200 print:border-red-300">
+                <div
+                  className="px-4 py-2 print:px-3 print:py-1.5"
+                  style={{ backgroundColor: '#ef4444' }}
+                >
+                  <h2
+                    className="font-semibold flex items-center gap-2 text-sm print:text-xs"
+                    style={{ color: '#fff' }}
+                  >
+                    <TrendingDown className="h-4 w-4" />
+                    DESPESAS
+                  </h2>
+                </div>
+                <div className="p-4 print:p-3 space-y-2 print:space-y-1 bg-red-50 print:bg-red-50">
+                  <Row label="Aluguer" value={fmt(despesas.aluguer)} colored="text-red-700" />
+                  <Row
+                    label="Combustível"
+                    value={fmt(despesas.combustivel)}
+                    colored="text-red-700"
+                  />
+                  <Row label="Portagens" value={fmt(despesas.portagens)} colored="text-red-700" />
+                  <Row
+                    label="Outros Custos"
+                    value={fmt(despesas.outros_custos)}
+                    colored="text-red-700"
+                  />
+                  <Row label="Caução" value={fmt(despesas.caucao)} colored="text-red-700" />
+                  <Row label="Seguros" value={fmt(despesas.seguros)} colored="text-red-700" />
+                  <Row label="Reparações" value={fmt(despesas.reparacoes)} colored="text-red-700" />
+                  <Separator className="bg-red-200" />
+                  <Row
+                    label="TOTAL DESPESAS"
+                    value={fmt(totalDespesas)}
+                    bold
+                    colored="text-red-700"
+                  />
                 </div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Conteúdo do Relatório */}
-        <div
-          className="space-y-4 print:space-y-3 print-content"
-          id="relatorio-motorista"
-          style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' } as any}
-        >
-          {/* Cabeçalho */}
-          <div className="text-center border-b pb-4 print:pb-2">
-            <img src={logoSrc} alt="Logo" className="h-24 mx-auto mb-3 print:h-16 print:mb-2" />
-            <h1 className="text-2xl print:text-base font-bold">RESUMO FINANCEIRO DO MOTORISTA</h1>
-          </div>
-
-          {/* Cards de resumo coloridos */}
-          <div className="grid grid-cols-3 gap-3 print:gap-2">
-            <div className="rounded-xl p-4 print:p-3 print:rounded-lg text-center" style={{ backgroundColor: '#22c55e', color: '#fff' }}>
-              <p className="text-xs font-medium uppercase tracking-wide print:text-[10px]" style={{ opacity: 0.85 }}>
-                Total Receitas
-              </p>
-              <p className="text-2xl print:text-lg font-bold mt-1">{fmt(totalReceitas)}</p>
-            </div>
-            <div className="rounded-xl p-4 print:p-3 print:rounded-lg text-center" style={{ backgroundColor: '#ef4444', color: '#fff' }}>
-              <p className="text-xs font-medium uppercase tracking-wide print:text-[10px]" style={{ opacity: 0.85 }}>
-                Total Despesas
-              </p>
-              <p className="text-2xl print:text-lg font-bold mt-1">{fmt(totalDespesas)}</p>
-            </div>
-            <div className="rounded-xl p-4 print:p-3 print:rounded-lg text-center" style={{ backgroundColor: liquido >= 0 ? '#2563eb' : '#f97316', color: '#fff' }}>
-              <p className="text-xs font-medium uppercase tracking-wide print:text-[10px]" style={{ opacity: 0.85 }}>
-                Líquido a Receber
-              </p>
-              <p className="text-2xl print:text-lg font-bold mt-1">{fmt(liquido)}</p>
-            </div>
-          </div>
-
-          {/* Informações do Motorista */}
-          <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:p-3 print:bg-slate-50 border">
-            <div
-              className={`grid gap-3 print:gap-2 ${infoFields.length <= 4 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}
-            >
-              {infoFields.map((f) => (
-                <div key={f.key}>
-                  <span className="text-xs text-muted-foreground print:text-[10px]">{f.label}</span>
-                  {f.value === null ? (
-                    <Loader2 className="h-4 w-4 animate-spin mt-1" />
-                  ) : (
-                    <p
-                      className={`font-semibold print:text-xs ${(f as any).colored || 'text-foreground'}`}
-                    >
-                      {f.value}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Receitas e Despesas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:gap-3 print:grid-cols-2">
-            {/* Receitas */}
-            <div className="rounded-lg overflow-hidden border border-green-200 print:border-green-300">
-              <div className="px-4 py-2 print:px-3 print:py-1.5" style={{ backgroundColor: '#22c55e' }}>
-                <h2 className="font-semibold flex items-center gap-2 text-sm print:text-xs" style={{ color: '#fff' }}>
-                  <TrendingUp className="h-4 w-4" />
-                  RECEITAS
+            {/* Resumo Final */}
+            <div className="rounded-lg overflow-hidden border border-blue-200 print:border-blue-300">
+              <div
+                className="px-4 py-2 print:px-3 print:py-1.5"
+                style={{ backgroundColor: '#2563eb' }}
+              >
+                <h2
+                  className="font-semibold flex items-center gap-2 text-sm print:text-xs"
+                  style={{ color: '#fff' }}
+                >
+                  <Calculator className="h-4 w-4" />
+                  RESUMO FINAL
                 </h2>
               </div>
-              <div className="p-4 print:p-3 space-y-2 print:space-y-1 bg-green-50 print:bg-green-50">
-                <Row label="Bolt" value={fmt(receitas.bolt)} colored="text-green-700" />
-                <Row label="Uber" value={fmt(receitas.uber)} colored="text-green-700" />
+              <div className="p-4 print:p-3 space-y-2 print:space-y-1 bg-blue-50 print:bg-blue-50">
                 <Row
-                  label="Outras Receitas"
-                  value={fmt(receitas.outras_receitas)}
-                  colored="text-green-700"
+                  label="Valores a Transportar (Semana Anterior)"
+                  value={fmt(valoresSemanaAnterior)}
+                  colored="text-blue-700"
                 />
-                <Separator className="bg-green-200" />
-                <Row label="TOTAL RECEITAS" value={fmt(totalReceitas)} bold colored="text-green-700" />
-              </div>
-            </div>
-
-            {/* Despesas */}
-            <div className="rounded-lg overflow-hidden border border-red-200 print:border-red-300">
-              <div className="px-4 py-2 print:px-3 print:py-1.5" style={{ backgroundColor: '#ef4444' }}>
-                <h2 className="font-semibold flex items-center gap-2 text-sm print:text-xs" style={{ color: '#fff' }}>
-                  <TrendingDown className="h-4 w-4" />
-                  DESPESAS
-                </h2>
-              </div>
-              <div className="p-4 print:p-3 space-y-2 print:space-y-1 bg-red-50 print:bg-red-50">
-                <Row label="Aluguer" value={fmt(despesas.aluguer)} colored="text-red-700" />
-                <Row label="Combustível" value={fmt(despesas.combustivel)} colored="text-red-700" />
-                <Row label="Portagens" value={fmt(despesas.portagens)} colored="text-red-700" />
-                <Row label="Outros Custos" value={fmt(despesas.outros_custos)} colored="text-red-700" />
-                <Row label="Caução" value={fmt(despesas.caucao)} colored="text-red-700" />
-                <Row label="Seguros" value={fmt(despesas.seguros)} colored="text-red-700" />
-                <Row label="Reparações" value={fmt(despesas.reparacoes)} colored="text-red-700" />
-                <Separator className="bg-red-200" />
-                <Row label="TOTAL DESPESAS" value={fmt(totalDespesas)} bold colored="text-red-700" />
-              </div>
-            </div>
-          </div>
-
-          {/* Resumo Final */}
-          <div className="rounded-lg overflow-hidden border border-blue-200 print:border-blue-300">
-            <div className="px-4 py-2 print:px-3 print:py-1.5" style={{ backgroundColor: '#2563eb' }}>
-              <h2 className="font-semibold flex items-center gap-2 text-sm print:text-xs" style={{ color: '#fff' }}>
-                <Calculator className="h-4 w-4" />
-                RESUMO FINAL
-              </h2>
-            </div>
-            <div className="p-4 print:p-3 space-y-2 print:space-y-1 bg-blue-50 print:bg-blue-50">
-              <Row
-                label="Valores a Transportar (Semana Anterior)"
-                value={fmt(valoresSemanaAnterior)}
-                colored="text-blue-700"
-              />
-              <Separator className="bg-blue-200" />
-              <Row
-                label="Total a Receber"
-                value={fmt(totalAReceber)}
-                colored={totalAReceber >= 0 ? 'text-green-700' : 'text-red-700'}
-              />
-              {!motorista.recibo_verde && !isImportado && (
+                <Separator className="bg-blue-200" />
                 <Row
-                  label="Ajuste (÷ 1.06)"
-                  value={`-${fmt(totalAReceber - liquido)}`}
-                  colored="text-orange-600"
+                  label="Total a Receber"
+                  value={fmt(totalAReceber)}
+                  colored={totalAReceber >= 0 ? 'text-green-700' : 'text-red-700'}
                 />
-              )}
-              <Separator className="my-2 print:my-1 bg-blue-200" />
-              <div className="flex justify-between items-center -mx-4 px-4 py-3 print:py-2 print:-mx-3 print:px-3" style={{ backgroundColor: '#2563eb' }}>
-                <span className="font-bold text-sm print:text-xs" style={{ color: '#fff' }}>
-                  VALOR LÍQUIDO A RECEBER
-                </span>
-                <span className="font-bold text-xl print:text-base" style={{ color: '#fff' }}>
-                  {fmt(liquido)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Rodapé impressão */}
-          <div className="hidden print:block text-center text-[10px] text-gray-500 pt-2 border-t mt-2">
-            <p>Documento gerado em {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: pt })}</p>
-            <p className="mt-0.5">WeGest, Lda. • NIF: 515127850</p>
-          </div>
-        </div>
-
-        {/* Botões de Ação */}
-        <div className="flex justify-end gap-3 pt-4 border-t print:hidden">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            <X className="h-4 w-4 mr-2" />
-            Fechar
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={isSending}>
-                {isSending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4 mr-2" />
+                {!motorista.recibo_verde && !isImportado && (
+                  <Row
+                    label="Ajuste (÷ 1.06)"
+                    value={`-${fmt(totalAReceber - liquido)}`}
+                    colored="text-orange-600"
+                  />
                 )}
-                Enviar
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleSendWhatsApp}>
-                <MessageSquare className="h-4 w-4 mr-2 text-green-500" />
-                WhatsApp
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleOpenEmail}>
-                <Mail className="h-4 w-4 mr-2 text-blue-500" />
-                Email
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleSendAccount}>
-                <UserCheck className="h-4 w-4 mr-2 text-primary" />
-                Enviar à Conta
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <Separator className="my-2 print:my-1 bg-blue-200" />
+                <div
+                  className="flex justify-between items-center -mx-4 px-4 py-3 print:py-2 print:-mx-3 print:px-3"
+                  style={{ backgroundColor: '#2563eb' }}
+                >
+                  <span className="font-bold text-sm print:text-xs" style={{ color: '#fff' }}>
+                    VALOR LÍQUIDO A RECEBER
+                  </span>
+                  <span className="font-bold text-xl print:text-base" style={{ color: '#fff' }}>
+                    {fmt(liquido)}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-          <Button onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-2" />
-            Imprimir
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+            {/* Rodapé impressão */}
+            <div className="hidden print:block text-center text-[10px] text-gray-500 pt-2 border-t mt-2">
+              <p>
+                Documento gerado em {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: pt })}
+              </p>
+              <p className="mt-0.5">WeGest, Lda. • NIF: 515127850</p>
+            </div>
+          </div>
 
-    <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-blue-500" />
-            Enviar Resumo por Email
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 pt-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="email-to">Para</Label>
-            <Input
-              id="email-to"
-              type="email"
-              value={emailTo}
-              onChange={(e) => setEmailTo(e.target.value)}
-              placeholder="email@motorista.pt"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="email-cc">CC <span className="text-muted-foreground font-normal">(opcional)</span></Label>
-            <Input
-              id="email-cc"
-              type="email"
-              value={emailCC}
-              onChange={(e) => setEmailCC(e.target.value)}
-              placeholder="gestor@empresa.pt"
-            />
-          </div>
-          <div className="bg-muted/40 rounded-lg p-3 text-sm text-muted-foreground space-y-1">
-            <p><strong>Assunto:</strong> Resumo Financeiro - {motorista.driver_name}</p>
-            <p><strong>Período:</strong> {format(dateRange.from, 'dd/MM/yyyy', { locale: pt })} a {format(dateRange.to, 'dd/MM/yyyy', { locale: pt })}</p>
-            <p><strong>Líquido:</strong> {fmt(liquido)}</p>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setShowEmailDialog(false)}>Cancelar</Button>
-            <Button onClick={handleSendEmail} disabled={!emailTo.trim()}>
-              <Mail className="h-4 w-4 mr-2" />
-              Abrir no email
+          {/* Botões de Ação */}
+          <div className="flex justify-end gap-3 pt-4 border-t print:hidden">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              <X className="h-4 w-4 mr-2" />
+              Fechar
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={isSending}>
+                  {isSending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-2" />
+                  )}
+                  Enviar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleSendWhatsApp}>
+                  <MessageSquare className="h-4 w-4 mr-2 text-green-500" />
+                  WhatsApp
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleOpenEmail}>
+                  <Mail className="h-4 w-4 mr-2 text-blue-500" />
+                  Email
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSendAccount}>
+                  <UserCheck className="h-4 w-4 mr-2 text-primary" />
+                  Enviar à Conta
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button onClick={handlePrint}>
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimir
             </Button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-blue-500" />
+              Enviar Resumo por Email
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="email-to">Para</Label>
+              <Input
+                id="email-to"
+                type="email"
+                value={emailTo}
+                onChange={(e) => setEmailTo(e.target.value)}
+                placeholder="email@motorista.pt"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="email-cc">
+                CC <span className="text-muted-foreground font-normal">(opcional)</span>
+              </Label>
+              <Input
+                id="email-cc"
+                type="email"
+                value={emailCC}
+                onChange={(e) => setEmailCC(e.target.value)}
+                placeholder="gestor@empresa.pt"
+              />
+            </div>
+            <div className="bg-muted/40 rounded-lg p-3 text-sm text-muted-foreground space-y-1">
+              <p>
+                <strong>Assunto:</strong> Resumo Financeiro - {motorista.driver_name}
+              </p>
+              <p>
+                <strong>Período:</strong> {format(dateRange.from, 'dd/MM/yyyy', { locale: pt })} a{' '}
+                {format(dateRange.to, 'dd/MM/yyyy', { locale: pt })}
+              </p>
+              <p>
+                <strong>Líquido:</strong> {fmt(liquido)}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSendEmail} disabled={!emailTo.trim()}>
+                <Mail className="h-4 w-4 mr-2" />
+                Abrir no email
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

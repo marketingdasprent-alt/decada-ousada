@@ -95,9 +95,7 @@ const RentingTaxas = () => {
     onError: (e: any) => toast({ title: 'Erro', description: e.message, variant: 'destructive' }),
   });
 
-  const filtered = taxas.filter(
-    (t) => !search || matchesSearch(t.nome, search)
-  );
+  const filtered = taxas.filter((t) => !search || matchesSearch(t.nome, search));
 
   const openNew = () => {
     setEditing(null);

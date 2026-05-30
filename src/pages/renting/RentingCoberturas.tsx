@@ -85,9 +85,7 @@ const RentingCoberturas = () => {
     onError: (e: any) => toast({ title: 'Erro', description: e.message, variant: 'destructive' }),
   });
 
-  const filtered = coberturas.filter(
-    (c) => !search || matchesSearch(c.nome, search)
-  );
+  const filtered = coberturas.filter((c) => !search || matchesSearch(c.nome, search));
 
   const openNew = () => {
     setEditing(null);

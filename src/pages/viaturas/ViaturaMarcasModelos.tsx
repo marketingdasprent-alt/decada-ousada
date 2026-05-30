@@ -164,9 +164,7 @@ const ViaturaMarcasModelos = () => {
     onError: (e: any) => toast({ title: 'Erro', description: e.message, variant: 'destructive' }),
   });
 
-  const filteredMarcas = marcas.filter(
-    (m) => !search || matchesSearch(m.nome, search)
-  );
+  const filteredMarcas = marcas.filter((m) => !search || matchesSearch(m.nome, search));
 
   // --- Marca handlers ---
   const openNewMarca = () => {
