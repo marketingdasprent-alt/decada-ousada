@@ -84,9 +84,7 @@ const RentingTarifas = () => {
   });
 
   const filtered = tarifas.filter((t) => {
-    return (
-      !search || matchesSearch(t.nome, search) || matchesSearch(t.grupo?.nome, search)
-    );
+    return !search || matchesSearch(t.nome, search) || matchesSearch(t.grupo?.nome, search);
   });
 
   return (

@@ -282,12 +282,7 @@ const RentingClientes = () => {
       if (isVisible('genero') && generoFiltro !== 'todos' && c.genero !== generoFiltro)
         return false;
       if (isVisible('nif') && nifFiltro && !(c.nif || '').includes(nifFiltro.trim())) return false;
-      if (
-        isVisible('email') &&
-        emailFiltro &&
-        !matchesSearch(c.email, emailFiltro)
-      )
-        return false;
+      if (isVisible('email') && emailFiltro && !matchesSearch(c.email, emailFiltro)) return false;
       if (
         isVisible('telemovel') &&
         telemovelFiltro &&

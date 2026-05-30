@@ -851,9 +851,7 @@ export default function AssistenciaNova() {
                               />
                               <div className="max-h-32 overflow-y-auto space-y-1">
                                 {viaturasDisponiveis
-                                  .filter((v) =>
-                                    matchesSearch(v.matricula, substituteSearchTerm)
-                                  )
+                                  .filter((v) => matchesSearch(v.matricula, substituteSearchTerm))
                                   .map((v) => (
                                     <button
                                       key={v.id}

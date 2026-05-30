@@ -81,9 +81,7 @@ const ViaturaCombustiveis = () => {
     onError: (e: any) => toast({ title: 'Erro', description: e.message, variant: 'destructive' }),
   });
 
-  const filtered = combustiveis.filter(
-    (c) => !search || matchesSearch(c.nome, search)
-  );
+  const filtered = combustiveis.filter((c) => !search || matchesSearch(c.nome, search));
 
   const openNew = () => {
     setEditing(null);

@@ -100,9 +100,7 @@ const RentingExtras = () => {
     onError: (e: any) => toast({ title: 'Erro', description: e.message, variant: 'destructive' }),
   });
 
-  const filtered = extras.filter(
-    (e) => !search || matchesSearch(e.nome, search)
-  );
+  const filtered = extras.filter((e) => !search || matchesSearch(e.nome, search));
 
   const openNew = () => {
     setEditing(null);

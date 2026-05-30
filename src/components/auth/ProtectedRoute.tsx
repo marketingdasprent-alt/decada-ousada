@@ -63,14 +63,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }, [user, loading, navigate, unauthenticatedRoute]);
 
   useEffect(() => {
-    if (loading || !user || !defaultRoute) return;
-
-    if (location.pathname === '/my-account' && defaultRoute !== '/my-account') {
-      navigate(defaultRoute, { replace: true });
-    }
-  }, [loading, user, defaultRoute, location.pathname, navigate]);
-
-  useEffect(() => {
     if (loading || !user || !requiredResource) return;
 
     const hasAccess = isAdmin || hasAccessToResource(requiredResource);

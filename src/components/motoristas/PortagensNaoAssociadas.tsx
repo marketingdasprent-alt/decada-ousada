@@ -48,7 +48,6 @@ interface Props {
 const fmtEur = (v: number) =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v || 0);
 
-
 export const PortagensNaoAssociadas: React.FC<Props> = ({ open, onOpenChange, onChanged }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);

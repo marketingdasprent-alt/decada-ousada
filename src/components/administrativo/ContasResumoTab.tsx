@@ -125,7 +125,14 @@ export function ContasResumoTab() {
   // Print settings (persisted)
   const PRINT_KEY = 'contas_print_settings';
   const [printSettings, setPrintSettings] = useState(() => {
-    try { return { ...{ orientacao: 'portrait', mostrarGestor: false, mostrarMatricula: false }, ...JSON.parse(localStorage.getItem(PRINT_KEY) || '{}') }; } catch { return { orientacao: 'portrait', mostrarGestor: false, mostrarMatricula: false }; }
+    try {
+      return {
+        ...{ orientacao: 'portrait', mostrarGestor: false, mostrarMatricula: false },
+        ...JSON.parse(localStorage.getItem(PRINT_KEY) || '{}'),
+      };
+    } catch {
+      return { orientacao: 'portrait', mostrarGestor: false, mostrarMatricula: false };
+    }
   });
   const [showPrintSettings, setShowPrintSettings] = useState(false);
   const updatePrintSetting = (key: string, val: any) => {
@@ -548,7 +555,9 @@ export function ContasResumoTab() {
       // 2. Buscar todos motoristas_ativos para matching (Nomes e IDs de plataforma)
       const { data: todosMotoristas } = await supabase
         .from('motoristas_ativos')
-        .select('id, nome, recibo_verde, uber_uuid, bolt_id, gestor_responsavel, data_contratacao, status_ativo, created_at');
+        .select(
+          'id, nome, recibo_verde, uber_uuid, bolt_id, gestor_responsavel, data_contratacao, status_ativo, created_at'
+        );
 
       // Mapa: uber_uuid -> motorista_id
       const uberIdMap: Record<string, string> = {};
@@ -734,7 +743,10 @@ export function ContasResumoTab() {
       setDataContratacaoMap(dcMap);
       setStatusAtivoMap(saMap);
       const mMap: Record<string, string> = {};
-      (viaturasResult.data || []).forEach((mv: any) => { if (mv.motorista_id && (mv.viaturas as any)?.matricula) mMap[mv.motorista_id] = (mv.viaturas as any).matricula; });
+      (viaturasResult.data || []).forEach((mv: any) => {
+        if (mv.motorista_id && (mv.viaturas as any)?.matricula)
+          mMap[mv.motorista_id] = (mv.viaturas as any).matricula;
+      });
       setMatriculaMap(mMap);
 
       // Mapa: motorista_id → valor semanal de aluguer de viatura
@@ -1168,8 +1180,7 @@ export function ContasResumoTab() {
       if (isCompanyName(r.driver_name)) return false;
       // Excluir inativos (motoristas com status_ativo = false no CRM)
       if (r.motorista_id && statusAtivoMap[r.motorista_id] === false) return false;
-      if (searchTerm && !matchesSearch(r.driver_name, searchTerm))
-        return false;
+      if (searchTerm && !matchesSearch(r.driver_name, searchTerm)) return false;
       if (filterRecibo === 'verde' && !r.recibo_verde) return false;
       if (filterRecibo === 'nao_verde' && r.recibo_verde) return false;
       if (filterSaldo === 'negativos') {
@@ -1184,7 +1195,7 @@ export function ContasResumoTab() {
       }
       if (filterSaldo === 'positivos' && r.liquido < 0) return false;
       if (filterGestor !== 'todos') {
-        const gestor = r.motorista_id ? (gestorMap[r.motorista_id] || '') : '';
+        const gestor = r.motorista_id ? gestorMap[r.motorista_id] || '' : '';
         if (gestor !== filterGestor) return false;
       }
       return true;
@@ -1199,7 +1210,20 @@ export function ContasResumoTab() {
       return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
     return result;
-  }, [resumos, searchTerm, filterRecibo, filterSaldo, filterGestor, gestorMap, dataContratacaoMap, statusAtivoMap, weekStart, weekEnd, sortField, sortDir]);
+  }, [
+    resumos,
+    searchTerm,
+    filterRecibo,
+    filterSaldo,
+    filterGestor,
+    gestorMap,
+    dataContratacaoMap,
+    statusAtivoMap,
+    weekStart,
+    weekEnd,
+    sortField,
+    sortDir,
+  ]);
 
   // Totais gerais
   const totais = useMemo(() => {
@@ -1259,13 +1283,18 @@ export function ContasResumoTab() {
       printSettings.mostrarGestor ? '<th>Gestor</th>' : '',
     ].join('');
 
-    const rows = list.map((r) => {
-      const extraTds = [
-        printSettings.mostrarMatricula ? `<td>${r.motorista_id ? (matriculaMap[r.motorista_id] || '—') : '—'}</td>` : '',
-        printSettings.mostrarGestor ? `<td>${r.motorista_id ? (gestorMap[r.motorista_id] || '—') : '—'}</td>` : '',
-      ].join('');
-      const liquidoColor = r.liquido < 0 ? '#dc2626' : '#15803d';
-      return `<tr>
+    const rows = list
+      .map((r) => {
+        const extraTds = [
+          printSettings.mostrarMatricula
+            ? `<td>${r.motorista_id ? matriculaMap[r.motorista_id] || '—' : '—'}</td>`
+            : '',
+          printSettings.mostrarGestor
+            ? `<td>${r.motorista_id ? gestorMap[r.motorista_id] || '—' : '—'}</td>`
+            : '',
+        ].join('');
+        const liquidoColor = r.liquido < 0 ? '#dc2626' : '#15803d';
+        return `<tr>
         <td style="font-weight:500">${r.driver_name}</td>
         <td style="text-align:right">${fmtEur(r.total_faturado)}</td>
         <td style="text-align:right;color:#16a34a">${fmtEur(r.combustivel)}</td>
@@ -1276,7 +1305,8 @@ export function ContasResumoTab() {
         ${extraTds}
         <td style="text-align:right;font-weight:700;color:${liquidoColor}">${fmtEur(r.liquido)}</td>
       </tr>`;
-    }).join('');
+      })
+      .join('');
 
     const footerExtras = [
       printSettings.mostrarMatricula ? '<td></td>' : '',
@@ -1454,31 +1484,55 @@ export function ContasResumoTab() {
           <div className="flex items-center gap-2 sm:ml-auto flex-shrink-0">
             <div className="relative">
               <div className="flex">
-                <Button variant="outline" size="sm" onClick={handlePrintAll} className="rounded-r-none border-r-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrintAll}
+                  className="rounded-r-none border-r-0"
+                >
                   <Printer className="h-4 w-4 mr-2" />
                   Imprimir
                 </Button>
-                <Button variant="outline" size="sm" className="rounded-l-none px-2" onClick={() => setShowPrintSettings(v => !v)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-l-none px-2"
+                  onClick={() => setShowPrintSettings((v) => !v)}
+                >
                   <Settings className="h-3.5 w-3.5" />
                 </Button>
               </div>
               {showPrintSettings && (
                 <div className="absolute right-0 top-full mt-1 z-50 bg-card border rounded-lg shadow-lg p-4 w-64 space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Opções de impressão</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Opções de impressão
+                  </p>
                   <div className="space-y-2">
                     {[
                       { key: 'mostrarGestor', label: 'Gestor Responsável' },
                       { key: 'mostrarMatricula', label: 'Matrícula' },
                     ].map(({ key, label }) => (
                       <div key={key} className="flex items-center gap-2">
-                        <Switch id={`ps-${key}`} checked={printSettings[key]} onCheckedChange={(v) => updatePrintSetting(key, v)} />
-                        <Label htmlFor={`ps-${key}`} className="text-sm cursor-pointer">{label}</Label>
+                        <Switch
+                          id={`ps-${key}`}
+                          checked={printSettings[key]}
+                          onCheckedChange={(v) => updatePrintSetting(key, v)}
+                        />
+                        <Label htmlFor={`ps-${key}`} className="text-sm cursor-pointer">
+                          {label}
+                        </Label>
                       </div>
                     ))}
                   </div>
                   <div className="flex gap-1 pt-1">
                     {(['portrait', 'landscape'] as const).map((o) => (
-                      <Button key={o} size="sm" variant={printSettings.orientacao === o ? 'default' : 'outline'} className="flex-1 text-xs h-7" onClick={() => updatePrintSetting('orientacao', o)}>
+                      <Button
+                        key={o}
+                        size="sm"
+                        variant={printSettings.orientacao === o ? 'default' : 'outline'}
+                        className="flex-1 text-xs h-7"
+                        onClick={() => updatePrintSetting('orientacao', o)}
+                      >
                         {o === 'portrait' ? 'Vertical' : 'Horizontal'}
                       </Button>
                     ))}
@@ -1548,7 +1602,9 @@ export function ContasResumoTab() {
               <SelectContent>
                 <SelectItem value="todos">Todos os gestores</SelectItem>
                 {[...new Set(Object.values(gestorMap))].sort().map((g) => (
-                  <SelectItem key={g} value={g}>{g}</SelectItem>
+                  <SelectItem key={g} value={g}>
+                    {g}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

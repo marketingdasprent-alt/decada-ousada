@@ -50,11 +50,12 @@ export const TicketSubstitutaModal: React.FC<Props> = ({
       </div>
       <div className="overflow-y-auto flex-1 space-y-2">
         {viaturasDisponiveis
-          .filter((v) => (
-            matchesSearch(v.matricula, search) ||
-            matchesSearch(v.marca, search) ||
-            matchesSearch(v.modelo, search)
-          ))
+          .filter(
+            (v) =>
+              matchesSearch(v.matricula, search) ||
+              matchesSearch(v.marca, search) ||
+              matchesSearch(v.modelo, search)
+          )
           .map((v) => (
             <button
               key={v.id}

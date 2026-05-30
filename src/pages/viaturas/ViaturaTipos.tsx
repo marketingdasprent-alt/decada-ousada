@@ -82,9 +82,7 @@ const ViaturaTipos = () => {
     onError: (e: any) => toast({ title: 'Erro', description: e.message, variant: 'destructive' }),
   });
 
-  const filtered = tipos.filter(
-    (t) => !search || matchesSearch(t.nome, search)
-  );
+  const filtered = tipos.filter((t) => !search || matchesSearch(t.nome, search));
 
   const openNew = () => {
     setEditing(null);
