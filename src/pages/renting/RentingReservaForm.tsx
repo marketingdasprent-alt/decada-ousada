@@ -34,7 +34,6 @@ import {
   ReservaTabAnexos,
   type AnexoPendente,
 } from '@/components/renting/reservas/tabs/ReservaTabAnexos';
-import { ReservaTabCaixa } from '@/components/renting/reservas/tabs/ReservaTabCaixa';
 import { ReservaTabCondutores } from '@/components/renting/reservas/tabs/ReservaTabCondutores';
 import { ReservaTabGeral } from '@/components/renting/reservas/tabs/ReservaTabGeral';
 import {
@@ -509,10 +508,9 @@ const RentingReservaForm = () => {
               <Card className="bg-card border-border">
                 <CardContent className="p-4 sm:p-6">
                   <Tabs defaultValue="geral" className="w-full">
-                    <TabsList className="grid grid-cols-4 w-full sm:w-auto sm:inline-flex">
+                    <TabsList className="grid grid-cols-3 w-full sm:w-auto sm:inline-flex">
                       <TabsTrigger value="geral">Geral</TabsTrigger>
                       <TabsTrigger value="condutores">Condutores</TabsTrigger>
-                      <TabsTrigger value="caixa">Caixa</TabsTrigger>
                       <TabsTrigger value="anexos">Anexos</TabsTrigger>
                     </TabsList>
 
@@ -533,14 +531,6 @@ const RentingReservaForm = () => {
                         motoristas={motoristas}
                         onCriarNovoCliente={() => setClienteDialogOpen(true)}
                         onCriarNovoMotorista={() => setMotoristaDialogOpen(true)}
-                      />
-                    </TabsContent>
-
-                    <TabsContent value="caixa" className="pt-4">
-                      <ReservaTabCaixa
-                        form={form}
-                        estacoes={estacoes}
-                        reservaCodigo={reserva?.codigo ?? null}
                       />
                     </TabsContent>
 

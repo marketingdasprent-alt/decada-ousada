@@ -60,6 +60,8 @@ import {
 } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
+import { usePermissions } from '@/hooks/usePermissions';
+import { CheckinCheckoutHistoricoCard } from '@/components/dashboard/CheckinCheckoutHistoricoCard';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -134,6 +136,8 @@ const COLORS = {
 const Dashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { hasPermission, isAdmin } = usePermissions();
+  const canSeeCheckinHistorico = hasPermission('dashboard_checkin_historico') || isAdmin;
 
   const [preset, setPreset] = useState<PeriodPreset>('mes');
   const [range, setRange] = useState<DateRange>(getPeriodRange('mes'));
@@ -1057,6 +1061,10 @@ const Dashboard = () => {
             </Card>
           </div>
         </>
+      )}
+
+      {canSeeCheckinHistorico && (
+        <CheckinCheckoutHistoricoCard enabled={canSeeCheckinHistorico} />
       )}
     </div>
   );
