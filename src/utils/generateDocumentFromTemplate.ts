@@ -25,6 +25,8 @@ interface GenerateDocumentParams {
   action?: 'print' | 'download';
   skipOutput?: boolean; // Se true, retorna o PDF sem abrir/gravar
   existingPdf?: jsPDF; // Se fornecido, adiciona páginas a este PDF em vez de criar novo
+  /** URL de um logo a desenhar no canto superior esquerdo da 1ª página (tamanho fixo). */
+  headerLogoUrl?: string;
 }
 
 interface UploadDocumentParams extends GenerateDocumentParams {
@@ -229,7 +231,27 @@ const replaceDynamicFields = (
   });
 
   // Substituir campos do contrato no formato {{data_inicio}}
-  const contratoFields = ['data_inicio', 'data_assinatura', 'cidade_assinatura', 'duracao_meses'];
+  // Os campos numéricos/monetários (tarifa, franquia, total, etc.) são passados
+  // já formatados como string por generateContratoPdf — aqui só se substituem.
+  const contratoFields = [
+    'data_inicio',
+    'data_fim',
+    'data_assinatura',
+    'cidade_assinatura',
+    'duracao_meses',
+    'numero_contrato',
+    'viatura_matricula',
+    'viatura_marca_modelo',
+    'viatura_grupo',
+    'viatura_kms',
+    'tarifa_diaria',
+    'franquia',
+    'caucao',
+    'kms_incluidos',
+    'km_adicional',
+    'total',
+    'observacoes',
+  ];
   contratoFields.forEach((field) => {
     const regex = new RegExp(`\\{\\{${field}\\}\\}`, 'g');
     const value = documentData[field];
@@ -413,7 +435,7 @@ const htmlToText = (
 export const generateDocumentFromTemplate = async (
   params: GenerateDocumentParams
 ): Promise<jsPDF | null> => {
-  const { templateId, motoristaData, documentData = {}, action = 'print' } = params;
+  const { templateId, motoristaData, documentData = {}, action = 'print', headerLogoUrl } = params;
 
   try {
     // Buscar o template da base de dados
@@ -460,6 +482,19 @@ export const generateDocumentFromTemplate = async (
         pdf.addImage(bg, 'PNG', 0, 0, 210, 297);
       } catch (error) {
         console.warn('Erro ao carregar papel timbrado:', error);
+      }
+    }
+
+    // Logo de cabeçalho (canto superior esquerdo da 1ª página), tamanho fixo.
+    // 'PNG' preserva transparência (sem caixa preta de fundo).
+    if (headerLogoUrl) {
+      try {
+        const logo = await loadImage(headerLogoUrl);
+        const logoWidth = 45; // mm
+        const logoHeight = logo.width > 0 ? logoWidth * (logo.height / logo.width) : 18;
+        pdf.addImage(logo, 'PNG', 15, 12, logoWidth, logoHeight);
+      } catch (error) {
+        console.warn('Erro ao carregar logo do cabeçalho:', headerLogoUrl, error);
       }
     }
 

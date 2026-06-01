@@ -6,6 +6,7 @@ import { generateDocumentFromTemplate } from './generateDocumentFromTemplate';
 import type { ContratoRenting } from '@/types/contratoRenting';
 import type { ClienteComDocumentos } from '@/types/cliente';
 import type { Motorista } from '@/types/motorista';
+import type { ViaturaBasic } from '@/hooks/useViaturas';
 
 export interface CondutorPrincipal {
   cliente_id: string | null;
@@ -18,6 +19,8 @@ export interface GenerateContratoPdfParams {
   condutorPrincipal: CondutorPrincipal | null;
   clientes: ClienteComDocumentos[];
   motoristas: Motorista[];
+  /** Viatura do contrato — fornece marca/modelo/kms para os placeholders {{viatura_*}}. */
+  viatura?: ViaturaBasic | null;
   /** Empresa actual — fornece dados para os placeholders {{empresa_*}}. */
   empresa: EmpresaConfig | null;
   action?: 'print' | 'download';
@@ -34,6 +37,7 @@ export const generateContratoPdf = async ({
   condutorPrincipal,
   clientes,
   motoristas,
+  viatura,
   empresa,
   action = 'print',
 }: GenerateContratoPdfParams): Promise<void> => {
@@ -41,30 +45,37 @@ export const generateContratoPdf = async ({
     throw new Error('Empresa não definida — impossível gerar contrato.');
   }
 
-  // 1) Encontrar template de contrato para esta empresa.
-  //    HACK pragmático: o tipo `contrato_tvde` é usado de forma demasiado
-  //    abrangente (Iban, Procedimentos, etc.) — filtramos por prefixo do
-  //    nome até refactor da taxonomia de templates. Convenção actual:
-  //    "Contrato TVDE - <Empresa>" tanto para TVDE como rent-a-car.
+  // 1) Escolher o template de contrato para esta empresa, conforme o `regime`.
+  //    Convenção de nomes (até existir taxonomia própria de `tipo`):
+  //      - rent-a-car → "Contrato Aluguer - <Empresa>"
+  //      - tvde       → "Contrato TVDE - <Empresa>"
+  //    Se ainda não existir o de aluguer, cai no de TVDE — não parte nada
+  //    enquanto o template de aluguer não for criado no admin.
   const { data: templates, error: templatesErr } = await supabase
     .from('document_templates')
     .select('id, nome, tipo, empresa_id')
     .eq('ativo', true)
     .eq('empresa_id', empresa.id)
-    .in('tipo', ['contrato_tvde', 'contrato'])
-    .ilike('nome', 'Contrato TVDE%')
+    .in('tipo', ['contrato_tvde', 'contrato', 'contrato_aluguer'])
     .order('nome', { ascending: true });
 
   if (templatesErr) throw templatesErr;
-  if (!templates || templates.length === 0) {
+
+  const porPrefixo = (prefixo: string) =>
+    (templates ?? []).find((t) => t.nome.toLowerCase().startsWith(prefixo.toLowerCase()));
+
+  const regimeAluguer = contrato.regime === 'rent_a_car';
+  const template = regimeAluguer
+    ? (porPrefixo('Contrato Aluguer') ?? porPrefixo('Contrato Rent') ?? porPrefixo('Contrato TVDE'))
+    : (porPrefixo('Contrato TVDE') ?? (templates ?? [])[0]);
+
+  if (!template) {
+    const nomeSugerido = regimeAluguer ? 'Contrato Aluguer' : 'Contrato TVDE';
     throw new Error(
       `Sem template de contrato activo para a empresa "${empresa.nome}". ` +
-        'Cria um chamado "Contrato TVDE - ' +
-        empresa.nome +
-        '" em Configurações do Sistema → Templates.'
+        `Cria um chamado "${nomeSugerido} - ${empresa.nome}" em Configurações do Sistema → Documentos.`
     );
   }
-  const template = templates[0];
 
   // 2) Resolver o condutor principal para preencher o "motorista" no template.
   //    TVDE: motorista directo. Rent-a-car: cliente mapeado para motorista_*.
@@ -121,13 +132,33 @@ export const generateContratoPdf = async ({
   );
   const duracaoMeses = Math.max(1, Math.round(diasContrato / 30));
 
-  // 4) Dados do contrato (placeholders {{data_inicio}}, etc.)
+  // 4) Dados do contrato (placeholders {{data_inicio}}, {{viatura_*}}, etc.)
   const today = new Date().toISOString().split('T')[0];
+  const eur = (n: number | null | undefined) =>
+    n != null && !Number.isNaN(Number(n)) ? `${Number(n).toFixed(2)} €` : '—';
+  const num = (n: number | null | undefined) =>
+    n != null && !Number.isNaN(Number(n)) ? String(n) : '—';
+
   const documentData = {
     data_inicio: contrato.data_inicio,
+    data_fim: contrato.data_fim,
     data_assinatura: today,
     cidade_assinatura: empresa.sede || (motoristaData.cidade as string) || 'Leiria',
     duracao_meses: duracaoMeses,
+    numero_contrato: contrato.codigo != null ? String(contrato.codigo) : '',
+    // Viatura
+    viatura_matricula: contrato.matricula ?? viatura?.matricula ?? '—',
+    viatura_marca_modelo: viatura ? `${viatura.marca} ${viatura.modelo}`.trim() : '—',
+    viatura_grupo: contrato.grupo ?? '—',
+    viatura_kms: num(viatura?.km_atual),
+    // Financeiro (já formatado; total_final só existe após facturar)
+    tarifa_diaria: eur(contrato.tarifa_diaria),
+    franquia: eur(contrato.franquia_valor),
+    caucao: eur(contrato.caucao_valor),
+    kms_incluidos: num(contrato.kms_incluidos),
+    km_adicional: eur(contrato.km_adicional_valor),
+    total: contrato.total_final != null ? eur(contrato.total_final) : 'A facturar',
+    observacoes: contrato.observacoes ?? '',
     empresaData: {
       nomeCompleto: empresa.nomeCompleto,
       nif: empresa.nif,
@@ -144,5 +175,7 @@ export const generateContratoPdf = async ({
     motoristaData,
     documentData,
     action,
+    // Contratos de aluguer levam o logo WeGest no canto superior esquerdo.
+    headerLogoUrl: regimeAluguer ? '/Logo.png' : undefined,
   });
 };

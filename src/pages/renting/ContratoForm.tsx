@@ -204,11 +204,13 @@ const ContratoForm = () => {
       empresas.find((e) => e.orgId === contrato.org_id) ?? empresas[0] ?? null;
     try {
       const principal = (condutoresDb ?? []).find((c) => c.is_principal) ?? null;
+      const viaturaContrato = viaturas.find((v) => v.id === contrato.viatura_id) ?? null;
       await generateContratoPdf({
         contrato,
         condutorPrincipal: principal,
         clientes,
         motoristas,
+        viatura: viaturaContrato,
         empresa: empresaContrato,
         action,
       });
@@ -623,25 +625,39 @@ const ContratoForm = () => {
     const subtotalBruto = baseAluguer + custoCoberturas + custoExtras;
     const subtotalTaxas = subtotalBruto * (1 - (values.desconto_percentagem ?? 0) / 100);
 
-    // Sincroniza condutores + coberturas + extras + taxas (junções) após o contrato existir.
-    const syncRelacoes = (contratoId: string) => {
-      syncCondutoresMutation.mutate({ contratoId, desejados: condutores });
-      syncCoberturasMutation.mutate({ contratoId, desejadas: coberturas });
-      syncExtrasMutation.mutate({ contratoId, desejados: extras, dias: diasContrato });
-      syncTaxasMutation.mutate({ contratoId, desejadas: taxas, subtotal: subtotalTaxas });
+    // Sincroniza condutores + coberturas + extras + taxas (junções) após o contrato
+    // existir. Corre as 4 em paralelo mas espera por todas — se alguma falhar, o
+    // utilizador é avisado (senão o contrato ficava com relações parciais em silêncio).
+    const syncRelacoes = async (contratoId: string): Promise<boolean> => {
+      const resultados = await Promise.allSettled([
+        syncCondutoresMutation.mutateAsync({ contratoId, desejados: condutores }),
+        syncCoberturasMutation.mutateAsync({ contratoId, desejadas: coberturas }),
+        syncExtrasMutation.mutateAsync({ contratoId, desejados: extras, dias: diasContrato }),
+        syncTaxasMutation.mutateAsync({ contratoId, desejadas: taxas, subtotal: subtotalTaxas }),
+      ]);
+      const falhas = resultados.filter((r) => r.status === 'rejected').length;
+      if (falhas > 0) {
+        toast({
+          title: 'Contrato gravado com sincronização parcial',
+          description: `${falhas} de 4 listas (condutores/coberturas/extras/taxas) falharam ao gravar. Reabre o contrato e grava de novo para corrigir.`,
+          variant: 'destructive',
+        });
+        return false;
+      }
+      return true;
     };
 
     if (isEdit && contrato) {
       // Editar: ficar na própria página (utilizador vê toast e continua a trabalhar).
       updateMutation.mutate(
         { id: contrato.id, ...payload },
-        { onSuccess: () => syncRelacoes(contrato.id) }
+        { onSuccess: () => void syncRelacoes(contrato.id) }
       );
     } else {
-      // Criar: sincronizar relações e navegar para modo edição do novo contrato.
+      // Criar: sincronizar relações e só depois navegar para o novo contrato.
       createMutation.mutate(payload, {
-        onSuccess: (created) => {
-          syncRelacoes(created.id);
+        onSuccess: async (created) => {
+          await syncRelacoes(created.id);
           navigate(`/renting/contratos/${created.id}`);
         },
       });
