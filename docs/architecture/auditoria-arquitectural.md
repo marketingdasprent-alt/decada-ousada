@@ -127,6 +127,19 @@ Inspeccionados:
 - A tabela `organizacao_modulos` é usada em [useModules.ts](../../src/hooks/useModules.ts) com `(supabase as any).from('organizacao_modulos')` mas **não existe migration** que a crie. O hook trata 42P01 como fail-open.
 - `motorista_id` em `calendario_eventos` aparece em [types.ts:1171](../../src/integrations/supabase/types.ts) mas as cascatas SQL ([20260520300002](../../supabase/migrations/20260520300002_calendario_origem_e_movimentos.sql)) não preenchem este campo. Coluna existe e está autenticada na DB, mas não tem semântica clara no fluxo novo.
 
+**Série `2026052000000X` com `version` colidida (verificado 2026-06):** seis timestamps têm dois ou três ficheiros cada, fruto de branches paralelos merged. O `version` que o Supabase regista é a parte numérica antes do primeiro `_`, por isso estes pares partilham a mesma chave em `supabase_migrations.schema_migrations` (que é PK):
+
+| `version` | Ficheiros |
+|---|---|
+| `20260520000001` | `add_contrato_regime_tvde` + `create_contrato_coberturas` |
+| `20260520000002` | `contratos_totais_coberturas` + `create_contrato_condutores` + `create_movimentos` |
+| `20260520000003` | `contrato_extras_integracao` + `create_contrato_cobrancas` |
+| `20260520000004` | `contrato_taxas_integracao` + `create_conta_corrente` |
+| `20260520000005` | `fix_handle_new_user_org_null` + `gerar_cobrancas_tvde` |
+| `20260520000006` | `faturar_danos_renting` + `rls_org_isolation` |
+
+Decisão (2026-06): **não re-sequenciar**. Produção já as tem aplicadas (via SQL editor, não via `db push`), o conteúdo é maioritariamente idempotente (`IF NOT EXISTS` / `DROP POLICY IF EXISTS` / `CREATE OR REPLACE`) e o CI ([ci.yml](../../.github/workflows/ci.yml)) **não** corre `db push` — só `format`/`lint`/`type-check`/`build`. Re-sequenciar manualmente tem dependências cruzadas reais (`create_contrato_cobrancas` → `faturar_danos`, `create_contrato_coberturas` → `contratos_totais_coberturas`) e a nova ordem poderia divergir da que produção realmente aplicou. A correção definitiva é um **baseline via schema dump** (ver Recomendação), não um rename ficheiro-a-ficheiro.
+
 **O que é dívida:**
 
 Migrations duplicadas significam que reproduzir uma BD fresca **não dá o mesmo resultado** que a BD actual. A duplicação de `create_contrato_condutores` aplica DDL conflitantes em sequência — só funciona porque a 2ª usa `IF NOT EXISTS`. A ausência de migration para `organizacao_modulos` significa que num deploy limpo, o hook arranca em fail-open permanente (todos os módulos contam como activos sem que ninguém os tenha activado).
@@ -137,8 +150,8 @@ Migrations duplicadas significam que reproduzir uma BD fresca **não dá o mesmo
 - `organizacao_modulos` não dá feature flags reais hoje.
 
 **Severidade:** Média
-**Custo:** 1 dia (consolidar as 2 migrations de `contrato_condutores`, criar a migration formal de `organizacao_modulos` com semente para as 3 orgs existentes).
-**Recomendação:** Antes do próximo deploy num ambiente diferente do actual (staging novo, cliente self-hosted).
+**Custo:** 1 dia (criar a migration formal de `organizacao_modulos` com semente) + 0.5d para o baseline.
+**Recomendação:** Antes do próximo deploy num ambiente diferente do actual (staging novo, cliente self-hosted), gerar um **baseline** com `supabase db dump --schema public` a partir da BD de produção e arquivar as migrations pré-baseline numa pasta `_archive/`. Isto resolve de uma vez as `version` colididas da série `2026052000000X`, as duplicações de nome de `contrato_condutores` e o `organizacao_modulos` em falta — sem o risco de re-sequenciar 13 ficheiros à mão. Até lá, **não correr `db push` contra uma BD limpa** esperando o estado de produção.
 
 ---
 
