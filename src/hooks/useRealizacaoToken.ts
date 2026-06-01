@@ -112,19 +112,11 @@ export function useRealizarFromToken() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ token, contratoId, tipo }: RealizarFromTokenArgs): Promise<void> => {
-      const novoEstado = tipo === 'entrega' ? 'em_curso' : 'devolvido';
-      const { error: e1 } = await supabase
-        .from('contratos_renting')
-        .update({ estado_operacional: novoEstado })
-        .eq('id', contratoId);
-      if (e1) throw e1;
-
-      const { error: e2 } = await supabase
-        .from('realizacao_tokens')
-        .update({ used_at: new Date().toISOString() })
-        .eq('id', token);
-      if (e2) throw e2;
+    mutationFn: async ({ token }: RealizarFromTokenArgs): Promise<void> => {
+      // RPC atómico: muda o estado do contrato (dispara a cascata que marca
+      // o evento realizado) + marca o token usado, na mesma transação.
+      const { error } = await supabase.rpc('realizar_token_realizacao', { p_token: token });
+      if (error) throw error;
     },
     onSuccess: (_, vars) => {
       // NOTA: NÃO invalidar a query do token aqui — o refetch dispara o

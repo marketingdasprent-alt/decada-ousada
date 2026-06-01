@@ -282,14 +282,9 @@ const RentingReservaForm = () => {
     });
   }, [regimeWatched, form, toast]);
 
-  // Regra de elegibilidade: qualquer viatura pode ser alugada em rent-a-car.
-  // No regime tvde só aparecem viaturas com "Elegível para TVDE? = Sim"
-  // (habilitada_tvde), opção que só existe em tipos com elegibilidade TVDE.
-  // A viatura já seleccionada mantém-se sempre visível (ex.: edição).
-  const viaturasParaSelecao = useMemo(() => {
-    if (regimeWatched !== 'tvde') return viaturas;
-    return viaturas.filter((v) => v.habilitada_tvde || v.id === viaturaId);
-  }, [viaturas, regimeWatched, viaturaId]);
+  // Qualquer viatura pode ser alugada em rent-a-car ou TVDE.
+  // O campo habilitada_tvde é apenas informativo/administrativo, não restringe.
+  const viaturasParaSelecao = viaturas;
 
   const onSubmit = async (values: ReservaFormValues) => {
     try {
