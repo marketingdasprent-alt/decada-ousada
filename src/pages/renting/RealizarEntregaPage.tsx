@@ -67,6 +67,9 @@ const RealizarEntregaPage = () => {
     }
 
     setUploading(true);
+    // Paths já enviados ao storage — para limpar em caso de falha e não
+    // deixar ficheiros órfãos (upload a meio falhou ou o insert rebentou).
+    const uploadedPaths: string[] = [];
     try {
       if (files.length > 0) {
         // checkout = entrega ao cliente; checkin = recolha da viatura.
@@ -92,6 +95,7 @@ const RealizarEntregaPage = () => {
             .from('contrato-media')
             .upload(path, fp.file, { contentType: fp.file.type });
           if (upErr) throw upErr;
+          uploadedPaths.push(path);
           registos.push({
             contrato_renting_id: info.contrato_id,
             tipo: mediaTipo,
@@ -120,6 +124,14 @@ const RealizarEntregaPage = () => {
         }
       );
     } catch (err: unknown) {
+      // Limpa ficheiros já enviados para não ficarem órfãos no bucket.
+      if (uploadedPaths.length > 0) {
+        try {
+          await supabase.storage.from('contrato-media').remove(uploadedPaths);
+        } catch {
+          /* limpeza best-effort — não mascarar o erro original */
+        }
+      }
       toast({
         title: 'Erro no upload',
         description: err instanceof Error ? err.message : 'Erro inesperado',

@@ -8558,6 +8558,10 @@ export type Database = {
           data_inicio: string
         }[]
       }
+      realizar_token_realizacao: {
+        Args: { p_token: string }
+        Returns: undefined
+      }
       execute_gestor_assignment: { Args: never; Returns: number }
       fn_contrato_dias: {
         Args: { p_data_fim: string; p_data_inicio: string }
