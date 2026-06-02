@@ -68,10 +68,16 @@ const statusColumns = [
 const CRM = () => {
   const isMobile = useIsMobile();
   const [realtimePayload, setRealtimePayload] = useState<any>(null);
+  const [filters, setFilters] = useState<FilterState>({
+    search: '',
+    status: 'todos',
+    dateRange: 'todos',
+    customStartDate: undefined,
+    customEndDate: undefined,
+    campaignTags: [],
+    userId: 'todos',
+  });
 
-  // Filtro de data padrão: início do mês até hoje
-
-  // Memorizar o callback para evitar reconexões constantes
   const handleRealtimeEvent = useCallback((payload: any) => {
     setRealtimePayload(payload);
   }, []);
@@ -84,7 +90,10 @@ const CRM = () => {
     updateLead: updateLeadHook,
     deleteLead: deleteLeadHook,
     refetchLeads,
-  } = useRealTimeLeads(handleRealtimeEvent);
+  } = useRealTimeLeads(handleRealtimeEvent, {
+    from: filters.customStartDate ? new Date(filters.customStartDate) : undefined,
+    to: filters.customEndDate ? new Date(filters.customEndDate) : undefined,
+  });
 
   const { tagsMap, getTagsForFormulario } = useFormularioTags();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -98,15 +107,6 @@ const CRM = () => {
     localStorage.setItem('crm-view-mode', viewMode);
   }, [viewMode]);
   const [currentUserName, setCurrentUserName] = useState<string>('');
-  const [filters, setFilters] = useState<FilterState>({
-    search: '',
-    status: 'todos',
-    dateRange: 'todos',
-    customStartDate: undefined,
-    customEndDate: undefined,
-    campaignTags: [],
-    userId: 'todos',
-  });
   const [userLeadHistory, setUserLeadHistory] = useState<Record<string, string[]>>({});
   const { toast } = useToast();
   const { availableTags, refreshTags } = useCampaignTags();
@@ -236,45 +236,7 @@ const CRM = () => {
       );
     }
 
-    // Date range filter
-    if (filters.customStartDate || filters.customEndDate) {
-      result = result.filter((lead) => {
-        const leadDate = new Date(lead.created_at);
-        const { customStartDate, customEndDate } = filters;
-
-        if (customStartDate && customEndDate) {
-          // Filtrar entre duas datas
-          const startOfDay = new Date(customStartDate);
-          startOfDay.setHours(0, 0, 0, 0);
-          const endOfDay = new Date(customEndDate);
-          endOfDay.setHours(23, 59, 59, 999);
-
-          const isInRange = leadDate >= startOfDay && leadDate <= endOfDay;
-          console.log('🔍 Lead:', lead.nome, {
-            leadDate: leadDate.toISOString(),
-            startOfDay: startOfDay.toISOString(),
-            endOfDay: endOfDay.toISOString(),
-            isInRange,
-          });
-
-          return isInRange;
-        } else if (customStartDate) {
-          // Filtrar a partir de uma data
-          const startOfDay = new Date(customStartDate);
-          startOfDay.setHours(0, 0, 0, 0);
-          return leadDate >= startOfDay;
-        } else if (customEndDate) {
-          // Filtrar até uma data
-          const endOfDay = new Date(customEndDate);
-          endOfDay.setHours(23, 59, 59, 999);
-          return leadDate <= endOfDay;
-        }
-
-        return true;
-      });
-
-      console.log(`✅ Leads após filtro de data: ${result.length}`);
-    }
+    // Filtro de datas aplicado no servidor (useRealTimeLeads)
 
     return result;
   }, [leads, filters]);
