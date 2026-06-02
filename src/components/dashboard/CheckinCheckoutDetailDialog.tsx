@@ -60,7 +60,9 @@ function ContratoMediaImage({
       .then(({ data }) => {
         if (!cancelled && data?.signedUrl) setSrc(data.signedUrl);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [path]);
 
   if (!src) return <Skeleton className={className} />;
@@ -108,13 +110,7 @@ interface LightboxState {
   signedUrls: (string | null)[];
 }
 
-function Lightbox({
-  state,
-  onClose,
-}: {
-  state: LightboxState;
-  onClose: () => void;
-}) {
+function Lightbox({ state, onClose }: { state: LightboxState; onClose: () => void }) {
   const [urls, setUrls] = useState<(string | null)[]>([]);
 
   useEffect(() => {
@@ -122,14 +118,23 @@ function Lightbox({
     let cancelled = false;
     Promise.all(
       state.media.map((m) =>
-        supabase.storage.from(BUCKET).createSignedUrl(m.url, 60 * 30).then(({ data }) => data?.signedUrl ?? null)
+        supabase.storage
+          .from(BUCKET)
+          .createSignedUrl(m.url, 60 * 30)
+          .then(({ data }) => data?.signedUrl ?? null)
       )
-    ).then((resolved) => { if (!cancelled) setUrls(resolved); });
-    return () => { cancelled = true; };
+    ).then((resolved) => {
+      if (!cancelled) setUrls(resolved);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [state.open, state.media]);
 
   const [idx, setIdx] = useState(0);
-  useEffect(() => { if (state.open) setIdx(state.index); }, [state.open, state.index]);
+  useEffect(() => {
+    if (state.open) setIdx(state.index);
+  }, [state.open, state.index]);
 
   const total = state.media.length;
   const currentUrl = urls[idx] ?? null;
@@ -147,7 +152,12 @@ function Lightbox({
   };
 
   return (
-    <Dialog open={state.open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog
+      open={state.open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
       <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 bg-black/95 border-none flex flex-col items-center justify-center overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>Visualização de Foto</DialogTitle>
@@ -155,10 +165,20 @@ function Lightbox({
         </DialogHeader>
 
         <div className="absolute top-4 right-4 z-50 flex gap-2">
-          <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full" onClick={download}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white hover:bg-white/20 rounded-full"
+            onClick={download}
+          >
             <Download className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white hover:bg-white/20 rounded-full"
+            onClick={onClose}
+          >
             <X className="h-5 w-5" />
           </Button>
         </div>
@@ -166,22 +186,38 @@ function Lightbox({
         <div className="relative w-full h-full flex items-center justify-center p-4 sm:p-12">
           {total > 1 && (
             <>
-              <Button variant="ghost" size="icon" className="absolute left-2 sm:left-6 z-40 text-white hover:bg-white/20 rounded-full h-12 w-12" onClick={prev}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-2 sm:left-6 z-40 text-white hover:bg-white/20 rounded-full h-12 w-12"
+                onClick={prev}
+              >
                 <ChevronLeft className="h-8 w-8" />
               </Button>
-              <Button variant="ghost" size="icon" className="absolute right-2 sm:right-6 z-40 text-white hover:bg-white/20 rounded-full h-12 w-12" onClick={next}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 sm:right-6 z-40 text-white hover:bg-white/20 rounded-full h-12 w-12"
+                onClick={next}
+              >
                 <ChevronRight className="h-8 w-8" />
               </Button>
             </>
           )}
           <div className="max-w-full max-h-full flex flex-col items-center gap-4">
             {currentUrl ? (
-              <img src={currentUrl} alt="Preview" className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl" />
+              <img
+                src={currentUrl}
+                alt="Preview"
+                className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
+              />
             ) : (
               <Skeleton className="w-64 h-64 rounded-lg" />
             )}
             <div className="text-white text-center bg-black/60 px-4 py-2 rounded-xl backdrop-blur-md border border-white/10">
-              <p className="text-[11px] font-mono text-white/50">{idx + 1} / {total}</p>
+              <p className="text-[11px] font-mono text-white/50">
+                {idx + 1} / {total}
+              </p>
               {currentMedia?.created_at && (
                 <p className="text-[10px] text-white/30 mt-0.5">
                   {format(parseISO(currentMedia.created_at), 'dd MMM yyyy HH:mm', { locale: pt })}
@@ -220,16 +256,20 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
     queryFn: async () => {
       const { data, error } = await supabase
         .from('reserva_condutores')
-        .select('id, is_principal, clientes:cliente_id (id, nome, nif), motoristas:motorista_id (id, nome)')
+        .select(
+          'id, is_principal, clientes:cliente_id (id, nome, nif), motoristas:motorista_id (id, nome)'
+        )
         .eq('reserva_id', reservaId as string)
         .order('is_principal', { ascending: false });
       if (error) return [];
-      return (data ?? []).map((c: any) => ({
-        id: c.id,
-        isPrincipal: c.is_principal as boolean,
-        nome: c.clientes?.nome ?? c.motoristas?.nome ?? null,
-        nif: c.clientes?.nif ?? null,
-      })).filter((c: any) => c.nome);
+      return (data ?? [])
+        .map((c: any) => ({
+          id: c.id,
+          isPrincipal: c.is_principal as boolean,
+          nome: c.clientes?.nome ?? c.motoristas?.nome ?? null,
+          nif: c.clientes?.nif ?? null,
+        }))
+        .filter((c: any) => c.nome);
     },
   });
 
@@ -242,8 +282,11 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
 
   const formatDate = (iso: string | null | undefined) => {
     if (!iso) return '—';
-    try { return format(parseISO(iso), 'dd MMM yyyy HH:mm', { locale: pt }); }
-    catch { return iso; }
+    try {
+      return format(parseISO(iso), 'dd MMM yyyy HH:mm', { locale: pt });
+    } catch {
+      return iso;
+    }
   };
 
   const openLightbox = (media: SessionMedia[], index: number) =>
@@ -259,7 +302,9 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
             <DialogTitle className="flex items-center gap-2">
               <Camera className="h-5 w-5 text-primary" />
               {contrato?.viatura?.matricula ?? '—'}
-              {contrato?.codigo && <span className="text-muted-foreground font-normal text-sm">· {codigo}</span>}
+              {contrato?.codigo && (
+                <span className="text-muted-foreground font-normal text-sm">· {codigo}</span>
+              )}
             </DialogTitle>
             <DialogDescription>
               {contrato?.cliente?.nome ?? contrato?.motorista_nome ?? 'Condutor desconhecido'}
@@ -269,7 +314,6 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
 
           <ScrollArea className="flex-1 mt-2">
             <div className="space-y-4 p-1 pr-3">
-
               {/* Info do contrato */}
               <section className="rounded-lg border bg-muted/30 p-4 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
@@ -305,19 +349,26 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
                     <div>
                       <p className="text-xs text-muted-foreground">Período</p>
                       <p className="font-medium">
-                        {formatDate(contrato?.data_inicio)} → {contrato?.data_fim ? formatDate(contrato.data_fim) : 'Em curso'}
+                        {formatDate(contrato?.data_inicio)} →{' '}
+                        {contrato?.data_fim ? formatDate(contrato.data_fim) : 'Em curso'}
                       </p>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 pt-1 flex-wrap">
                   {hasCheckin && (
-                    <Badge variant="outline" className="border-blue-400 text-blue-600 dark:text-blue-400 text-[10px]">
+                    <Badge
+                      variant="outline"
+                      className="border-blue-400 text-blue-600 dark:text-blue-400 text-[10px]"
+                    >
                       <LogIn className="h-3 w-3 mr-1" /> Check-in ({mediaCheckin.length} fotos)
                     </Badge>
                   )}
                   {hasCheckout && (
-                    <Badge variant="outline" className="border-green-400 text-green-600 dark:text-green-400 text-[10px]">
+                    <Badge
+                      variant="outline"
+                      className="border-green-400 text-green-600 dark:text-green-400 text-[10px]"
+                    >
                       <LogOut className="h-3 w-3 mr-1" /> Check-out ({mediaCheckout.length} fotos)
                     </Badge>
                   )}
@@ -338,7 +389,11 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
                         <div>
                           <p className="text-xs text-muted-foreground">Nome</p>
                           <p className="font-medium">{contrato.motorista_nome}</p>
-                          {contrato.motorista_nif && <p className="text-xs text-muted-foreground">NIF: {contrato.motorista_nif}</p>}
+                          {contrato.motorista_nif && (
+                            <p className="text-xs text-muted-foreground">
+                              NIF: {contrato.motorista_nif}
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -365,7 +420,9 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
                         <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
                         <div>
                           <p className="text-xs text-muted-foreground">Localidade</p>
-                          <p className="font-medium">{contrato?.motorista_cidade ?? contrato?.motorista_morada}</p>
+                          <p className="font-medium">
+                            {contrato?.motorista_cidade ?? contrato?.motorista_morada}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -374,21 +431,31 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
                         <CreditCard className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
                         <div>
                           <p className="text-xs text-muted-foreground">IBAN</p>
-                          <p className="font-medium font-mono text-xs tracking-wide">{contrato.motorista_iban}</p>
+                          <p className="font-medium font-mono text-xs tracking-wide">
+                            {contrato.motorista_iban}
+                          </p>
                         </div>
                       </div>
                     )}
                   </div>
 
                   {/* Dados financeiros */}
-                  {(contrato?.viatura?.valor_mensal != null || contrato?.motorista_caucao != null || contrato?.viatura?.limite_kms != null || contrato?.motorista_cartao_frota) && (
+                  {(contrato?.viatura?.valor_mensal != null ||
+                    contrato?.motorista_caucao != null ||
+                    contrato?.viatura?.limite_kms != null ||
+                    contrato?.motorista_cartao_frota) && (
                     <div className="pt-3 border-t grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                       {contrato?.viatura?.valor_mensal != null && (
                         <div className="flex items-start gap-2">
                           <Banknote className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
                           <div>
                             <p className="text-xs text-muted-foreground">Valor</p>
-                            <p className="font-semibold">{contrato.viatura.valor_mensal.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</p>
+                            <p className="font-semibold">
+                              {contrato.viatura.valor_mensal.toLocaleString('pt-PT', {
+                                style: 'currency',
+                                currency: 'EUR',
+                              })}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -397,7 +464,12 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
                           <Banknote className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
                           <div>
                             <p className="text-xs text-muted-foreground">Caução</p>
-                            <p className="font-semibold">{contrato.motorista_caucao.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</p>
+                            <p className="font-semibold">
+                              {contrato.motorista_caucao.toLocaleString('pt-PT', {
+                                style: 'currency',
+                                currency: 'EUR',
+                              })}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -406,7 +478,9 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
                           <Gauge className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
                           <div>
                             <p className="text-xs text-muted-foreground">Kms</p>
-                            <p className="font-semibold">{contrato.viatura.limite_kms.toLocaleString('pt-PT')}</p>
+                            <p className="font-semibold">
+                              {contrato.viatura.limite_kms.toLocaleString('pt-PT')}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -423,19 +497,34 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
                   )}
 
                   {/* KMs e combustível do check-in/out */}
-                  {(contrato?.km_checkin != null || contrato?.km_checkout != null || contrato?.combustivel_checkin || contrato?.combustivel_checkout) && (
+                  {(contrato?.km_checkin != null ||
+                    contrato?.km_checkout != null ||
+                    contrato?.combustivel_checkin ||
+                    contrato?.combustivel_checkout) && (
                     <div className="pt-3 border-t grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                       {contrato?.km_checkin != null && (
-                        <div><span className="font-medium text-foreground">KM Check-in:</span> {contrato.km_checkin.toLocaleString('pt-PT')}</div>
+                        <div>
+                          <span className="font-medium text-foreground">KM Check-in:</span>{' '}
+                          {contrato.km_checkin.toLocaleString('pt-PT')}
+                        </div>
                       )}
                       {contrato?.km_checkout != null && (
-                        <div><span className="font-medium text-foreground">KM Check-out:</span> {contrato.km_checkout.toLocaleString('pt-PT')}</div>
+                        <div>
+                          <span className="font-medium text-foreground">KM Check-out:</span>{' '}
+                          {contrato.km_checkout.toLocaleString('pt-PT')}
+                        </div>
                       )}
                       {contrato?.combustivel_checkin && (
-                        <div><span className="font-medium text-foreground">Comb. entrada:</span> {contrato.combustivel_checkin}</div>
+                        <div>
+                          <span className="font-medium text-foreground">Comb. entrada:</span>{' '}
+                          {contrato.combustivel_checkin}
+                        </div>
                       )}
                       {contrato?.combustivel_checkout && (
-                        <div><span className="font-medium text-foreground">Comb. saída:</span> {contrato.combustivel_checkout}</div>
+                        <div>
+                          <span className="font-medium text-foreground">Comb. saída:</span>{' '}
+                          {contrato.combustivel_checkout}
+                        </div>
                       )}
                     </div>
                   )}
@@ -454,9 +543,15 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
                         <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <span className="font-medium">{c.nome}</span>
                         {c.isPrincipal && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Principal</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                            Principal
+                          </span>
                         )}
-                        {c.nif && <span className="text-xs text-muted-foreground ml-auto">NIF: {c.nif}</span>}
+                        {c.nif && (
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            NIF: {c.nif}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -487,7 +582,8 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
               {/* Fotos com tabs */}
               <section className="space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <Camera className="h-3.5 w-3.5" /> Fotos ({mediaCheckin.length + mediaCheckout.length})
+                  <Camera className="h-3.5 w-3.5" /> Fotos (
+                  {mediaCheckin.length + mediaCheckout.length})
                 </h3>
                 {hasCheckin && hasCheckout ? (
                   <Tabs defaultValue={defaultTab}>
@@ -500,10 +596,18 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="checkin" className="mt-3">
-                      <PhotoGrid media={mediaCheckin} onOpen={(i) => openLightbox(mediaCheckin, i)} empty="Sem fotos de check-in." />
+                      <PhotoGrid
+                        media={mediaCheckin}
+                        onOpen={(i) => openLightbox(mediaCheckin, i)}
+                        empty="Sem fotos de check-in."
+                      />
                     </TabsContent>
                     <TabsContent value="checkout" className="mt-3">
-                      <PhotoGrid media={mediaCheckout} onOpen={(i) => openLightbox(mediaCheckout, i)} empty="Sem fotos de check-out." />
+                      <PhotoGrid
+                        media={mediaCheckout}
+                        onOpen={(i) => openLightbox(mediaCheckout, i)}
+                        empty="Sem fotos de check-out."
+                      />
                     </TabsContent>
                   </Tabs>
                 ) : (
@@ -514,16 +618,12 @@ export const CheckinCheckoutDetailDialog: React.FC<Props> = ({ open, onOpenChang
                   />
                 )}
               </section>
-
             </div>
           </ScrollArea>
         </DialogContent>
       </Dialog>
 
-      <Lightbox
-        state={lightbox}
-        onClose={() => setLightbox((s) => ({ ...s, open: false }))}
-      />
+      <Lightbox state={lightbox} onClose={() => setLightbox((s) => ({ ...s, open: false }))} />
     </>
   );
 };

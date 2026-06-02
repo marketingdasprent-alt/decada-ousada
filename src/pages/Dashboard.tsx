@@ -1063,9 +1063,7 @@ const Dashboard = () => {
         </>
       )}
 
-      {canSeeCheckinHistorico && (
-        <CheckinCheckoutHistoricoCard enabled={canSeeCheckinHistorico} />
-      )}
+      {canSeeCheckinHistorico && <CheckinCheckoutHistoricoCard enabled={canSeeCheckinHistorico} />}
     </div>
   );
 };

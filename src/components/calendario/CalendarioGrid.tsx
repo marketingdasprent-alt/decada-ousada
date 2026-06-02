@@ -52,29 +52,32 @@ export const CalendarioGrid: React.FC<Props> = ({
   const startX = useRef(0);
   const startWidth = useRef(0);
 
-  const onResizeStart = useCallback((e: React.MouseEvent) => {
-    isResizing.current = true;
-    startX.current = e.clientX;
-    startWidth.current = panelWidth;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
+  const onResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      isResizing.current = true;
+      startX.current = e.clientX;
+      startWidth.current = panelWidth;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
 
-    const onMouseMove = (ev: MouseEvent) => {
-      if (!isResizing.current) return;
-      const delta = startX.current - ev.clientX;
-      const next = Math.min(520, Math.max(200, startWidth.current + delta));
-      setPanelWidth(next);
-    };
-    const onMouseUp = () => {
-      isResizing.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-  }, [panelWidth]);
+      const onMouseMove = (ev: MouseEvent) => {
+        if (!isResizing.current) return;
+        const delta = startX.current - ev.clientX;
+        const next = Math.min(520, Math.max(200, startWidth.current + delta));
+        setPanelWidth(next);
+      };
+      const onMouseUp = () => {
+        isResizing.current = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    },
+    [panelWidth]
+  );
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -88,8 +91,9 @@ export const CalendarioGrid: React.FC<Props> = ({
     day = addDays(day, 1);
   }
 
+  // Eventos slot aparecem só no Relatório de Eventos, não no grid do calendário.
   const getEventsForDay = (d: Date) =>
-    eventos.filter((ev) => isSameDay(new Date(ev.data_inicio), d));
+    eventos.filter((ev) => ev.tipo !== 'slot' && isSameDay(new Date(ev.data_inicio), d));
 
   const today = new Date();
 

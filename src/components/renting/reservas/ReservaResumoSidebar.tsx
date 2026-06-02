@@ -231,7 +231,9 @@ export const ReservaResumoSidebar: React.FC<ReservaResumoSidebarProps> = ({
                 inputMode="decimal"
                 value={precoUnitInput}
                 onChange={(e) => handlePrecoUnitarioChange(e.target.value)}
-                onFocus={() => { inputFocused.current = true; }}
+                onFocus={() => {
+                  inputFocused.current = true;
+                }}
                 onBlur={handlePrecoBlur}
                 disabled={!dias}
                 placeholder="0,00"

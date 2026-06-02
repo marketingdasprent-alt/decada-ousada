@@ -96,7 +96,14 @@ function groupRenting(rows: any[]): CheckinCheckoutSession[] {
               motorista_cartao_frota: null,
               motorista_caucao: null,
               viatura: cr.viaturas
-                ? { id: cr.viaturas.id, matricula: cr.viaturas.matricula, marca: cr.viaturas.marca, modelo: cr.viaturas.modelo, valor_mensal: null, limite_kms: null }
+                ? {
+                    id: cr.viaturas.id,
+                    matricula: cr.viaturas.matricula,
+                    marca: cr.viaturas.marca,
+                    modelo: cr.viaturas.modelo,
+                    valor_mensal: null,
+                    limite_kms: null,
+                  }
                 : null,
             }
           : null,

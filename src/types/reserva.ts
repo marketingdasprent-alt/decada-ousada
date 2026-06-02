@@ -38,12 +38,13 @@ export const RENOVACAO_OPCAO_LABELS: Record<RenovacaoOpcao, string> = {
   intervalo_dias: 'A cada intervalo específico de dias',
 };
 
-export const RESERVA_REGIMES = ['rent_a_car', 'tvde'] as const;
+export const RESERVA_REGIMES = ['rent_a_car', 'tvde', 'slot'] as const;
 export type ReservaRegime = (typeof RESERVA_REGIMES)[number];
 
 export const REGIME_LABELS: Record<ReservaRegime, string> = {
   rent_a_car: 'Rent-a-Car',
   tvde: 'TVDE',
+  slot: 'Slot',
 };
 
 export type Reserva = {
@@ -62,8 +63,10 @@ export type Reserva = {
   condutor_id: string | null;
   condutor_nome: string | null;
   estado: ReservaEstado;
-  /** rent_a_car ou tvde — determina o regime de aluguer e a taxa de IVA. */
+  /** rent_a_car, tvde ou slot — determina o regime de aluguer e a taxa de IVA. */
   regime: ReservaRegime;
+  /** Valor semanal cobrado ao motorista no regime slot (por carro). */
+  slot_valor_semanal: number | null;
   valor_total: number | null;
   observacoes: string | null;
   observacoes_internas: string | null;

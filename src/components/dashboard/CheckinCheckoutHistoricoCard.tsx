@@ -33,8 +33,7 @@ function ThumbnailImage({ path }: { path: string }) {
     };
   }, [path]);
 
-  if (!src)
-    return <Skeleton className="w-full h-full rounded-md" />;
+  if (!src) return <Skeleton className="w-full h-full rounded-md" />;
 
   return <img src={src} className="w-full h-full object-cover" alt="" />;
 }
@@ -80,12 +79,18 @@ function SessionRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1 mb-0.5 flex-wrap">
           {hasCheckin && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20">
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20"
+            >
               <LogIn className="h-2.5 w-2.5 mr-0.5" /> Check-in
             </Badge>
           )}
           {hasCheckout && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-400 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20">
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 border-green-400 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20"
+            >
               <LogOut className="h-2.5 w-2.5 mr-0.5" /> Check-out
             </Badge>
           )}
@@ -96,7 +101,9 @@ function SessionRow({
           )}
         </div>
         <p className="text-sm font-medium truncate leading-tight">
-          {nomeCondutor ?? <span className="text-muted-foreground italic">Condutor desconhecido</span>}
+          {nomeCondutor ?? (
+            <span className="text-muted-foreground italic">Condutor desconhecido</span>
+          )}
         </p>
         <p className="text-xs text-muted-foreground">{dataFormatada}</p>
       </div>
@@ -149,8 +156,7 @@ export const CheckinCheckoutHistoricoCard: React.FC<Props> = ({ enabled }) => {
                 </div>
               ))}
               <div className="flex items-center justify-center py-2 text-xs text-muted-foreground gap-2">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                A carregar...
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />A carregar...
               </div>
             </div>
           ) : sessions.length === 0 ? (
@@ -165,11 +171,7 @@ export const CheckinCheckoutHistoricoCard: React.FC<Props> = ({ enabled }) => {
               <ScrollArea className={showAll ? 'max-h-[520px]' : undefined}>
                 <div className="space-y-2 pr-1">
                   {visibleSessions.map((s) => (
-                    <SessionRow
-                      key={s.key}
-                      session={s}
-                      onClick={() => setSelectedSession(s)}
-                    />
+                    <SessionRow key={s.key} session={s} onClick={() => setSelectedSession(s)} />
                   ))}
                 </div>
               </ScrollArea>
@@ -193,7 +195,9 @@ export const CheckinCheckoutHistoricoCard: React.FC<Props> = ({ enabled }) => {
 
       <CheckinCheckoutDetailDialog
         open={selectedSession !== null}
-        onOpenChange={(o) => { if (!o) setSelectedSession(null); }}
+        onOpenChange={(o) => {
+          if (!o) setSelectedSession(null);
+        }}
         session={selectedSession}
       />
     </>

@@ -69,12 +69,15 @@ export const CONTRATO_RENOVACAO_OPCAO_LABELS: Record<ContratoRenovacaoOpcao, str
 // ============================================================
 // Regime (rent-a-car vs TVDE)
 // ============================================================
-export const CONTRATO_REGIMES = ['rent_a_car', 'tvde'] as const;
+// Nota: 'slot' existe no enum partilhado mas NÃO gera contratos_renting
+// (a reserva slot fica só como reserva). Mantido aqui por consistência do enum.
+export const CONTRATO_REGIMES = ['rent_a_car', 'tvde', 'slot'] as const;
 export type ContratoRegime = (typeof CONTRATO_REGIMES)[number];
 
 export const CONTRATO_REGIME_LABELS: Record<ContratoRegime, string> = {
   rent_a_car: 'Rent-a-Car',
   tvde: 'TVDE',
+  slot: 'Slot',
 };
 
 // ============================================================
