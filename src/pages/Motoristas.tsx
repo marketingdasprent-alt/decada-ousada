@@ -302,13 +302,16 @@ export default function Motoristas() {
   // Combined filtering and sorting logic
   const filteredMotoristas = useMemo(() => {
     const searchNormalized = normalizeString(searchTerm);
+    // Pesquisa por palavras: cada palavra do termo tem de aparecer no nome
+    const searchWords = searchNormalized.split(' ').filter(Boolean);
 
     const result = motoristas.filter((m) => {
       // Text search (code, name, NIF, phone)
+      const nomeNorm = normalizeString(m.nome);
       const matchesSearch =
         searchTerm.trim() === '' ||
         m.codigo.toString().includes(searchTerm) ||
-        normalizeString(m.nome).includes(searchNormalized) ||
+        searchWords.every((w) => nomeNorm.includes(w)) ||
         (m.nif && m.nif.includes(searchTerm)) ||
         (m.bolt_id && m.bolt_id.includes(searchTerm)) ||
         (m.uber_uuid && m.uber_uuid.includes(searchTerm)) ||

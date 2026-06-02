@@ -86,7 +86,7 @@ export default function MotoristaDetalhe() {
     { id: 'dados', label: 'Dados', icon: User },
     { id: 'documentos', label: 'Documentos', icon: FileText },
     { id: 'financeiro', label: 'Financeiro', icon: Wallet },
-    { id: 'recibos', label: 'Recibos', icon: Receipt },
+    { id: 'recibos', label: 'Resumos', icon: Receipt },
     { id: 'viaturas', label: 'Viaturas', icon: Car },
     { id: 'contratos', label: 'Contratos', icon: FileSignature },
     { id: 'danos', label: 'Danos', icon: AlertTriangle },
