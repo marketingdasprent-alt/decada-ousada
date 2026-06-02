@@ -29,6 +29,7 @@ import {
   uploadDocumentToStorage,
 } from '@/utils/generateDocumentFromTemplate';
 import { useEmpresas } from '@/hooks/useEmpresas';
+import { matchesSearch } from '@/lib/utils';
 
 interface Motorista {
   id: string;
@@ -131,8 +132,8 @@ export const GenerateDocumentsDialog = ({
     } else {
       const filtered = motoristas.filter(
         (m) =>
-          m.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (m.email && m.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          matchesSearch(m.nome, searchTerm) ||
+          matchesSearch(m.email, searchTerm) ||
           (m.nif && m.nif.includes(searchTerm))
       );
       setFilteredMotoristas(filtered);
@@ -270,26 +271,13 @@ export const GenerateDocumentsDialog = ({
       );
 
       let successCount = 0;
-      // Vários documentos juntam-se num único PDF (e num único trabalho de impressão):
-      // evita o bloqueio de pop-ups de abrir vários separadores e garante que cada
-      // documento começa numa folha nova mesmo em impressão frente-e-verso.
-      const isMultiple = templatesToGenerate.length > 1;
+      // Para impressão cada documento abre o seu próprio diálogo; combinação só para download
+      const isMultiple = templatesToGenerate.length > 1 && action === 'download';
 
+      // Quando múltiplos downloads, criar um PDF combinado onde todos os documentos são adicionados
       const combinedPdf = isMultiple
         ? new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
         : null;
-
-      // Empurra o próximo documento para uma folha nova: se o anterior terminou em
-      // página ímpar, insere uma página em branco. Em frente-e-verso essa página fica
-      // no verso do documento anterior, evitando que a declaração saia atrás do contrato.
-      const ensureNewSheet = () => {
-        if (!combinedPdf) return;
-        // Exclui a página inicial em branco (removida no fim).
-        const printedSoFar = combinedPdf.getNumberOfPages() - 1;
-        if (printedSoFar > 0 && printedSoFar % 2 === 1) {
-          combinedPdf.addPage();
-        }
-      };
 
       const docParams = {
         data_inicio: activeMotorista.data_contratacao || today,
@@ -373,7 +361,6 @@ export const GenerateDocumentsDialog = ({
       for (const template of contratoTemplates) {
         setCurrentGenerating(template.id);
         try {
-          ensureNewSheet();
           await generateDocumentFromTemplate({
             templateId: template.id,
             motoristaData,
@@ -395,7 +382,6 @@ export const GenerateDocumentsDialog = ({
       for (const template of otherTemplates) {
         setCurrentGenerating(template.id);
         try {
-          ensureNewSheet();
           await generateDocumentFromTemplate({
             templateId: template.id,
             motoristaData,
@@ -413,23 +399,12 @@ export const GenerateDocumentsDialog = ({
         }
       }
 
-      // Múltiplos documentos: apagar a página 1 em branco e imprimir/descarregar o PDF combinado
+      // Quando múltiplos downloads: apagar página 1 em branco e guardar PDF combinado
       if (isMultiple && combinedPdf && successCount > 0) {
         combinedPdf.deletePage(1);
         const today_str = new Date().toISOString().split('T')[0].replace(/-/g, '');
         const fileName = `Documentos_${activeMotorista.nome}_${today_str}.pdf`;
-
-        if (action === 'print') {
-          combinedPdf.autoPrint();
-          const win = window.open(combinedPdf.output('bloburl'), '_blank');
-          if (!win) {
-            // Pop-up bloqueado: descarregar como alternativa para não perder o documento
-            combinedPdf.save(fileName);
-            toast.info('Pop-up bloqueado — documentos descarregados em vez de impressos.');
-          }
-        } else {
-          combinedPdf.save(fileName);
-        }
+        combinedPdf.save(fileName);
       }
 
       setCurrentGenerating(null);
