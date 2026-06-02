@@ -36,7 +36,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { format, subDays } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, matchesSearch } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -326,14 +326,13 @@ export const UberDataTab: React.FC = () => {
         if (selectedStatus === 'completed' && t.status !== 'completed') return false;
       }
       if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        const driverName = getDriverName(t, driverNameMap, uberDriversMap).name.toLowerCase();
+        const driverName = getDriverName(t, driverNameMap, uberDriversMap).name;
         const matches =
-          driverName.includes(term) ||
-          (t.trip_reference || '').toLowerCase().includes(term) ||
-          (t.uber_driver_id || '').toLowerCase().includes(term) ||
-          (t.uber_vehicle_id || '').toLowerCase().includes(term) ||
-          (t.transaction_type || '').toLowerCase().includes(term);
+          matchesSearch(driverName, searchTerm) ||
+          matchesSearch(t.trip_reference, searchTerm) ||
+          matchesSearch(t.uber_driver_id, searchTerm) ||
+          matchesSearch(t.uber_vehicle_id, searchTerm) ||
+          matchesSearch(t.transaction_type, searchTerm);
         if (!matches) return false;
       }
       return true;

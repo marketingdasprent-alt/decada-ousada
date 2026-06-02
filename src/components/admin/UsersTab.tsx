@@ -50,6 +50,7 @@ import {
   Plus,
 } from 'lucide-react';
 import type { Cargo } from '@/hooks/useRBAC';
+import { matchesSearch } from '@/lib/utils';
 
 interface Profile {
   id: string;
@@ -163,9 +164,8 @@ export const UsersTab = () => {
 
     // Filtro por texto
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
       result = result.filter(
-        (p) => p.nome?.toLowerCase().includes(term) || p.email?.toLowerCase().includes(term)
+        (p) => matchesSearch(p.nome, searchTerm) || matchesSearch(p.email, searchTerm)
       );
     }
 

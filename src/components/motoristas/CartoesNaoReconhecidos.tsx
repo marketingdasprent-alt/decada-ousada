@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Loader2, Search, Link2, CreditCard, Fuel, Zap, ChevronsUpDown } from 'lucide-react';
+import { matchesSearch } from '@/lib/utils';
 
 type Plataforma = 'bp' | 'repsol' | 'edp';
 
@@ -135,9 +136,8 @@ export const CartoesNaoReconhecidos: React.FC<Props> = ({ open, onOpenChange, on
 
   const filtered = useMemo(() => {
     if (!search) return cartoes;
-    const t = normalize(search);
     return cartoes.filter(
-      (c) => c.card_number.toLowerCase().includes(t) || normalize(c.nome || '').includes(t)
+      (c) => matchesSearch(c.card_number, search) || matchesSearch(c.nome, search)
     );
   }, [cartoes, search]);
 

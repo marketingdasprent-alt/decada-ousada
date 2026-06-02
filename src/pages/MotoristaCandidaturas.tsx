@@ -55,7 +55,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { DocumentPreviewPanel } from '@/components/motoristas/DocumentPreviewPanel';
 import { GenerateDocumentsDialog } from '@/components/motoristas/GenerateDocumentsDialog';
-import { cn, normalizeString } from '@/lib/utils';
+import { cn, matchesSearch } from '@/lib/utils';
 
 interface Candidatura {
   id: string;
@@ -161,15 +161,14 @@ const MotoristaCandidaturas: React.FC = () => {
   };
 
   const filteredCandidaturas = candidaturas.filter((c) => {
-    const term = normalizeString(searchTerm);
-    const matchesSearch =
-      normalizeString(c.nome).includes(term) ||
-      normalizeString(c.email).includes(term) ||
-      (c.nif && normalizeString(c.nif).includes(term));
+    const matchesSearchResult =
+      matchesSearch(c.nome, searchTerm) ||
+      matchesSearch(c.email, searchTerm) ||
+      (c.nif && matchesSearch(c.nif, searchTerm));
 
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearchResult && matchesStatus;
   });
 
   const stats = {

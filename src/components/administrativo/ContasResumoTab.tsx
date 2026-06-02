@@ -49,7 +49,10 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Settings,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { generateFinanceiroPDF } from '@/utils/generateFinanceiroPDF';
 import { generateContasConsolidadoPDF } from '@/utils/generateContasConsolidadoPDF';
 import { useThemedLogo } from '@/hooks/useThemedLogo';
@@ -62,7 +65,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 import { useIsMobile } from '@/hooks/use-mobile';
-import { cn, normalizeString } from '@/lib/utils';
+import { cn, matchesSearch } from '@/lib/utils';
 
 interface MotoristaResumo {
   /** id único estável por linha — usar SEMPRE para selectedIds, react keys, filtros.
@@ -113,6 +116,31 @@ export function ContasResumoTab() {
   const [rendaAluguerSemana, setRendaAluguerSemana] = useState(0);
   const logoSrc = useThemedLogo();
 
+  // Maps for extra print data and filters
+  const [gestorMap, setGestorMap] = useState<Record<string, string>>({});
+  const [matriculaMap, setMatriculaMap] = useState<Record<string, string>>({});
+  const [dataContratacaoMap, setDataContratacaoMap] = useState<Record<string, string>>({});
+  const [statusAtivoMap, setStatusAtivoMap] = useState<Record<string, boolean>>({});
+
+  // Print settings (persisted)
+  const PRINT_KEY = 'contas_print_settings';
+  const [printSettings, setPrintSettings] = useState(() => {
+    try {
+      return {
+        ...{ orientacao: 'portrait', mostrarGestor: false, mostrarMatricula: false },
+        ...JSON.parse(localStorage.getItem(PRINT_KEY) || '{}'),
+      };
+    } catch {
+      return { orientacao: 'portrait', mostrarGestor: false, mostrarMatricula: false };
+    }
+  });
+  const [showPrintSettings, setShowPrintSettings] = useState(false);
+  const updatePrintSetting = (key: string, val: any) => {
+    const next = { ...printSettings, [key]: val };
+    setPrintSettings(next);
+    localStorage.setItem(PRINT_KEY, JSON.stringify(next));
+  };
+
   // Sorting
   type SortField =
     | 'driver_name'
@@ -130,6 +158,8 @@ export function ContasResumoTab() {
   const [filterRecibo, setFilterRecibo] = useState<'todos' | 'verde' | 'nao_verde'>('todos');
   // Filter: saldo
   const [filterSaldo, setFilterSaldo] = useState<'todos' | 'negativos' | 'positivos'>('todos');
+  // Filter: gestor
+  const [filterGestor, setFilterGestor] = useState<string>('todos');
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -525,7 +555,9 @@ export function ContasResumoTab() {
       // 2. Buscar todos motoristas_ativos para matching (Nomes e IDs de plataforma)
       const { data: todosMotoristas } = await supabase
         .from('motoristas_ativos')
-        .select('id, nome, recibo_verde, uber_uuid, bolt_id');
+        .select(
+          'id, nome, recibo_verde, uber_uuid, bolt_id, gestor_responsavel, data_contratacao, status_ativo, created_at'
+        );
 
       // Mapa: uber_uuid -> motorista_id
       const uberIdMap: Record<string, string> = {};
@@ -617,7 +649,7 @@ export function ContasResumoTab() {
       // 4d-bis. Buscar valor de aluguer de viatura (bulk) para todos os motoristas activos
       const viaturasQuery = supabase
         .from('motorista_viaturas')
-        .select('motorista_id, viaturas(valor_aluguer)')
+        .select('motorista_id, viaturas(valor_aluguer, matricula)')
         .eq('status', 'ativo');
 
       // 4e. Buscar resumos semanais Bolt (dados CSV) cujo intervalo intersecte a semana seleccionada
@@ -696,6 +728,26 @@ export function ContasResumoTab() {
 
       // Guardar lista de motoristas para o dialog de importação
       setMotoristasList((todosMotoristas || []).map((m) => ({ id: m.id, nome: m.nome })));
+
+      // Mapas auxiliares para impressão (gestor + matrícula) e filtros
+      const gMap: Record<string, string> = {};
+      const dcMap: Record<string, string> = {};
+      const saMap: Record<string, boolean> = {};
+      (todosMotoristas || []).forEach((m: any) => {
+        if (m.gestor_responsavel) gMap[m.id] = m.gestor_responsavel;
+        // Usar data_contratacao se disponível, senão usar created_at (sempre preenchido)
+        dcMap[m.id] = m.data_contratacao || m.created_at;
+        saMap[m.id] = m.status_ativo !== false;
+      });
+      setGestorMap(gMap);
+      setDataContratacaoMap(dcMap);
+      setStatusAtivoMap(saMap);
+      const mMap: Record<string, string> = {};
+      (viaturasResult.data || []).forEach((mv: any) => {
+        if (mv.motorista_id && (mv.viaturas as any)?.matricula)
+          mMap[mv.motorista_id] = (mv.viaturas as any).matricula;
+      });
+      setMatriculaMap(mMap);
 
       // Mapa: motorista_id → valor semanal de aluguer de viatura
       const aluguerByMotorista: Record<string, number> = {};
@@ -1126,12 +1178,26 @@ export function ContasResumoTab() {
   const filteredResumos = useMemo(() => {
     let result = resumos.filter((r) => {
       if (isCompanyName(r.driver_name)) return false;
-      if (searchTerm && !normalizeString(r.driver_name).includes(normalizeString(searchTerm)))
-        return false;
+      // Excluir inativos (motoristas com status_ativo = false no CRM)
+      if (r.motorista_id && statusAtivoMap[r.motorista_id] === false) return false;
+      if (searchTerm && !matchesSearch(r.driver_name, searchTerm)) return false;
       if (filterRecibo === 'verde' && !r.recibo_verde) return false;
       if (filterRecibo === 'nao_verde' && r.recibo_verde) return false;
-      if (filterSaldo === 'negativos' && r.liquido >= 0) return false;
+      if (filterSaldo === 'negativos') {
+        if (r.liquido >= 0) return false;
+        // Sem receitas = novo ou sem viagens esta semana, não é um "negativo real"
+        if (r.total_faturado === 0) return false;
+        // Entrou esta semana = ainda não tem semana completa
+        if (r.motorista_id && dataContratacaoMap[r.motorista_id]) {
+          const dc = new Date(dataContratacaoMap[r.motorista_id]);
+          if (dc >= weekStart && dc <= weekEnd) return false;
+        }
+      }
       if (filterSaldo === 'positivos' && r.liquido < 0) return false;
+      if (filterGestor !== 'todos') {
+        const gestor = r.motorista_id ? gestorMap[r.motorista_id] || '' : '';
+        if (gestor !== filterGestor) return false;
+      }
       return true;
     });
     result = [...result].sort((a, b) => {
@@ -1144,7 +1210,20 @@ export function ContasResumoTab() {
       return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
     return result;
-  }, [resumos, searchTerm, filterRecibo, sortField, sortDir]);
+  }, [
+    resumos,
+    searchTerm,
+    filterRecibo,
+    filterSaldo,
+    filterGestor,
+    gestorMap,
+    dataContratacaoMap,
+    statusAtivoMap,
+    weekStart,
+    weekEnd,
+    sortField,
+    sortDir,
+  ]);
 
   // Totais gerais
   const totais = useMemo(() => {
@@ -1176,6 +1255,7 @@ export function ContasResumoTab() {
   const handlePrintAll = async () => {
     const list = filteredResumos;
     if (list.length === 0) return;
+    setShowPrintSettings(false);
     let logoUrl = '';
     try {
       const res = await fetch('/Logo.png');
@@ -1196,26 +1276,49 @@ export function ContasResumoTab() {
     const totalLiquido = list.reduce((s, r) => s + r.liquido, 0);
     const totalAluguer = list.reduce((s, r) => s + r.aluguer, 0);
     const totalCombust = list.reduce((s, r) => s + r.combustivel, 0);
+    const orientation = printSettings.orientacao === 'landscape' ? 'landscape' : 'portrait';
+
+    const extraCols = [
+      printSettings.mostrarMatricula ? '<th>Matrícula</th>' : '',
+      printSettings.mostrarGestor ? '<th>Gestor</th>' : '',
+    ].join('');
+
     const rows = list
-      .map(
-        (r) => `<tr>
-      <td>${r.driver_name}</td>
-      <td style="text-align:right">${fmtEur(r.total_faturado)}</td>
-      <td style="text-align:right">${fmtEur(r.combustivel)}</td>
-      <td style="text-align:right">${fmtEur(r.portagens)}</td>
-      <td style="text-align:right">${fmtEur(r.reparacoes)}</td>
-      <td style="text-align:right">${fmtEur(r.outros_custos)}</td>
-      <td style="text-align:right">${fmtEur(r.aluguer)}</td>
-      <td style="text-align:right;font-weight:600">${fmtEur(r.liquido)}</td>
-    </tr>`
-      )
+      .map((r) => {
+        const extraTds = [
+          printSettings.mostrarMatricula
+            ? `<td>${r.motorista_id ? matriculaMap[r.motorista_id] || '—' : '—'}</td>`
+            : '',
+          printSettings.mostrarGestor
+            ? `<td>${r.motorista_id ? gestorMap[r.motorista_id] || '—' : '—'}</td>`
+            : '',
+        ].join('');
+        const liquidoColor = r.liquido < 0 ? '#dc2626' : '#15803d';
+        return `<tr>
+        <td style="font-weight:500">${r.driver_name}</td>
+        <td style="text-align:right">${fmtEur(r.total_faturado)}</td>
+        <td style="text-align:right;color:#16a34a">${fmtEur(r.combustivel)}</td>
+        <td style="text-align:right;color:#16a34a">${fmtEur(r.portagens)}</td>
+        <td style="text-align:right;color:#16a34a">${fmtEur(r.reparacoes)}</td>
+        <td style="text-align:right;color:#16a34a">${fmtEur(r.outros_custos)}</td>
+        <td style="text-align:right;color:#16a34a">${fmtEur(r.aluguer)}</td>
+        ${extraTds}
+        <td style="text-align:right;font-weight:700;color:${liquidoColor}">${fmtEur(r.liquido)}</td>
+      </tr>`;
+      })
       .join('');
+
+    const footerExtras = [
+      printSettings.mostrarMatricula ? '<td></td>' : '',
+      printSettings.mostrarGestor ? '<td></td>' : '',
+    ].join('');
+
     const w = window.open('', '_blank');
     if (!w) return;
-    w.document
-      .write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Resumos Semanais — WeGest</title><link rel="icon" href="${logoUrl}" type="image/png">
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>Resumos Semanais — WeGest</title>
     <style>
-      *{margin:0;padding:0;box-sizing:border-box}
+      *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
       body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#1a1a1a;background:white}
       .page{padding:24px 32px}
       .header{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:2px solid #e5e7eb;margin-bottom:20px}
@@ -1224,19 +1327,19 @@ export function ContasResumoTab() {
       .header-title h1{font-size:18px;font-weight:700;color:#111827}
       .header-title p{font-size:11px;color:#6b7280;margin-top:2px}
       .header-right{text-align:right;font-size:10px;color:#6b7280;line-height:1.8}
-      .stats{display:flex;gap:12px;margin-bottom:20px}
-      .stat{border:1px solid #e5e7eb;border-radius:8px;padding:10px 16px;min-width:100px}
-      .stat .lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6b7280}
-      .stat .val{font-size:16px;font-weight:700;color:#111827;margin-top:2px}
+      .stats{display:flex;gap:10px;margin-bottom:20px}
+      .stat{border-radius:8px;padding:10px 16px;min-width:90px;color:#fff}
+      .stat .lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;opacity:.85}
+      .stat .val{font-size:15px;font-weight:700;margin-top:2px}
       table{width:100%;border-collapse:collapse}
-      thead th{background:#f9fafb;border-top:1px solid #e5e7eb;border-bottom:2px solid #d1d5db;padding:8px 10px;text-align:left;font-weight:600;color:#374151;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em}
+      thead th{background:#f1f5f9;border-bottom:2px solid #cbd5e1;padding:7px 9px;text-align:left;font-weight:600;color:#374151;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
       thead th.r{text-align:right}
-      tbody td{border-bottom:1px solid #f3f4f6;padding:7px 10px}
-      tbody tr:nth-child(even) td{background:#f9fafb}
-      tfoot td{border-top:2px solid #d1d5db;padding:8px 10px;font-weight:700}
+      tbody td{border-bottom:1px solid #f1f5f9;padding:6px 9px;font-size:11px}
+      tbody tr:nth-child(even) td{background:#f8fafc}
+      tfoot td{border-top:2px solid #cbd5e1;padding:7px 9px;font-weight:700}
       tfoot td.r{text-align:right}
       .footer{margin-top:20px;padding-top:12px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;font-size:9px;color:#9ca3af}
-      @media print{body{margin:0}.page{padding:16px 20px}@page{margin:10mm}}
+      @page{size:${orientation};margin:10mm}
     </style></head><body onload="window.print()">
     <div class="page">
       <div class="header">
@@ -1247,17 +1350,18 @@ export function ContasResumoTab() {
         <div class="header-right"><div>Exportado em ${date}</div><div>${list.length} motorista(s)</div></div>
       </div>
       <div class="stats">
-        <div class="stat"><div class="lbl">Motoristas</div><div class="val">${list.length}</div></div>
-        <div class="stat"><div class="lbl">Total Faturado</div><div class="val">${fmtEur(totalFaturado)}</div></div>
-        <div class="stat"><div class="lbl">Líquido</div><div class="val">${fmtEur(totalLiquido)}</div></div>
-        <div class="stat"><div class="lbl">Aluguer</div><div class="val">${fmtEur(totalAluguer)}</div></div>
-        <div class="stat"><div class="lbl">Combustível</div><div class="val">${fmtEur(totalCombust)}</div></div>
+        <div class="stat" style="background:#6366f1"><div class="lbl">Motoristas</div><div class="val">${list.length}</div></div>
+        <div class="stat" style="background:#22c55e"><div class="lbl">Total Faturado</div><div class="val">${fmtEur(totalFaturado)}</div></div>
+        <div class="stat" style="background:${totalLiquido >= 0 ? '#2563eb' : '#ef4444'}"><div class="lbl">Líquido</div><div class="val">${fmtEur(totalLiquido)}</div></div>
+        <div class="stat" style="background:#8b5cf6"><div class="lbl">Aluguer</div><div class="val">${fmtEur(totalAluguer)}</div></div>
+        <div class="stat" style="background:#f59e0b"><div class="lbl">Combustível</div><div class="val">${fmtEur(totalCombust)}</div></div>
       </div>
       <table>
         <thead><tr>
-          <th>Motorista</th><th class="r">Faturado</th><th class="r">Combustível</th>
+          <th>Motorista</th>
+          <th class="r">Faturado</th><th class="r">Combustível</th>
           <th class="r">Portagens</th><th class="r">Reparações</th><th class="r">Outros</th>
-          <th class="r">Aluguer</th><th class="r">Líquido</th>
+          <th class="r">Aluguer</th>${extraCols}<th class="r">Líquido</th>
         </tr></thead>
         <tbody>${rows}</tbody>
         <tfoot><tr>
@@ -1268,10 +1372,11 @@ export function ContasResumoTab() {
           <td class="r">${fmtEur(list.reduce((s, r) => s + r.reparacoes, 0))}</td>
           <td class="r">${fmtEur(list.reduce((s, r) => s + r.outros_custos, 0))}</td>
           <td class="r">${fmtEur(totalAluguer)}</td>
+          ${footerExtras}
           <td class="r">${fmtEur(totalLiquido)}</td>
         </tr></tfoot>
       </table>
-      <div class="footer"><span>WeGest — Sistema de Gestão de Frotas</span><span>Gerado automaticamente em ${date}</span></div>
+      <div class="footer"><span>WeGest — Sistema de Gestão de Frotas</span><span>${date}</span></div>
     </div></body></html>`);
     w.document.close();
   };
@@ -1377,10 +1482,64 @@ export function ContasResumoTab() {
           </div>
 
           <div className="flex items-center gap-2 sm:ml-auto flex-shrink-0">
-            <Button variant="outline" size="sm" onClick={handlePrintAll}>
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir
-            </Button>
+            <div className="relative">
+              <div className="flex">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrintAll}
+                  className="rounded-r-none border-r-0"
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Imprimir
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-l-none px-2"
+                  onClick={() => setShowPrintSettings((v) => !v)}
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              {showPrintSettings && (
+                <div className="absolute right-0 top-full mt-1 z-50 bg-card border rounded-lg shadow-lg p-4 w-64 space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Opções de impressão
+                  </p>
+                  <div className="space-y-2">
+                    {[
+                      { key: 'mostrarGestor', label: 'Gestor Responsável' },
+                      { key: 'mostrarMatricula', label: 'Matrícula' },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="flex items-center gap-2">
+                        <Switch
+                          id={`ps-${key}`}
+                          checked={printSettings[key]}
+                          onCheckedChange={(v) => updatePrintSetting(key, v)}
+                        />
+                        <Label htmlFor={`ps-${key}`} className="text-sm cursor-pointer">
+                          {label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-1 pt-1">
+                    {(['portrait', 'landscape'] as const).map((o) => (
+                      <Button
+                        key={o}
+                        size="sm"
+                        variant={printSettings.orientacao === o ? 'default' : 'outline'}
+                        className="flex-1 text-xs h-7"
+                        onClick={() => updatePrintSetting('orientacao', o)}
+                      >
+                        {o === 'portrait' ? 'Vertical' : 'Horizontal'}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <Button variant="outline" size="sm" onClick={handleExportAll}>
               <FileDown className="h-4 w-4 mr-2" />
               Exportar Excel
@@ -1434,11 +1593,29 @@ export function ContasResumoTab() {
             <span className="w-1.5 h-1.5 rounded-full bg-current" />
             Líquido Negativo
           </button>
-          {(filterRecibo !== 'todos' || filterSaldo !== 'todos') && (
+          {/* Filtro por gestor */}
+          {Object.keys(gestorMap).length > 0 && (
+            <Select value={filterGestor} onValueChange={setFilterGestor}>
+              <SelectTrigger className="h-7 text-xs w-auto min-w-[140px] border-border">
+                <SelectValue placeholder="Gestor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os gestores</SelectItem>
+                {[...new Set(Object.values(gestorMap))].sort().map((g) => (
+                  <SelectItem key={g} value={g}>
+                    {g}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {(filterRecibo !== 'todos' || filterSaldo !== 'todos' || filterGestor !== 'todos') && (
             <button
               onClick={() => {
                 setFilterRecibo('todos');
                 setFilterSaldo('todos');
+                setFilterGestor('todos');
               }}
               className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-1"
             >
@@ -1629,7 +1806,7 @@ export function ContasResumoTab() {
                         </TableCell>
                         <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
                           {resumo.aluguer > 0 ? (
-                            <span className="font-medium text-purple-600">
+                            <span className="font-medium text-green-600">
                               {formatCurrency(resumo.aluguer)}
                             </span>
                           ) : (
@@ -1638,7 +1815,7 @@ export function ContasResumoTab() {
                         </TableCell>
                         <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
                           {resumo.combustivel > 0 ? (
-                            <span className="font-medium text-orange-600">
+                            <span className="font-medium text-green-600">
                               {formatCurrency(resumo.combustivel)}
                             </span>
                           ) : (
@@ -1647,7 +1824,7 @@ export function ContasResumoTab() {
                         </TableCell>
                         <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
                           {resumo.portagens > 0 ? (
-                            <span className="font-medium text-green-700">
+                            <span className="font-medium text-green-600">
                               {formatCurrency(resumo.portagens)}
                             </span>
                           ) : (
@@ -1656,7 +1833,7 @@ export function ContasResumoTab() {
                         </TableCell>
                         <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
                           {resumo.outros_custos > 0 ? (
-                            <span className="font-medium text-destructive">
+                            <span className="font-medium text-green-600">
                               {formatCurrency(resumo.outros_custos)}
                             </span>
                           ) : (
@@ -1665,7 +1842,7 @@ export function ContasResumoTab() {
                         </TableCell>
                         <TableCell className="text-right" onClick={() => handleRowClick(resumo)}>
                           {resumo.reparacoes > 0 ? (
-                            <span className="font-medium text-red-600">
+                            <span className="font-medium text-green-600">
                               {formatCurrency(resumo.reparacoes)}
                             </span>
                           ) : (

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { matchesSearch } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -96,12 +97,11 @@ export default function Administrativo() {
         const term = searchTerm.toLowerCase();
         const codigoRecibo = String(recibo.codigo).padStart(4, '0');
         const codigoMotorista = String(recibo.motoristas_ativos?.codigo || '').padStart(4, '0');
-        const nomeMotorista = (recibo.motoristas_ativos?.nome || '').toLowerCase();
         const valorStr = String(recibo.valor_total || 0);
         const matches =
           codigoRecibo.includes(term.replace('#', '')) ||
           codigoMotorista.includes(term.replace('#', '')) ||
-          nomeMotorista.includes(term) ||
+          matchesSearch(recibo.motoristas_ativos?.nome, searchTerm) ||
           valorStr.includes(term);
         if (!matches) return false;
       }

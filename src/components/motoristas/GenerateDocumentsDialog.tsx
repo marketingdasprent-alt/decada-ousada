@@ -29,6 +29,7 @@ import {
   uploadDocumentToStorage,
 } from '@/utils/generateDocumentFromTemplate';
 import { useEmpresas } from '@/hooks/useEmpresas';
+import { matchesSearch } from '@/lib/utils';
 
 interface Motorista {
   id: string;
@@ -131,8 +132,8 @@ export const GenerateDocumentsDialog = ({
     } else {
       const filtered = motoristas.filter(
         (m) =>
-          m.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (m.email && m.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          matchesSearch(m.nome, searchTerm) ||
+          matchesSearch(m.email, searchTerm) ||
           (m.nif && m.nif.includes(searchTerm))
       );
       setFilteredMotoristas(filtered);

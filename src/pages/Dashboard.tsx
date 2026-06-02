@@ -62,6 +62,7 @@ import { pt } from 'date-fns/locale';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import { usePermissions } from '@/hooks/usePermissions';
 import { CheckinCheckoutHistoricoCard } from '@/components/dashboard/CheckinCheckoutHistoricoCard';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -508,7 +509,7 @@ const Dashboard = () => {
           </Button>
         ))}
         <Select value={gestorFiltro} onValueChange={setGestorFiltro}>
-          <SelectTrigger className="h-9 w-44 gap-1.5">
+          <SelectTrigger className="h-9 w-auto gap-1.5">
             <UserCheck className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <SelectValue placeholder="Todos os Gestores" />
           </SelectTrigger>
@@ -531,6 +532,7 @@ const Dashboard = () => {
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </Button>
+        <ThemeToggle />
       </StickyPageHeader>
 
       {loading ? (
