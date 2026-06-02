@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 
 import type { ClienteComDocumentos } from '@/types/cliente';
 import type { Motorista } from '@/types/motorista';
+import type { ReservaRegime } from '@/types/reserva';
 
 const normalizeForSearch = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -42,8 +43,9 @@ interface CondutoresFieldsShape extends FieldValues {
 }
 
 interface CondutoresFieldsProps {
-  /** Regime do contrato/reserva — bifurca a lista de entidades. */
-  regime: 'rent_a_car' | 'tvde';
+  /** Regime do contrato/reserva — bifurca a lista de entidades.
+   *  rent_a_car → clientes; tvde e slot → motoristas. */
+  regime: ReservaRegime;
   clientes: ClienteComDocumentos[];
   motoristas?: Motorista[];
   /** Label para o botão de "X também conduz" (rent-a-car). */
@@ -64,7 +66,8 @@ export const CondutoresFields: React.FC<CondutoresFieldsProps> = ({
 }) => {
   const form = useFormContext<CondutoresFieldsShape>();
   const [adicionarOpen, setAdicionarOpen] = useState(false);
-  const isTvde = regime === 'tvde';
+  // tvde e slot usam motoristas; rent_a_car usa clientes.
+  const isTvde = regime !== 'rent_a_car';
 
   const clienteId = form.watch('cliente_id');
   const cliente = clienteId ? (clientes.find((c) => c.id === clienteId) ?? null) : null;

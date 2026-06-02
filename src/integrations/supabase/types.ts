@@ -6068,7 +6068,7 @@ export type Database = {
           condutor_nome: string | null
           created_at: string
           created_by: string | null
-          data_fim: string
+          data_fim: string | null
           data_inicio: string
           deleted_at: string | null
           desconto: number
@@ -6091,6 +6091,7 @@ export type Database = {
           regime: Database["public"]["Enums"]["contrato_regime_enum"]
           renovacao_intervalo_dias: number | null
           renovacao_opcao: string | null
+          slot_valor_semanal: number | null
           tarifa_id: string | null
           tarifa_nome: string | null
           tarifa_preco_dia: number | null
@@ -6113,7 +6114,7 @@ export type Database = {
           condutor_nome?: string | null
           created_at?: string
           created_by?: string | null
-          data_fim: string
+          data_fim?: string | null
           data_inicio: string
           deleted_at?: string | null
           desconto?: number
@@ -6136,6 +6137,7 @@ export type Database = {
           regime?: Database["public"]["Enums"]["contrato_regime_enum"]
           renovacao_intervalo_dias?: number | null
           renovacao_opcao?: string | null
+          slot_valor_semanal?: number | null
           tarifa_id?: string | null
           tarifa_nome?: string | null
           tarifa_preco_dia?: number | null
@@ -6158,7 +6160,7 @@ export type Database = {
           condutor_nome?: string | null
           created_at?: string
           created_by?: string | null
-          data_fim?: string
+          data_fim?: string | null
           data_inicio?: string
           deleted_at?: string | null
           desconto?: number
@@ -6181,6 +6183,7 @@ export type Database = {
           regime?: Database["public"]["Enums"]["contrato_regime_enum"]
           renovacao_intervalo_dias?: number | null
           renovacao_opcao?: string | null
+          slot_valor_semanal?: number | null
           tarifa_id?: string | null
           tarifa_nome?: string | null
           tarifa_preco_dia?: number | null
@@ -8726,7 +8729,7 @@ export type Database = {
         | "devolvido"
         | "cancelado"
       contrato_origem_enum: "sistema" | "online" | "telefone" | "balcao"
-      contrato_regime_enum: "rent_a_car" | "tvde"
+      contrato_regime_enum: "rent_a_car" | "tvde" | "slot"
       contrato_renovacao_opcao_enum:
         | "primeiro_dia_mes"
         | "mesmo_dia_cada_mes"
@@ -8890,7 +8893,7 @@ export const Constants = {
         "cancelado",
       ],
       contrato_origem_enum: ["sistema", "online", "telefone", "balcao"],
-      contrato_regime_enum: ["rent_a_car", "tvde"],
+      contrato_regime_enum: ["rent_a_car", "tvde", "slot"],
       contrato_renovacao_opcao_enum: [
         "primeiro_dia_mes",
         "mesmo_dia_cada_mes",

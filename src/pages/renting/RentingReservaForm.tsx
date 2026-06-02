@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, ArrowLeft, CalendarCheck, FileText, Loader2, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -9,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { StickyPageHeader } from '@/components/ui/StickyPageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 
 import { useClientes } from '@/hooks/useClientes';
 import { useMotoristas } from '@/hooks/useMotoristas';
@@ -29,12 +32,12 @@ import { useViaturas } from '@/hooks/useViaturas';
 import { ClienteDialog } from '@/components/renting/ClienteDialog';
 import { MotoristaDialog } from '@/components/motoristas/MotoristaDialog';
 import { ReservaDeleteConfirm } from '@/components/renting/reservas/ReservaDeleteConfirm';
+import { ContratoPrestacaoDialog } from '@/components/renting/reservas/ContratoPrestacaoDialog';
 import { ReservaResumoSidebar } from '@/components/renting/reservas/ReservaResumoSidebar';
 import {
   ReservaTabAnexos,
   type AnexoPendente,
 } from '@/components/renting/reservas/tabs/ReservaTabAnexos';
-import { ReservaTabCaixa } from '@/components/renting/reservas/tabs/ReservaTabCaixa';
 import { ReservaTabCondutores } from '@/components/renting/reservas/tabs/ReservaTabCondutores';
 import { ReservaTabGeral } from '@/components/renting/reservas/tabs/ReservaTabGeral';
 import {
@@ -65,6 +68,7 @@ const DEFAULT_VALUES: ReservaFormValues = {
   caucao_valor: null,
   kms_incluidos: null,
   km_adicional_valor: null,
+  slot_valor_semanal: null,
   is_longa_duracao: false,
   renovacao_opcao: null,
   renovacao_intervalo_dias: null,
@@ -100,7 +104,9 @@ const RentingReservaForm = () => {
   const [anexosPendentes, setAnexosPendentes] = useState<AnexoPendente[]>([]);
   const [clienteDialogOpen, setClienteDialogOpen] = useState(false);
   const [motoristaDialogOpen, setMotoristaDialogOpen] = useState(false);
+  const [prestacaoDialogOpen, setPrestacaoDialogOpen] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const adicionarAnexosPendentes = (files: File[]) => {
     setAnexosPendentes((prev) => [
@@ -170,8 +176,26 @@ const RentingReservaForm = () => {
     );
   };
 
-  /** Adiciona um motorista recém-criado à lista de condutores (TVDE). */
+  /** Adiciona um motorista recém-criado à lista de condutores (TVDE/slot). */
   const handleMotoristaCriado = (motoristaId: string) => {
+    // No regime slot: marca o motorista como slot, define-o como único
+    // condutor e actualiza a lista para aparecer no seletor de slot.
+    if (form.getValues('regime') === 'slot') {
+      void supabase
+        .from('motoristas_ativos')
+        .update({ is_slot: true })
+        .eq('id', motoristaId)
+        .then(() => queryClient.invalidateQueries({ queryKey: ['motoristas'] }));
+      const m = motoristas.find((x) => x.id === motoristaId);
+      form.setValue(
+        'condutores',
+        [{ cliente_id: null, motorista_id: motoristaId, is_principal: true }],
+        { shouldDirty: true, shouldValidate: true }
+      );
+      form.setValue('condutor_id', motoristaId, { shouldDirty: true });
+      if (m?.nome) form.setValue('condutor_nome', m.nome, { shouldDirty: true });
+      return;
+    }
     const existentes = (form.getValues('condutores') ?? []) as Array<{
       cliente_id: string | null;
       motorista_id: string | null;
@@ -206,6 +230,7 @@ const RentingReservaForm = () => {
       condutor_nome: reserva.condutor_nome ?? '',
       estado: reserva.estado,
       regime: reserva.regime,
+      slot_valor_semanal: reserva.slot_valor_semanal,
       valor_total: reserva.valor_total,
       franquia_valor: reserva.franquia_valor,
       caucao_valor: reserva.caucao_valor,
@@ -268,17 +293,18 @@ const RentingReservaForm = () => {
       motorista_id: string | null;
     }>;
     if (condutores.length === 0) return;
+    // rent_a_car usa clientes; tvde e slot usam motoristas.
     const expectedKey: 'cliente_id' | 'motorista_id' =
-      regimeWatched === 'tvde' ? 'motorista_id' : 'cliente_id';
+      regimeWatched === 'rent_a_car' ? 'cliente_id' : 'motorista_id';
     const tipoErrado = condutores.some((c) => !c[expectedKey]);
     if (!tipoErrado) return;
     form.setValue('condutores', [], { shouldDirty: true, shouldValidate: true });
     toast({
       title: 'Condutores limpos',
       description:
-        regimeWatched === 'tvde'
-          ? 'Mudaste para TVDE — os condutores são agora motoristas. Volta a adicionar.'
-          : 'Mudaste para Rent-a-car — os condutores são agora clientes. Volta a adicionar.',
+        regimeWatched === 'rent_a_car'
+          ? 'Mudaste para Rent-a-car — os condutores são agora clientes. Volta a adicionar.'
+          : 'Mudaste de regime — os condutores são agora motoristas. Volta a adicionar.',
     });
   }, [regimeWatched, form, toast]);
 
@@ -310,15 +336,18 @@ const RentingReservaForm = () => {
         estacao_entrega_id: values.estacao_entrega_id || null,
         estacao_recolha_id: values.estacao_recolha_id || null,
         data_inicio: localInputToIso(values.data_inicio),
-        data_fim: localInputToIso(values.data_fim),
+        // Slot é aberto (sem data fim); restantes regimes exigem data_fim.
+        data_fim: values.data_fim ? localInputToIso(values.data_fim) : null,
         cliente_id: values.cliente_id || null,
         cliente_nome: values.cliente_nome || null,
         // Snapshot legado de condutor (compat) — preenchido a partir da lista
-        // bifurcada. Em TVDE usa o motorista, em rent-a-car fica null.
+        // bifurcada. Em TVDE/slot usa o motorista, em rent-a-car fica null.
         condutor_id: condutorPrincipalMotorista?.id ?? null,
         condutor_nome: condutorPrincipalNome,
         estado: values.estado,
         regime: values.regime,
+        // Valor semanal só no regime slot (cobrado por carro).
+        slot_valor_semanal: values.regime === 'slot' ? (values.slot_valor_semanal ?? null) : null,
         valor_total: values.valor_total,
         franquia_valor: values.franquia_valor,
         caucao_valor: values.caucao_valor,
@@ -459,7 +488,18 @@ const RentingReservaForm = () => {
           )}
           {isEdit &&
             reserva &&
-            (contratoExistente ? (
+            // Slot não gera contrato_renting — gera contrato de prestação de serviços.
+            (reserva.regime === 'slot' ? (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setPrestacaoDialogOpen(true)}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Gerar Contrato de Prestação
+              </Button>
+            ) : contratoExistente ? (
               <Button
                 type="button"
                 variant="secondary"
@@ -509,10 +549,17 @@ const RentingReservaForm = () => {
               <Card className="bg-card border-border">
                 <CardContent className="p-4 sm:p-6">
                   <Tabs defaultValue="geral" className="w-full">
-                    <TabsList className="grid grid-cols-4 w-full sm:w-auto sm:inline-flex">
+                    {/* Em slot o motorista escolhe-se no Geral — sem tab Condutores. */}
+                    <TabsList
+                      className={cn(
+                        'grid w-full sm:w-auto sm:inline-flex',
+                        regimeWatched === 'slot' ? 'grid-cols-2' : 'grid-cols-3'
+                      )}
+                    >
                       <TabsTrigger value="geral">Geral</TabsTrigger>
-                      <TabsTrigger value="condutores">Condutores</TabsTrigger>
-                      <TabsTrigger value="caixa">Caixa</TabsTrigger>
+                      {regimeWatched !== 'slot' && (
+                        <TabsTrigger value="condutores">Condutores</TabsTrigger>
+                      )}
                       <TabsTrigger value="anexos">Anexos</TabsTrigger>
                     </TabsList>
 
@@ -522,27 +569,23 @@ const RentingReservaForm = () => {
                         viaturas={viaturasParaSelecao}
                         estacoes={estacoes}
                         clientes={clientes}
-                      />
-                    </TabsContent>
-
-                    <TabsContent value="condutores" className="pt-4">
-                      <ReservaTabCondutores
-                        form={form}
-                        regime={regimeWatched}
-                        clientes={clientes}
                         motoristas={motoristas}
-                        onCriarNovoCliente={() => setClienteDialogOpen(true)}
-                        onCriarNovoMotorista={() => setMotoristaDialogOpen(true)}
+                        onCriarMotorista={() => setMotoristaDialogOpen(true)}
                       />
                     </TabsContent>
 
-                    <TabsContent value="caixa" className="pt-4">
-                      <ReservaTabCaixa
-                        form={form}
-                        estacoes={estacoes}
-                        reservaCodigo={reserva?.codigo ?? null}
-                      />
-                    </TabsContent>
+                    {regimeWatched !== 'slot' && (
+                      <TabsContent value="condutores" className="pt-4">
+                        <ReservaTabCondutores
+                          form={form}
+                          regime={regimeWatched}
+                          clientes={clientes}
+                          motoristas={motoristas}
+                          onCriarNovoCliente={() => setClienteDialogOpen(true)}
+                          onCriarNovoMotorista={() => setMotoristaDialogOpen(true)}
+                        />
+                      </TabsContent>
+                    )}
 
                     <TabsContent value="anexos" className="pt-4">
                       <ReservaTabAnexos
@@ -592,6 +635,16 @@ const RentingReservaForm = () => {
         motorista={null}
         onMotoristaCreated={(m) => handleMotoristaCriado(m.id)}
       />
+
+      {reserva && (
+        <ContratoPrestacaoDialog
+          open={prestacaoDialogOpen}
+          onOpenChange={setPrestacaoDialogOpen}
+          reserva={reserva}
+          motoristas={motoristas}
+          viaturas={viaturas}
+        />
+      )}
     </>
   );
 };

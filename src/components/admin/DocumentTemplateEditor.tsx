@@ -17,6 +17,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Save, X, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useCamposDinamicos } from '@/hooks/useCamposDinamicos';
+import { categoriasOrdenadas, labelCategoria, type BaseCategoria } from '@/lib/camposDinamicos';
+
+const CATEGORIA_EMOJI: Record<BaseCategoria, string> = {
+  motorista: '👤',
+  empresa: '🏢',
+  viatura: '🚗',
+  contrato: '📄',
+};
 
 interface DocumentTemplate {
   id?: string;
@@ -100,44 +109,19 @@ export const DocumentTemplateEditor = ({
     }
   }, [template]);
 
-  const camposDinamicos = [
-    {
-      label: '👤 Motorista',
-      icon: '👤',
-      fields: [
-        '{{motorista_nome}}',
-        '{{motorista_nif}}',
-        '{{motorista_documento_tipo}}',
-        '{{motorista_documento_numero}}',
-        '{{carta_conducao}}',
-        '{{carta_categorias}}',
-        '{{motorista_morada}}',
-        '{{motorista_email}}',
-        '{{motorista_telefone}}',
-      ],
-    },
-    {
-      label: '🏢 Empresa',
-      icon: '🏢',
-      fields: [
-        '{{empresa_nome_completo}}',
-        '{{empresa_nif}}',
-        '{{empresa_sede}}',
-        '{{empresa_licenca_tvde}}',
-        '{{empresa_representante}}',
-      ],
-    },
-    {
-      label: '📄 Contrato',
-      icon: '📄',
-      fields: [
-        '{{data_inicio}}',
-        '{{data_assinatura}}',
-        '{{cidade_assinatura}}',
-        '{{duracao_meses}}',
-      ],
-    },
-  ];
+  // Paleta vinda da configuração por organização (catálogo + overrides).
+  // Renomear/esconder/reordenar é feito na tab Configurações → Campos.
+  const { campos: camposEfetivos } = useCamposDinamicos();
+  const camposDinamicos = categoriasOrdenadas(camposEfetivos)
+    .map((cat) => ({
+      key: cat,
+      label: labelCategoria(cat),
+      icon: (CATEGORIA_EMOJI as Record<string, string>)[cat] ?? '🏷️',
+      campos: camposEfetivos
+        .filter((c) => c.categoria === cat && c.ativo)
+        .sort((a, b) => a.ordem - b.ordem),
+    }))
+    .filter((g) => g.campos.length > 0);
 
   const insertField = (field: string) => {
     if (editorRef.current) {
@@ -292,11 +276,11 @@ export const DocumentTemplateEditor = ({
         template_data: {
           conteudo: conteudoCompleto,
         } as any,
-        campos_dinamicos: {
-          motorista: camposDinamicos[0].fields,
-          empresa: camposDinamicos[1].fields,
-          contrato: camposDinamicos[2].fields,
-        } as any,
+        // Snapshot da paleta efectiva no momento (informativo). A config real
+        // vive em org_campos_dinamicos; aqui guardamos só um registo.
+        campos_dinamicos: Object.fromEntries(
+          camposDinamicos.map((g) => [g.key, g.campos.map((c) => `{{${c.chave}}}`)])
+        ) as any,
         papel_timbrado_url: papelTimbradoUrl || null,
         ativo,
         versao,
@@ -414,32 +398,42 @@ export const DocumentTemplateEditor = ({
           </Card>
         </div>
 
-        {/* COLUNA LATERAL - FERRAMENTAS */}
+        {/* COLUNA LATERAL - FERRAMENTAS (fluxo normal, scroll da página) */}
         <div className="space-y-4 pr-2">
           {/* Campos Dinâmicos */}
-          <Card className="bg-card/50 border-border sticky top-0 z-50 shadow-lg">
+          <Card className="bg-card border-border shadow-lg">
             <CardHeader>
               <CardTitle className="text-foreground text-lg">Campos Dinâmicos</CardTitle>
               <CardDescription className="text-muted-foreground text-xs">
-                Clique para inserir no cursor
+                Clica para inserir no cursor, ou arrasta para o documento
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 max-h-[calc(100vh-320px)] md:max-h-[calc(100vh-200px)] overflow-y-auto">
+            <CardContent className="space-y-4">
               {camposDinamicos.map((categoria) => (
-                <div key={categoria.label} className="space-y-2">
+                <div key={categoria.key} className="space-y-2">
                   <Label className="text-sm text-foreground font-bold flex items-center gap-2">
                     <span>{categoria.icon}</span>
                     {categoria.label}
                   </Label>
                   <div className="flex flex-wrap gap-1.5">
-                    {categoria.fields.map((field) => (
+                    {categoria.campos.map((campo) => (
                       <Badge
-                        key={field}
+                        key={campo.chave}
                         variant="outline"
-                        className="cursor-pointer hover:bg-yellow-500/20 hover:border-yellow-500 transition-all text-xs px-2 py-1"
-                        onClick={() => insertField(field)}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData(
+                            'application/x-campo-dinamico',
+                            `{{${campo.chave}}}`
+                          );
+                          e.dataTransfer.setData('text/plain', `{{${campo.chave}}}`);
+                          e.dataTransfer.effectAllowed = 'copy';
+                        }}
+                        className="cursor-grab active:cursor-grabbing hover:bg-yellow-500/20 hover:border-yellow-500 transition-all text-xs px-2 py-1 select-none"
+                        onClick={() => insertField(`{{${campo.chave}}}`)}
+                        title={`{{${campo.chave}}}`}
                       >
-                        {field.replace(/[{}]/g, '')}
+                        {campo.label}
                       </Badge>
                     ))}
                   </div>

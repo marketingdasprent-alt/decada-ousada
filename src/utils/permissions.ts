@@ -44,6 +44,7 @@ export const RECURSOS = {
   ADMIN_UTILIZADORES: 'admin_utilizadores',
   ADMIN_GRUPOS: 'admin_grupos',
   ADMIN_DOCUMENTOS: 'admin_documentos',
+  ADMIN_CAMPOS_DINAMICOS: 'admin_campos_dinamicos',
   ADMIN_FORMULARIOS: 'admin_formularios',
   ADMIN_INTEGRACOES: 'admin_integracoes',
   ADMIN_CONFIGURACOES: 'admin_configuracoes',
@@ -69,6 +70,9 @@ export const RECURSOS = {
   RENTING_CONTRATOS: 'renting_contratos',
   RENTING_MOVIMENTACOES: 'renting_movimentacoes',
   RENTING_CLIENTES: 'renting_clientes',
+
+  // Dashboard / Contabilidade
+  DASHBOARD_CHECKIN_HISTORICO: 'dashboard_checkin_historico',
 } as const;
 
 export type RecursoKey = (typeof RECURSOS)[keyof typeof RECURSOS];

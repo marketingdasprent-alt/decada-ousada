@@ -5,11 +5,12 @@ import { CondutoresFields } from '@/components/renting/shared/CondutoresFields';
 import type { ReservaFormValues } from '../reservaDialog.schema';
 import type { ClienteComDocumentos } from '@/types/cliente';
 import type { Motorista } from '@/types/motorista';
+import type { ReservaRegime } from '@/types/reserva';
 
 interface ReservaTabCondutoresProps {
   // Mantido por compatibilidade com o callsite — o shared usa useFormContext.
   form: UseFormReturn<ReservaFormValues>;
-  regime: 'rent_a_car' | 'tvde';
+  regime: ReservaRegime;
   clientes: ClienteComDocumentos[];
   motoristas?: Motorista[];
   onCriarNovoCliente?: () => void;

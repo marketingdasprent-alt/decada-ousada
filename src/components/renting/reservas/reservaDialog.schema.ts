@@ -26,7 +26,8 @@ export const reservaDialogSchema = z
     estacao_recolha_id: z.string().uuid().nullable().optional(),
 
     data_inicio: datetimeLocal,
-    data_fim: datetimeLocal,
+    // Slot é aberto (sem data fim). Validação condicional no superRefine.
+    data_fim: z.string().optional().nullable(),
 
     cliente_id: z.string().uuid().nullable().optional(),
     cliente_nome: z.string().max(255).optional().nullable(),
@@ -38,6 +39,7 @@ export const reservaDialogSchema = z
     regime: z.enum(RESERVA_REGIMES).default('rent_a_car'),
 
     valor_total: optionalNumber,
+    slot_valor_semanal: optionalNumber,
     franquia_valor: optionalNumber,
     caucao_valor: optionalNumber,
     kms_incluidos: optionalNumber,
@@ -75,22 +77,51 @@ export const reservaDialogSchema = z
         message: 'Apenas um condutor pode ser principal.',
       }),
   })
-  .refine((d) => new Date(d.data_fim).getTime() > new Date(d.data_inicio).getTime(), {
-    message: 'Data fim tem que ser posterior à data início',
-    path: ['data_fim'],
-  })
-  .refine(
-    (d) => {
-      const diffDays =
-        (new Date(d.data_fim).getTime() - new Date(d.data_inicio).getTime()) /
-        (1000 * 60 * 60 * 24);
-      return diffDays <= 365;
-    },
-    { message: 'Duração máxima: 365 dias', path: ['data_fim'] }
-  )
-  // Validação condicional: estado confirmada/em_curso exige dados completos.
-  // Reserva pendente pode ser rascunho com cliente/viatura/estações por preencher.
+  // Validações condicionais ao regime e estado.
   .superRefine((d, ctx) => {
+    const isSlot = d.regime === 'slot';
+
+    // data_fim: obrigatória e válida fora do regime slot (slot é aberto).
+    if (!isSlot) {
+      if (!d.data_fim || Number.isNaN(new Date(d.data_fim).getTime())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['data_fim'],
+          message: 'Data fim obrigatória',
+        });
+      } else {
+        const inicio = new Date(d.data_inicio).getTime();
+        const fim = new Date(d.data_fim).getTime();
+        if (fim <= inicio) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['data_fim'],
+            message: 'Data fim tem que ser posterior à data início',
+          });
+        } else if ((fim - inicio) / (1000 * 60 * 60 * 24) > 365) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['data_fim'],
+            message: 'Duração máxima: 365 dias',
+          });
+        }
+      }
+    }
+
+    // Slot: exige a viatura (carro do motorista); cliente/estações não se aplicam.
+    if (isSlot) {
+      if (!d.viatura_id) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['viatura_id'],
+          message: 'Seleciona a viatura (carro do motorista)',
+        });
+      }
+      return;
+    }
+
+    // Validação condicional: estado confirmada/em_curso exige dados completos.
+    // Reserva pendente pode ser rascunho com cliente/viatura/estações por preencher.
     const exigeCompleto = d.estado === 'confirmada' || d.estado === 'em_curso';
     if (!exigeCompleto) return;
 

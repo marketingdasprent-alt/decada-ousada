@@ -284,6 +284,18 @@ const ContratoForm = () => {
       return;
     }
     if (!isEdit && reservaFromQuery) {
+      // Slot não gera contrato_renting — fica só como reserva (o contrato é
+      // o de prestação de serviços). Bloqueia a conversão e volta à reserva.
+      if (reservaFromQuery.regime === 'slot') {
+        toast({
+          title: 'Regime slot não gera contrato de aluguer',
+          description:
+            'Usa "Gerar Contrato de Prestação" na reserva slot — não há contrato_renting.',
+          variant: 'destructive',
+        });
+        navigate(`/renting/reservas/${reservaFromQuery.id}`);
+        return;
+      }
       // Conversão reserva → contrato: copia TUDO o que faz sentido.
       // O orçamento da reserva (valor_total) torna-se valor_total_manual no contrato.
       form.reset({
@@ -410,8 +422,11 @@ const ContratoForm = () => {
 
   // O IVA não é editável no contrato — é derivado do regime
   // (rent-a-car / TVDE) e das taxas configuradas na organização.
+  // 'slot' nunca gera contrato_renting; mapeamos para modalidade rent_a_car
+  // por segurança de tipos (a função de IVA só conhece rent_a_car/tvde).
   useEffect(() => {
-    form.setValue('taxa_iva', ivaParaModalidade(orgDefinicoes, regime), {
+    const modalidade = regime === 'tvde' ? 'tvde' : 'rent_a_car';
+    form.setValue('taxa_iva', ivaParaModalidade(orgDefinicoes, modalidade), {
       shouldDirty: false,
     });
   }, [regime, orgDefinicoes, form]);

@@ -51,6 +51,12 @@ const TIPOS_CONFIG = [
     color: 'border-pink-500 bg-pink-500/10 text-pink-700 dark:text-pink-400',
     colorActive: 'border-pink-500 bg-pink-500 text-white',
   },
+  {
+    value: 'slot',
+    label: 'Slot',
+    color: 'border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+    colorActive: 'border-amber-500 bg-amber-500 text-white',
+  },
 ];
 
 const TIPO_LABELS: Record<string, string> = Object.fromEntries(
@@ -64,6 +70,7 @@ const TIPO_COLORS_PDF: Record<string, [number, number, number]> = {
   troca: [168, 85, 247],
   upgrade: [234, 179, 8],
   lista_espera: [236, 72, 153],
+  slot: [245, 158, 11],
 };
 
 async function loadImageWithDimensions(
@@ -312,7 +319,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
         doc.setFontSize(9.5);
         doc.setTextColor(20, 20, 25);
         const matricula =
-          ev.tipo === 'lista_espera'
+          ev.tipo === 'lista_espera' || ev.tipo === 'slot'
             ? ev.titulo
             : ev.tipo === 'troca'
               ? `${formatMatricula(ev.titulo)}${ev.matricula_devolver ? `  <>  ${formatMatricula(ev.matricula_devolver)}` : ''}`
@@ -758,7 +765,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
 
           const ty = y + 5.5;
           const titulo =
-            ev.tipo === 'lista_espera'
+            ev.tipo === 'lista_espera' || ev.tipo === 'slot'
               ? ev.titulo
               : ev.tipo === 'troca'
                 ? `${formatMatricula(ev.titulo)}${ev.matricula_devolver ? ` ↔ ${formatMatricula(ev.matricula_devolver)}` : ''}`
@@ -1195,7 +1202,7 @@ export const RelatorioDialog: React.FC<Props> = ({ open, onOpenChange, currentMo
                 eventosFiltrados.map((ev) => {
                   const tipoConfig = TIPOS_CONFIG.find((t) => t.value === ev.tipo);
                   const titulo =
-                    ev.tipo === 'lista_espera'
+                    ev.tipo === 'lista_espera' || ev.tipo === 'slot'
                       ? ev.titulo
                       : ev.tipo === 'troca'
                         ? `${formatMatricula(ev.titulo)}${ev.matricula_devolver ? ` ↔ ${formatMatricula(ev.matricula_devolver)}` : ''}`
