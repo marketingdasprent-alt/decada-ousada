@@ -452,12 +452,24 @@ export const generateDocumentFromTemplate = async (
 
     const templateData = template as unknown as DocumentTemplate;
 
+    // Campos do catálogo criados pelo provider são ALIASES: {{chave}} → {{fonte}}.
+    // Substituímos antes da resolução normal para garantir que resolvem sempre.
+    let conteudo = templateData.template_data.conteudo as string;
+    try {
+      const { data: aliases } = await (supabase as any)
+        .from('campos_catalogo')
+        .select('chave, fonte');
+      for (const a of (aliases ?? []) as { chave: string; fonte: string }[]) {
+        if (a.chave && a.fonte) {
+          conteudo = conteudo.split(`{{${a.chave}}}`).join(`{{${a.fonte}}}`);
+        }
+      }
+    } catch {
+      /* tabela ausente ou sem aliases — segue com o conteúdo original */
+    }
+
     // Substituir campos dinâmicos no conteúdo
-    const processedContent = replaceDynamicFields(
-      templateData.template_data.conteudo,
-      motoristaData,
-      documentData
-    );
+    const processedContent = replaceDynamicFields(conteudo, motoristaData, documentData);
 
     // Criar PDF ou usar existente
     const pdf =

@@ -182,6 +182,20 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
           style:
             'width: 210mm; min-height: 297mm; margin: 0 auto; padding: 30mm; box-shadow: 0 0 10px rgba(0,0,0,0.1);',
         },
+        // Arrastar um campo dinâmico (chip) para o documento → insere o
+        // placeholder na posição exacta onde foi largado.
+        handleDrop: (view, event, _slice, moved) => {
+          const campo = event.dataTransfer?.getData('application/x-campo-dinamico');
+          if (!campo || moved) return false;
+          const coords = { left: event.clientX, top: event.clientY };
+          const pos = view.posAtCoords(coords);
+          if (pos) {
+            view.dispatch(view.state.tr.insertText(campo, pos.pos));
+            view.focus();
+          }
+          event.preventDefault();
+          return true;
+        },
       },
     });
 
