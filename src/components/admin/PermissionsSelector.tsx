@@ -129,6 +129,7 @@ const RECURSO_LABELS: Record<string, string> = {
   admin_utilizadores: 'Gerir utilizadores e contas',
   admin_grupos: 'Gerir grupos e permissões',
   admin_documentos: 'Gerir templates de documentos',
+  admin_campos_dinamicos: 'Gerir campos dinâmicos',
   admin_formularios: 'Gerir formulários',
   admin_integracoes: 'Gerir integrações externas',
   admin_configuracoes: 'Configurações do sistema',

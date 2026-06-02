@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, Loader2, Plus, RotateCcw, Save, Tags, Trash2 } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Plus,
+  RotateCcw,
+  Save,
+  Tags,
+  Trash2,
+  X,
+} from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useOrgId } from '@/contexts/TenantContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 
 import {
@@ -56,9 +67,12 @@ export function CamposTab() {
   const save = useSaveCamposDinamicos();
   const { toast } = useToast();
 
-  // Gestão do catálogo — só a org provider (Década Ousada) pode criar campos.
+  // Gestão do catálogo — só a org provider (Década Ousada) E com a permissão
+  // 'admin_campos_dinamicos'. A RLS garante que só a provider escreve.
   const orgId = useOrgId();
+  const { canEdit } = usePermissions();
   const isProvider = orgId === DECADA_OUSADA_ORG_ID;
+  const podeGerirCatalogo = isProvider && canEdit('admin_campos_dinamicos');
   const { data: custom = [] } = useCamposCatalogo();
   const criarCampo = useCriarCampoCatalogo();
   const apagarCampo = useApagarCampoCatalogo();
@@ -191,8 +205,8 @@ export function CamposTab() {
         </div>
       </div>
 
-      {/* Gestão do catálogo — só provider */}
-      {isProvider && (
+      {/* Gestão do catálogo — só provider com permissão */}
+      {podeGerirCatalogo && (
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -217,27 +231,42 @@ export function CamposTab() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">Categoria</label>
-                <Select value={novaCategoria} onValueChange={(v) => setNovaCategoria(v)}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categoriasDisponiveis.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {labelCategoria(c)}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value={NOVA_CATEGORIA}>＋ Nova categoria…</SelectItem>
-                  </SelectContent>
-                </Select>
-                {novaCategoria === NOVA_CATEGORIA && (
-                  <Input
-                    value={novaCategoriaNome}
-                    onChange={(e) => setNovaCategoriaNome(e.target.value)}
-                    placeholder="Nome da categoria"
-                    className="h-9 mt-1"
-                    autoFocus
-                  />
+                {novaCategoria === NOVA_CATEGORIA ? (
+                  <div className="relative">
+                    <Input
+                      value={novaCategoriaNome}
+                      onChange={(e) => setNovaCategoriaNome(e.target.value)}
+                      placeholder="Nome da nova categoria"
+                      className="h-9 pr-8"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNovaCategoria('contrato');
+                        setNovaCategoriaNome('');
+                      }}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      title="Escolher categoria existente"
+                      aria-label="Cancelar nova categoria"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <Select value={novaCategoria} onValueChange={(v) => setNovaCategoria(v)}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoriasDisponiveis.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {labelCategoria(c)}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={NOVA_CATEGORIA}>＋ Nova categoria…</SelectItem>
+                    </SelectContent>
+                  </Select>
                 )}
               </div>
               <div className="space-y-1">
